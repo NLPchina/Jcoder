@@ -1,0 +1,313 @@
+package org.nlpcn.jcoder.scheduler;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.log4j.Logger;
+import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.TaskInfo;
+import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.ExceptionUtil;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.quartz.SchedulerException;
+
+public class ThreadManager {
+
+	private static final Logger LOG = Logger.getLogger(QuartzSchedulerManager.class);
+
+	private static final AtomicLong JOB_ID = new AtomicLong();
+
+	/**
+	 * 增加一个task 只有master可以添加任务
+	 * 
+	 * @param task
+	 * @throws SchedulerException
+	 * @throws TaskException
+	 */
+	public synchronized static boolean add(Task task) throws TaskException {
+
+		boolean flag = true;
+
+		try {
+			flag = QuartzSchedulerManager.addJob(task);
+		} catch (SchedulerException e) {
+			flag = false;
+			LOG.error(e);
+			throw new TaskException(e.getMessage());
+		}
+
+		return flag;
+	}
+
+	/**
+	 * 运行一个task
+	 * 
+	 * @param task
+	 * @throws TaskException
+	 */
+	public static void run(Task task) throws TaskException {
+		String threadName = task.getName() + "@" + JOB_ID.getAndIncrement() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss");
+		TaskRunManager.runTaskJob(new TaskJob(threadName, task));
+	}
+
+	/**
+	 * 运行一个taskJob
+	 * 
+	 * @param task
+	 * @throws TaskException
+	 */
+	public static void run(TaskJob taskJob) throws TaskException {
+		TaskRunManager.runTaskJob(taskJob);
+	}
+
+	/**
+	 * 停止一个task
+	 * 
+	 * @param task
+	 * @throws TaskException
+	 */
+	public static void stop(Task task) throws TaskException {
+		stop(task.getName());
+	}
+
+	/**
+	 * 停止一个task
+	 * 
+	 * @param task
+	 * @throws TaskException
+	 */
+	public static synchronized void stop(String taskName) throws TaskException {
+		try {
+			// 从任务中移除
+			try {
+				TaskRunManager.stopTaskJob(taskName);
+			} catch (Exception e) {
+				LOG.error(e);
+				e.printStackTrace();
+			}
+			// 进行二次停止
+			if (TaskRunManager.checkExists(taskName)) {
+				TaskRunManager.stopTaskJob(taskName);
+			}
+			// 从定时任务中移除
+			QuartzSchedulerManager.stopTaskJob(taskName);
+
+		} catch (Exception e) {
+			LOG.error(e);
+			throw new TaskException(e.getMessage());
+		}
+	}
+
+	/**
+	 * 停止一个job
+	 * 
+	 * @param job
+	 * @throws TaskException
+	 */
+	public static void stop(TaskJob job) throws TaskException {
+		stop(job.getTask());
+	}
+
+	/**
+	 * 刷新task 相当于从定时任务中移除，并且重新插入,非线程安全.如果调用记得在外层锁定对象
+	 * 
+	 * @param task
+	 * @throws Exception
+	 */
+	public static void flush(Task oldTask, Task newTask) throws Exception {
+		if (oldTask != null && StringUtil.isNotBlank(oldTask.getName())) {
+
+			if (oldTask.getType() == 2) {
+				LOG.info("to stop oldTask " + oldTask.getName() + " BEGIN! ");
+				stop(oldTask);
+				LOG.info("to stop oldTask " + oldTask.getName() + " OK! ");
+			} else if (oldTask.getType() == 1) {
+				LOG.info("to remove Api oldTask " + oldTask.getName() + " BEGIN! ");
+				removeApi(oldTask);
+				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
+			}
+		}
+
+		Thread.sleep(1000L);
+
+		if (newTask != null && StringUtil.isNotBlank(newTask.getName()) && newTask.getStatus() == 1) {
+			LOG.info("to start newTask " + newTask.getName() + " BEGIN! ");
+			add(newTask);
+			LOG.info("to start newTask " + newTask.getName() + " BEGIN! ");
+		}
+	}
+
+	/**
+	 * 从网址映射列表中删除api
+	 * 
+	 * @param oldTask
+	 */
+	private static void removeApi(Task oldTask) {
+		StaticValue.MAPPING.remove(oldTask);
+	}
+
+	/**
+	 * 判断一个任务是否存在
+	 * 
+	 * @param taskName
+	 * @return
+	 * @throws SchedulerException
+	 */
+	public static boolean checkExists(String taskName) {
+		try {
+			return QuartzSchedulerManager.checkExists(taskName) || TaskRunManager.checkExists(taskName);
+		} catch (Exception e) {
+			e.printStackTrace();
+			LOG.error(e.getMessage());
+		}
+		return true;
+	}
+
+	/**
+	 * 取得所有的在运行状态的线程
+	 * 
+	 * @throws SchedulerException
+	 */
+	public static List<TaskInfo> getAllThread() throws TaskException {
+		Collection<TaskJob> taskList = TaskRunManager.getTaskList();
+		List<TaskInfo> threads = new ArrayList<>();
+		for (TaskJob taskJob : taskList) {
+			Task task = taskJob.getTask();
+			if (taskJob.isInterrupted()) {
+				task.setRunStatus("正在停止");
+			} else if (taskJob.isAlive()) {
+				task.setRunStatus("运行中");
+			} else if (taskJob.isOver()) {
+				task.setRunStatus("运行结束");
+			} else {
+				task.setRunStatus("状态不明");
+			}
+			threads.add(new TaskInfo(task, taskJob.getStartTime()));
+		}
+		return threads;
+	}
+
+	/**
+	 * 获得所有的调度任务
+	 * 
+	 * @return
+	 * @throws SchedulerException
+	 */
+	public static List<TaskInfo> getAllScheduler() throws SchedulerException {
+		List<Task> taskList = QuartzSchedulerManager.getTaskList();
+		List<TaskInfo> schedulers = new ArrayList<>();
+		long time = System.currentTimeMillis();
+		for (Task task : taskList) {
+			schedulers.add(new TaskInfo(task, time));
+		}
+		return schedulers;
+	}
+
+	public static List<TaskInfo> getAllAction() {
+		Set<String> actionList = ActionRunManager.getActionList();
+		List<TaskInfo> actions = new ArrayList<>();
+		for (String key : actionList) {
+			TaskInfo taskInfo = null;
+			try {
+				String[] split = key.split("@");
+				Task task = TaskService.findTaskByCache(split[0]);
+				if (task == null) {
+					task = new Task();
+				}
+				task.setRunStatus("运行中");
+				taskInfo = new TaskInfo(task, Long.parseLong(split[1]));
+			} catch (Exception e) {
+				taskInfo = new TaskInfo();
+				taskInfo.setMessage(ExceptionUtil.printStackTrace(e));
+				LOG.error(e);
+			}
+			taskInfo.setName(key);
+			actions.add(taskInfo);
+		}
+		return actions;
+	}
+
+	/**
+	 * 从当前的进程队列中获得某个task
+	 * 
+	 * @return
+	 */
+	public static Task getTask(String taskName) {
+		Task findTaskByName = TaskService.findTaskByCache(taskName);
+		if (findTaskByName != null) {
+			return findTaskByName;
+		}
+		return TaskRunManager.getTask(taskName);
+	}
+
+	/**
+	 * 删除一个已经运行结束的job
+	 * 
+	 * @param name
+	 */
+	public static void removeTaskJob(String name) {
+		TaskRunManager.removeTaskIfOver(name);
+	}
+
+	/**
+	 * 停止调度任务
+	 */
+	public static void stopScheduler() {
+		try {
+			QuartzSchedulerManager.stopScheduler();
+		} catch (SchedulerException e) {
+			e.printStackTrace();
+			LOG.error(e);
+		}
+	}
+
+	/**
+	 * 开启调度任务
+	 */
+	public static void startScheduler() {
+		try {
+			QuartzSchedulerManager.startScheduler();
+		} catch (SchedulerException e) {
+			e.printStackTrace();
+			LOG.error(e);
+		}
+	}
+
+	/**
+	 * 增加taskaction到运行队列中
+	 * 
+	 * @param key
+	 * @param thread
+	 */
+	public static void add2ActionTask(String key, Thread thread) {
+		ActionRunManager.add2ThreadPool(key, thread);
+	}
+
+	/**
+	 * 强行停止一个
+	 * 
+	 * @param key
+	 * @param taskName
+	 * @return
+	 * @throws TaskException
+	 */
+	public static boolean stopActionTask(String key) throws TaskException {
+		return ActionRunManager.stop(key);
+	}
+
+	/**
+	 * 从Action队列中移除
+	 * 
+	 * @param key
+	 */
+	public static void removeActionTask(String key) {
+		ActionRunManager.remove(key);
+	}
+
+}

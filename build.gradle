@@ -1,0 +1,74 @@
+group 'nlpcn.org'
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: 'war'
+
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+    maven {
+        url "http://maven.nlpcn.org/"
+    }
+}
+
+dependencies {
+    compile 'org.nutz:nutz:1.r.56.r3'
+    compile 'org.nlpcn:nlp-lang:1.7'
+    compile 'org.nutz:nutz:1.r.56.r3'
+    compile 'com.alibaba:fastjson:1.1.33'
+    compile 'com.h2database:h2:1.3.176'
+    compile 'com.alibaba:druid:1.0.9'
+    compile 'log4j:log4j:1.2.16'
+    compile 'org.slf4j:slf4j-log4j12:1.6.1'
+    compile 'org.quartz-scheduler:quartz:2.2.1'
+    compile 'javax.mail:mail:1.4.1'
+    compile 'org.jsoup:jsoup:1.3.3'
+    compile 'com.google.guava:guava:14.0.1'
+    //javaee support
+    compile 'javax.servlet:javax.servlet-api:3.1.0'
+    compile 'javax.servlet:jstl:1.2'
+	compile 'javax.inject:javax.inject:1'
+	compile 'org.atmosphere:atmosphere-runtime:2.4.4'
+ 	
+ 	
+    // web server
+   	providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
+    providedCompile 'org.eclipse.jetty:jetty-jsp:9.2.2.v20140723'
+    providedCompile 'org.eclipse.jetty:jetty-continuation:9.2.2.v20140723'
+    providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.2.v20140723'
+    
+    
+
+	testCompile 'junit:junit:4.12'
+
+	war{
+		def schemaJarFile = project.configurations.providedCompile 
+		schemaJarFile.each{source ->
+			from zipTree(source)
+			exclude("**/*.SF")
+		}
+		
+		from('build/classes/main/Bootstrap.class')
+		manifest {
+        	attributes 'Implementation-Title': 'Jcoder Webserver', 'Implementation-Version': version,  'Main-Class':'Bootstrap'
+    	}
+    	
+    	
+    	classpath = classpath - sourceSets.main.output
+
+		from (jar) {
+			into 'WEB-INF/lib'
+		}
+		
+	}
+	
+	
+	tasks.withType(JavaCompile) {  
+    	options.encoding = "UTF-8"  
+	}
+}

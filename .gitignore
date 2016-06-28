@@ -1,0 +1,15 @@
+out/
+.classpath
+.project
+.settings/
+bin/
+.ext*
+log/
+/build/
+/target
+bak/
+code/
+resource/
+/.gradle/
+.gradle/
+.DS_Store
