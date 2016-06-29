@@ -11,6 +11,7 @@ import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.SharedSpace;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -53,60 +54,36 @@ public class TaskAction {
 		}
 	}
 
-	@At("/task/offline/?")
-	@Ok("raw")
-	public String offline(Long groupId, @Param("::task") Task task) {
-		JSONObject job = new JSONObject();
-		job.put("id", task.getId());
-		job.put("name", task.getName());
-		job.put("ok", true);
-		job.put("message", "下线成功！");
-		try {
-			taskService.offline(task);
-		} catch (Exception e) {
-			e.printStackTrace();
-			job.put("ok", false);
-			job.put("message", "下线失败！ 原因：" + e.getMessage());
-		}
-		return job.toJSONString();
-	}
-
 	@At("/task/editor/?/?")
 	@Ok("jsp:/task/task_editor.jsp")
-	public void find(Long groupId, String name, @Param("version") String version) {
+	public void find(Long groupId, Long taskId, @Param("version") String version) {
 		Mvcs.getReq().setAttribute("groupId", groupId);
-		if (StringUtil.isNotBlank(name) && !name.equals("_new")) {
-			if (!StringUtil.isBlank(version)) {
-				TaskHistory task = TaskService.findTaskByDBHistory(name, version);
-				Mvcs.getReq().setAttribute("task", task);
-			} else {
-				Task task = TaskService.findTaskByDB(name);
-				Mvcs.getReq().setAttribute("task", new TaskHistory(task));
-				version = task.getVersion();
-			}
-
-			List<String> versions = taskService.versions(groupId, name);
-			Mvcs.getReq().setAttribute("versions", versions);
+		if (!StringUtil.isBlank(version)) {
+			TaskHistory task = TaskService.findTaskByDBHistory(taskId, version);
+			Mvcs.getReq().setAttribute("task", task);
+			taskId = task.getTaskId();
+		} else {
+			Task task = TaskService.findTaskByDB(taskId);
+			Mvcs.getReq().setAttribute("task", new TaskHistory(task));
+			version = task.getVersion();
+			taskId = task.getId();
 		}
+
+		List<String> versions = taskService.versions(taskId, 100);
+		Mvcs.getReq().setAttribute("versions", versions);
+	}
+
+	@At("/task/_new/?")
+	@Ok("jsp:/task/task_editor.jsp")
+	public void create(Long groupId) {
+		Mvcs.getReq().setAttribute("groupId", groupId);
 	}
 
 	@At("/task/delete/?")
 	@Ok("raw")
 	public boolean delete(String name) {
 		Task task = TaskService.findTaskByCache(name);
-		try {
-			taskService.delete(task);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
-
-	@At("/task/delete/?/?")
-	@Ok("redirect:/task/versionsManager")
-	public boolean delete(String name, String version) {
-		TaskHistory task = TaskService.findTaskByDBHistory(name, version);
+		task = TaskService.findTaskByDB(task.getId()); // old task and new task must not same
 		try {
 			taskService.delete(task);
 		} catch (Exception e) {
@@ -121,7 +98,8 @@ public class TaskAction {
 	public boolean del(String name) {
 		Task task = TaskService.findTaskByCache(name);
 		try {
-			taskService.del(task);
+			taskService.delByDB(task);
+			SharedSpace.removeTaskMessage(task.getId());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
@@ -187,6 +165,5 @@ public class TaskAction {
 		json.put("tasks", tasks);
 		return json;
 	}
-
 
 }

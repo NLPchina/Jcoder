@@ -1,17 +1,17 @@
 package org.nlpcn.jcoder.scheduler;
 
-import org.apache.log4j.Logger;
-import org.nlpcn.jcoder.domain.Task;
-
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.log4j.Logger;
+import org.nlpcn.jcoder.domain.Task;
 
 class TaskRunManager {
 
 	private static final Logger LOG = Logger.getLogger(TaskRunManager.class);
-	
+
 	private static final ConcurrentHashMap<String, TaskJob> THREAD_POOL = new ConcurrentHashMap<String, TaskJob>();
 
 	/**
@@ -31,20 +31,10 @@ class TaskRunManager {
 		}
 	}
 
-	/**
-	 * 从线程池中移除
-	 * 
-	 * @param taskJob
-	 * @throws Exception
-	 */
-	public static synchronized void stopTaskJob(TaskJob taskJob) throws Exception {
-		stopTaskJob(taskJob.getName());
-	}
+	public static synchronized boolean stop(String key) throws TaskException {
+		if (THREAD_POOL.containsKey(key)) {
 
-	public static synchronized boolean stopTaskJob(String taskName) throws TaskException {
-		if (THREAD_POOL.containsKey(taskName)) {
-
-			TaskJob remove = THREAD_POOL.get(taskName);
+			TaskJob remove = THREAD_POOL.get(key);
 
 			// 10次尝试将线程移除队列中
 			for (int i = 0; i < 10; i++) {
@@ -56,7 +46,7 @@ class TaskRunManager {
 						LOG.error(e);
 					}
 				} else {
-					THREAD_POOL.remove(taskName);
+					THREAD_POOL.remove(key);
 					remove.getTask().setMessage("thread has been stopd! by interrupt!");
 					LOG.info("thread has been stopd!");
 					return true;
@@ -69,7 +59,7 @@ class TaskRunManager {
 				}
 			}
 
-			if (THREAD_POOL.containsKey(taskName)) {
+			if (THREAD_POOL.containsKey(key)) {
 				remove.getTask().setMessage("线程尝试停止失败。被强制kill!");
 				remove.stop();
 			}
@@ -82,13 +72,13 @@ class TaskRunManager {
 			}
 
 			if (remove.isOver()) {
-				THREAD_POOL.remove(taskName);
+				THREAD_POOL.remove(key);
 			} else {
 				remove.getTask().setMessage("stop Failure");
-				throw new TaskException(taskName + " stop Failure");
+				throw new TaskException(key + " stop Failure");
 			}
 		} else {
-			LOG.info(taskName + " not find in Thread pool!");
+			LOG.info(key + " not find in Thread pool!");
 		}
 		return true;
 	}
@@ -98,44 +88,55 @@ class TaskRunManager {
 	 * 
 	 * @return
 	 */
-	public static synchronized Collection<TaskJob> getTaskList() {
-		return THREAD_POOL.values();
+	public static synchronized Set<Entry<String, TaskJob>> getTaskList() {
+		return THREAD_POOL.entrySet();
 
 	}
 
-	public static boolean checkExists(String taskName) {
-		return THREAD_POOL.containsKey(taskName);
+	public static boolean checkExists(String key) {
+		return THREAD_POOL.containsKey(key);
 	}
 
 	public static void resetScheduler() throws TaskException {
 		synchronized (THREAD_POOL) {
 			Set<String> keys = THREAD_POOL.keySet();
 			for (String key : keys) {
-				stopTaskJob(key);
+				stopAll(key);
 			}
 		}
 
-	}
-
-	public static Task getTask(String taskName) {
-		TaskJob taskJob = THREAD_POOL.get(taskName);
-		if (taskJob == null) {
-			return null;
-		}
-		return taskJob.getTask();
 	}
 
 	/**
-	 * 删除一个已经结束的任务
+	 * stop all task in thread
 	 * 
-	 * @param name
+	 * @param taskName
 	 */
-	public static void removeTaskIfOver(String name) {
-		synchronized (THREAD_POOL) {
-			TaskJob taskJob = THREAD_POOL.get(name);
-			if (taskJob != null && taskJob.isOver()) {
-				THREAD_POOL.remove(name);
+	public static void stopAll(String taskName) {
+		Set<String> all = new HashSet<>(THREAD_POOL.keySet());
+		String pre = taskName + "@";
+		for (String key : all) {
+
+			try {
+				if (key.startsWith(pre)) {
+					stop(key);
+				}
+			} catch (TaskException e) {
+				e.printStackTrace();
+				LOG.error("stop " + key + " err !" + e.getMessage());
 			}
+		}
+	}
+
+	/**
+	 * remove key if it is over!
+	 * 
+	 * @param key
+	 */
+	public static void removeIfOver(String key) {
+		TaskJob taskJob = THREAD_POOL.get(key);
+		if (taskJob.isOver()) {
+			THREAD_POOL.remove(key);
 		}
 	}
 

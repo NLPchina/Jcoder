@@ -1,29 +1,17 @@
 package org.nlpcn.jcoder.controller;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.UUID;
-
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.run.CodeRunner;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.scheduler.ActionRunManager;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.ExceptionUtil;
-import org.nlpcn.jcoder.util.JsonResult;
-import org.nlpcn.jcoder.util.JsonView;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.TextView;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.At;
 import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 @IocBean
@@ -43,9 +31,8 @@ public class ApiAction {
 
 		String taskName = null;
 		try {
-			JSONObject json = JSONObject.parseObject(jsonTask);
 
-			String remoteAddr = Mvcs.getReq().getRemoteAddr();
+			JSONObject json = JSONObject.parseObject(jsonTask);
 
 			String code = json.getString("task.code");
 			String codeType = json.getString("task.codeType");
@@ -55,10 +42,15 @@ public class ApiAction {
 			task.setCodeType(codeType);
 			task.setType(2);
 
-			taskName = task.getName() + "@" + "0@" + remoteAddr;
-			LOG.info(taskName + " publish ok ! will be run !");
-			ActionRunManager.add2ThreadPool(taskName, Thread.currentThread());
-			LOG.info(taskName + " result : " + new JavaRunner(task).compile().instanceObjByIoc().execute());
+			taskName = task.getName() + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
+
+			if (ThreadManager.checkExists(taskName)) {
+				LOG.warn(taskName + " has beening run! pleast stop it first!");
+			} else {
+				LOG.info(taskName + " publish ok ! will be run !");
+				ThreadManager.add2ActionTask(taskName, Thread.currentThread());
+				LOG.info(taskName + " result : " + new JavaRunner(task).compile().instanceObjByIoc().execute());
+			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -67,10 +59,10 @@ public class ApiAction {
 			return StaticValue.errMessage(e.getMessage());
 		} finally {
 			if (taskName != null)
-				ThreadManager.removeActionTask(taskName);
+				ThreadManager.removeActionIfOver(taskName);
 		}
 
-		return StaticValue.okMessage("代码提交成功!已开始运行");
+		return StaticValue.okMessage("code run over!");
 	}
 
 	/**
@@ -87,9 +79,8 @@ public class ApiAction {
 		try {
 			LOG.info(taskName + " will be to stop ! ");
 			JSONObject json = JSONObject.parseObject(jsonTask);
-			String remoteAddr = Mvcs.getReq().getRemoteAddr();
-			taskName = json.getString("task.name") + "@" + "0@" + remoteAddr;
-			ActionRunManager.stop(taskName);
+			taskName = json.getString("task.name") + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
+			ThreadManager.stop(taskName);
 			LOG.info(taskName + " stoped ! ");
 			return StaticValue.OK;
 		} catch (Exception e) {

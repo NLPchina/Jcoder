@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.run.java;
 
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -10,7 +11,7 @@ import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.mvc.annotation.Param;
 
-public class TestRun {
+public class ApiTest {
 
 	@Inject
 	private Logger log;
@@ -28,7 +29,7 @@ public class TestRun {
 	@Execute
 	public String test(@Param("name") String name, String bbb) throws InterruptedException {
 		log.info("execute----------------aaa----------");
-		Thread.sleep(1000000L);
+		Thread.sleep(100000L);
 		return "execute : " + user.getName() + " " + name + "\t" + bbb;
 	}
 
@@ -40,7 +41,7 @@ public class TestRun {
 
 	public static void main(String[] args) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
-		TestRun tr = new TestRun();
+		ApiTest tr = new ApiTest();
 
 		Method method = tr.getClass().getDeclaredMethod("test", String.class);
 

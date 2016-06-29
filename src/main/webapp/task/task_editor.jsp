@@ -37,7 +37,7 @@
 							</h2>
 						</div>
 						<form action="" method="post" name="taskForm" id="taskForm">
-							<input type="hidden" value="${task.taskId}" id="task.id" name="task.id" />
+							<input type="hidden" value="${task.taskId==null?task.id:task.taskId}" id="task.id" name="task.id" />
 							<input type="hidden" value="${task.createUser }" id="task.createUser" name="task.createUser" />
 							<input type="hidden"  id="task.createTime" name="task.createTime"  value='<fmt:formatDate pattern="yyyy-MM-dd HH:mm:ss" value="${task.createTime}" />'/>
 							<div class="box-content">
@@ -90,7 +90,7 @@
 									<label class="control-label" >versions</label>
 									 <select class="form-control" id="change_version" >
 										<c:forEach items="${versions}" var="v">
-											<option ${task.version==v?'selected="selected"':''} value="${v}">${v}-${task.version}</option>
+											<option ${task.version==v?'selected="selected"':''} value="${v}">${v}</option>
 										</c:forEach>
 									</select>
 								</div>
@@ -259,9 +259,9 @@
 			var childs = $("#change_version").children();
 			var version = $("#change_version").val();
 			if(childs[0].value!=version){
-				location.href="/task/editor/${groupId}/${task.name}?version="+version;
+				location.href="/task/editor/${groupId}/${task.taskId==null?task.id:task.taskId}?version="+version;
 			}else{
-				location.href="/task/editor/${groupId}/${task.name}";
+				location.href="/task/editor/${groupId}/${task.taskId==null?task.id:task.taskId}";
 			}
 		});
 		

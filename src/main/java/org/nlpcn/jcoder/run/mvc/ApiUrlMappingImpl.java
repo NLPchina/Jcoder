@@ -63,8 +63,6 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				map.put(path, invoker);
 				// 记录一下方法与 url 的映射
 				config.getAtMap().addMethod(path, ai.getMethod());
-			} else if (!ai.isForSpecialHttpMethod()) {
-				log.warnf("Duplicate @At mapping ? path=" + path);
 			}
 
 			// 将动作链，根据特殊的 HTTP 方法，保存到调用者内部
@@ -157,12 +155,12 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	/**
 	 * 从映射表中删除一个api
 	 */
-	public void remove(Task task) {
+	public void remove(String name) {
 		Iterator<Entry<String, ActionInvoker>> iterator = map.entrySet().iterator();
 		String path = null;
 		synchronized (map) {
 			while (iterator.hasNext()) {
-				if ((path = iterator.next().getKey()).startsWith("/api/" + task.getName() + "/")) {
+				if ((path = iterator.next().getKey()).startsWith("/api/" + name + "/")||path.equals("/api/" + name)) {
 					iterator.remove();
 					log.info("remove api " + path);
 				}

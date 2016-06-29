@@ -1,7 +1,5 @@
 package org.nlpcn.jcoder.job;
 
-import java.util.Random;
-
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.service.H2Server;

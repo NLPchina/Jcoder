@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -66,15 +67,6 @@ public class ThreadManager {
 		TaskRunManager.runTaskJob(taskJob);
 	}
 
-	/**
-	 * 停止一个task
-	 * 
-	 * @param task
-	 * @throws TaskException
-	 */
-	public static void stop(Task task) throws TaskException {
-		stop(task.getName());
-	}
 
 	/**
 	 * 停止一个task
@@ -82,19 +74,19 @@ public class ThreadManager {
 	 * @param task
 	 * @throws TaskException
 	 */
-	public static synchronized void stop(String taskName) throws TaskException {
+	private static synchronized void stopTaskAndRemove(String taskName) throws TaskException {
 		try {
 			// 从任务中移除
 			try {
-				TaskRunManager.stopTaskJob(taskName);
+				TaskRunManager.stopAll(taskName);
 			} catch (Exception e) {
 				LOG.error(e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
-			if (TaskRunManager.checkExists(taskName)) {
-				TaskRunManager.stopTaskJob(taskName);
-			}
+
+			TaskRunManager.stopAll(taskName);
+
 			// 从定时任务中移除
 			QuartzSchedulerManager.stopTaskJob(taskName);
 
@@ -102,16 +94,6 @@ public class ThreadManager {
 			LOG.error(e);
 			throw new TaskException(e.getMessage());
 		}
-	}
-
-	/**
-	 * 停止一个job
-	 * 
-	 * @param job
-	 * @throws TaskException
-	 */
-	public static void stop(TaskJob job) throws TaskException {
-		stop(job.getTask());
 	}
 
 	/**
@@ -125,11 +107,11 @@ public class ThreadManager {
 
 			if (oldTask.getType() == 2) {
 				LOG.info("to stop oldTask " + oldTask.getName() + " BEGIN! ");
-				stop(oldTask);
+				stopTaskAndRemove(oldTask.getName());
 				LOG.info("to stop oldTask " + oldTask.getName() + " OK! ");
 			} else if (oldTask.getType() == 1) {
 				LOG.info("to remove Api oldTask " + oldTask.getName() + " BEGIN! ");
-				removeApi(oldTask);
+				stopActionAndRemove(oldTask.getName());
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
 		}
@@ -143,13 +125,26 @@ public class ThreadManager {
 		}
 	}
 
-	/**
-	 * 从网址映射列表中删除api
-	 * 
-	 * @param oldTask
-	 */
-	private static void removeApi(Task oldTask) {
-		StaticValue.MAPPING.remove(oldTask);
+
+	private static void stopActionAndRemove(String taskName) throws TaskException {
+		StaticValue.MAPPING.remove(taskName); //remove url from api mapping
+		try {
+			// 从任务中移除
+			try {
+				ActionRunManager.stopAll(taskName);
+			} catch (Exception e) {
+				LOG.error(e);
+				e.printStackTrace();
+			}
+			// 进行二次停止
+
+			ActionRunManager.stopAll(taskName);
+
+		} catch (Exception e) {
+			LOG.error(e);
+			throw new TaskException(e.getMessage());
+		}
+		
 	}
 
 	/**
@@ -175,20 +170,20 @@ public class ThreadManager {
 	 * @throws SchedulerException
 	 */
 	public static List<TaskInfo> getAllThread() throws TaskException {
-		Collection<TaskJob> taskList = TaskRunManager.getTaskList();
+		Collection<Entry<String, TaskJob>> entrys = TaskRunManager.getTaskList();
 		List<TaskInfo> threads = new ArrayList<>();
-		for (TaskJob taskJob : taskList) {
-			Task task = taskJob.getTask();
-			if (taskJob.isInterrupted()) {
+		for (Entry<String, TaskJob> entry : entrys) {
+			Task task = entry.getValue().getTask();
+			if (entry.getValue().isInterrupted()) {
 				task.setRunStatus("正在停止");
-			} else if (taskJob.isAlive()) {
+			} else if (entry.getValue().isAlive()) {
 				task.setRunStatus("运行中");
-			} else if (taskJob.isOver()) {
+			} else if (entry.getValue().isOver()) {
 				task.setRunStatus("运行结束");
 			} else {
 				task.setRunStatus("状态不明");
 			}
-			threads.add(new TaskInfo(task, taskJob.getStartTime()));
+			threads.add(new TaskInfo(entry.getKey(), task, entry.getValue().getStartTime()));
 		}
 		return threads;
 	}
@@ -204,7 +199,7 @@ public class ThreadManager {
 		List<TaskInfo> schedulers = new ArrayList<>();
 		long time = System.currentTimeMillis();
 		for (Task task : taskList) {
-			schedulers.add(new TaskInfo(task, time));
+			schedulers.add(new TaskInfo(task.getName(), task, time));
 		}
 		return schedulers;
 	}
@@ -221,7 +216,7 @@ public class ThreadManager {
 					task = new Task();
 				}
 				task.setRunStatus("运行中");
-				taskInfo = new TaskInfo(task, Long.parseLong(split[1]));
+				taskInfo = new TaskInfo(key, task, DateUtils.getDate(split[2], "yyyyMMddHHmmss").getTime());
 			} catch (Exception e) {
 				taskInfo = new TaskInfo();
 				taskInfo.setMessage(ExceptionUtil.printStackTrace(e));
@@ -231,28 +226,6 @@ public class ThreadManager {
 			actions.add(taskInfo);
 		}
 		return actions;
-	}
-
-	/**
-	 * 从当前的进程队列中获得某个task
-	 * 
-	 * @return
-	 */
-	public static Task getTask(String taskName) {
-		Task findTaskByName = TaskService.findTaskByCache(taskName);
-		if (findTaskByName != null) {
-			return findTaskByName;
-		}
-		return TaskRunManager.getTask(taskName);
-	}
-
-	/**
-	 * 删除一个已经运行结束的job
-	 * 
-	 * @param name
-	 */
-	public static void removeTaskJob(String name) {
-		TaskRunManager.removeTaskIfOver(name);
 	}
 
 	/**
@@ -290,24 +263,35 @@ public class ThreadManager {
 	}
 
 	/**
-	 * 强行停止一个
+	 * 强行停止一个 thread
 	 * 
 	 * @param key
 	 * @param taskName
 	 * @return
 	 * @throws TaskException
 	 */
-	public static boolean stopActionTask(String key) throws TaskException {
-		return ActionRunManager.stop(key);
+	public static boolean stop(String key) throws TaskException {
+		if (ActionRunManager.checkExists(key)) {
+			return ActionRunManager.stop(key);
+		}
+
+		if (TaskRunManager.checkExists(key)) {
+			return TaskRunManager.stop(key);
+		}
+
+		return true;
+
 	}
 
 	/**
-	 * 从Action队列中移除
-	 * 
 	 * @param key
 	 */
-	public static void removeActionTask(String key) {
-		ActionRunManager.remove(key);
+	public static void removeTaskIfOver(String key) {
+		TaskRunManager.removeIfOver(key);
+	}
+
+	public static void removeActionIfOver(String key) {
+		ActionRunManager.removeIfOver(key) ;
 	}
 
 }

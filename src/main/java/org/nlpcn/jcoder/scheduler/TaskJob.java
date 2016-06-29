@@ -23,7 +23,7 @@ public class TaskJob extends Thread {
 	 * @param code
 	 */
 	public TaskJob(String name , Task task) {
-		super(task.getName());
+		super(name);
 		this.task = task;
 	}
 
@@ -46,7 +46,7 @@ public class TaskJob extends Thread {
 			task.setMessage("上一次运行时间　" + new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒").format(new Date()) + " 发生异常,异常信息如下　" + e.toString());
 		} finally {
 			over = true;
-			ThreadManager.removeTaskJob(task.getName());
+			ThreadManager.removeTaskIfOver(this.getName()) ;
 		}
 
 	}

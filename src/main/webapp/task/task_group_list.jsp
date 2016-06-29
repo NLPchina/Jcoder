@@ -16,7 +16,7 @@
 					<li><a href="#jihua" data-toggle="tab" onclick="tabDatas(2);">Cron</a></li>
 					<li><a href="#laji" data-toggle="tab" onclick="tabDatas(0);">Recycle </a></li>
 					<c:if test="${userType==1 || AUTH_MAP[groupId]==2}">
-						<li><a href="#xinjian" data-toggle="tab" onclick="location.href='${ctx}/task/editor/${groupId }/_new'">Create Task</a></li>
+						<li><a href="#xinjian" data-toggle="tab" onclick="location.href='${ctx}/task/_new/${groupId }'">Create Task</a></li>
 					</c:if>
 				</ul>
 			</div>
@@ -172,7 +172,7 @@
 					var updateTime = new Date(n.updateTime) ;
 					var timeStamp = (updateTime.getYear()+1900)+'-'+(updateTime.getMonth()+1)+'-'+updateTime.getDate()+' '+updateTime.getHours()+":"+updateTime.getMinutes()+':'+updateTime.getSeconds() ;
 					row.find("#taskUpdateTime").text(timeStamp);
-					row.find("#taskEdir").attr("href","${ctx }/task/editor/"+n.groupId+"/" + n.name);
+					row.find("#taskEdir").attr("href","${ctx }/task/editor/"+n.groupId+"/" + n.id);
 					row.find("#taskDelete").click(function() {delTask(d, n.name, this);
 					});
 					row.appendTo("#" + m + "body");

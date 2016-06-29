@@ -53,7 +53,8 @@
 										</td>
 										<td class="center">${task.message}</td>
 										<td class="center">
-											<a class="btn btn-info" href="${ctx }/task/editor/${task.groupId }/${task.name}"> <i class="glyphicon glyphicon-edit icon-white"></i> Edit </a>
+											<a class="btn btn-info" href="${ctx }/task/editor/${task.groupId }/${task.id}"> <i class="glyphicon glyphicon-edit icon-white"></i> Edit </a>
+											<a class="btn btn-danger" href="${ctx }/thread/stop/${task.name}"> <i class="glyphicon glyphicon-trash icon-white"></i> Stop </a>
 										</td>
 									</tr>
 									</c:if>
@@ -94,8 +95,8 @@
 										</td>
 										<td class="center">${task.message}</td>
 										<td class="center">
-											<a class="btn btn-info" href="${ctx }/task/editor/${task.groupId }/${task.name.split('@')[0]}"> <i class="glyphicon glyphicon-edit icon-white"></i> Edit </a> 
-											<a class="btn btn-danger" href="${ctx }/thread/stop/action/${task.name}"> <i class="glyphicon glyphicon-trash icon-white"></i> Stop </a>
+											<a class="btn btn-info" href="${ctx }/task/editor/${task.groupId }/${task.id}"> <i class="glyphicon glyphicon-edit icon-white"></i> Edit </a> 
+											<a class="btn btn-danger" href="${ctx }/thread/stop/${task.name}"> <i class="glyphicon glyphicon-trash icon-white"></i> Stop </a>
 										</td>
 									</tr>
 									</c:if>

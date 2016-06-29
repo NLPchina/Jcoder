@@ -5,6 +5,8 @@ public class TaskInfo {
 	private Long id;
 
 	private String name;
+	
+	private String taskName ;
 
 	private String description;
 
@@ -28,9 +30,10 @@ public class TaskInfo {
 	public TaskInfo() {
 	};
 
-	public TaskInfo(Task task, long startTime) {
+	public TaskInfo(String name ,Task task, long startTime) {
 		this.id = task.getId();
-		this.name = task.getName();
+		this.name = name;
+		this.taskName = task.getName() ;
 		this.description = task.getDescription();
 		this.success = task.getSuccess();
 		this.error = task.getError();
@@ -119,6 +122,14 @@ public class TaskInfo {
 
 	public void setRunStatus(String runStatus) {
 		this.runStatus = runStatus;
+	}
+
+	public String getTaskName() {
+		return taskName;
+	}
+
+	public void setTaskName(String taskName) {
+		this.taskName = taskName;
 	}
 	
 }

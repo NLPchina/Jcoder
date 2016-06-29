@@ -71,21 +71,20 @@ public class ThreadAction {
 	@At("/thread/stop/task/?")
 	@Ok("redirect:/thread/list/")
 	public void stopTask(String name) throws Exception {
-		stopTaskApi(name);
-	}
-
-	@At("/thread/stop/task/api/?")
-	@Ok("raw")
-	public String stopTaskApi(String name) throws Exception {
 		try {
-			ThreadManager.stop(name);
-			return StaticValue.OK;
-		} catch (TaskException e) {
+			authEditorValidate(name);
+			try {
+				ThreadManager.stop(name);
+			} catch (TaskException e) {
+				e.printStackTrace();
+				LOG.error(e);
+			}
+		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e);
-			return StaticValue.ERR;
 		}
 	}
+
 
 	/**
 	 * 停止一个运行的action
@@ -95,13 +94,13 @@ public class ThreadAction {
 	 * @throws Exception
 	 */
 	@Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))
-	@At("/thread/stop/action/?")
+	@At("/thread/stop/?")
 	@Ok("redirect:/thread/list/")
-	public void stopAction(String name) throws Exception {
+	public void stop(String key) throws Exception {
 		try {
-			authEditorValidate(name);
+			authEditorValidate(key.split("@")[0]);
 			try {
-				ThreadManager.stopActionTask(name);
+				ThreadManager.stop(key);
 			} catch (TaskException e) {
 				e.printStackTrace();
 				LOG.error(e);

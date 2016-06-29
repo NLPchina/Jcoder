@@ -15,6 +15,7 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.domain.UserGroup;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.DateUtils;
@@ -30,317 +31,316 @@ import com.google.common.collect.Lists;
 @IocBean
 public class TaskService {
 
-    private static final Logger LOG = Logger.getLogger(TaskService.class);
+	private static final Logger LOG = Logger.getLogger(TaskService.class);
 
-    private static final ConcurrentHashMap<String, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
-    public static final String VERSION_SPLIT = "_";
+	private static final ConcurrentHashMap<String, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
+	public static final String VERSION_SPLIT = "_";
 
-    private BasicDao basicDao = StaticValue.systemDao;
+	private BasicDao basicDao = StaticValue.systemDao;
 
-    /**
-     * 保存或者更新一个任务
-     *
-     * @param task
-     * @throws Exception
-     */
-    public boolean saveOrUpdate(Task task, Long groupId) throws Exception {
-        // 进行权限认证
-        authEditorValidate(groupId);
-        authEditorValidate(task.getGroupId());
+	/**
+	 * 保存或者更新一个任务
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	public boolean saveOrUpdate(Task task, Long groupId) throws Exception {
 
-        checkTask(task);
-        HttpSession session = Mvcs.getHttpSession();
-        String userName = session.getAttribute("user").toString();
-        Date date = new Date();
-        task.setUpdateTime(date);
-        task.setUpdateUser(userName);
+		// 进行权限认证
+		authEditorValidate(groupId);
+		authEditorValidate(task.getGroupId());
 
-        // 历史库版本保存
-        boolean isModify = checkTaskModify(task);
+		if (task.getStatus() == 1) {// check code throw Exception
+			new JavaRunner(task).check();
+		}
 
-        if (isModify) {
-            String version = generateVersion(task);
-            task.setVersion(version);
-        }
+		checkTask(task);
 
-        if (task.getId() == null) {
-            task.setCreateTime(date);
-            task.setCreateUser(userName);
-            task = basicDao.save(task);
-        } else {
-            basicDao.update(task);
-        }
+		HttpSession session = Mvcs.getHttpSession();
+		String userName = session.getAttribute("user").toString();
+		Date date = new Date();
+		task.setUpdateTime(date);
+		task.setUpdateUser(userName);
 
-        if (isModify) {
-            basicDao.save(new TaskHistory(task));
-        }
+		// 历史库版本保存
+		boolean isModify = checkTaskModify(task);
 
-        flush(task.getId());
+		if (isModify) {
+			String version = generateVersion(task);
+			task.setVersion(version);
+		}
 
-        return isModify;
-    }
+		if (task.getId() == null) {
+			task.setCreateTime(date);
+			task.setCreateUser(userName);
+			task = basicDao.save(task);
+		} else {
+			basicDao.update(task);
+		}
 
-    /**
-     * 判断task代码是否修改过
-     *
-     * @param task
-     * @return
-     */
-    private boolean checkTaskModify(Task task) {
-        Long id = task.getId();
-        if (id == null) {
-            return true;
-        }
-        Task t = basicDao.find(id, Task.class);
-        if (t == null) {
-            return true;
-        }
-        if (!t.getCode().equals(task.getCode())) {
-            return true;
-        }
-        return false;
-    }
+		if (isModify) {
+			basicDao.save(new TaskHistory(task));
+		}
 
+		flush(task.getId());
 
-    /**
-     * 刷新某个task
-     *
-     * @throws Exception
-     */
-    public void flush(Long id) throws Exception {
-        Task oldTask = null;
-        // 查找处old task.
-        for (Task task : TASK_MAP_CACHE.values()) {
-            if (task.getId().equals(id)) {
-                oldTask = task;
-                break;
-            }
-        }
+		return isModify;
+	}
 
-        // 查找处新的task
-        Task newTask = this.basicDao.find(id, Task.class);
+	/**
+	 * 判断task代码是否修改过
+	 *
+	 * @param task
+	 * @return
+	 */
+	private boolean checkTaskModify(Task task) {
+		Long id = task.getId();
+		if (id == null) {
+			return true;
+		}
+		Task t = basicDao.find(id, Task.class);
+		if (t == null) {
+			return true;
+		}
+		if (!t.getCode().equals(task.getCode())) {
+			return true;
+		}
+		return false;
+	}
 
-        Task temp = new Task();
+	/**
+	 * 刷新某个task
+	 *
+	 * @throws Exception
+	 */
+	public void flush(Long id) throws Exception {
+		Task oldTask = null;
+		// 查找处old task.
+		for (Task task : TASK_MAP_CACHE.values()) {
+			if (task.getId().equals(id)) {
+				oldTask = task;
+				break;
+			}
+		}
 
-        if (oldTask == null) {
-            oldTask = temp;
-        }
-        if (newTask == null) {
-            newTask = temp;
-        }
+		// 查找处新的task
+		Task newTask = this.basicDao.find(id, Task.class);
 
-        synchronized (oldTask) {
-            synchronized (newTask) {
-                if (StringUtil.isNotBlank(oldTask.getName())) {
-                    TASK_MAP_CACHE.remove(oldTask.getName());
-                }
+		Task temp = new Task();
 
-                if (StringUtil.isNotBlank(newTask.getName())) {
-                    TASK_MAP_CACHE.put(newTask.getName(), newTask);
-                }
-                ThreadManager.flush(oldTask, newTask);
-            }
-        }
-    }
+		if (oldTask == null) {
+			oldTask = temp;
+		}
+		if (newTask == null) {
+			newTask = temp;
+		}
 
-    public void checkTask(Task task) throws Exception {
-        if (task == null) {
-            throw new Exception("task is null!");
-        } else if (StringUtil.isBlank(task.getName())) {
-            throw new Exception("task is name null or empty!");
-        } else if (StringUtil.isBlank(task.getDescription())) {
-            throw new Exception("task is description null or empty!");
-        } else if (StringUtil.isBlank(task.getCodeType())) {
-            throw new Exception("task is codeType null or empty!");
-        } else if (StringUtil.isBlank(task.getCode())) {
-            throw new Exception("task is code null or empty!");
-        } else if (TASK_MAP_CACHE.contains(task.getName())) {
-            if (!TASK_MAP_CACHE.get(task.getName()).getId().equals(task.getId())) {
-                throw new Exception("task name is unique !");
-            }
-        }
-    }
+		synchronized (oldTask) {
+			synchronized (newTask) {
+				if (StringUtil.isNotBlank(oldTask.getName())) {
+					TASK_MAP_CACHE.remove(oldTask.getName());
+				}
 
-    /**
-     * 删除一个任务
-     *
-     * @param task
-     * @throws Exception
-     */
-    public void delete(Task task) throws Exception {
-        authEditorValidate(task.getGroupId());
-        task.setType(0);
-        task.setStatus(0);
-        saveOrUpdate(task, task.getGroupId());
-    }
+				if (StringUtil.isNotBlank(newTask.getName())) {
+					TASK_MAP_CACHE.put(newTask.getName(), newTask);
+				}
+				ThreadManager.flush(oldTask, newTask);
+			}
+		}
+	}
 
-    /**
-     * 删除一个历史任务
-     *
-     * @param task
-     * @throws Exception
-     */
-    public void delete(TaskHistory task) throws Exception {
-        authEditorValidate(task.getGroupId());
-        basicDao.delById(task.getId(), TaskHistory.class);
-    }
+	public void checkTask(Task task) throws Exception {
+		if (task == null) {
+			throw new Exception("task is null!");
+		} else if (StringUtil.isBlank(task.getName())) {
+			throw new Exception("task is name null or empty!");
+		} else if (StringUtil.isBlank(task.getDescription())) {
+			throw new Exception("task is description null or empty!");
+		} else if (StringUtil.isBlank(task.getCodeType())) {
+			throw new Exception("task is codeType null or empty!");
+		} else if (StringUtil.isBlank(task.getCode())) {
+			throw new Exception("task is code null or empty!");
+		} else if (TASK_MAP_CACHE.contains(task.getName())) {
+			if (!TASK_MAP_CACHE.get(task.getName()).getId().equals(task.getId())) {
+				throw new Exception("task name is unique !");
+			}
+		}
+	}
 
-    /**
-     * 彻底删除一个任务
-     *
-     * @param task
-     * @throws Exception
-     */
-    public void del(Task task) throws Exception {
-        authEditorValidate(task.getGroupId());
-        basicDao.delById(task.getId(), Task.class); // 不需要通知队列了
-    }
+	/**
+	 * 删除一个任务
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	public void delete(Task task) throws Exception {
+		authEditorValidate(task.getGroupId());
+		task.setType(0);
+		task.setStatus(0);
+		saveOrUpdate(task, task.getGroupId());
+	}
 
-    /**
-     * 从数据库中init所有的task
-     *
-     * @throws TaskException
-     */
-    public void initTaskFromDB() throws TaskException {
+	/**
+	 * 删除一个历史任务
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	public void delete(TaskHistory task) throws Exception {
+		authEditorValidate(task.getGroupId());
+		basicDao.delById(task.getId(), TaskHistory.class);
+	}
 
-        List<Task> search = this.basicDao.search(Task.class, "id");
+	/**
+	 * 彻底删除一个任务
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	public void delByDB(Task task) throws Exception {
+		authEditorValidate(task.getGroupId());
+		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId())) ;//delete history
+		basicDao.delById(task.getId(), Task.class); // 不需要通知队列了
+	}
 
-        // 取得目前正在运行的task
-        List<TaskInfo> list = ThreadManager.getAllThread();
+	/**
+	 * 从数据库中init所有的task
+	 *
+	 * @throws TaskException
+	 */
+	public void initTaskFromDB() throws TaskException {
 
-        HashSet<String> taskSet = new HashSet<>();
+		List<Task> search = this.basicDao.search(Task.class, "id");
 
-        list.forEach(ti -> taskSet.add(ti.getName()));
+		// 取得目前正在运行的task
+		List<TaskInfo> list = ThreadManager.getAllThread();
 
-        for (Task task : search) {
-            try {
-                TASK_MAP_CACHE.put(task.getName(), task);
-                if (task.getStatus() == 0) {
-                    task.setMessage("未激活！");
-                } else if (task.getType() == 2) {
-                    // 如果只是运行一次的计划任务。并且这个任务还在活动中。那么这个任务将不再发布
-                    if ((StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr())) && taskSet.contains(task.getName())) {
-                        LOG.warn(task.getName() + " in runing in! so not to publish it!");
-                        continue;
-                    }
+		HashSet<String> taskSet = new HashSet<>();
 
-                    if (ThreadManager.add(task)) {
-                        task.setMessage("已注册于计划任务！注册规则: " + task.getScheduleStr());
-                    }
-                } else {
-                    task.setMessage("已激活等待被调用！");
-                }
+		list.forEach(ti -> taskSet.add(ti.getName()));
 
-            } catch (Exception e) {
-                e.printStackTrace();
-                task.setMessage(e.toString());
-                LOG.error(e);
-            }
-        }
-    }
+		for (Task task : search) {
+			try {
+				TASK_MAP_CACHE.put(task.getName(), task);
+				if (task.getStatus() == 0) {
+					task.setMessage("未激活！");
+				} else if (task.getType() == 2) {
+					// 如果只是运行一次的计划任务。并且这个任务还在活动中。那么这个任务将不再发布
+					if ((StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr())) && taskSet.contains(task.getName())) {
+						LOG.warn(task.getName() + " in runing in! so not to publish it!");
+						continue;
+					}
 
-    public static synchronized Task findTaskByCache(String name) {
-        return TASK_MAP_CACHE.get(name);
-    }
+					if (ThreadManager.add(task)) {
+						task.setMessage("已注册于计划任务！注册规则: " + task.getScheduleStr());
+					}
+				} else {
+					task.setMessage("已激活等待被调用！");
+				}
 
-    public static synchronized Task findTaskByDB(String name) {
-        LOG.info("find task by db!");
-        return StaticValue.systemDao.findByCondition(Task.class, Cnd.where("name", "=", name));
-    }
+			} catch (Exception e) {
+				e.printStackTrace();
+				task.setMessage(e.toString());
+				LOG.error(e);
+			}
+		}
+	}
 
-    public static synchronized TaskHistory findTaskByDBHistory(String name, String version) {
-        LOG.info("find task by dbHistory!");
-        return StaticValue.systemDao.findByCondition(TaskHistory.class, Cnd.where("version", "=", version).and("name", "=", name));
-    }
+	public static synchronized Task findTaskByCache(String name) {
+		return TASK_MAP_CACHE.get(name);
+	}
 
-    public static List<TaskHistory> findDBHistory() {
-        return StaticValue.systemDao.search(TaskHistory.class, Cnd.NEW());
-    }
+	public static synchronized Task findTaskByDB(Long id) {
+		LOG.info("find task by db!");
+		return StaticValue.systemDao.findByCondition(Task.class, Cnd.where("id", "=", id));
+	}
 
-    /**
-     * 根据类型查找task集合
-     *
-     * @param type
-     * @return
-     */
-    public static synchronized Collection<Task> findTaskList(Integer type) {
-        Collection<Task> values = TASK_MAP_CACHE.values();
-        if (type == null) {
-            return values;
-        }
-        List<Task> result = Lists.newArrayList();
-        for (Task task : values) {
-            if (type.equals(task.getType())) {
-                result.add(task);
-            }
-        }
-        return result;
-    }
+	public static synchronized TaskHistory findTaskByDBHistory(Long taskId, String version) {
+		LOG.info("find task by dbHistory!");
+		return StaticValue.systemDao.findByCondition(TaskHistory.class, Cnd.where("version", "=", version).and("taskId", "=", taskId));
+	}
 
-    /**
-     * 根据组id获得task集合
-     *
-     * @param groupId
-     * @return
-     */
-    public List<Task> tasksList(Long groupId) {
-        if (groupId == null) {
-            return null;
-        }
-        return basicDao.search(Task.class, Cnd.where("groupId", "=", groupId));
-    }
+	public static List<TaskHistory> findDBHistory() {
+		return StaticValue.systemDao.search(TaskHistory.class, Cnd.NEW());
+	}
 
-    /**
-     * 编辑task权限验证
-     *
-     * @param groupId
-     * @throws Exception
-     */
-    private void authEditorValidate(Long groupId) throws Exception {
-        if ((Integer) Mvcs.getHttpSession().getAttribute("userType") == 1) {
-            return;
-        }
-        UserGroup ug = basicDao.findByCondition(UserGroup.class,
-                Cnd.where("groupId", "=", groupId).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
-        if (ug == null || ug.getAuth() != 2) {
-            throw new Exception("not have editor auth in groupId:" + groupId);
-        }
-    }
+	/**
+	 * 根据类型查找task集合
+	 *
+	 * @param type
+	 * @return
+	 */
+	public static synchronized Collection<Task> findTaskList(Integer type) {
+		Collection<Task> values = TASK_MAP_CACHE.values();
+		if (type == null) {
+			return values;
+		}
+		List<Task> result = Lists.newArrayList();
+		for (Task task : values) {
+			if (type.equals(task.getType())) {
+				result.add(task);
+			}
+		}
+		return result;
+	}
 
-    /**
-     * @param task
-     * @throws Exception
-     */
-    public void offline(Task task) throws Exception {
-        ThreadManager.stop(task);
-    }
+	/**
+	 * 根据组id获得task集合
+	 *
+	 * @param groupId
+	 * @return
+	 */
+	public List<Task> tasksList(Long groupId) {
+		if (groupId == null) {
+			return null;
+		}
+		return basicDao.search(Task.class, Cnd.where("groupId", "=", groupId));
+	}
 
-    /**
-     * @param groupId
-     * @param name
-     * @return
-     */
-    public List<String> versions(Long groupId, String name) {
-        List<String> list = new ArrayList<>();
-        Condition cnd = Cnd.where("groupId", "=", groupId).and("name", "=", name).desc("id");
-        List<TaskHistory> tasks = basicDao.search(TaskHistory.class, cnd);
-        for (TaskHistory taskHistory : tasks) {
-            list.add(taskHistory.getVersion());
-        }
-        return list;
-    }
+	/**
+	 * 编辑task权限验证
+	 *
+	 * @param groupId
+	 * @throws Exception
+	 */
+	private void authEditorValidate(Long groupId) throws Exception {
+		if ((Integer) Mvcs.getHttpSession().getAttribute("userType") == 1) {
+			return;
+		}
+		UserGroup ug = basicDao.findByCondition(UserGroup.class, Cnd.where("groupId", "=", groupId).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
+		if (ug == null || ug.getAuth() != 2) {
+			throw new Exception("not have editor auth in groupId:" + groupId);
+		}
+	}
 
-    // 生成任务的版本号
-    private static String generateVersion(Task t) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(t.getUpdateUser());
-        sb.append(VERSION_SPLIT);
-        sb.append(DateUtils.formatDate(t.getUpdateTime(), "yyyy-MM-dd HH:mm:ss"));
-        return sb.toString();
-    }
+	/**
+	 * @param groupId
+	 * @param name
+	 * @return
+	 */
+	public List<String> versions(Long taskId, int size) {
+		List<String> list = new ArrayList<>();
+		Condition cnd = Cnd.where("taskId", "=", taskId).desc("id");
+		List<TaskHistory> tasks = basicDao.search(TaskHistory.class, cnd);
+		for (TaskHistory taskHistory : tasks) {
+			list.add(taskHistory.getVersion());
+			if (size-- == 0) {
+				break;
+			}
+		}
+		return list;
+	}
 
+	// 生成任务的版本号
+	private static String generateVersion(Task t) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(t.getUpdateUser());
+		sb.append(VERSION_SPLIT);
+		sb.append(DateUtils.formatDate(t.getUpdateTime(), "yyyy-MM-dd HH:mm:ss"));
+		return sb.toString();
+	}
 
-    public List<Task> getTasks(int... ids) {
-        return basicDao.searchByIds(Task.class, ids, "name");
-    }
+	public List<Task> getTasks(int... ids) {
+		return basicDao.searchByIds(Task.class, ids, "name");
+	}
 }

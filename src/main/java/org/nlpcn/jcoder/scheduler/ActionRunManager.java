@@ -4,6 +4,7 @@ import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.service.TaskService;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author ansj
  * 
  */
-public class ActionRunManager {
+class ActionRunManager {
 
 	private static final Logger LOG = Logger.getLogger(ActionRunManager.class);
 
@@ -54,7 +55,6 @@ public class ActionRunManager {
 					LOG.error(e);
 				}
 			}
-			
 
 			if (THREAD_POOL.containsKey(key)) {
 				if (task != null) {
@@ -63,7 +63,7 @@ public class ActionRunManager {
 				try {
 					thread.stop();
 				} catch (Exception e) {
-					task.setMessage("Thread deah!"+e.getMessage());
+					task.setMessage("Thread deah!" + e.getMessage());
 					e.printStackTrace();
 					LOG.error(e);
 				}
@@ -90,8 +90,12 @@ public class ActionRunManager {
 		return true;
 	}
 
-	public static void remove(String key) {
-		THREAD_POOL.remove(key);
+	/**
+	 * @param key
+	 * @return
+	 */
+	public static boolean checkExists(String key) {
+		return THREAD_POOL.containsKey(key);
 	}
 
 	/**
@@ -101,5 +105,24 @@ public class ActionRunManager {
 	 */
 	public static Set<String> getActionList() {
 		return THREAD_POOL.keySet();
+	}
+
+	public static void removeIfOver(String key) {
+		THREAD_POOL.remove(key) ;
+	}
+
+	public static void stopAll(String taskName) {
+		Set<String> all = new HashSet<>(THREAD_POOL.keySet());
+		String pre = taskName + "@";
+		for (String key : all) {
+			try {
+				if (key.startsWith(pre)) {
+					stop(key);
+				}
+			} catch (TaskException e) {
+				e.printStackTrace();
+				LOG.error("stop " + key + " err !" + e.getMessage());
+			}
+		}
 	}
 }

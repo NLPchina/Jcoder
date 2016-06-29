@@ -4,15 +4,18 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
+import org.nlpcn.commons.lang.util.MapCount;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.CodeRuntimeException;
-import org.nlpcn.jcoder.run.execute.DefaultExecute;
-import org.nlpcn.jcoder.run.execute.Execute;
+import org.nlpcn.jcoder.run.annotation.DefaultExecute;
+import org.nlpcn.jcoder.run.annotation.Execute;
+import org.nlpcn.jcoder.run.annotation.Single;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -62,6 +65,13 @@ public class JavaRunner {
 
 					Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
 
+					Single single = clz.getAnnotation(Single.class);
+
+					if (single != null) {
+						codeInfo.setSingle(single.value());
+					}
+
+					MapCount<String> mc = new MapCount<>();
 					// set execute method
 					for (Method method : clz.getMethods()) {
 						if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
@@ -70,9 +80,30 @@ public class JavaRunner {
 
 						if (Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
 							codeInfo.setDefaultMethod(method);
+							mc.add(method.getName());
 						} else if (Mirror.getAnnotationDeep(method, Execute.class) != null) { // 先default
 							codeInfo.addMethod(method);
+							mc.add(method.getName());
 						}
+					}
+
+					if (mc.size() == 0) {
+						throw new CodeRuntimeException("you must set a Execute or DefaultExecute annotation for execute");
+					}
+
+					StringBuilder sb = null;
+					for (Entry<String, Double> entry : mc.get().entrySet()) {
+						if (entry.getValue() > 1) {
+							if (sb == null) {
+								sb = new StringBuilder();
+							}
+							sb.append(entry.getKey() + " ");
+						}
+					}
+
+					if (sb != null && sb.length() > 0) {
+						sb.append(" Execute method name repetition");
+						throw new CodeRuntimeException(sb.toString());
 					}
 
 					codeInfo.getDefaultMethod(); // 空取一下，如果报异常活该
@@ -228,5 +259,65 @@ public class JavaRunner {
 			this.task.updateError();
 			throw new CodeRuntimeException(e);
 		}
+	}
+
+	/**
+	 * to compile it and validate some function
+	 * @return it always return true 
+	 * @throws CodeException 
+	 * @throws IOException 
+	 */
+	public boolean check() throws CodeException, IOException {
+		String code = task.getCode();
+
+		DynamicEngine de = DynamicEngine.getInstance();
+
+		String pack = JavaSourceUtil.findPackage(code);
+
+		String className = JavaSourceUtil.findClassName(code);
+
+		if (className == null) {
+			throw new CodeException("not find className");
+		}
+
+		Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
+
+		clz.getAnnotation(Single.class);
+
+		MapCount<String> mc = new MapCount<>();
+		// set execute method
+		for (Method method : clz.getMethods()) {
+			if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
+				continue;
+			}
+
+			if (Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
+				mc.add(method.getName());
+			} else if (Mirror.getAnnotationDeep(method, Execute.class) != null) { // 先default
+				mc.add(method.getName());
+			}
+		}
+
+		if (mc.size() == 0) {
+			throw new CodeRuntimeException("you must set a Execute or DefaultExecute annotation for execute");
+		}
+
+		StringBuilder sb = null;
+		for (Entry<String, Double> entry : mc.get().entrySet()) {
+			if (entry.getValue() > 1) {
+				if (sb == null) {
+					sb = new StringBuilder();
+				}
+				sb.append(entry.getKey() + " ");
+			}
+		}
+
+		if (sb != null && sb.length() > 0) {
+			sb.append(" Execute method name repetition");
+			throw new CodeRuntimeException(sb.toString());
+		}
+		
+		return true ;
+
 	}
 }
