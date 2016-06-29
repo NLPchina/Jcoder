@@ -10,7 +10,7 @@ In this project you can fast publish your API and schedule task, dynamic edit yo
 
   * first you need jdk8(must) and maven(not must)
   * to down last release war https://github.com/NLPchina/Jcoder/releases
-  * run it `java -jar jcoder-[version].war`  and visit 
+  * run it `java -jar jcoder-[version].war`  and visit http://localhost:8080
 
 - ##### Publish a API 
 
