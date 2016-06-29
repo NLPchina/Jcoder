@@ -241,7 +241,7 @@
 							$.messager.alert("message:","The code have no change ,so not save it to history Task");	
 						}else{
 							document.getElementById("task.id").value = result.id;
-							location.href="/task/editor/${groupId}/"+result.name;	
+							location.href="/task/editor/${groupId}/"+result.id;	
 						}
 					}else{
 						$('#dialog_message').text(result.message);
