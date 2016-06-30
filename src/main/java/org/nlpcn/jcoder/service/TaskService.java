@@ -223,7 +223,7 @@ public class TaskService {
 			try {
 				TASK_MAP_CACHE.put(task.getName(), task);
 				if (task.getStatus() == 0) {
-					task.setMessage("未激活！");
+					task.setMessage("not active");
 				} else if (task.getType() == 2) {
 					// 如果只是运行一次的计划任务。并且这个任务还在活动中。那么这个任务将不再发布
 					if ((StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr())) && taskSet.contains(task.getName())) {
@@ -232,10 +232,10 @@ public class TaskService {
 					}
 
 					if (ThreadManager.add(task)) {
-						task.setMessage("已注册于计划任务！注册规则: " + task.getScheduleStr());
+						task.setMessage("regedit ok ! cornStr : " + task.getScheduleStr());
 					}
 				} else {
-					task.setMessage("已激活等待被调用！");
+					task.setMessage("actived wait for server");
 				}
 
 			} catch (Exception e) {

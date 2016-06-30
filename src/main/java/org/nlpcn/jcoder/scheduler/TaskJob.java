@@ -6,6 +6,8 @@ import java.util.Date;
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeRunner;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.ExceptionUtil;
 
 public class TaskJob extends Thread {
 
@@ -22,7 +24,7 @@ public class TaskJob extends Thread {
 	 * 
 	 * @param code
 	 */
-	public TaskJob(String name , Task task) {
+	public TaskJob(String name, Task task) {
 		super(name);
 		this.task = task;
 	}
@@ -37,16 +39,16 @@ public class TaskJob extends Thread {
 		try {
 			task.setMessage(task.getName() + " 开始运行　" + new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒").format(new Date()) + " 启动运行！");
 			CodeRunner.run(task);
-			task.setMessage("上一次运行时间　" + new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒").format(new Date()) + " 成功运行！");
+			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
 			task.updateSuccess();
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e);
 			task.updateError();
-			task.setMessage("上一次运行时间　" + new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒").format(new Date()) + " 发生异常,异常信息如下　" + e.toString());
+			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 		} finally {
 			over = true;
-			ThreadManager.removeTaskIfOver(this.getName()) ;
+			ThreadManager.removeTaskIfOver(this.getName());
 		}
 
 	}
@@ -58,6 +60,5 @@ public class TaskJob extends Thread {
 	public boolean isOver() {
 		return over;
 	}
-
 
 }

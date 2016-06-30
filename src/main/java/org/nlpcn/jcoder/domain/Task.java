@@ -49,10 +49,6 @@ public class Task {
 	@Column("version")
 	private String version;
 
-	private static long ok;
-
-	private static long err;
-
 	private String runStatus;
 	
 	private CodeInfo codeInfo = new CodeInfo();
@@ -119,14 +115,6 @@ public class Task {
 		this.status = status;
 	}
 
-	public void updateError() {
-		err++;
-	}
-
-	public void updateSuccess() {
-		ok++;
-	}
-
 	public String getCodeType() {
 		return StringUtil.isBlank(codeType) ? "java" : codeType;
 	}
@@ -188,11 +176,20 @@ public class Task {
 	}
 
 	public long getSuccess() {
-		return ok;
+		return SharedSpace.getSuccess(this.getId());
 	}
 
+	
 	public long getError() {
-		return err;
+		return SharedSpace.getError(this.getId());
+	}
+
+	public void updateError() {
+		SharedSpace.updateError(this.getId());
+	}
+
+	public void updateSuccess() {
+		SharedSpace.updateSuccess(this.getId());
 	}
 
 	public String getMessage() {
