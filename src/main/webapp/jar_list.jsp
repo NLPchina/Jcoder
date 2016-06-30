@@ -36,13 +36,13 @@
 						<table class="table table-striped table-bordered">
 							<thead>
 								<tr>
-									<th>加载状态</th>
-									<th>名称</th>
-									<th>大小</th>
-									<th>修改时间</th>
-									<th>路径</th>
+									<th>Status</th>
+									<th>Name</th>
+									<th>Size</th>
+									<th>Time</th>
+									<th>Path</th>
 									<c:if test="${entry.key=='File' }">
-									<th>操作</th>
+									<th>Edit</th>
 									</c:if>
 								</tr>
 							</thead>
@@ -52,13 +52,13 @@
 									<tr>
 										<td class="center ">
 											<c:if test="${info.status==0 }">
-												<span class="label-success label label-default">加载成功</span>
+												<span class="label-success label label-default">Ok</span>
 											</c:if>
 											<c:if test="${info.status==1 }">
-												<span class="label-default label">未加载</span>
+												<span class="label-default label">Unload</span>
 											</c:if>
 											<c:if test="${info.status==2 }">
-												<span class="label-warning label label-default">未释放</span>
+												<span class="label-warning label label-default">Unrelease</span>
 											</c:if>
 											
 										</td>
@@ -99,7 +99,7 @@
 					<div id="update_jar_info"></div>
 				</div>
 				<div class="modal-footer">
-					<a href="${ctx }/jar/list" class="btn btn-primary" >确定</a>
+					<a href="${ctx }/jar/list" class="btn btn-primary" >Ok</a>
 				</div>
 			</div>
 		</div>
