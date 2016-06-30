@@ -91,8 +91,17 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 	public ActionInvoker getOrCreate(NutConfig config, ActionContext ac) {
 		RequestPath rp = Mvcs.getRequestPathObject(ac.getRequest());
+
 		String path = rp.getPath();
+
+		int len = path.length();
+
+		if (path.charAt(len - 1) == '/') {
+			path = path.substring(0, len - 1);
+		}
+
 		ac.setSuffix(rp.getSuffix());
+
 		ActionInvoker invoker = map.get(path);
 
 		if (invoker == null) {
@@ -160,7 +169,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		String path = null;
 		synchronized (map) {
 			while (iterator.hasNext()) {
-				if ((path = iterator.next().getKey()).startsWith("/api/" + name + "/")||path.equals("/api/" + name)) {
+				if ((path = iterator.next().getKey()).startsWith("/api/" + name + "/") || path.equals("/api/" + name)) {
 					iterator.remove();
 					log.info("remove api " + path);
 				}
