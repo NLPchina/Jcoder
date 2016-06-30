@@ -16,9 +16,9 @@
                 <li><a class="ajax-link" href="${ctx }/thread/list/"><i class="glyphicon glyphicon-list-alt"></i><span>Thread Manager</span></a></li>
                 <li><a class="ajax-link" href="${ctx }/jcoder_console.jsp"><i class="glyphicon glyphicon-eye-open"></i><span> Console </span></a></li>
                 <c:if test="${userType==1}">
-                <li><a class="ajax-link" href="${ctx }/ioc"><i class="glyphicon glyphicon-eye-open"></i><span> Ioc Manager </span></a></li>
+                <li><a class="ajax-link" href="${ctx }/ioc"><i class="glyphicon glyphicon-th"></i><span> Ioc Manager </span></a></li>
                 <li><a class="ajax-link" href="${ctx }/jar/list"><i class="glyphicon glyphicon-upload"></i><span> Jar Manger </span></a></li>
-                <li><a class="ajax-link" href="${ctx }/resource/list"><i class="glyphicon glyphicon-upload"></i><span> Resource Manager </span></a></li>
+                <li><a class="ajax-link" href="${ctx }/resource/list"><i class="glyphicon glyphicon-file"></i><span> Resource Manager </span></a></li>
                 <li><a class="ajax-link" href="${ctx }/user/list"><i class="glyphicon glyphicon-user"></i><span> User Manager </span></a></li>
                 <li><a class="ajax-link" href="${ctx }/group/list"><i class="glyphicon glyphicon-tower"></i><span> Group Manager </span></a></li>
                 </c:if>

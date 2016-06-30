@@ -47,7 +47,9 @@ dependencies {
 	testCompile 'junit:junit:4.12'
 
 	war{
+	
 		def schemaJarFile = project.configurations.providedCompile 
+		
 		schemaJarFile.each{source ->
 			from zipTree(source)
 			exclude("**/*.SF")
@@ -64,7 +66,6 @@ dependencies {
 		from (jar) {
 			into 'WEB-INF/lib'
 		}
-		
 	}
 	
 	

@@ -67,7 +67,6 @@ public class ThreadManager {
 		TaskRunManager.runTaskJob(taskJob);
 	}
 
-
 	/**
 	 * 停止一个task
 	 * 
@@ -125,9 +124,8 @@ public class ThreadManager {
 		}
 	}
 
-
 	private static void stopActionAndRemove(String taskName) throws TaskException {
-		StaticValue.MAPPING.remove(taskName); //remove url from api mapping
+		StaticValue.MAPPING.remove(taskName); // remove url from api mapping
 		try {
 			// 从任务中移除
 			try {
@@ -144,11 +142,11 @@ public class ThreadManager {
 			LOG.error(e);
 			throw new TaskException(e.getMessage());
 		}
-		
+
 	}
 
 	/**
-	 * 判断一个任务是否存在
+	 * 判断一个定时任务是否存在
 	 * 
 	 * @param taskName
 	 * @return
@@ -175,13 +173,13 @@ public class ThreadManager {
 		for (Entry<String, TaskJob> entry : entrys) {
 			Task task = entry.getValue().getTask();
 			if (entry.getValue().isInterrupted()) {
-				task.setRunStatus("正在停止");
+				task.setRunStatus("Stoping");
 			} else if (entry.getValue().isAlive()) {
-				task.setRunStatus("运行中");
+				task.setRunStatus("Runging");
 			} else if (entry.getValue().isOver()) {
-				task.setRunStatus("运行结束");
+				task.setRunStatus("Stoped");
 			} else {
-				task.setRunStatus("状态不明");
+				task.setRunStatus("UnKnow");
 			}
 			threads.add(new TaskInfo(entry.getKey(), task, entry.getValue().getStartTime()));
 		}
@@ -215,7 +213,7 @@ public class ThreadManager {
 				if (task == null) {
 					task = new Task();
 				}
-				task.setRunStatus("运行中");
+				task.setRunStatus("Runging");
 				taskInfo = new TaskInfo(key, task, DateUtils.getDate(split[2], "yyyyMMddHHmmss").getTime());
 			} catch (Exception e) {
 				taskInfo = new TaskInfo();
@@ -291,7 +289,18 @@ public class ThreadManager {
 	}
 
 	public static void removeActionIfOver(String key) {
-		ActionRunManager.removeIfOver(key) ;
+		ActionRunManager.removeIfOver(key);
+	}
+
+	/**
+	 * 判断一个任务是否存在
+	 * 
+	 * @param taskName
+	 * @return
+	 * @throws SchedulerException
+	 */
+	public static boolean checkActionExists(String taskName) {
+		return ActionRunManager.checkExists(taskName);
 	}
 
 }

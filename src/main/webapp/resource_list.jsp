@@ -23,6 +23,7 @@
 						</h2>
 						
 						<div class="box-icon">
+							<a href="#"  id="create_begin" class="btn btn-round btn-default btn-success"><i class="glyphicon glyphicon-folder-open"></i></a>
 							<a href="#"  id="update_begin" class="btn btn-round btn-default btn-success"><i class="glyphicon glyphicon-circle-arrow-up"></i></a>
 		                </div>
 					</div>
@@ -85,6 +86,23 @@
 			</div>
 		</div>
 	</div>
+	
+	<div class="modal fade" id="createFile" tabindex="-1" >
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">×</button>
+					<h3>Create Dir</h3>
+				</div>
+				<div class="modal-body">
+					<div id="update_file">Input Dir Name: <input type="text" class="form-control" placeholder="input folder name" id="createFileName"/></div>
+				</div>
+				<div class="modal-footer">
+					<a id="create_folder_btn" href="#" class="btn btn-primary" >确定</a>
+				</div>
+			</div>
+		</div>
+	</div>
 
 	<%@include file="footer.jsp"%>
 	
@@ -101,7 +119,6 @@
 		
 		var flag = true;
 		$('#update_begin').click(function() {
-			$('#dialog_message').text("shang");
 			$('#myModal').modal('show');
 			if(flag){
 				flag = false ;
@@ -116,6 +133,25 @@
 				}
 			}
 		});
+		
+		$('#create_begin').click(function() {
+			$('#createFile').modal('show');
+		});
+		
+		
+		$('#create_folder_btn').click(function(){
+			
+			var path = getUrlParam('path') ;
+			
+			if(path !=null){
+				location.href = "${ctx}/resource/crate_folder?path="+getUrlParam('path')+"&floder="+$('#createFileName').val() ;
+			}else{
+				location.href = "${ctx}/resource/crate_folder?floder="+$('#createFileName').val() ;
+			}
+			
+			
+			
+		})
 		
 	</script>
 	

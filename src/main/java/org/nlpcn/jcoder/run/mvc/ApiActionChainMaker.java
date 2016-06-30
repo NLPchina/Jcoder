@@ -28,7 +28,13 @@ public class ApiActionChainMaker implements ActionChainMaker {
 		list.add(init(config, ai, new ApiViewProcessor())); // 对入口方法进行渲染@Ok
 
 		// 最后是专门负责兜底的异常处理器,这个处理器可以认为是全局异常处理器,对应@Fail
-		Processor error = new FailProcessor();
+		Processor error = new ApiFailProcessor();
+		try {
+			error.init(config, ai);
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+		
 		return new NutActionChain(list, error, ai);
 	}
 
@@ -36,7 +42,6 @@ public class ApiActionChainMaker implements ActionChainMaker {
 		try {
 			p.init(config, ai);
 		} catch (Throwable e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return p;

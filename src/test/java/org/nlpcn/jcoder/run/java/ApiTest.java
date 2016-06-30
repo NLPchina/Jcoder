@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.mvc.annotation.Param;
 

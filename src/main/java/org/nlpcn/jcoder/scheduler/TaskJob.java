@@ -37,7 +37,7 @@ public class TaskJob extends Thread {
 	public void run() {
 		over = false;
 		try {
-			task.setMessage(task.getName() + " 开始运行　" + new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒").format(new Date()) + " 启动运行！");
+			task.setMessage(task.getName() + " at　" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " begin runging");
 			CodeRunner.run(task);
 			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
 			task.updateSuccess();

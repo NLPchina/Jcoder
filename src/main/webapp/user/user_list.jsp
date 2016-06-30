@@ -15,26 +15,24 @@
 					<div class="box-header well" data-toggle="collapse" 
 								data-target="#collapseUser">
 						<h2 class="glyphicon glyphicon-user">
-							<span> 用户管理 </span>
+							<span> UserManager </span>
 						</h2>
 					</div>
 					<div id="collapseUser" class="panel-collapse collapse in">
 						<div class="panel-body">
 							<div class="row">
-								<button type="button" data-toggle="modal" onclick="add('用户');"
-									class="btn btn-link  col-lg-offset-9 col-sm-offset-9"
-									data-target="#myModal">添加</button>
+								<button type="button" data-toggle="modal" onclick="add('User');" class="btn btn-link  col-lg-offset-9 col-sm-offset-9" data-target="#myModal">Add</button>
 							</div>
 							<div class="row">
 								<table class="table">
 									<thead>
 										<tr>
-											<th>序号</th>
-											<th>帐号</th>
-											<th>邮箱</th>
-											<th>类型</th>
-											<th>创建时间</th>
-											<th>操作</th>
+											<th>No</th>
+											<th>Account</th>
+											<th>Mail</th>
+											<th>Type</th>
+											<th>CreateTime</th>
+											<th>Edit</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -44,11 +42,11 @@
 												<td>${m.name}</td>
 												<td hidden="hidden">${m.password}</td>
 												<td>${m.mail}</td>
-												<td>${m.type==1?"超级用户":m.type==2?"组长":"组员"}</td>
+												<td>${m.type==1?"Admin":m.type==2?"Group Master":"Member"}</td>
 												<td><fmt:formatDate value="${m.createTime}" type="both" /></td>
-												<td><button type="button" class="btn btn-link" onclick="editUser(this);" data-target="#myModal" data-toggle="modal">编辑</button>
-													<button type="button" class="btn btn-link" onclick="editAuth(${m.id});" data-target="#myModal" data-toggle="modal">权限</button>
-													<button type="button" class="btn btn-link" onclick="deleteUser(this);" data-target="#myModal" data-toggle="modal">删除</button></td>
+												<td><button type="button" class="btn btn-link" onclick="editUser(this);" data-target="#myModal" data-toggle="modal">Edit</button>
+													<button type="button" class="btn btn-link" onclick="editAuth(${m.id});" data-target="#myModal" data-toggle="modal">Auth</button>
+													<button type="button" class="btn btn-link" onclick="deleteUser(this);" data-target="#myModal" data-toggle="modal">Delete</button></td>
 											</tr>
 										</c:forEach>
 									</tbody>
@@ -71,8 +69,8 @@
 			<form id="modalAction" action="#" method="post">
 				<div class="modal-body" id="datas"></div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-default" >关闭</button>
-					<button type="submit" id="submit_user" class="btn btn-primary" onclick="modalSubmit();" style="display: block">提交</button>
+					<button type="button" class="btn btn-default" >Close</button>
+					<button type="submit" id="submit_user" class="btn btn-primary" onclick="modalSubmit();" style="display: block">Submit</button>
 				</div>
 			</form>
 		</div>
@@ -84,28 +82,28 @@
 <div id="user" hidden="hidden">
 	<table class='table table-striped'>
 		<tr>
-			<td>序号：</td>
+			<td>No：</td>
 			<td><input type='text' class='form-control' name='id'
 				id="userId" readonly /></td>
 		</tr>
 		<tr>
-			<td>帐号：</td>
+			<td>Åccount：</td>
 			<td><input type='text' class='form-control' name='name' required onblur="checkName('/user/nameDiff',this)" id='userName' /></td>
 		</tr>
 		<tr>
-			<td>密码：</td>
+			<td>Password：</td>
 			<td><input type="password" class='form-control' id="userPassword" required name='password' /></td>
 		</tr>
 		<tr>
-			<td>邮箱：</td>
+			<td>Email：</td>
 			<td><input type='email' class='form-control' id="userMail" required name='mail' /></td>
 		</tr>
 		<tr>
-			<td>类型：</td>
+			<td>Type：</td>
 			<td><select id="userType" name='type'>
-					<option value="3">普通用户</option>
+					<option value="3">Member</option>
 					<!-- <option value="2">组长</option> -->
-					<option value="1">超级用户</option>
+					<option value="1">Admin</option>
 			</select></td>
 		</tr>
 	</table>
@@ -114,7 +112,7 @@
 <div id="auth" hidden="hidden">
 	<table class='table table-striped'>
 		<tr>
-			<td>组名称</td><td>查看</td><td>编辑</td>				
+			<td>Group Name</td><td>View</td><td>Edit</td>				
 		</tr>
 		<c:forEach items="${groups }" var="group">
 		<tr>
@@ -122,9 +120,9 @@
 			<td>
 				<input type='hidden' class='form-control' name='id' id="tempUserId" readonly />
 				<select name="auth" id="auth_${group.id }" onchange="checkedchange(${group.id},this.value)" style="width: 98%">
-					<option value="0">无权限</option>
-					<option value="1">查看权限</option>
-					<option value="2">编辑权限</option>
+					<option value="0">None</option>
+					<option value="1">View</option>
+					<option value="2">Editor</option>
 				</select>
 			</td>
 		</tr>
@@ -145,26 +143,26 @@
 			"name" : na
 		}, function(data, status) {
 			if (data == 'false') {
-				node.setCustomValidity("名字已被占用！");
+				node.setCustomValidity("the use name has been created！");
 			} else {
 				node.setCustomValidity("");
 			}
 		});
 	}
 	function shift(m) {
-		if (m == "删除") {
+		if (m == "Delete") {
 			return "del";
 		}
-		if (m == "添加") {
+		if (m == "Add") {
 			return "add";
 		}
-		if (m == "修改") {
+		if (m == "Modify") {
 			return "modify";
 		}
-		if (m == "用户") {
+		if (m == "User") {
 			return "user";
 		}
-		if (m == "组") {
+		if (m == "Group") {
 			return "group";
 		}
 	}
@@ -178,24 +176,24 @@
 			"userId":userId
 		}, function(data, status) {
 			if(status!='success'){
-				alert("授权失败！请重新选择");
+				alert("Auth  ERR  ！Please try again");
 			}
 		});
 	}
 	
 	function editUser(m) {
-		actionName = '用户';
-		act = "修改";
+		actionName = 'User';
+		act = "Edit";
 		$("#submit_user").css('display', '');
 		var tr = m.parentNode.parentNode;
-		$("#modalName").html('用户管理');
+		$("#modalName").html('User Manager');
 		$("#datas").html($("#user").html());
 		$("#userId").val(tr.cells[0].innerText);
 		$("#userName").val(tr.cells[1].innerText);
 		$("#userPassword").val(tr.cells[2].innerText);
 		$("#userMail").val(tr.cells[3].innerText);
 		var t = tr.cells[4].innerText;
-		var d = (t == "超级用户" ? 1 : 3);
+		var d = (t == "Admin" ? 1 : 3);
 		$("#userType option[value='" + d + "'").attr('selected', 'selected');
 	}
 	
@@ -206,9 +204,9 @@
 			"userId":userId
 		}, function(data, status) {
 			if(status!='success'){
-				alert("授权失败！请重新选择");
+				alert("Auth  ERR  ！Please try again");
 			}else{
-				$("#modalName").html('权限管理');
+				$("#modalName").html('AuthManager');
 				$("#datas").html($("#auth").html());
 				$('#tempUserId').val(userId) ;
 				$("input[name='auth']").find("option[value='0']").attr("selected",true);
@@ -220,27 +218,27 @@
 	}
 	
 	function deleteUser(m){
-		actionName = '用户';
-		act = "删除";
+		actionName = 'User';
+		act = "Delete";
 		$("#submit_user").css('display', '');
 		var tr = m.parentNode.parentNode;
-		$("#modalName").html('用户管理');
+		$("#modalName").html('User Manager');
 		$("#datas").html($("#user").html());
 		$("#userId").val(tr.cells[0].innerText);
 		$("#userName").val(tr.cells[1].innerText);
 		$("#userPassword").val(tr.cells[2].innerText);
 		$("#userMail").val(tr.cells[3].innerText);
 		var t = tr.cells[4].innerText;
-		var d = (t == "超级用户" ? 1 : 3);
+		var d = (t == "Admin" ? 1 : 3);
 		$("#userType option[value='" + d + "'").attr('selected', 'selected');
 	}
 	
 	function add(n) {
 		actionName = n;
-		act = "添加";
+		act = "Add";
 		$("#submit_user").css('display', '');
 		$("#userType option[value='3']").attr('selected', 'selected');
-		$("#modalName").html(n + "添加");
+		$("#modalName").html(n + "Add");
 		$("#datas").html($("#" + shift(n)).html());
 	}
 </script>

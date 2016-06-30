@@ -16,22 +16,21 @@
 				<div class="box-inner">
 					<div class="box-header well" data-original-title="">
 						<h2>
-							<i class="glyphicon glyphicon-user"></i>
+							<i class="glyphicon glyphicon-user"></i> Thread Manager
 						</h2>
 					</div>
 					<div class="box-content">
 						<table class="table table-striped table-bordered bootstrap-datatable datatable responsive">
 							<thead>
 								<tr>
-									<th>名称</th>
-									<th>分组</th>
-									<th>简介</th>
-									<th>激活</th>
-									<th>状态</th>
-									<th>成功</th>
-									<th>失败</th>
-									<th>信息</th>
-									<th>操作</th>
+									<th>Name</th>
+									<th>Group</th>
+									<th>Description</th>
+									<th>Status</th>
+									<th>Success</th>
+									<th>Err</th>
+									<th>Info</th>
+									<th>Edit</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -41,15 +40,14 @@
 										<td>${task.name }</td>
 										<td>${task.groupId }</td>
 										<td class="center">${task.description }</td>
-										<td class="center">${task.status}</td>
 										<td class="center">
 											${task.runStatus}
 										</td>
 										<td class="center">
-											<span class="label-success label label-default">${task.success}　次</span>
+											<span class="label-success label label-default">${task.success}　times</span>
 										</td>
 										<td class="center">
-											<span class="label-success label label-danger">${task.error}　次</span>
+											<span class="label-success label label-danger">${task.error}　times</span>
 										</td>
 										<td class="center">${task.message}</td>
 										<td class="center">
@@ -65,15 +63,14 @@
 						<table class="table table-striped table-bordered bootstrap-datatable datatable responsive">
 							<thead>
 								<tr>
-									<th>名称</th>
-									<th>分组</th>
-									<th>简介</th>
-									<th>激活</th>
-									<th>状态</th>
-									<th>成功</th>
-									<th>失败</th>
-									<th>信息</th>
-									<th>操作</th>
+									<th>Name</th>
+									<th>Group</th>
+									<th>Description</th>
+									<th>Status</th>
+									<th>Success</th>
+									<th>Err</th>
+									<th>Info</th>
+									<th>Edit</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -83,15 +80,14 @@
 										<td>${task.name }</td>
 										<td>${task.groupId }</td>
 										<td class="center">${task.description }</td>
-										<td class="center">${task.status}</td>
 										<td class="center">
 											${task.runStatus}
 										</td>
 										<td class="center">
-											<span class="label-success label label-default">${task.success}　次</span>
+											<span class="label-success label label-default">${task.success}　times</span>
 										</td>
 										<td class="center">
-											<span class="label-success label label-danger">${task.error}　次</span>
+											<span class="label-success label label-danger">${task.error}　times</span>
 										</td>
 										<td class="center">${task.message}</td>
 										<td class="center">

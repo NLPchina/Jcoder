@@ -44,7 +44,7 @@ public class ApiAction {
 
 			taskName = task.getName() + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
 
-			if (ThreadManager.checkExists(taskName)) {
+			if (ThreadManager.checkActionExists(taskName)) {
 				LOG.warn(taskName + " has beening run! pleast stop it first!");
 			} else {
 				LOG.info(taskName + " publish ok ! will be run !");

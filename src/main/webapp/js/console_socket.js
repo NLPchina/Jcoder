@@ -121,17 +121,17 @@ $(function() {
 	});
 
 	request.onClose = function(response) {
-		content.append('<连接被关闭!>');
+		content.append('connect has been closed!');
 		closeStyle();
 	};
 
 	request.onError = function(response) {
-		content.append('<p>粗错啦!!!!!!!!!!!!!!!!!!!!</p>');
+		content.append('<p>err!!!!!!!!!!!!!!!!!!!!</p>');
 		closeStyle();
 	};
 
 	request.onReconnect = function(request, response) {
-		content.append('<p>尝试重新连接服务器!</p>');
+		content.append('<p>reconnect server!</p>');
 		input.attr('disabled', 'disabled');
 	};
 
@@ -155,7 +155,6 @@ $(function() {
 
 	$("#script_start").click(function() {
 		if (status) {
-			content.empty();
 			$("#code").val(editor.getValue());
 			var json = $("#taskForm").serializeJson()
 			if (status) {
@@ -164,19 +163,18 @@ $(function() {
 				}, function(result) {
 					content.append("<p>" + JSON.stringify(result) + "</p>");
 				}, "json").error(function() {
-					content.append("<p>运行失败 !</p>");
+					content.append("<p>run err !</p>");
 				});
 			} else {
-				content.append("<p>服务已经断开！请重新链接</p>");
+				content.append("<p>server has beein break ! please reconnect</p>");
 			}
 		} else {
-			content.append("<p>服务已经断开！请重新链接</p>");
+			content.append("<p>server has beein break ! please reconnect</p>");
 		}
 	});
 
 	$("#script_stop").click(function() {
 		if (status) {
-			content.empty();
 			$("#code").val(editor.getValue());
 			var json = $("#taskForm").serializeJson()
 			if (status) {
@@ -185,18 +183,19 @@ $(function() {
 				}, function(result) {
 					content.append("<p>" + JSON.stringify(result) + "</p>");
 				}, "json").error(function() {
-					content.append("<p>运行失败!" + JSON.stringify(result) + "</p>");
+					content.append("<p>run err !" + JSON.stringify(result) + "</p>");
 				});
 			} else {
-				content.append("<p>服务已经断开！请重新链接</p>");
+				content.append("<p>server has beein break ! please reconnect</p>");
 			}
 		} else {
-			content.append("<p>服务已经断开！请重新链接</p>");
+			content.append("<p>server has beein break ! please reconnect</p>");
 		}
 	});
 
 	$("#socket_connected").click(function() {
 		if (!status) {
+			content.empty();
 			subSocket = socket.subscribe(request);
 		} else {
 			subSocket.close();

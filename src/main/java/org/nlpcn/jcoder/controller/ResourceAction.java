@@ -234,4 +234,17 @@ public class ResourceAction {
 
 		return StaticValue.okMessage(path);
 	}
+
+	@At("/resource/crate_folder")
+	@Ok("redirect:/resource/list")
+	public void crateFolder(@Param("path") String path, @Param("floder") String floder) {
+		File file = null;
+		if (StringUtil.isBlank(path)) {
+			file = RESOURCE_ROOT;
+		} else {
+			file = new File(path);
+		}
+		file = new File(file, floder);
+		file.mkdirs();
+	}
 }

@@ -15,25 +15,25 @@
 					<div class="box-header well" data-toggle="collapse" 
 								data-target="#collapseGroup">
 						<h2 class="glyphicon glyphicon-user">
-							<span> 组管理 </span>
+							<span> GroupManager </span>
 						</h2>
 					</div>
 					<div id="collapseGroup" class="panel-collapse collapse in">
 						<div class="panel-body">
 							<div class="row">
-								<button type="button" data-toggle="modal" onclick="add('组');"
+								<button type="button" data-toggle="modal" onclick="add('Group');"
 									class="btn btn-link  col-lg-offset-9 col-sm-offset-9"
-									data-target="#myModal">添加</button>
+									data-target="#myModal">Add</button>
 							</div>
 							<div>
 								<table style="width: 100%" border="1" class="table-striped">
 									<thead>
 										<tr>
-											<th>组号</th>
-											<th>组名</th>
-											<th>描述</th>
-											<th>创建时间</th>
-											<th>操作</th>
+											<th>No</th>
+											<th>GroupName</th>
+											<th>Description</th>
+											<th>Create Time</th>
+											<th>Edit</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -44,21 +44,21 @@
 												<td>${m.description}</td>
 												<td><fmt:formatDate value="${m.createTime}" type="both" /></td>
 												<td><button type="button" data-toggle="modal"
-														onclick="edit(this,'组','修改');" class="btn btn-link"
-														data-target="#myModal">编辑</button>
+														onclick="edit(this,'Group','Edit');" class="btn btn-link"
+														data-target="#myModal">Edit</button>
 													<button type="button" data-toggle="modal"
-														onclick="edit(this,'组','删除');" class="btn btn-link"
-														data-target="#myModal">删除</button></td>
+														onclick="edit(this,'Group','Delete');" class="btn btn-link"
+														data-target="#myModal">Delete</button></td>
 											</tr>
 											<tr>
 												<td colspan="6">
 														<table class="table " >
 															<thead>
 																<tr>
-																	<th>用户ID</th>
-																	<th>用户名</th>
-																	<th>创建时间</th>
-																	<th>权限</th>
+																	<th>User ID</th>
+																	<th>User Name</th>
+																	<th>Create Time</th>
+																	<th>Auth</th>
 																</tr>
 															</thead>
 															<c:forEach items="${m.users}" var="u">
@@ -67,7 +67,7 @@
 																	<td>${u.id }</td>
 																	<td>${u.name }</td>
 																	<td><fmt:formatDate value="${u.createTime}" type="both" /></td>
-																	<td>${u.auth==1?'查看':'编辑' }</td>
+																	<td>${u.auth==1?'View':'Edit' }</td>
 																<tr>
 															</tr>
 															</c:forEach>
@@ -97,9 +97,8 @@
 			<form id="modalAction" action="#" method="post">
 				<div class="modal-body" id="datas"></div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-					<button type="submit" class="btn btn-primary"
-						onclick="modalSubmit();">提交</button>
+					<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					<button type="submit" class="btn btn-primary" onclick="modalSubmit();">Submit</button>
 				</div>
 			</form>
 		</div>
@@ -111,17 +110,17 @@
 <div id="group" hidden="hidden">
 	<table class='table table-striped'>
 		<tr>
-			<td>组号：</td>
+			<td>GroupNo：</td>
 			<td><input type='text' class='form-control' name='id'
 				id="groupId" readonly /></td>
 		</tr>
 		<tr>
-			<td>组名：</td>
+			<td>GroupName：</td>
 			<td><input type='text' class='form-control' id="groupName"
 				required name='name' onblur="checkName('/group/nameDiff',this)" /></td>
 		</tr>
 		<tr>
-			<td>描述：</td>
+			<td>Description：</td>
 			<td><textarea class='form-control' id="groupDescription"
 					name='description' /></textarea></td>
 		</tr>
@@ -141,26 +140,26 @@
 			"name" : na
 		}, function(data, status) {
 			if (data == 'false') {
-				node.setCustomValidity("名字已被占用！");
+				node.setCustomValidity("name has been in db ！");
 			} else {
 				node.setCustomValidity("");
 			}
 		});
 	}
 	function shift(m) {
-		if (m == "删除") {
+		if (m == "Delete") {
 			return "del";
 		}
-		if (m == "添加") {
+		if (m == "Add") {
 			return "add";
 		}
-		if (m == "修改") {
+		if (m == "Edit") {
 			return "modify";
 		}
-		if (m == "用户") {
+		if (m == "User") {
 			return "user";
 		}
-		if (m == "组") {
+		if (m == "Group") {
 			return "group";
 		}
 	}
@@ -169,7 +168,7 @@
 		var modalName, modalContent;
 		actionName = n;
 		act = l;
-		if (n == "用户") {
+		if (n == "User") {
 			$("#modalName").html(n + l);
 			$("#datas").html($("#user").html());
 			$("#userId").val(tr.cells[0].innerText);
@@ -177,10 +176,10 @@
 			$("#userPassword").val(tr.cells[2].innerText);
 			$("#userMail").val(tr.cells[3].innerText);
 			var t = tr.cells[4].innerText;
-			var d = (t == "超级用户" ? 1 : 3);
+			var d = (t == "Admin" ? 1 : 3);
 			$("#userType option[value='" + d + "'")
 					.attr('selected', 'selected');
-		} else if (n == "组") {
+		} else if (n == "Group") {
 			$("#modalName").html(n + l);
 			$("#datas").html($("#group").html());
 			$("#groupId").val(tr.cells[0].innerText);
@@ -190,9 +189,9 @@
 	}
 	function add(n) {
 		actionName = n;
-		act = "添加";
+		act = "Add";
 		$("#userType option[value='3'").attr('selected', 'selected');
-		$("#modalName").html(n + "添加");
+		$("#modalName").html(n + "Add");
 		$("#datas").html($("#" + shift(n)).html());
 	}
 </script>

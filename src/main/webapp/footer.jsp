@@ -1,6 +1,7 @@
 <%@ page language="java" pageEncoding="UTF-8"%>
 
-    <hr/>
+<div class="row">&nbsp;</div>
+<div class="row">&nbsp;</div>
 
 <div class="col-lg-12 col-sm-12">
     <footer class="row">

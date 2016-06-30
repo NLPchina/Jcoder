@@ -18,11 +18,12 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 	private AtomicLong al = new AtomicLong();
 
 	public void process(ActionContext ac) throws Throwable {
+		String threadName = null;
 		Task module = (Task) ac.getModule();
 		Method method = ac.getMethod();
 		Object[] args = ac.getMethodArgs();
 		try {
-			String threadName = module.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@" + al.getAndIncrement();
+			threadName = module.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@" + al.getAndIncrement();
 			ThreadManager.add2ActionTask(threadName, Thread.currentThread());
 			Object result = new JavaRunner(module).compile().instanceObjByIoc().execute(method, args);
 			ac.setMethodReturn(result);
@@ -33,6 +34,8 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 			throw Lang.unwrapThrow(e);
 		} catch (InvocationTargetException e) {
 			throw e.getCause();
+		} finally {
+			ThreadManager.removeActionIfOver(threadName);
 		}
 	}
 }

@@ -1,5 +1,6 @@
-package org.nlpcn.jcoder.util;
+package org.nlpcn.jcoder.run.mvc.view;
 
+import org.nlpcn.jcoder.util.ApiException;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.View;
 
@@ -26,6 +27,9 @@ public class JsonView implements View {
 
 	public JsonView(Object result) {
 		this.result = result;
+	}
+	
+	public JsonView() {
 	}
 
 	@Override

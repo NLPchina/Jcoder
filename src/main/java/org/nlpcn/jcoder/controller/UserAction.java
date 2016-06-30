@@ -84,7 +84,7 @@ public class UserAction {
 	@At("/user/add")
 	@Ok("redirect:/user/list")
 	@Fail("jsp:/fail.jsp")
-	public void addU(@Param("") User user) throws Exception {
+	public void addU(@Param("..") User user) throws Exception {
 		if (userNameDiff(user.getName())) {
 			user.setCreateTime(new Date());
 			basicDao.save(user);
@@ -94,7 +94,7 @@ public class UserAction {
 
 	@At("/user/del")
 	@Ok("redirect:/user/list")
-	public void delU(@Param("") User user) {
+	public void delU(@Param("..") User user) {
 		// TODO 删除用户后要把用户相关的userTask及userGroup删除，等userTask完成后做
 		if (user.getType() == 1) {
 			// 保证至少要有一个超级用户
@@ -119,7 +119,7 @@ public class UserAction {
 	@At("/user/modify")
 	@Ok("redirect:/user/list")
 	@Fail("jsp:/fail.jsp")
-	public void modify(@Param("") User user) throws Exception {
+	public void modify(@Param("..") User user) throws Exception {
 		if (user == null) {
 			return;
 		}
@@ -132,7 +132,7 @@ public class UserAction {
 	@At("/group/add")
 	@Ok("redirect:/group/list")
 	@Fail("jsp:/fail.jsp")
-	public void addG(@Param("") Group group) throws Exception {
+	public void addG(@Param("..") Group group) throws Exception {
 		if (groupNameDiff(group.getName())) {
 			group.setCreateTime(new Date());
 			basicDao.save(group);
@@ -145,7 +145,7 @@ public class UserAction {
 
 	@At("/group/del")
 	@Ok("redirect:/group/list")
-	public void delG(@Param("") Group group) {
+	public void delG(@Param("..") Group group) {
 		basicDao.delById(group.getId(), Group.class);
 		log.info("del group:" + group.getName());
 		Condition con = Cnd.where("groupId", "=", group.getId());
@@ -165,7 +165,7 @@ public class UserAction {
 	@At("/group/modify")
 	@Ok("redirect:/group/list")
 	@Fail("jsp:/fail.jsp")
-	public void modifyG(@Param("") Group group) throws Exception {
+	public void modifyG(@Param("..") Group group) throws Exception {
 		if (group == null) {
 			return;
 		}
