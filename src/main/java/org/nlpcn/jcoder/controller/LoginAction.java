@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.apache.log4j.Logger;
@@ -21,8 +22,6 @@ import org.nutz.mvc.annotation.At;
 import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
 
-import com.alibaba.fastjson.JSONObject;
-
 @IocBean
 public class LoginAction {
 
@@ -32,12 +31,17 @@ public class LoginAction {
 
 	@At("/login")
 	@Ok("raw")
-	public String login(@Param("name") String name, @Param("password") String password) {
-		JSONObject job = new JSONObject();
+	public String login(HttpServletRequest req, @Param("name") String name, @Param("password") String password, @Param("verification_code") String verificationCode) {
+
+		String sessionCode = (String) req.getSession().getAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY);
+		if (!sessionCode.equalsIgnoreCase(verificationCode)) {
+			return StaticValue.errMessage("Login fail please validate verification code ");
+		}
+
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);
 
-		if (user != null && user.getPassword().equals(password)) {
+		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
 			HttpSession session = Mvcs.getHttpSession();
 			session.setAttribute("user", name);
 			session.setAttribute("userId", user.getId());
@@ -59,13 +63,12 @@ public class LoginAction {
 				List<Group> groups = basicDao.search(Group.class, co);
 				session.setAttribute("GROUP_LIST", groups);
 			}
-			log.info("用户" + name + "登录成功！");
-			job.put("ok", true);
-			return job.toJSONString();
+			log.info("user " + name + "login ok");
+
+			return StaticValue.OK;
 		} else {
-			log.info("用户" + name + "登录失败！");
-			job.put("ok", false);
-			return job.toJSONString();
+			log.info("user " + name + "login err");
+			return StaticValue.errMessage("login fail please validate your name or password");
 		}
 	}
 

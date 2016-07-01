@@ -15,7 +15,7 @@ CREATE TABLE `groups` (
 --  Records of `groups`
 -- ----------------------------
 BEGIN;
-INSERT INTO `groups` VALUES (1, 'Test', 'test', now());
+INSERT INTO `groups` VALUES (1, 'Default', 'Default Group', now());
 COMMIT;
 
 -- ----------------------------
@@ -83,7 +83,7 @@ CREATE TABLE `user` (
 -- ----------------------------
 
 BEGIN;
-INSERT INTO `user` VALUES ('1', 'admin', 'admin', '1', 'yourmail', now());
+INSERT INTO `user` VALUES ('1', 'admin', 'd70900a860013845b32be1d0fbc89d58', '1', 'yourmail', now());
 COMMIT;
 
 -- ----------------------------

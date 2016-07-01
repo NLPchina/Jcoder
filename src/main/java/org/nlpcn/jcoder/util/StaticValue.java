@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.util;
 import java.util.ResourceBundle;
 
 import org.apache.log4j.Logger;
+import org.nlpcn.commons.lang.util.MD5;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.App;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
@@ -201,6 +202,17 @@ public class StaticValue {
 	 */
 	public static void initIOC() {
 		NutzUtil.init(App.class);
+	}
+	
+	
+	/**
+	 * md5 code
+	 * 
+	 * @param password
+	 * @return
+	 */
+	public static String passwordEncoding(String password) {
+		return MD5.code(MD5.code(password + "jcoder"));
 	}
 
 }

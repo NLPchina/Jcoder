@@ -1,5 +1,12 @@
 package org.nlpcn.jcoder.controller;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.User;
@@ -9,12 +16,14 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
-import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.*;
-
-import java.util.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Fail;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
@@ -86,6 +95,7 @@ public class UserAction {
 	@Fail("jsp:/fail.jsp")
 	public void addU(@Param("..") User user) throws Exception {
 		if (userNameDiff(user.getName())) {
+			user.setPassword(StaticValue.passwordEncoding(user.getPassword()));
 			user.setCreateTime(new Date());
 			basicDao.save(user);
 			log.info("add user:" + user.getName());
@@ -123,6 +133,13 @@ public class UserAction {
 		if (user == null) {
 			return;
 		}
+		
+		User dbUser = basicDao.find(user.getId(), User.class);
+
+		if (!user.getPassword().equals(dbUser.getPassword())) {
+			user.setPassword(StaticValue.passwordEncoding(user.getPassword()));
+		}
+
 		boolean flag = basicDao.update(user);
 		if (flag) {
 			log.info("modify user:" + user);
@@ -174,4 +191,5 @@ public class UserAction {
 			log.info("modify group:" + group.toString());
 		}
 	}
+
 }
