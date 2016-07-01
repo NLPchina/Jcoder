@@ -11,9 +11,7 @@ import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
-import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -57,8 +55,6 @@ public class Bootstrap {
 		getOrCreateEnv(PREFIX + "host", null);
 		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
 
-		createLog4jConfig(logPath);
-
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
@@ -71,7 +67,7 @@ public class Bootstrap {
 
 		File jcoderHome = new File(home);
 
-		makeFiles(jcoderHome);
+		makeFiles(jcoderHome, logPath);
 
 		context.setTempDirectory(new File(jcoderHome, "tmp"));
 		context.setContextPath("/");
@@ -102,20 +98,26 @@ public class Bootstrap {
 	 * config log4j setting
 	 * 
 	 * @param logPath
+	 * @throws IOException
+	 * @throws FileNotFoundException
 	 */
-	private static void createLog4jConfig(String logPath) {
-		Properties pro = new Properties();
-		pro.put("log4j.rootLogger", "info, stdout,R");
-		pro.put("log4j.appender.stdout", "org.apache.log4j.ConsoleAppender");
-		pro.put("log4j.appender.stdout.layout", "org.apache.log4j.PatternLayout  ");
-		pro.put("log4j.appender.stdout.layout.ConversionPattern", "%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n");
-		pro.put("log4j.appender.R", "org.apache.log4j.DailyRollingFileAppender");
-		pro.put("log4j.appender.R.File", logPath);
-		pro.put("log4j.appender.R.DatePattern ", " '.'yyyy-MM-dd");
-		pro.put("log4j.appender.R.layout", "org.apache.log4j.PatternLayout");
-		pro.put("log4j.appender.R.layout.ConversionPattern", "%d{HH:mm:ss} %c{1} %-5p %m%n");
-		pro.put("log4j.logger.org.atmosphere.cpr.AsynchronousProcessor", "FATAL");
-		PropertyConfigurator.configure(pro);
+	private static void createLog4jConfig(File log4jFile, String logPath) throws FileNotFoundException, IOException {
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(
+				"log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n" + "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n"
+						+ "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
+						+ "log4j.appender.R=org.apache.log4j.DailyRollingFileAppender\n" + "log4j.appender.R.File=");
+
+		sb.append(logPath);
+
+		sb.append("\n" + "log4j.appender.R.DatePattern = '.'yyyy-MM-dd\n" + "log4j.appender.R.layout=org.apache.log4j.PatternLayout\n"
+				+ "log4j.appender.R.layout.ConversionPattern=%d{HH:mm:ss} %c{1} %-5p %m%n\n" + "\n" + "## Disable other log  \n"
+				+ "log4j.logger.org.atmosphere.cpr.AsynchronousProcessor=FATAL");
+
+		wirteFile(log4jFile.getAbsolutePath(), "utf-8", sb.toString());
+
 	}
 
 	private static void parseFile(String file) throws UnsupportedEncodingException, FileNotFoundException, IOException {
@@ -150,7 +152,7 @@ public class Bootstrap {
 		}
 	}
 
-	private static void makeFiles(File JcoderHome) throws FileNotFoundException, IOException {
+	private static void makeFiles(File JcoderHome, String logPath) throws FileNotFoundException, IOException {
 		File libDir = new File(JcoderHome, "lib"); // create jar dir
 		if (!libDir.exists()) {
 			libDir.mkdirs();
@@ -178,6 +180,8 @@ public class Bootstrap {
 		if (!resourceDir.exists()) {
 			resourceDir.mkdirs();
 		}
+
+		createLog4jConfig(new File(resourceDir, "log4j.properties"), logPath);
 	}
 
 	private static String getOrCreateEnv(String key, String def) {

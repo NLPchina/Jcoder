@@ -11,7 +11,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
+import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.Context;
@@ -22,9 +24,14 @@ public class JcoderFilter extends NutFilter {
 
 	private ApiActionHandler apiHandler;
 
+	private String host;
+
+	private static final byte[] AUTH_ERR = "no right to call this server".getBytes();
+
 	public void init(FilterConfig conf) throws ServletException {
 		super.init(conf);
 		apiHandler = new ApiActionHandler(conf);
+		host = StaticValue.HOST;
 	}
 
 	@Override
@@ -36,7 +43,28 @@ public class JcoderFilter extends NutFilter {
 		if (path.startsWith("/api/")) {
 			_doFilter(chain, request, response);
 		} else {
-			super.doFilter(request, response, chain);
+			if (host == null) {
+				super.doFilter(request, response, chain);
+			} else if (host.equals(request.getServerName())) {
+				super.doFilter(request, response, chain);
+			} else {
+				_doAuthoErr(response);
+			}
+		}
+	}
+
+	private void _doAuthoErr(HttpServletResponse response) throws IOException {
+		try {
+			response.setStatus(403);
+			response.setHeader("Cache-Control", "no-cache");
+			response.setContentType("text/html");
+			response.setContentLength(AUTH_ERR.length);
+			response.getOutputStream().write(AUTH_ERR);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			response.getOutputStream().flush();
+			response.getOutputStream().close();
 		}
 	}
 
@@ -90,5 +118,5 @@ public class JcoderFilter extends NutFilter {
 	public ApiActionHandler getApiHandler() {
 		return apiHandler;
 	}
-	
+
 }

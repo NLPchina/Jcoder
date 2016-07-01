@@ -1,13 +1,12 @@
 package org.nlpcn.jcoder.run.mvc.view;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.nlpcn.jcoder.util.ApiException;
-import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.View;
 
 import com.alibaba.fastjson.JSONObject;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * 直接返回正文
