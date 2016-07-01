@@ -1,59 +1,79 @@
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.swing.SpinnerListModel;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class Bootstrap {
 
+	private static final String PREFIX = "jcoder_";
+
+	private static final Map<String, String> ENV_MAP = new HashMap<>();
+
 	public static void main(String[] args) throws Exception {
-		String host = null;
-		int port = 8080;
-		String contextPath = "/";
-		boolean forceHttps = false;
+
+		for (String arg : args) {
+			if (arg.startsWith("-f") && arg.contains("=")) {
+				String[] dim = arg.split("=");
+				parseFile(dim[1]);
+				break;
+			}
+		}
 
 		for (String arg : args) {
 			if (arg.startsWith("--") && arg.contains("=")) {
 				String[] dim = arg.split("=");
 				if (dim.length >= 2) {
 					if (dim[0].equals("--host")) {
-						host = dim[1];
+						ENV_MAP.put(PREFIX + "host", dim[1]);
 					} else if (dim[0].equals("--port")) {
-						port = Integer.parseInt(dim[1]);
-					} else if (dim[0].equals("--prefix")) {
-						contextPath = dim[1];
-					} else if (dim[0].equals("--jcoder.home")) {
-						System.setProperty("jcoder.home", dim[1]);
+						ENV_MAP.put(PREFIX + "port", dim[1]);
+					} else if (dim[0].equals("--home")) {
+						ENV_MAP.put(PREFIX + "home", dim[1]);
+					} else if (dim[0].equals("--log")) {
+						ENV_MAP.put(PREFIX + "log", dim[1]);
 					}
 				}
 			}
 		}
 
+		getOrCreateEnv(PREFIX + "host", null);
+		getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
+		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
+		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
+
 		Server server = new Server(port);
-
-		File JcoderHome = getJcoderHome();
-
-		System.setProperty(JAVA_HOME_NAME, JcoderHome.getAbsolutePath());
 
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
 		URL location = domain.getCodeSource().getLocation();
 
 		WebAppContext context = new WebAppContext();
 
-		makeFiles(JcoderHome);
+		File jcoderHome = new File(home);
 
-		context.setTempDirectory(new File(JcoderHome, "tmp"));
-		context.setContextPath(contextPath);
+		makeFiles(jcoderHome);
+
+		context.setTempDirectory(new File(jcoderHome, "tmp"));
+		context.setContextPath("/");
 		context.setServer(server);
 
 		context.setWelcomeFiles(new String[] { "Home.jsp" });
 
-		context.setExtraClasspath(new File(JcoderHome, "resource").getAbsolutePath());
+		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());
 
 		context.setInitParameter("org.eclipse.jetty.servlet.DefaultServlet.useFileMappedB uffer", "false");
 
@@ -64,10 +84,6 @@ public class Bootstrap {
 			context.setWar("src/main/webapp");
 		}
 
-		if (forceHttps) {
-			context.setInitParameter("org.scalatra.ForceHttps", "true");
-		}
-
 		server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", "-1");
 		context.setMaxFormContentSize(-1);
 		server.setHandler(context);
@@ -76,17 +92,48 @@ public class Bootstrap {
 		server.join();
 	}
 
+	private static void parseFile(String file) throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"))) {
+			String temp = null;
+
+			while ((temp = br.readLine()) != null) {
+
+				temp = temp.trim();
+
+				if (StringUtil.isBlank(temp)) {
+					continue;
+				}
+
+				if (temp.trim().charAt(0) == '#') {
+					continue;
+				}
+
+				String[] split = temp.split("\\s+");
+
+				if (split.length == 2) {
+					String key = split[0].trim();
+					if (!key.startsWith(PREFIX)) {
+						key = PREFIX + key;
+					}
+					ENV_MAP.put(key, split[1].trim());
+				} else {
+					System.err.println(temp + " format err");
+				}
+
+			}
+		}
+	}
+
 	private static void makeFiles(File JcoderHome) throws FileNotFoundException, IOException {
 		File libDir = new File(JcoderHome, "lib"); // create jar dir
 		if (!libDir.exists()) {
 			libDir.mkdirs();
 			wirteFile(new File(libDir, "pom.xml").getAbsolutePath(), "utf-8",
-					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-							+ "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>1.2</version>\n"
-							+ "	<description>use maven to down jars</description>\n" + "  \n" + "	<dependencies>\n" + "\n" + "	</dependencies>\n" + "\n" + "	<build>  \n"
-							+ "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n" + "</project>");
+					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" + "	<modelVersion>4.0.0</modelVersion>\n"
+							+ "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>1.2</version>\n" + "	<description>use maven to down jars</description>\n"
+							+ "  \n" + "	<dependencies>\n" + "\n" + "	</dependencies>\n" + "\n" + "	<build>  \n" + "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n"
+							+ "</project>");
 		}
 
 		File iocFile = new File(JcoderHome, "ioc.js"); // create ioc file
@@ -98,27 +145,39 @@ public class Bootstrap {
 		if (!tmpDir.exists()) {
 			tmpDir.mkdirs();
 		}
-		
 
-		File resourceDir = new File(JcoderHome, "resource"); // create resource dir
+		File resourceDir = new File(JcoderHome, "resource"); // create resource
+																// dir
 		if (!resourceDir.exists()) {
 			resourceDir.mkdirs();
 		}
 	}
 
-	private static final String JAVA_HOME_NAME = "jcoder.home";
-	private static final String EVN_HOME_NAME = "JCODER_HOME";
+	private static String getOrCreateEnv(String key, String def) {
 
-	private static File getJcoderHome() {
-		String home = System.getProperty(JAVA_HOME_NAME);
-		if (home != null && home.length() > 0) {
-			return new File(home);
+		if (!key.startsWith(PREFIX)) {
+			key = PREFIX + key;
 		}
-		home = System.getenv(EVN_HOME_NAME);
-		if (home != null && home.length() > 0) {
-			return new File(home);
+
+		String value = ENV_MAP.get(key);
+
+		if (value == null) {
+			value = System.getProperty(key);
 		}
-		return new File(System.getProperty("user.home"), ".jcoder");
+
+		if (value == null) {
+			value = System.getenv(key);
+		}
+
+		if (value == null) {
+			value = def;
+		}
+
+		if (value != null) {
+			System.setProperty(key, value);
+		}
+		
+		return value;
 	}
 
 	/**

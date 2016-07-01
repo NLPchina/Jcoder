@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.util;
 
+import java.io.File;
 import java.util.ResourceBundle;
 
 import org.apache.log4j.Logger;
@@ -21,7 +22,16 @@ public class StaticValue {
 
 	private static final Logger LOG = Logger.getLogger(StaticValue.class);
 
-	public static final String HOME = System.getProperty("jcoder.home");
+	private static final String PREFIX = "jcoder_";
+
+	public static final String HOME = System.getProperty(PREFIX + "home");
+	public static final String HOST = System.getProperty(PREFIX + "host");
+	public static final String LOG_PATH = System.getProperty(PREFIX + "log");
+
+	public static final File HOME_FILE = new File(HOME);
+
+	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
+	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 
 	private static Ioc systemIoc;
 
@@ -43,9 +53,7 @@ public class StaticValue {
 
 	public static final String SYSTEM_SPLIT = "SYSTEM_SPLIT_ANSJ";
 
-	public static final String LOG_PATH = initLogPath();
-
-	//api路径的映射
+	// api路径的映射
 	public static final ApiUrlMappingImpl MAPPING = new ApiUrlMappingImpl();
 
 	/**
@@ -57,21 +65,6 @@ public class StaticValue {
 	public static String errMessage(Exception e) {
 		String error = JSON.toJSONString(errMessageJson(e));
 		return error;
-	}
-
-	/**
-	 * 加载log文件的日志
-	 * 
-	 * @return
-	 */
-	private static String initLogPath() {
-		String path = ResourceBundle.getBundle("config").getString("PrintConsole.LogFilePath");
-
-		if (StringUtil.isBlank(path)) {
-			path = "log/jcoder.log";
-		}
-
-		return path;
 	}
 
 	/**
@@ -203,8 +196,7 @@ public class StaticValue {
 	public static void initIOC() {
 		NutzUtil.init(App.class);
 	}
-	
-	
+
 	/**
 	 * md5 code
 	 * 

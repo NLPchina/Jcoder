@@ -61,7 +61,7 @@ public class ResourceAction {
 
 	private static final Logger LOG = Logger.getLogger(ResourceAction.class);
 
-	private static final File RESOURCE_ROOT = new File(StaticValue.HOME + "/resource");
+	private static final File RESOURCE_ROOT = StaticValue.RESOURCE_FILE;
 
 	@Inject
 	private TaskService taskService;

@@ -177,7 +177,7 @@ public class JarAction {
 			}
 
 			if (resource) { // is incloud resource dir
-				File file = new File(StaticValue.HOME + "/resource");
+				File file = StaticValue.RESOURCE_FILE;
 				String basePath = new File(StaticValue.HOME).getAbsolutePath();
 				Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
 
