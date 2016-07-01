@@ -54,15 +54,32 @@
 			<!-- user dropdown starts -->
 			<div class="btn-group pull-right">
 				<c:if test="${user!=null }">
-				<button class="btn btn-default dropdown-toggle"
-					data-toggle="dropdown">
-					<i class="glyphicon glyphicon-user"></i><span
-						class="hidden-sm hidden-xs">&nbsp;${empty user?'admin':user }&nbsp;</span> <span class="caret"></span>
+				<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+					<i class="glyphicon glyphicon-user"></i>
+					<span class="hidden-sm hidden-xs">&nbsp;${empty user?'admin':user }&nbsp;</span> 
+					<span class="caret"></span>
 				</button>
 				<ul class="dropdown-menu">
 					<li><a href="${ctx }/down/sdk">DevSDK</a></li>
 					<li class="divider"></li>
 					<li><a href="${ctx }/loginOut">Logout</a></li>
+				</ul>
+				</c:if>
+			</div>
+			<!-- user dropdown ends -->
+			
+			<!-- user dropdown starts -->
+			<div class="btn-group pull-right">
+				<c:if test="${user!=null }">
+				<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+					<i class="glyphicon glyphicon-user"></i>
+					<span class="hidden-sm hidden-xs">&nbsp;DevSDK</span> 
+					<span class="caret"></span>
+				</button>
+				<ul class="dropdown-menu">
+					<li><a href="${ctx }/down/sdk">Code+Jar</a></li>
+					<li class="divider"></li>
+					<li><a href="${ctx }/down/sdk?resource=true">Code+Jar+Resource</a></li>
 				</ul>
 				</c:if>
 			</div>

@@ -170,6 +170,7 @@ public class JarAction {
 					String code = task.getCode();
 					String path = JavaSourceUtil.findPackage(code);
 					String className = JavaSourceUtil.findClassName(code);
+					
 					out.putNextEntry(new ZipEntry("jcoder_sdk/src/" + path.replace(".", "/") + "/" + className + ".java"));
 					out.write(code.getBytes("utf-8"));
 				} catch (RuntimeException e) {
@@ -186,15 +187,21 @@ public class JarAction {
 
 						File f = tempFile.toFile();
 
-						out.putNextEntry(new ZipEntry(f.getAbsolutePath().replace(basePath, "")));
+						if (f.isDirectory() || !f.canRead() || f.isHidden()) {
+							return FileVisitResult.CONTINUE;
+						}
+						
+						String filePath = ("jcoder_sdk/" + f.getAbsolutePath().replace(basePath, "")).replace("\\", "/").replace("//", "/");
+System.out.println(filePath);						
+
+						out.putNextEntry(new ZipEntry(filePath));
 
 						int len = 0;
 						byte[] buffer = new byte[10240];
-						if (!f.isDirectory() && f.canRead()) {
-							try (FileInputStream fis = new FileInputStream(f)) {
-								while ((len = fis.read(buffer)) > 0) {
-									out.write(buffer, 0, len);
-								}
+						
+						try (FileInputStream fis = new FileInputStream(f)) {
+							while ((len = fis.read(buffer)) > 0) {
+								out.write(buffer, 0, len);
 							}
 						}
 
@@ -291,4 +298,5 @@ public class JarAction {
 			return StaticValue.okMessage("成功上传 " + fileNum + " 个文件!");
 		}
 	}
+	
 }
