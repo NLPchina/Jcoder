@@ -4,7 +4,6 @@ import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
-import org.nutz.mvc.Mvcs;
 
 public class ApiTest {
 
@@ -12,11 +11,9 @@ public class ApiTest {
 	private Logger log;
 
 	@DefaultExecute
-	public String defaultTest() throws InterruptedException {
+	public String defaultTest(String name) throws InterruptedException {
 
-		log.info(Mvcs.getReq().getServerName().matches("127.0.*"));
-		
-		return StaticValue.OK;
+		return StaticValue.okMessage("hello " + name);
 	}
 
 }

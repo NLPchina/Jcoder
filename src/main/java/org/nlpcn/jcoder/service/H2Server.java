@@ -29,11 +29,11 @@ public class H2Server {
 			return;
 		}
 		try {
-			LOG.info("database path is " + "正在启动h2...");
-
 			String h2db = StaticValue.HOME + "/h2db/jcoder";
 
-			boolean dbIsActive = new File(h2db+".h2.db").isFile();
+			LOG.info("database path is " + h2db + " begin start...");
+
+			boolean dbIsActive = new File(h2db + ".h2.db").isFile();
 
 			DruidDataSource dds = new DruidDataSource();
 			dds.setDriverClassName("org.h2.Driver");
@@ -50,28 +50,27 @@ public class H2Server {
 
 			LOG.info("database path is " + new File(h2db).getAbsolutePath());
 			server = Server.createPgServer(new String[] { "-baseDir", h2db }).start();
-			
 
 			if (!dbIsActive) {
 				LOG.warn("the database is not create , use db script to create it!");
 				String content = IOUtil.getContent(H2Server.class.getResourceAsStream("/jcoder.sql"), IOUtil.UTF8);
 				basicDao.executeSql(content);
-			}else{
+			} else {
 				LOG.info("the database is active good luck for use it !");
 			}
 		} catch (SQLException e) {
-			LOG.error("启动h2出错：" + e.toString());
+			LOG.error("start h2 fail：" + e.toString());
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
-		LOG.info("数据库启动完毕...");
+		LOG.info("db has startd ， good luck !...");
 	}
 
 	public static void stopServer() {
 		if (server != null) {
-			System.out.println("正在关闭h2...");
+			System.out.println("to stop h2...");
 			server.stop();
-			System.out.println("关闭成功.");
+			System.out.println("stop ok.");
 		}
 	}
 

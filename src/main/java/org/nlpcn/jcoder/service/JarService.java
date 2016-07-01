@@ -217,7 +217,7 @@ public class JarService {
 	 * @return
 	 * @throws IOException
 	 */
-	public static void flushMaven() throws IOException {
+	public synchronized static void flushMaven() throws IOException {
 		clean();
 		copy();
 	}
