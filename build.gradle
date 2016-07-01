@@ -53,6 +53,12 @@ dependencies {
 		def schemaJarFile = project.configurations.providedCompile 
 		
 		schemaJarFile.each{source ->
+			println source 
+			if(source.name=='javax.servlet-api-3.1.0.jar'){
+    			from(source){
+    				into 'WEB-INF/lib'
+    			}
+    		}
 			from zipTree(source)
 			exclude("**/*.SF")
 		}
@@ -64,6 +70,7 @@ dependencies {
     	
     	
     	classpath = classpath - sourceSets.main.output
+    	
 
 		from (jar) {
 			into 'WEB-INF/lib'
