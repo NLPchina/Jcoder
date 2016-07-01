@@ -38,7 +38,7 @@ public class JarService {
 
 	private static final String CONFIG_PATH = JAR_PATH + "/config.properties";
 
-	private static final String MAVEN_PATH = "MAVEN_PATH";
+	private static final String MAVEN_PATH = "maven";
 
 	private static final String MD5 = "MD5";
 
@@ -104,6 +104,10 @@ public class JarService {
 		}
 
 		if (StringUtil.isBlank(mavenPath)) {
+			mavenPath = System.getProperty(StaticValue.PREFIX + "maven");
+		}
+		
+		if(StringUtil.isBlank(mavenPath)){
 			String home = getPathByVar("MAVEN_HOME");
 			if (StringUtil.isBlank(home)) {
 				home = getPathByVar("M2_HOME");
@@ -114,6 +118,7 @@ public class JarService {
 				mavenPath = home + "/bin/mvn";
 			}
 		}
+		
 		return mavenPath;
 	}
 

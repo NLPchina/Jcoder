@@ -5,7 +5,6 @@ import java.util.ResourceBundle;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.commons.lang.util.MD5;
-import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.App;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -22,14 +21,13 @@ public class StaticValue {
 
 	private static final Logger LOG = Logger.getLogger(StaticValue.class);
 
-	private static final String PREFIX = "jcoder_";
+	public static final String PREFIX = "jcoder_";
 
-	public static final String HOME = System.getProperty(PREFIX + "home");
-	public static final String HOST = System.getProperty(PREFIX + "host");
-	public static final String LOG_PATH = System.getProperty(PREFIX + "log");
+	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
+	public static final String HOST = getValueOrCreate("host", null);
+	public static final String LOG_PATH = getValueOrCreate("log", "log/jcoder.log");
 
 	public static final File HOME_FILE = new File(HOME);
-
 	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 
@@ -65,6 +63,15 @@ public class StaticValue {
 	public static String errMessage(Exception e) {
 		String error = JSON.toJSONString(errMessageJson(e));
 		return error;
+	}
+
+	private static String getValueOrCreate(String key, String def) {
+		String value = System.getProperty(PREFIX + key);
+		if (value == null) {
+			return def;
+		} else {
+			return value;
+		}
 	}
 
 	/**

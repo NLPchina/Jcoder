@@ -11,9 +11,9 @@ import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
-import javax.swing.SpinnerListModel;
-
+import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -46,13 +46,19 @@ public class Bootstrap {
 						ENV_MAP.put(PREFIX + "home", dim[1]);
 					} else if (dim[0].equals("--log")) {
 						ENV_MAP.put(PREFIX + "log", dim[1]);
+					} else if (dim[0].equals("--maven")) {
+						ENV_MAP.put(PREFIX + "maven", dim[1]);
 					}
 				}
 			}
 		}
 
+		getOrCreateEnv(PREFIX + "maven", "mvn");
 		getOrCreateEnv(PREFIX + "host", null);
-		getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
+		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
+
+		createLog4jConfig(logPath);
+
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
@@ -92,6 +98,26 @@ public class Bootstrap {
 		server.join();
 	}
 
+	/**
+	 * config log4j setting
+	 * 
+	 * @param logPath
+	 */
+	private static void createLog4jConfig(String logPath) {
+		Properties pro = new Properties();
+		pro.put("log4j.rootLogger", "info, stdout,R");
+		pro.put("log4j.appender.stdout", "org.apache.log4j.ConsoleAppender");
+		pro.put("log4j.appender.stdout.layout", "org.apache.log4j.PatternLayout  ");
+		pro.put("log4j.appender.stdout.layout.ConversionPattern", "%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n");
+		pro.put("log4j.appender.R", "org.apache.log4j.DailyRollingFileAppender");
+		pro.put("log4j.appender.R.File", logPath);
+		pro.put("log4j.appender.R.DatePattern ", " '.'yyyy-MM-dd");
+		pro.put("log4j.appender.R.layout", "org.apache.log4j.PatternLayout");
+		pro.put("log4j.appender.R.layout.ConversionPattern", "%d{HH:mm:ss} %c{1} %-5p %m%n");
+		pro.put("log4j.logger.org.atmosphere.cpr.AsynchronousProcessor", "FATAL");
+		PropertyConfigurator.configure(pro);
+	}
+
 	private static void parseFile(String file) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"))) {
 			String temp = null;
@@ -108,7 +134,7 @@ public class Bootstrap {
 					continue;
 				}
 
-				String[] split = temp.split("\\s+");
+				String[] split = temp.split("=");
 
 				if (split.length == 2) {
 					String key = split[0].trim();
@@ -129,11 +155,12 @@ public class Bootstrap {
 		if (!libDir.exists()) {
 			libDir.mkdirs();
 			wirteFile(new File(libDir, "pom.xml").getAbsolutePath(), "utf-8",
-					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" + "	<modelVersion>4.0.0</modelVersion>\n"
-							+ "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>1.2</version>\n" + "	<description>use maven to down jars</description>\n"
-							+ "  \n" + "	<dependencies>\n" + "\n" + "	</dependencies>\n" + "\n" + "	<build>  \n" + "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n"
-							+ "</project>");
+					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+							+ "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>1.2</version>\n"
+							+ "	<description>use maven to down jars</description>\n" + "  \n" + "	<dependencies>\n" + "\n" + "	</dependencies>\n" + "\n" + "	<build>  \n"
+							+ "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n" + "</project>");
 		}
 
 		File iocFile = new File(JcoderHome, "ioc.js"); // create ioc file
@@ -176,7 +203,7 @@ public class Bootstrap {
 		if (value != null) {
 			System.setProperty(key, value);
 		}
-		
+
 		return value;
 	}
 

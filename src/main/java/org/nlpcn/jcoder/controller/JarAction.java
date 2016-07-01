@@ -232,9 +232,9 @@ public class JarAction {
 	@Ok("redirect:/jar/list")
 	public Object remove(@Param("path") String path) throws IOException {
 		if (JarService.removeJar(new File(path))) {
-			return StaticValue.okMessage("成功删除jar:" + path);
+			return StaticValue.okMessage("delete jar:" + path);
 		} else {
-			return StaticValue.errMessage("失败删除jar:" + path + " 可能是因为这不是一个jar包,或者jar包是maven管理的");
+			return StaticValue.errMessage("delete jar fail :" + path + " may be it is not a jar or it a maven jar");
 		}
 	}
 
