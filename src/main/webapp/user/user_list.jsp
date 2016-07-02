@@ -156,7 +156,7 @@
 		if (m == "Add") {
 			return "add";
 		}
-		if (m == "Modify") {
+		if (m == "Edit") {
 			return "modify";
 		}
 		if (m == "User") {

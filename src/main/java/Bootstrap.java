@@ -58,6 +58,8 @@ public class Bootstrap {
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
+		System.setProperty("java.awt.headless", "true"); //support kaptcha
+		
 		Server server = new Server(port);
 
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
