@@ -192,7 +192,6 @@ public class JarAction {
 						}
 						
 						String filePath = ("jcoder_sdk/" + f.getAbsolutePath().replace(basePath, "")).replace("\\", "/").replace("//", "/");
-System.out.println(filePath);						
 
 						out.putNextEntry(new ZipEntry(filePath));
 
@@ -295,7 +294,7 @@ System.out.println(filePath);
 			}
 
 			JarService.flushClassLoader();
-			return StaticValue.okMessage("成功上传 " + fileNum + " 个文件!");
+			return StaticValue.okMessage("upload " + fileNum + " file ok!");
 		}
 	}
 	

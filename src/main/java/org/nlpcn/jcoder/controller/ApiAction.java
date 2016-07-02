@@ -2,6 +2,7 @@ package org.nlpcn.jcoder.controller;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.ExceptionUtil;
@@ -9,12 +10,15 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
 import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
 
 import com.alibaba.fastjson.JSONObject;
 
 @IocBean
+@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
 public class ApiAction {
 
 	private static final Logger LOG = Logger.getLogger(ApiAction.class);

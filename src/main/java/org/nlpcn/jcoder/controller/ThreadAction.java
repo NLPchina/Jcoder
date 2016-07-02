@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.domain.UserGroup;
+import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.TaskService;
