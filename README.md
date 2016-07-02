@@ -87,3 +87,4 @@ In this project you can fast publish your API and schedule task, dynamic edit yo
   ![https://raw.githubusercontent.com/wiki/NLPchina/Jcoder/3.png](https://raw.githubusercontent.com/wiki/NLPchina/Jcoder/3.png)
 
 
+* [创建中文分词服务例子](http://www.jianshu.com/p/1fcf5327107a)
