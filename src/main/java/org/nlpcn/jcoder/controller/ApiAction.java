@@ -1,11 +1,22 @@
 package org.nlpcn.jcoder.controller;
 
+import java.io.StringReader;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.apache.log4j.Logger;
+import org.nlpcn.jcoder.domain.ClassDoc;
+import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ExceptionUtil;
+import org.nlpcn.jcoder.util.JavaDocUtil;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -18,10 +29,57 @@ import org.nutz.mvc.annotation.Param;
 import com.alibaba.fastjson.JSONObject;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
 public class ApiAction {
 
 	private static final Logger LOG = Logger.getLogger(ApiAction.class);
+
+	/**
+	 * api
+	 * 
+	 * @return api info
+	 */
+	@At("/api")
+	@Ok("json")
+	public Object api() {
+		Collection<Task> list = TaskService.findTaskList(1);
+
+		Map<Long, List<Task>> collect = list.stream().collect(Collectors.groupingBy(t -> t.getGroupId()));
+
+		Map<Long, String> groupMap = new HashMap<>();
+
+		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
+
+		groups.forEach(g -> groupMap.put(g.getId(), g.getName()));
+
+		Map<String, List<ClassDoc>> apiInfo = new HashMap<>();
+
+		collect.forEach((k, v) -> {
+			apiInfo.put(groupMap.get(k), list.stream().map((t) -> {
+				boolean compile = false;
+
+				ClassDoc cd = null;
+				try {
+					new JavaRunner(t).compile();
+					compile = true;
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
+				try {
+					cd = JavaDocUtil.parse(new StringReader(t.getCode()));
+				} catch (Exception e) {
+					cd = new ClassDoc(t.getName());
+				}
+
+				cd.setStatus(compile);
+
+				return cd;
+
+			}).collect(Collectors.toList()));
+		});
+
+		return apiInfo;
+
+	}
 
 	/**
 	 * 执行测试用户的api
@@ -31,6 +89,7 @@ public class ApiAction {
 	 */
 	@At("/run_api")
 	@Ok("raw")
+	@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
 	public Object runApi(@Param("json") String jsonTask) {
 
 		String taskName = null;
@@ -77,6 +136,7 @@ public class ApiAction {
 	 */
 	@At("/stop_api")
 	@Ok("raw")
+	@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
 	public Object stopApi(@Param("json") String jsonTask) {
 
 		String taskName = null;
@@ -92,6 +152,6 @@ public class ApiAction {
 			LOG.error(taskName + " err " + ExceptionUtil.printStackTraceWithOutLine(e));
 			return StaticValue.ERR;
 		}
-
 	}
+
 }

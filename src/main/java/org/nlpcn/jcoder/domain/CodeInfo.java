@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
-import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.CodeRuntimeException;
+import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 
@@ -29,6 +29,8 @@ public class CodeInfo {
 	private Method defaultMethod;
 
 	private Ioc ioc;
+	
+	private ClassLoader classLoader ;
 
 	private boolean single = true;
 
@@ -36,8 +38,17 @@ public class CodeInfo {
 		return this.ioc != StaticValue.getUserIoc();
 	}
 
+	public boolean classLoaderChanged() {
+		return this.classLoader != DynamicEngine.getInstance().getParentClassLoader();
+	}
+
 	public void setioc(Ioc ioc) {
 		this.ioc = ioc;
+	}
+	
+
+	public void setClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
 	}
 
 	public Class<?> getClassz() {

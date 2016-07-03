@@ -44,13 +44,14 @@ public class JavaRunner {
 	 */
 	public JavaRunner compile() {
 
-		if (codeInfo.getClassz() != null) {
+		if (codeInfo.getClassz() != null || codeInfo.classLoaderChanged()) {
 			return this;
 		}
 
 		synchronized (codeInfo) {
 			if (codeInfo.getClassz() == null) {
 				try {
+
 					String code = task.getCode();
 
 					DynamicEngine de = DynamicEngine.getInstance();
@@ -62,6 +63,8 @@ public class JavaRunner {
 					if (className == null) {
 						throw new CodeException("not find className");
 					}
+
+					codeInfo.setClassLoader(de.getParentClassLoader());
 
 					Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
 
@@ -263,9 +266,10 @@ public class JavaRunner {
 
 	/**
 	 * to compile it and validate some function
-	 * @return it always return true 
-	 * @throws CodeException 
-	 * @throws IOException 
+	 * 
+	 * @return it always return true
+	 * @throws CodeException
+	 * @throws IOException
 	 */
 	public boolean check() throws CodeException, IOException {
 		String code = task.getCode();
@@ -316,8 +320,8 @@ public class JavaRunner {
 			sb.append(" Execute method name repetition");
 			throw new CodeRuntimeException(sb.toString());
 		}
-		
-		return true ;
+
+		return true;
 
 	}
 }

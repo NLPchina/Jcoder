@@ -161,4 +161,9 @@ public class DynamicEngine {
 		}
 		return this.javaCodeToClass(className, content);
 	}
+
+	public URLClassLoader getParentClassLoader() {
+		return parentClassLoader;
+	}
+	
 }
