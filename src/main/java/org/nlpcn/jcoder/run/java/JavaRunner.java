@@ -200,6 +200,9 @@ public class JavaRunner {
 
 			Mirror<?> mirror = Mirror.me(codeInfo.getClassz());
 
+			ClassLoader defaultClassLoader = Thread.currentThread().getContextClassLoader() ;
+			
+			Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
 			for (Field field : mirror.getFields()) {
 				Inject inject = field.getAnnotation(Inject.class);
 				if (inject != null) {
@@ -210,6 +213,8 @@ public class JavaRunner {
 					}
 				}
 			}
+			Thread.currentThread().setContextClassLoader(defaultClassLoader);
+			
 			if (codeInfo.isSingle()) {
 				codeInfo.setJavaObject(objInstance);
 			}

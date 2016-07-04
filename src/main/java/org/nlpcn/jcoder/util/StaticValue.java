@@ -133,7 +133,7 @@ public class StaticValue {
 
 	public static Ioc getUserIoc() {
 		if (userIoc == null) {
-			userIoc = new NutIoc(new JsonLoader(StaticValue.HOME + "/ioc.js"));
+			userIoc = new NutIoc(new JsonLoader(StaticValue.HOME + "/resource/ioc.js"));
 		}
 		return userIoc;
 	}

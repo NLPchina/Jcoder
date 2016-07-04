@@ -167,10 +167,6 @@ public class Bootstrap {
 							+ "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n" + "</project>");
 		}
 
-		File iocFile = new File(JcoderHome, "ioc.js"); // create ioc file
-		if (!iocFile.exists()) {
-			wirteFile(iocFile.getAbsolutePath(), "utf-8", "var ioc = {\n\n};");
-		}
 
 		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
 		if (!tmpDir.exists()) {
@@ -181,6 +177,11 @@ public class Bootstrap {
 																// dir
 		if (!resourceDir.exists()) {
 			resourceDir.mkdirs();
+		}
+		
+		File iocFile = new File(JcoderHome, "/resource/ioc.js"); // create ioc file
+		if (!iocFile.exists()) {
+			wirteFile(iocFile.getAbsolutePath(), "utf-8", "var ioc = {\n\n};");
 		}
 
 		createLog4jConfig(new File(resourceDir, "log4j.properties"), logPath);
