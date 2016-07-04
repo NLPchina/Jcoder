@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,7 +141,11 @@ public class JarAction {
 		jars.addAll(JarService.findSystemJars());
 		jars.addAll(JarService.findJars());
 
-		Collection<Task> taskList = StaticValue.systemDao.search(Task.class, Cnd.where("status", "=", 1)) ;
+		for (File file : new File("/Users/sunjian/Documents/workspace/jcoder_sdk/lib").listFiles()) {
+			jars.add(file);
+		}
+
+		Collection<Task> taskList = StaticValue.systemDao.search(Task.class, Cnd.where("status", "=", 1));
 
 		byte[] buffer = new byte[10240];
 
@@ -151,11 +156,17 @@ public class JarAction {
 
 		try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
 
+			Set<String> sets = new HashSet<>();
 			// 写jar包
 			for (File jar : jars) {
 				if (jar.isDirectory() || !jar.canRead() || !jar.getName().toLowerCase().endsWith(".jar")) {
 					continue;
 				}
+				String name = "jcoder_sdk/lib/" + jar.getName();
+				if (sets.contains(name)) {
+					continue;
+				}
+				sets.add(name);
 				out.putNextEntry(new ZipEntry("jcoder_sdk/lib/" + jar.getName()));
 				try (FileInputStream fis = new FileInputStream(jar)) {
 					while ((len = fis.read(buffer)) > 0) {
@@ -171,7 +182,7 @@ public class JarAction {
 					String code = task.getCode();
 					String path = JavaSourceUtil.findPackage(code);
 					String className = JavaSourceUtil.findClassName(code);
-					
+
 					out.putNextEntry(new ZipEntry("jcoder_sdk/src/" + path.replace(".", "/") + "/" + className + ".java"));
 					out.write(code.getBytes("utf-8"));
 				} catch (RuntimeException e) {
@@ -191,14 +202,14 @@ public class JarAction {
 						if (f.isDirectory() || !f.canRead() || f.isHidden()) {
 							return FileVisitResult.CONTINUE;
 						}
-						
+
 						String filePath = ("jcoder_sdk/" + f.getAbsolutePath().replace(basePath, "")).replace("\\", "/").replace("//", "/");
 
 						out.putNextEntry(new ZipEntry(filePath));
 
 						int len = 0;
 						byte[] buffer = new byte[10240];
-						
+
 						try (FileInputStream fis = new FileInputStream(f)) {
 							while ((len = fis.read(buffer)) > 0) {
 								out.write(buffer, 0, len);
@@ -298,5 +309,5 @@ public class JarAction {
 			return StaticValue.okMessage("upload " + fileNum + " file ok!");
 		}
 	}
-	
+
 }
