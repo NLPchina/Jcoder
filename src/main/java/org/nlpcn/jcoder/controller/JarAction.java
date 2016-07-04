@@ -37,6 +37,7 @@ import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.JsonResult;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.dao.Cnd;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -139,7 +140,7 @@ public class JarAction {
 		jars.addAll(JarService.findSystemJars());
 		jars.addAll(JarService.findJars());
 
-		Collection<Task> taskList = TaskService.findTaskList(null);
+		Collection<Task> taskList = StaticValue.systemDao.search(Task.class, Cnd.where("status", "=", 1)) ;
 
 		byte[] buffer = new byte[10240];
 

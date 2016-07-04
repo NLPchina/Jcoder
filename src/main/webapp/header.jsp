@@ -60,8 +60,6 @@
 					<span class="caret"></span>
 				</button>
 				<ul class="dropdown-menu">
-					<li><a href="${ctx }/down/sdk">DevSDK</a></li>
-					<li class="divider"></li>
 					<li><a href="${ctx }/loginOut">Logout</a></li>
 				</ul>
 				</c:if>

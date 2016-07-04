@@ -44,7 +44,7 @@ public class JavaRunner {
 	 */
 	public JavaRunner compile() {
 
-		if (codeInfo.getClassz() != null || codeInfo.classLoaderChanged()) {
+		if (codeInfo.getClassz() != null || !codeInfo.classLoaderChanged()) {
 			return this;
 		}
 
@@ -59,6 +59,8 @@ public class JavaRunner {
 					String pack = JavaSourceUtil.findPackage(code);
 
 					String className = JavaSourceUtil.findClassName(code);
+
+					LOG.info("to compile " + pack + "." + className);
 
 					if (className == null) {
 						throw new CodeException("not find className");
@@ -151,6 +153,7 @@ public class JavaRunner {
 
 	private void instanceWithOutIoc() {
 		try {
+			LOG.info("to instance with out ioc className : " + codeInfo.getClassz().getName());
 			this.objInstance = codeInfo.getClassz().newInstance();
 			if (codeInfo.isSingle()) {
 				codeInfo.setJavaObject(objInstance);
@@ -187,6 +190,7 @@ public class JavaRunner {
 
 	private void instanceWithIoc() {
 		try {
+			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
 
 			objInstance = codeInfo.getClassz().newInstance();
 
