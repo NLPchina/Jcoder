@@ -1,15 +1,11 @@
 package org.nlpcn.jcoder.controller;
 
 import java.io.StringReader;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.ClassDoc;
-import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -25,6 +21,7 @@ import org.nutz.mvc.annotation.By;
 import org.nutz.mvc.annotation.Filters;
 import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.filter.CrossOriginFilter;
 
 import com.alibaba.fastjson.JSONObject;
 
@@ -40,7 +37,7 @@ public class ApiAction {
 	 */
 	@At("/api")
 	@Ok("json")
-
+	@Filters(@By(type = CrossOriginFilter.class))
 	public Object api(@Param(value = "type", df = "1") int type) {
 
 		List<ClassDoc> result = TaskService.findTaskList(type).stream().map((t) -> {
