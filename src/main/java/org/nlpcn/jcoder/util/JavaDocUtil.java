@@ -3,8 +3,10 @@ package org.nlpcn.jcoder.util;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +14,8 @@ import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc.ParamDoc;
+import org.nutz.mvc.annotation.DELETE;
+import org.nutz.mvc.annotation.GET;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
@@ -22,6 +26,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.google.common.collect.Sets;
 
 /**
  * 根据java文件解析javadoc
@@ -69,6 +74,8 @@ public class JavaDocUtil {
 
 	}
 
+	private static final Set<String> DEFAULT_METHODS = Sets.newHashSet("GET", "POST", "PUT", "DELETE");
+
 	private static void explainMethod(ClassDoc cd, MethodDeclaration node) {
 
 		MethodDeclaration method = (MethodDeclaration) node;
@@ -79,6 +86,8 @@ public class JavaDocUtil {
 
 		boolean defaultExecute = false;
 
+		Set<String> methods = new HashSet<>();
+
 		for (AnnotationExpr an : annotations) {
 			String name = an.getName().getName();
 			if (name.equals("Execute")) {
@@ -88,7 +97,13 @@ public class JavaDocUtil {
 				flag = true;
 				defaultExecute = true;
 				break;
+			} else if (name.equals("GET") || name.equals("POST") || name.equals("PUT") || name.equals("DELETE")) {
+				methods.add(name);
 			}
+		}
+
+		if (methods.size() == 0) {
+			methods.addAll(DEFAULT_METHODS);
 		}
 
 		if (!flag) {
@@ -96,6 +111,8 @@ public class JavaDocUtil {
 		}
 
 		MethodDoc md = (MethodDoc) cd.createSubDoc(method.getName());
+
+		md.setMethods(methods);
 
 		md.setDefaultExecute(defaultExecute);
 
@@ -128,7 +145,7 @@ public class JavaDocUtil {
 			ParamDoc pd = (ParamDoc) md.createSubDoc(name);
 
 			pd.setFieldName(fieldName);
-			
+
 			pd.setType(param.getType().toString());
 
 			String content = paramMap.get(fieldName);

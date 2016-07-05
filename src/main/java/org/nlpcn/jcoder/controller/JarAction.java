@@ -141,10 +141,6 @@ public class JarAction {
 		jars.addAll(JarService.findSystemJars());
 		jars.addAll(JarService.findJars());
 
-		for (File file : new File("/Users/sunjian/Documents/workspace/jcoder_sdk/lib").listFiles()) {
-			jars.add(file);
-		}
-
 		Collection<Task> taskList = StaticValue.systemDao.search(Task.class, Cnd.where("status", "=", 1));
 
 		byte[] buffer = new byte[10240];

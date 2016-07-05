@@ -2,8 +2,10 @@ package org.nlpcn.jcoder.domain;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * api 的信息类
@@ -22,6 +24,8 @@ public class ClassDoc extends ApiDoc {
 
 	private boolean status = true;
 
+	private String description;
+
 	public boolean isSingle() {
 		return single;
 	}
@@ -38,6 +42,14 @@ public class ClassDoc extends ApiDoc {
 		this.status = status;
 	}
 
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
 	public class MethodDoc extends ApiDoc {
 		public MethodDoc(String name) {
 			super(name);
@@ -46,6 +58,8 @@ public class ClassDoc extends ApiDoc {
 		private boolean defaultExecute;
 
 		private String retrunContent;
+
+		private Set<String> methods;
 
 		public boolean isDefaultExecute() {
 			return defaultExecute;
@@ -61,6 +75,26 @@ public class ClassDoc extends ApiDoc {
 
 		public void setRetrunContent(String retrunContent) {
 			this.retrunContent = retrunContent;
+		}
+
+		public Set<String> getMethods() {
+			if (methods == null) {
+				Set<String> temp = new HashSet<>();
+				temp.add("*");
+				return temp;
+			}
+			return methods;
+		}
+
+		public void setMethods(Set<String> methods) {
+			this.methods = methods;
+		}
+
+		public void addMethod(String method) {
+			if (methods == null) {
+				methods = new HashSet<>();
+			}
+			methods.add(method);
 		}
 
 		public class ParamDoc extends ApiDoc {

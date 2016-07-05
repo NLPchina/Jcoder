@@ -40,44 +40,29 @@ public class ApiAction {
 	 */
 	@At("/api")
 	@Ok("json")
-	public Object api() {
-		Collection<Task> list = TaskService.findTaskList(1);
 
-		Map<Long, List<Task>> collect = list.stream().collect(Collectors.groupingBy(t -> t.getGroupId()));
+	public Object api(@Param(value = "type", df = "1") int type) {
 
-		Map<Long, String> groupMap = new HashMap<>();
+		List<ClassDoc> result = TaskService.findTaskList(type).stream().map((t) -> {
+			boolean compile = false;
+			ClassDoc cd = null;
+			try {
+				new JavaRunner(t).compile();
+				compile = true;
+			} catch (Exception e1) {
+				LOG.error(e1);
+			}
+			try {
+				cd = JavaDocUtil.parse(new StringReader(t.getCode()));
+			} catch (Exception e) {
+				cd = new ClassDoc(t.getName());
+			}
+			cd.setStatus(compile);
+			cd.setDescription(t.getDescription());
+			return cd;
+		}).collect(Collectors.toList());
 
-		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
-
-		groups.forEach(g -> groupMap.put(g.getId(), g.getName()));
-
-		Map<String, List<ClassDoc>> apiInfo = new HashMap<>();
-
-		collect.forEach((k, v) -> {
-			apiInfo.put(groupMap.get(k), list.stream().map((t) -> {
-				boolean compile = false;
-
-				ClassDoc cd = null;
-				try {
-					new JavaRunner(t).compile();
-					compile = true;
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-				try {
-					cd = JavaDocUtil.parse(new StringReader(t.getCode()));
-				} catch (Exception e) {
-					cd = new ClassDoc(t.getName());
-				}
-
-				cd.setStatus(compile);
-
-				return cd;
-
-			}).collect(Collectors.toList()));
-		});
-
-		return apiInfo;
+		return result;
 
 	}
 
