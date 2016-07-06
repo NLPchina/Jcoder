@@ -197,12 +197,6 @@ public class StaticValue {
 		}
 	}
 
-	/**
-	 * 加载IOC
-	 */
-	public static void initIOC() {
-		NutzUtil.init(App.class);
-	}
 
 	/**
 	 * md5 code

@@ -23,6 +23,8 @@ public class ClassDoc extends ApiDoc {
 	private boolean single = true;
 
 	private boolean status = true;
+	
+	private String version ;
 
 	private String description;
 
@@ -32,6 +34,14 @@ public class ClassDoc extends ApiDoc {
 
 	public void setSingle(boolean single) {
 		this.single = single;
+	}
+	
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 	public boolean isStatus() {
@@ -60,7 +70,7 @@ public class ClassDoc extends ApiDoc {
 		private String retrunContent;
 
 		private Set<String> methods;
-
+		
 		public boolean isDefaultExecute() {
 			return defaultExecute;
 		}

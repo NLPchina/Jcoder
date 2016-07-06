@@ -35,7 +35,13 @@ public class ApiFailProcessor extends ViewProcessor {
 				cause = temp;
 			}
 
-			view.render(ac.getRequest(), ac.getResponse(), StaticValue.errMessage(cause.getMessage()));
+			String message = cause.getMessage();
+
+			if (message == null) {
+				message = "null is sex , sex is null";
+			}
+
+			view.render(ac.getRequest(), ac.getResponse(), StaticValue.errMessage(message));
 		}
 
 		doNext(ac);

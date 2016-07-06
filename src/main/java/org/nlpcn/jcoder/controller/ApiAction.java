@@ -55,6 +55,7 @@ public class ApiAction {
 				cd = new ClassDoc(t.getName());
 			}
 			cd.setStatus(compile);
+			cd.setVersion(t.getVersion());
 			cd.setDescription(t.getDescription());
 			return cd;
 		}).collect(Collectors.toList());

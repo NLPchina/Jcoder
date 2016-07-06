@@ -11,9 +11,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
-import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.Context;
