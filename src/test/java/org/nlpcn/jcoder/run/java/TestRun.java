@@ -1,22 +1,17 @@
 package org.nlpcn.jcoder.run.java;
 
 import org.apache.log4j.Logger;
-import org.nlpcn.jcoder.domain.User;
-import org.nlpcn.jcoder.run.annotation.Execute;
+import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nutz.ioc.loader.annotation.Inject;
 
 public class TestRun {
 
-	@Inject
-	private Logger laog;
+  @Inject
+  private Logger log;
 
-	@Execute
-	public Object defaultTest(String name) throws InterruptedException {
-		User user = new User();
-		user.setName("ansj");
-		user.setPassword("fuck");
-		user.setId(100L);
-		return user;
-	}
+  @DefaultExecute
+  public String defaultTest(String name) throws InterruptedException {
+      return "Hello Jcoder " + name;
+  }
 
 }
