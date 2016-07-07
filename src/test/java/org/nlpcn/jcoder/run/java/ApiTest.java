@@ -22,9 +22,9 @@ public class ApiTest {
 	 * @throws InterruptedException 线程停止时抛出
 	 */
 	@DefaultExecute
-	public String defaultTest(String name) throws InterruptedException {
-
-		return StaticValue.okMessage("hello " + name);
+	public void defaultTest(String name) throws InterruptedException {
+		Integer a = null  ;
+		a++ ;
 	}
 
 }

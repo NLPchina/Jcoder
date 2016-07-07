@@ -1,25 +1,12 @@
 package org.nlpcn.jcoder.run.java;
 
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.ToolProvider;
-
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.nlpcn.jcoder.run.CodeException;
 

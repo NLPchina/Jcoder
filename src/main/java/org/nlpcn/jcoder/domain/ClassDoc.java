@@ -2,8 +2,10 @@ package org.nlpcn.jcoder.domain;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * api 的信息类
@@ -21,6 +23,10 @@ public class ClassDoc extends ApiDoc {
 	private boolean single = true;
 
 	private boolean status = true;
+	
+	private String version ;
+
+	private String description;
 
 	public boolean isSingle() {
 		return single;
@@ -29,6 +35,14 @@ public class ClassDoc extends ApiDoc {
 	public void setSingle(boolean single) {
 		this.single = single;
 	}
+	
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
+	}
 
 	public boolean isStatus() {
 		return status;
@@ -36,6 +50,14 @@ public class ClassDoc extends ApiDoc {
 
 	public void setStatus(boolean status) {
 		this.status = status;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	public class MethodDoc extends ApiDoc {
@@ -47,6 +69,8 @@ public class ClassDoc extends ApiDoc {
 
 		private String retrunContent;
 
+		private Set<String> methods;
+		
 		public boolean isDefaultExecute() {
 			return defaultExecute;
 		}
@@ -61,6 +85,26 @@ public class ClassDoc extends ApiDoc {
 
 		public void setRetrunContent(String retrunContent) {
 			this.retrunContent = retrunContent;
+		}
+
+		public Set<String> getMethods() {
+			if (methods == null) {
+				Set<String> temp = new HashSet<>();
+				temp.add("*");
+				return temp;
+			}
+			return methods;
+		}
+
+		public void setMethods(Set<String> methods) {
+			this.methods = methods;
+		}
+
+		public void addMethod(String method) {
+			if (methods == null) {
+				methods = new HashSet<>();
+			}
+			methods.add(method);
 		}
 
 		public class ParamDoc extends ApiDoc {

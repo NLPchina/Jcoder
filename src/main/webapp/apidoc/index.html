@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html ng-app="apiApp" ng-controller="apiCtrl">
+<head>
+	<title>apiDoc: apidoc-example - 0.3.0</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+	<link href="vendor/prettify.css" rel="stylesheet" media="screen">
+	<link href="vendor/style.css" rel="stylesheet" media="screen, print">
+	<script type="text/javascript" src="vendor/jquery.min.js"></script>
+	<script type="text/javascript" src="vendor/angular.min.js"></script>
+	<script type="text/javascript">
+	$(function(){
+		
+		// Content-Scroll on Navigation click.
+	    $('.sidenav1').find('a').on('click', function(e) {
+	        e.preventDefault();
+	        var id = $(this).attr('href');
+	        if ($(id).length > 0)
+	            $('html,body').animate({ scrollTop: parseInt($(id).offset().top) }, 400);
+	        window.location.hash = $(this).attr('href');
+	    });
+		
+	});
+	
+	</script>
+	<style>
+	
+	</style>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div id="sidenav" class="span2">
+		<nav id="scrollingNav">
+		  <ul class="sidenav nav nav-list">
+	        <li class="{{x.isGroup?'nav-header':''}} {{x.isActive?'active':''}}" 
+	        	ng-repeat="x in nav_datas" ng-click="clickNav(x)">
+	        	<a href="{{x.href}}">{{x.name}}</a>
+	        </li>
+		  </ul>
+		</nav>
+	</div>
+	<div id="content">
+		<div id="project">
+		  <div class="pull-left">
+		    <h1>Jcoder Api Doc</h1>
+		  </div>
+		  <div class="clearfix"></div>
+		</div>
+		<div id="header">
+			<div id="api-_"><h2 id="welcome-to-apidoc">Welcome to Jcoder Api Doc</h2>
+				<p>Please visit the full documentation.</p>
+			</div>
+		</div>
+		<div id="sections">
+
+<section id="{{x.name}}" ng-repeat="x in datas">
+	<h1>{{x.name}}</h1>
+	<div id="{{x.name}}_{{y.name}}" ng-repeat="y in x.sub">
+		<article id="api-User-GetUser-0.3.0" data-group="User" data-name="GetUser" data-version="0.3.0">
+		    <div class="pull-left">
+		      <h1>{{y.name}} - {{y.defaultExecute}}</h1>
+		    </div>
+		    <div class="clearfix"></div>
+		
+		      <p></p><p>{{y.content}}</p> <p></p>
+		
+			<span class="method {{m|lowercase}}" ng-repeat="m in y.methods">{{m}}</span>
+			
+		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{ctx}}/api/{{x.name}}/{{y.name}}</span></code></pre>
+		
+		
+		      <h2 ng-show="y.sub.length>0">Parameter</h2>
+		      <table ng-show="y.sub.length>0">
+		        <thead>
+		          <tr>
+		            <th style="width: 30%">Field</th>
+		            <th style="width: 10%">Type</th>
+		            <th style="width: 70%">Description</th>
+		          </tr>
+		        </thead>
+		        <tbody>
+		          <tr ng-repeat="s in y.sub">
+		            <td class="code">{{s.name}}</td>
+		            <td>{{s.type}}</td>
+		            <td>{{s.content}}</td>
+		          </tr>
+		        </tbody>
+		      </table>
+		      
+		      
+		</article>
+	</div>
+</section>
+		</div>
+		<div id="generator">
+			<div class="content">
+		        Generated with <a href="#">Jcoder Api Doc</a> 1.0.0 - 2016‎/‎7/‎5 18:34:17
+		    </div>
+		</div>
+	</div>
+  </div>
+</div>
+
+
+<script type="text/javascript" src="vendor/main.js"></script>
+</body></html>
