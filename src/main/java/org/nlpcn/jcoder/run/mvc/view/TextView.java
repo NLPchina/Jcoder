@@ -39,6 +39,11 @@ public class TextView implements View {
 		if (obj == null) {
 			obj = result;
 		}
+
+		if (obj == null) {
+			return;
+		}
+
 		resp.getWriter().write(toString(obj));
 		resp.flushBuffer();
 	}

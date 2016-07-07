@@ -14,8 +14,6 @@ import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc.ParamDoc;
-import org.nutz.mvc.annotation.DELETE;
-import org.nutz.mvc.annotation.GET;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;

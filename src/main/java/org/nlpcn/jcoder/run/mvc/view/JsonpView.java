@@ -37,6 +37,11 @@ public class JsonpView implements View {
 		if (obj == null) {
 			obj = result;
 		}
+		
+		if(obj==null){
+			return ;
+		}
+		
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(methodName);
