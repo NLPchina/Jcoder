@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -12,9 +11,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
+import org.nlpcn.jcoder.run.mvc.view.JsonView;
+import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.lang.Strings;
-import org.nutz.lang.util.Context;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
 
@@ -69,47 +68,24 @@ public class JcoderFilter extends NutFilter {
 	private void _doFilter(final FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		Mvcs.setIoc(StaticValue.getUserIoc()); // reset ioc
 
-		ServletContext prCtx = Mvcs.getServletContext();
-
 		Mvcs.setServletContext(sc);
 
-		String matchUrl = request.getServletPath() + Strings.sBlank(request.getPathInfo());
-
-		String markKey = "nutz_ctx_mark";
-		Integer mark = (Integer) request.getAttribute(markKey);
-		if (mark != null) {
-			request.setAttribute(markKey, mark + 1);
-		} else {
-			request.setAttribute(markKey, 0);
-		}
-
-		String preName = Mvcs.getName();
-		Context preContext = Mvcs.resetALL();
 		try {
-			if (sp != null)
-				request = sp.filter(request, response, Mvcs.getServletContext());
+
 			Mvcs.set(this.selfName, request, response);
-			if (!isExclusion(matchUrl)) {
-				if (apiHandler.handle(request, response))
-					return;
-			}
-			nextChain(request, response, chain);
-		} finally {
-			// 仅当forward/incule时,才需要恢复之前设置
-			if (mark != null) {
-				Mvcs.ctx().reqCtx(preContext);
-				Mvcs.setServletContext(prCtx);
-				Mvcs.set(preName, request, response);
-				if (mark == 0) {
-					request.removeAttribute(markKey);
-				} else {
-					request.setAttribute(markKey, mark - 1);
+
+			if (!apiHandler.handle(request, response)) {
+				try {
+					new JsonView(ApiException.NotFound, "api not found ! may be it not actived!").render(request, response, null);
+				} catch (Throwable e) {
+					nextChain(request, response, chain);
 				}
-			} else {
-				Mvcs.set(null, null, null);
-				Mvcs.ctx().removeReqCtx();
-				Mvcs.setServletContext(null);
 			}
+
+		} finally {
+			Mvcs.set(null, null, null);
+			Mvcs.ctx().removeReqCtx();
+			Mvcs.setServletContext(null);
 		}
 	}
 
