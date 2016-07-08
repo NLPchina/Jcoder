@@ -21,7 +21,6 @@ public class ApiActionChainMaker implements ActionChainMaker {
 		List<Processor> list = new ArrayList<>();
 		list.add(init(config, ai, new EncodingProcessor())); // 设置编码信息@Encoding
 		list.add(init(config, ai, new ApiModuleProcessor())); // 获取入口类的对象,从ioc或直接new
-		list.add(init(config, ai, new ApiCrossOriginProcessor()));//增加跨域头
 		list.add(init(config, ai, new ActionFiltersProcessor())); // 处理@Filters
 		list.add(init(config, ai, new ApiAdaptorProcessor())); // 处理@Adaptor
 		list.add(init(config, ai, new ApiMethodInvokeProcessor())); // 执行入口方法

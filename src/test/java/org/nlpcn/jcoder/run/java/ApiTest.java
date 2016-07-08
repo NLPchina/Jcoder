@@ -2,7 +2,7 @@ package org.nlpcn.jcoder.run.java;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
-import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.run.annotation.Single;
 import org.nutz.ioc.loader.annotation.Inject;
 
 /**
@@ -10,7 +10,9 @@ import org.nutz.ioc.loader.annotation.Inject;
  * @author Ansj
  *
  */
+@Single(false)
 public class ApiTest {
+	
 
 	@Inject
 	private Logger log;
@@ -23,7 +25,7 @@ public class ApiTest {
 	 */
 	@DefaultExecute
 	public void defaultTest(String name) throws InterruptedException {
-		Integer a = null  ;
+		Integer a = 0  ;
 		a++ ;
 	}
 

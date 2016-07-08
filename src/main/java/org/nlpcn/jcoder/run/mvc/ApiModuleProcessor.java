@@ -26,7 +26,7 @@ public class ApiModuleProcessor extends AbstractProcessor {
 	public void init(NutConfig config, ActionInfo ai) throws Throwable {
 		Task task = TaskService.findTaskByCache(ai.getModuleType().getSimpleName());
 		method = ai.getMethod();
-		moduleObj = new JavaRunner(task).compile().instanceObjByIoc().getTask();
+		moduleObj = new JavaRunner(task).compile().instance().getTask();
 	}
 
 	public void process(ActionContext ac) throws Throwable {

@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.Restful;
 import org.nutz.mvc.View;
 
 import com.alibaba.fastjson.JSONObject;
@@ -33,7 +34,13 @@ public class TextView implements View {
 
 	@Override
 	public void render(HttpServletRequest req, HttpServletResponse resp, Object obj) throws Throwable {
-		resp.setStatus(httpStatus);
+
+		if (obj instanceof Restful) {
+			resp.setStatus(((Restful) obj).getCode());
+		} else {
+			resp.setStatus(httpStatus);
+		}
+
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("text/html");
 		if (obj == null) {

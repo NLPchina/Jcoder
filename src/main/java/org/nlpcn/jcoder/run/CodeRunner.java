@@ -8,7 +8,7 @@ public class CodeRunner {
 	public static Object run(Task task) throws Exception {
 		switch (task.getCodeType()) {
 		case "java":
-			new JavaRunner(task).compile().instanceObjByIoc().execute() ;
+			new JavaRunner(task).compile().instance().execute() ;
 			return null ;
 		default:
 			break;

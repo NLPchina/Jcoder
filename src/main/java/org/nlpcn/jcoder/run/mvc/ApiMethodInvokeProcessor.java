@@ -25,7 +25,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		try {
 			threadName = module.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@" + al.getAndIncrement();
 			ThreadManager.add2ActionTask(threadName, Thread.currentThread());
-			Object result = new JavaRunner(module).compile().instanceObjByIoc().execute(method, args);
+			Object result = executeByCache(module, method, args);
 			ac.setMethodReturn(result);
 			doNext(ac);
 		} catch (IllegalAccessException e) {
@@ -37,5 +37,9 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		} finally {
 			ThreadManager.removeActionIfOver(threadName);
 		}
+	}
+
+	private Object executeByCache(Task module, Method method, Object[] args) {
+		return new JavaRunner(module).compile().instance().execute(method, args);
 	}
 }

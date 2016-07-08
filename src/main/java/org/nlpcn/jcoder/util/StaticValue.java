@@ -197,7 +197,6 @@ public class StaticValue {
 		}
 	}
 
-
 	/**
 	 * md5 code
 	 * 

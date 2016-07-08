@@ -4,11 +4,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.Restful;
 import org.nutz.mvc.View;
 
 import com.alibaba.fastjson.JSONObject;
 
 public class JsonpView implements View {
+
+	private static final String ORIGIN = "*";
+	private static final String METHODS = "get, post, put, delete, options";
+	private static final String HEADERS = "origin, content-type, accept";
+	private static final String CREDENTIALS = "true";
 
 	private int httpStatus = ApiException.OK;
 	private Object result;
@@ -31,17 +37,26 @@ public class JsonpView implements View {
 
 	@Override
 	public void render(HttpServletRequest req, HttpServletResponse resp, Object obj) throws Throwable {
-		resp.setStatus(httpStatus);
+		if (obj instanceof Restful) {
+			resp.setStatus(((Restful) obj).getCode());
+		} else {
+			resp.setStatus(httpStatus);
+		}
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("text/javascript");
+		// crossorigin
+		resp.addHeader("Access-Control-Allow-Origin", ORIGIN);
+		resp.addHeader("Access-Control-Allow-Methods", METHODS);
+		resp.addHeader("Access-Control-Allow-Headers", HEADERS);
+		resp.addHeader("Access-Control-Allow-Credentials", CREDENTIALS);
 		if (obj == null) {
 			obj = result;
 		}
-		
-		if(obj==null){
-			return ;
+
+		if (obj == null) {
+			return;
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(methodName);
