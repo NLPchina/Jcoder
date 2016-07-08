@@ -43,7 +43,7 @@
 							<div class="box-content">
 								<div class="form-group has-success col-md-1">
 									<div class="controls">
-										<label class="control-label" for="inputWarning1">Task Type</label>
+										<label class="control-label" for="inputWarning1">Type</label>
 										<select id='task_type' name='task.type' class="form-control">
 											<option value=1 ${task.type==1?"selected":""}>API</option>
 											<option value=2 ${task.type==2?"selected":""}>Cron</option>
