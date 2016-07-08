@@ -22,6 +22,10 @@ public class ApiException extends ExecutionException {
 	 * 不允许
 	 */
 	public static final int Forbidden = 403;
+	/**
+	 * 不允许
+	 */
+	public static final int NotFound = 404;
 
 	/**
 	 * 服务器繁忙

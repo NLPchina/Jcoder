@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.run.java;
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Single;
+import org.nlpcn.jcoder.util.Testing;
 import org.nutz.ioc.loader.annotation.Inject;
 
 /**
@@ -12,7 +13,6 @@ import org.nutz.ioc.loader.annotation.Inject;
  */
 @Single(false)
 public class ApiTest {
-	
 
 	@Inject
 	private Logger log;
@@ -29,4 +29,7 @@ public class ApiTest {
 		a++ ;
 	}
 
+	public static void main(String[] args) throws InterruptedException, Exception {
+		Testing.instance(ApiTest.class).defaultTest("中国");
+	}
 }
