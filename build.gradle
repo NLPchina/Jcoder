@@ -37,7 +37,7 @@ dependencies {
     compile 'javax.servlet:jstl:1.2'
 	compile 'javax.inject:javax.inject:1'
 	compile 'org.atmosphere:atmosphere-runtime:2.4.4'
-	compile 'io.netty:netty-all:4.1.2.Final'
+	//compile 'io.netty:netty-all:4.1.2.Final'
 	
  	
  	

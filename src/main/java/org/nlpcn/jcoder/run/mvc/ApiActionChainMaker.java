@@ -3,6 +3,11 @@ package org.nlpcn.jcoder.run.mvc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.nlpcn.jcoder.run.mvc.processor.ApiAdaptorProcessor;
+import org.nlpcn.jcoder.run.mvc.processor.ApiFailProcessor;
+import org.nlpcn.jcoder.run.mvc.processor.ApiMethodInvokeProcessor;
+import org.nlpcn.jcoder.run.mvc.processor.ApiModuleProcessor;
+import org.nlpcn.jcoder.run.mvc.processor.ApiViewProcessor;
 import org.nutz.mvc.ActionChain;
 import org.nutz.mvc.ActionChainMaker;
 import org.nutz.mvc.ActionInfo;

@@ -1,5 +1,6 @@
-package org.nlpcn.jcoder.run.mvc;
+package org.nlpcn.jcoder.run.mvc.processor;
 
+import org.nlpcn.jcoder.run.mvc.ApiPairAdaptor;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.HttpAdaptor;
