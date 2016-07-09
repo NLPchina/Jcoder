@@ -30,6 +30,8 @@ public class StaticValue {
 	public static final File HOME_FILE = new File(HOME);
 	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
+	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
+
 
 	private static Ioc systemIoc;
 

@@ -29,6 +29,8 @@ public class Bootstrap {
 				String[] dim = arg.split("=");
 				parseFile(dim[1]);
 				break;
+			}else{
+				System.err.println("are you sure ? -f not -f=file ! it not can use!");
 			}
 		}
 
@@ -48,6 +50,8 @@ public class Bootstrap {
 						ENV_MAP.put(PREFIX + "maven", dim[1]);
 					}
 				}
+			}else{
+				System.err.println("arg : "+arg +" can use ! not find = over it ");
 			}
 		}
 
@@ -61,8 +65,9 @@ public class Bootstrap {
 		System.setProperty("java.awt.headless", "true"); //support kaptcha
 		
 		Server server = new Server(port);
-
+		
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
+		
 		URL location = domain.getCodeSource().getLocation();
 
 		WebAppContext context = new WebAppContext();
@@ -87,11 +92,9 @@ public class Bootstrap {
 		} else {
 			context.setWar("src/main/webapp");
 		}
-
-		server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", "-1");
-		context.setMaxFormContentSize(-1);
+		
 		server.setHandler(context);
-		server.setStopAtShutdown(true);
+		
 		server.start();
 		server.join();
 	}
@@ -171,6 +174,11 @@ public class Bootstrap {
 		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
 		if (!tmpDir.exists()) {
 			tmpDir.mkdirs();
+		}
+		
+		File pluginDir = new File(JcoderHome, "plugins"); // create tmp dir
+		if (!pluginDir.exists()) {
+			pluginDir.mkdirs();
 		}
 
 		File resourceDir = new File(JcoderHome, "resource"); // create resource
