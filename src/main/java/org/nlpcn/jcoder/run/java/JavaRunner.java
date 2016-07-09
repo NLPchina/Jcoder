@@ -133,6 +133,7 @@ public class JavaRunner {
 	public JavaRunner instance() {
 
 		if (!codeInfo.isSingle()) {// if not single .it only instance by run
+			_instance();
 			return this;
 		}
 
@@ -205,17 +206,7 @@ public class JavaRunner {
 	 */
 	public Object execute() {
 		try {
-
-			Object obj = null;
-
-			if (codeInfo.isSingle()) {
-				obj = this.codeInfo.getJavaObject();
-			} else {
-				LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
-				obj = this.codeInfo.getClassz().newInstance();
-			}
-
-			Object invoke = this.codeInfo.getDefaultMethod().invoke(obj, DEFAULT_ARG);
+			Object invoke = this.codeInfo.getDefaultMethod().invoke(objInstance, DEFAULT_ARG);
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
@@ -235,17 +226,7 @@ public class JavaRunner {
 	 */
 	public Object execute(Method method, Object[] args) {
 		try {
-
-			Object obj = null;
-
-			if (codeInfo.isSingle()) {
-				obj = this.codeInfo.getJavaObject();
-			} else {
-				LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
-				obj = this.codeInfo.getClassz().newInstance();
-			}
-
-			Object invoke = method.invoke(obj, args);
+			Object invoke = method.invoke(objInstance, args);
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {

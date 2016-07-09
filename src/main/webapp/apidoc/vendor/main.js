@@ -43,6 +43,4 @@ apiApp.controller('apiCtrl', function($scope, $http,$location) {
         window.location.hash = x.href;
 	};
 	
-	
-	
 });
