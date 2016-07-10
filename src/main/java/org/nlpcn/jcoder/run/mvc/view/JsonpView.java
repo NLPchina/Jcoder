@@ -38,7 +38,7 @@ public class JsonpView implements View {
 	@Override
 	public void render(HttpServletRequest req, HttpServletResponse resp, Object obj) throws Throwable {
 		if (obj instanceof Restful) {
-			resp.setStatus(((Restful) obj).getCode());
+			resp.setStatus(((Restful) obj).code());
 		} else {
 			resp.setStatus(httpStatus);
 		}

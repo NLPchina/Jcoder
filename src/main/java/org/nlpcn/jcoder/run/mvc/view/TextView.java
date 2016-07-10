@@ -36,7 +36,7 @@ public class TextView implements View {
 	public void render(HttpServletRequest req, HttpServletResponse resp, Object obj) throws Throwable {
 
 		if (obj instanceof Restful) {
-			resp.setStatus(((Restful) obj).getCode());
+			resp.setStatus(((Restful) obj).code());
 		} else {
 			resp.setStatus(httpStatus);
 		}
@@ -51,15 +51,8 @@ public class TextView implements View {
 			return;
 		}
 
-		resp.getWriter().write(toString(obj));
+		resp.getWriter().write(obj.toString());
 		resp.flushBuffer();
-	}
-
-	public String toString(Object result) {
-		if (result instanceof String) {
-			return (String) result;
-		}
-		return JSONObject.toJSONString(result);
 	}
 
 }

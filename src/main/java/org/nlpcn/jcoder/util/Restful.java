@@ -1,5 +1,7 @@
 package org.nlpcn.jcoder.util;
 
+import com.alibaba.fastjson.JSONObject;
+
 public class Restful {
 
 	private boolean ok = true;
@@ -34,7 +36,7 @@ public class Restful {
 		this.obj = obj;
 	}
 
-	public int getCode() {
+	public int code() {
 		return code;
 	}
 
@@ -62,6 +64,13 @@ public class Restful {
 
 	public Restful(Object obj) {
 		this.obj = obj;
+	}
+	
+	
+
+	@Override
+	public String toString() {
+		return  JSONObject.toJSONString(this);
 	}
 
 	public static Restful instance(boolean ok, String message, Object obj, int code) {
