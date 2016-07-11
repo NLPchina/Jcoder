@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.Restful;
 import org.nutz.mvc.View;
 
 import com.alibaba.fastjson.JSONObject;
@@ -16,6 +17,11 @@ import com.alibaba.fastjson.JSONObject;
  */
 public class JsonView implements View {
 
+	private static final String ORIGIN = "*";
+	private static final String METHODS = "get, post, put, delete, options";
+	private static final String HEADERS = "origin, content-type, accept";
+	private static final String CREDENTIALS = "true";
+
 	private int httpStatus = ApiException.OK;
 	private Object result;
 
@@ -27,23 +33,34 @@ public class JsonView implements View {
 	public JsonView(Object result) {
 		this.result = result;
 	}
-	
+
 	public JsonView() {
 	}
 
 	@Override
 	public void render(HttpServletRequest req, HttpServletResponse resp, Object obj) throws Throwable {
-		resp.setStatus(httpStatus);
+		if (obj instanceof Restful) {
+			resp.setStatus(((Restful) obj).code());
+		} else {
+			resp.setStatus(httpStatus);
+		}
+
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("application/json");
+		// crossorigin
+		resp.addHeader("Access-Control-Allow-Origin", ORIGIN);
+		resp.addHeader("Access-Control-Allow-Methods", METHODS);
+		resp.addHeader("Access-Control-Allow-Headers", HEADERS);
+		resp.addHeader("Access-Control-Allow-Credentials", CREDENTIALS);
+
 		if (obj == null) {
 			obj = result;
 		}
-		
-		if(obj==null){
-			return ;
+
+		if (obj == null) {
+			return;
 		}
-		
+
 		resp.getWriter().write(toString(obj));
 		resp.flushBuffer();
 	}

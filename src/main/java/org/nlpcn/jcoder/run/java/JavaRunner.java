@@ -126,69 +126,32 @@ public class JavaRunner {
 	}
 
 	/**
-	 * instance objcet if object is created , it nothing to do !
-	 * 
-	 * @return
-	 * @throws CodeException
-	 */
-	public JavaRunner instanceObj() {
-
-		if (codeInfo.isSingle() && codeInfo.getJavaObject() != null) {
-			objInstance = codeInfo.getJavaObject();
-			return this;
-		}
-
-		if (codeInfo.isSingle()) {
-			synchronized (codeInfo) {
-				if (codeInfo.getJavaObject() == null) {
-					instanceWithOutIoc();
-				}
-			}
-		} else {
-			instanceWithOutIoc();
-		}
-
-		return this;
-	}
-
-	private void instanceWithOutIoc() {
-		try {
-			LOG.info("to instance with out ioc className : " + codeInfo.getClassz().getName());
-			this.objInstance = codeInfo.getClassz().newInstance();
-			if (codeInfo.isSingle()) {
-				codeInfo.setJavaObject(objInstance);
-			}
-		} catch (InstantiationException | IllegalAccessException e) {
-			e.printStackTrace();
-			throw new CodeRuntimeException(e);
-		}
-	}
-
-	/**
 	 * instance and inject objcet if object is created , it nothing to do !
 	 * 
 	 * @return
 	 */
-	public JavaRunner instanceObjByIoc() {
-		if (codeInfo.isSingle() && codeInfo.getJavaObject() != null && !codeInfo.iocChanged()) {
+	public JavaRunner instance() {
+
+		if (!codeInfo.isSingle()) {// if not single .it only instance by run
+			_instance();
+			return this;
+		}
+
+		if (codeInfo.getJavaObject() != null && !codeInfo.iocChanged()) {
 			this.objInstance = codeInfo.getJavaObject();
 			return this;
 		}
 
-		if (codeInfo.isSingle()) {
-			synchronized (codeInfo) {
-				if (codeInfo.getJavaObject() == null) {
-					instanceWithIoc();
-				}
+		synchronized (codeInfo) {
+			if (codeInfo.getJavaObject() == null) {
+				_instance();
 			}
-		} else {
-			instanceWithIoc();
 		}
 
 		return this;
 	}
 
-	private void instanceWithIoc() {
+	private void _instance() {
 		try {
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
 
@@ -200,8 +163,8 @@ public class JavaRunner {
 
 			Mirror<?> mirror = Mirror.me(codeInfo.getClassz());
 
-			ClassLoader defaultClassLoader = Thread.currentThread().getContextClassLoader() ;
-			
+			ClassLoader defaultClassLoader = Thread.currentThread().getContextClassLoader();
+
 			Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
 			for (Field field : mirror.getFields()) {
 				Inject inject = field.getAnnotation(Inject.class);
@@ -214,7 +177,7 @@ public class JavaRunner {
 				}
 			}
 			Thread.currentThread().setContextClassLoader(defaultClassLoader);
-			
+
 			if (codeInfo.isSingle()) {
 				codeInfo.setJavaObject(objInstance);
 			}
@@ -243,7 +206,7 @@ public class JavaRunner {
 	 */
 	public Object execute() {
 		try {
-			Object invoke = this.codeInfo.getDefaultMethod().invoke(this.codeInfo.getJavaObject(), DEFAULT_ARG);
+			Object invoke = this.codeInfo.getDefaultMethod().invoke(objInstance, DEFAULT_ARG);
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
@@ -263,7 +226,7 @@ public class JavaRunner {
 	 */
 	public Object execute(Method method, Object[] args) {
 		try {
-			Object invoke = method.invoke(this.codeInfo.getJavaObject(), args);
+			Object invoke = method.invoke(objInstance, args);
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {

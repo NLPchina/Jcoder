@@ -134,7 +134,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 		if (task != null && task.getStatus() == 1) {
 
-			CodeInfo codeInfo = new JavaRunner(task).compile().instanceObjByIoc().getTask().codeInfo();
+			CodeInfo codeInfo = new JavaRunner(task).compile().instance().getTask().codeInfo();
 
 			ApiActionChainMaker aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[] {});
 

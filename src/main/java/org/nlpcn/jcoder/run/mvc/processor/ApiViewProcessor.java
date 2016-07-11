@@ -1,4 +1,4 @@
-package org.nlpcn.jcoder.run.mvc;
+package org.nlpcn.jcoder.run.mvc.processor;
 
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.run.mvc.view.JsonpView;

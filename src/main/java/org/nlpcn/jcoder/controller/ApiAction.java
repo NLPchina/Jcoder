@@ -66,7 +66,6 @@ public class ApiAction {
 
 	/**
 	 * 执行测试用户的api
-	 * 
 	 * @param jsonTask
 	 * @return
 	 */
@@ -95,7 +94,7 @@ public class ApiAction {
 			} else {
 				LOG.info(taskName + " publish ok ! will be run !");
 				ThreadManager.add2ActionTask(taskName, Thread.currentThread());
-				LOG.info(taskName + " result : " + new JavaRunner(task).compile().instanceObjByIoc().execute());
+				LOG.info(taskName + " result : " + new JavaRunner(task).compile().instance().execute());
 			}
 
 		} catch (Exception e) {
