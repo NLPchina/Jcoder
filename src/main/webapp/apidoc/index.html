@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html ng-app="apiApp" ng-controller="apiCtrl">
 <head>
-	<title>apiDoc: apidoc-example - 0.3.0</title>
+	<title>Jcoder Api Doc</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<link href="vendor/bootstrap.min.css" rel="stylesheet" media="screen">
@@ -36,7 +36,7 @@
 		  <ul class="sidenav nav nav-list">
 	        <li class="{{x.isGroup?'nav-header':''}} {{x.isActive?'active':''}}" 
 	        	ng-repeat="x in nav_datas" ng-click="clickNav(x)">
-	        	<a href="{{x.href}}">{{x.name}}</a>
+	        	<a href="{{x.href}}" class="{{x.status==false?'alert-error':''}}">{{x.name}}</a>
 	        </li>
 		  </ul>
 		</nav>
@@ -49,18 +49,19 @@
 		  <div class="clearfix"></div>
 		</div>
 		<div id="header">
-			<div id="api-_"><h2 id="welcome-to-apidoc">Welcome to Jcoder Api Doc</h2>
-				<p>Please visit the full documentation.</p>
+			<div id="api-_">
+				<h2 id="welcome-to-apidoc"></h2>
 			</div>
 		</div>
 		<div id="sections">
 
 <section id="{{x.name}}" ng-repeat="x in datas">
-	<h1>{{x.name}}</h1>
+	<h1 class="{{x.status==false?'alert-error':''}}">{{x.name}}</h1>
+	<p>version: {{x.version}}</p>
 	<div id="{{x.name}}_{{y.name}}" ng-repeat="y in x.sub">
 		<article id="api-User-GetUser-0.3.0" data-group="User" data-name="GetUser" data-version="0.3.0">
 		    <div class="pull-left">
-		      <h1>{{y.name}} - {{y.defaultExecute}}</h1>
+		      <h1>{{y.name}}</h1>
 		    </div>
 		    <div class="clearfix"></div>
 		
@@ -68,8 +69,9 @@
 		
 			<span class="method {{m|lowercase}}" ng-repeat="m in y.methods">{{m}}</span>
 			
-		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{ctx}}/api/{{x.name}}/{{y.name}}</span></code></pre>
+		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{atx}}/api/{{x.name}}{{y.defaultExecute?'':'/'+y.name}}</span></code></pre>
 		
+			<pre class="prettyprint prettyprinted" ng-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
 		
 		      <h2 ng-show="y.sub.length>0">Parameter</h2>
 		      <table ng-show="y.sub.length>0">
@@ -89,6 +91,22 @@
 		        </tbody>
 		      </table>
 		      
+		      <h2 ng-show="y.attr">Attribute</h2>
+		      <table ng-show="y.attr">
+		        <thead>
+		          <tr>
+		            <th style="width: 30%">Field</th>
+		            <th style="width: 70%">Value</th>
+		          </tr>
+		        </thead>
+		        <tbody>
+		          <tr ng-repeat="(key,value) in y.attr">
+		            <td class="code">{{key}}</td>
+		            <td>{{value}}</td>
+		          </tr>
+		        </tbody>
+		      </table>
+		      
 		      
 		</article>
 	</div>
@@ -102,6 +120,8 @@
 	</div>
   </div>
 </div>
+
+
 
 
 <script type="text/javascript" src="vendor/main.js"></script>

@@ -1,11 +1,11 @@
 var apiApp = angular.module('apiApp', []);
-
-apiApp.controller('apiCtrl', function($scope, $http,$location) {
+apiApp.controller('apiCtrl', function($scope, $http, $location) {
 	
-	$http.get('/api').success(function(response) {
+	//'vendor/api.json'
+	$http.get('/api').success(function(response) { 
 		$scope.datas = response;
 		
-		$scope.ctx = $location.$$protocol + "://"+ $location.$$host + ":" + $location.$$port;
+		$scope.atx = $location.$$protocol+"://"+$location.$$host+":"+$location.$$port;
 		
 		$scope.nav_datas = [{
 			"name": "General",
@@ -42,7 +42,5 @@ apiApp.controller('apiCtrl', function($scope, $http,$location) {
             $('html,body').animate({ scrollTop: parseInt($(id).offset().top) }, 400);
         window.location.hash = x.href;
 	};
-	
-	
 	
 });
