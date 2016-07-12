@@ -43,7 +43,7 @@
 						</div>
 						<div class="form-group has-error col-md-1" style="float: right">
 									<label class="control-label" for="inputError1">&nbsp;</label>
-									<a id="submit_maven" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save">保存加载</i></a>
+									<a id="submit_maven" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save">Save And Reload</i></a>
 								</div>
 						</form>
 					</div>
@@ -66,13 +66,13 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<button type="button" class="close" data-dismiss="modal">×</button>
-					<h3>保存</h3>
+					<h3>Save</h3>
 				</div>
 				<div class="modal-body">
 					<p id="dialog_message"></p>
 				</div>
 				<div class="modal-footer">
-					<a href="#" class="btn btn-primary" data-dismiss="modal">确定</a>
+					<a href="#" class="btn btn-primary" data-dismiss="modal">Confirm</a>
 				</div>
 			</div>
 		</div>
@@ -127,12 +127,12 @@
 		$('#submit_maven').click(function() {
 			$("#code").val(editor.getValue());
 			var d = $("#mavenForm").serialize();
-			$.messager.confirm("提示", "确定要保存！", function() { 
+			$.messager.confirm("Alert", "are you sure save it！", function() { 
 				$.post("${ctx }/maven/save", d, function(result) {
 					$('#dialog_message').html(result.message);
 					$('#myModal').modal('show');
 				}, "json").error(function() {
-					$('#dialog_message').text('保存失败！可能是服务器没有响应！');
+					$('#dialog_message').text('save errr may be your session has lost！');
 					$('#myModal').modal('show');
 				});
 			});

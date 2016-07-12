@@ -50,7 +50,7 @@ public class Bootstrap {
 						ENV_MAP.put(PREFIX + "maven", dim[1]);
 					}
 				}
-			}else{
+			}else if(!arg.startsWith("-f")){
 				System.err.println("arg : "+arg +" can use ! not find = over it ");
 			}
 		}
