@@ -71,8 +71,6 @@
 			
 		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{atx}}/api/{{x.name}}{{y.defaultExecute?'':'/'+y.name}}</span></code></pre>
 		
-			<pre class="prettyprint prettyprinted" ng-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
-		
 		      <h2 ng-show="y.sub.length>0">Parameter</h2>
 		      <table ng-show="y.sub.length>0">
 		        <thead>
@@ -107,6 +105,8 @@
 		        </tbody>
 		      </table>
 		      
+		        <h2 ng-show="y.retrunContent">Return</h2>
+		        <pre class="prettyprint prettyprinted" ng-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
 		      
 		</article>
 	</div>
