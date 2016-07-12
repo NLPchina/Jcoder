@@ -44,7 +44,16 @@ public class JsonView implements View {
 		} else {
 			resp.setStatus(httpStatus);
 		}
+		
+		if (obj == null) {
+			obj = result;
+		}
+		
+		if (obj == null) {
+			return;
+		}
 
+		
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("application/json");
 		// crossorigin
@@ -52,14 +61,6 @@ public class JsonView implements View {
 		resp.addHeader("Access-Control-Allow-Methods", METHODS);
 		resp.addHeader("Access-Control-Allow-Headers", HEADERS);
 		resp.addHeader("Access-Control-Allow-Credentials", CREDENTIALS);
-
-		if (obj == null) {
-			obj = result;
-		}
-
-		if (obj == null) {
-			return;
-		}
 
 		resp.getWriter().write(toString(obj));
 		resp.flushBuffer();

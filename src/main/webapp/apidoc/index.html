@@ -69,7 +69,7 @@
 		
 			<span class="method {{m|lowercase}}" ng-repeat="m in y.methods">{{m}}</span>
 			
-		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{atx}}/api/{{x.name}}{{y.defaultExecute?'':'/'+y.name}}</span></code></pre>
+		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{atx}}/api/{{x.name}}/{{y.name}}</span></code></pre>
 		
 		      <h2 ng-show="y.sub.length>0">Parameter</h2>
 		      <table ng-show="y.sub.length>0">

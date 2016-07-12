@@ -42,6 +42,15 @@ public class JsonpView implements View {
 		} else {
 			resp.setStatus(httpStatus);
 		}
+		
+		if (obj == null) {
+			obj = result;
+		}
+		
+		if (obj == null) {
+			return;
+		}
+		
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("text/javascript");
 		// crossorigin
@@ -49,13 +58,7 @@ public class JsonpView implements View {
 		resp.addHeader("Access-Control-Allow-Methods", METHODS);
 		resp.addHeader("Access-Control-Allow-Headers", HEADERS);
 		resp.addHeader("Access-Control-Allow-Credentials", CREDENTIALS);
-		if (obj == null) {
-			obj = result;
-		}
 
-		if (obj == null) {
-			return;
-		}
 
 		StringBuilder sb = new StringBuilder();
 

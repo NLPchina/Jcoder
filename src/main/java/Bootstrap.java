@@ -29,7 +29,7 @@ public class Bootstrap {
 				String[] dim = arg.split("=");
 				parseFile(dim[1]);
 				break;
-			}else{
+			} else {
 				System.err.println("are you sure ? -f not -f=file ! it not can use!");
 			}
 		}
@@ -50,8 +50,8 @@ public class Bootstrap {
 						ENV_MAP.put(PREFIX + "maven", dim[1]);
 					}
 				}
-			}else if(!arg.startsWith("-f")){
-				System.err.println("arg : "+arg +" can use ! not find = over it ");
+			} else if (!arg.startsWith("-f")) {
+				System.err.println("arg : " + arg + " can use ! not find = over it ");
 			}
 		}
 
@@ -63,11 +63,11 @@ public class Bootstrap {
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
 		System.setProperty("java.awt.headless", "true"); //support kaptcha
-		
+
 		Server server = new Server(port);
-		
+
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
-		
+
 		URL location = domain.getCodeSource().getLocation();
 
 		WebAppContext context = new WebAppContext();
@@ -92,9 +92,9 @@ public class Bootstrap {
 		} else {
 			context.setWar("src/main/webapp");
 		}
-		
+
 		server.setHandler(context);
-		
+
 		server.start();
 		server.join();
 	}
@@ -108,12 +108,16 @@ public class Bootstrap {
 	 */
 	private static void createLog4jConfig(File log4jFile, String logPath) throws FileNotFoundException, IOException {
 
+		if (log4jFile.exists()) {
+			return;
+		}
+
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(
-				"log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n" + "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n"
-						+ "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
-						+ "log4j.appender.R=org.apache.log4j.DailyRollingFileAppender\n" + "log4j.appender.R.File=");
+		sb.append("log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout.Encoding=UTF-8\n" + "log4j.appender.R.Encoding=UTF-8\n"
+				+ "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n" + "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n"
+				+ "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
+				+ "log4j.appender.R=org.apache.log4j.DailyRollingFileAppender\n" + "log4j.appender.R.File=");
 
 		sb.append(logPath);
 
@@ -170,12 +174,11 @@ public class Bootstrap {
 							+ "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n" + "</project>");
 		}
 
-
 		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
 		if (!tmpDir.exists()) {
 			tmpDir.mkdirs();
 		}
-		
+
 		File pluginDir = new File(JcoderHome, "plugins"); // create tmp dir
 		if (!pluginDir.exists()) {
 			pluginDir.mkdirs();
@@ -186,7 +189,7 @@ public class Bootstrap {
 		if (!resourceDir.exists()) {
 			resourceDir.mkdirs();
 		}
-		
+
 		File iocFile = new File(JcoderHome, "/resource/ioc.js"); // create ioc file
 		if (!iocFile.exists()) {
 			wirteFile(iocFile.getAbsolutePath(), "utf-8", "var ioc = {\n\n};");

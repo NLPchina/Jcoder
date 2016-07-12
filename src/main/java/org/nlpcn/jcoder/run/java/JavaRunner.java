@@ -72,6 +72,8 @@ public class JavaRunner {
 
 					Single single = clz.getAnnotation(Single.class);
 
+					codeInfo.setClassz(clz);
+
 					if (single != null) {
 						codeInfo.setSingle(single.value());
 					}
@@ -197,8 +199,7 @@ public class JavaRunner {
 	private static final Object[] DEFAULT_ARG = new Object[0];
 
 	/**
-	 * execte task defaultExecute if not found , it execute excutemehtod ， if
-	 * not found it throw Exception
+	 * execte task defaultExecute if not found , it execute excutemehtod ， if not found it throw Exception
 	 * 
 	 * @return
 	 * 
@@ -217,8 +218,7 @@ public class JavaRunner {
 	}
 
 	/**
-	 * execte task defaultExecute if not found , it execute excutemehtod ， if
-	 * not found it throw Exception
+	 * execte task defaultExecute if not found , it execute excutemehtod ， if not found it throw Exception
 	 * 
 	 * @return
 	 * 
@@ -257,8 +257,6 @@ public class JavaRunner {
 		}
 
 		Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
-
-		clz.getAnnotation(Single.class);
 
 		MapCount<String> mc = new MapCount<>();
 		// set execute method

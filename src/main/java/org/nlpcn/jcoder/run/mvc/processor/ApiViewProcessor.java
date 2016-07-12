@@ -38,7 +38,7 @@ public class ApiViewProcessor extends AbstractProcessor {
 		if (re != null) {
 			view.render(ac.getRequest(), ac.getResponse(), re);
 		} else if (err == null) {
-			view.render(ac.getRequest(), ac.getResponse(), StaticValue.OK);
+			view.render(ac.getRequest(), ac.getResponse(), null);
 		}
 
 		doNext(ac);
