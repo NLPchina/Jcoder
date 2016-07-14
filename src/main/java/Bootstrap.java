@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 
@@ -33,7 +34,7 @@ public class Bootstrap {
 				System.err.println("are you sure ? -f not -f=file ! it not can use!");
 			}
 		}
-
+		
 		for (String arg : args) {
 			if (arg.startsWith("--") && arg.contains("=")) {
 				String[] dim = arg.split("=");
@@ -60,6 +61,7 @@ public class Bootstrap {
 		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
 
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
+	
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
 		System.setProperty("java.awt.headless", "true"); //support kaptcha
@@ -79,12 +81,10 @@ public class Bootstrap {
 		context.setTempDirectory(new File(jcoderHome, "tmp"));
 		context.setContextPath("/");
 		context.setServer(server);
-
+		
 		context.setWelcomeFiles(new String[] { "Home.jsp" });
 
 		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());
-
-		context.setInitParameter("org.eclipse.jetty.servlet.DefaultServlet.useFileMappedB uffer", "false");
 
 		if (location.toExternalForm().endsWith(".war")) { // 如果是war包
 			context.setDescriptor(location.toExternalForm() + "/WEB-INF/web.xml");
@@ -92,8 +92,22 @@ public class Bootstrap {
 		} else {
 			context.setWar("src/main/webapp");
 		}
+		
+		HandlerList list = new HandlerList() ;
 
-		server.setHandler(context);
+		WebAppContext web = new WebAppContext(); //add a web site in jcoder 
+		
+		web.setContextPath("/web/");
+		
+		web.setInitParameter("org.eclipse.jetty.servlet.DefaultServlet.useFileMappedBuffer", "false");
+		
+		web.setWar(new File(jcoderHome,"web").getAbsolutePath());
+		
+		list.addHandler(web);
+
+		list.addHandler(context);
+
+		server.setHandler(list);
 
 		server.start();
 		server.join();
@@ -179,7 +193,7 @@ public class Bootstrap {
 			tmpDir.mkdirs();
 		}
 
-		File pluginDir = new File(JcoderHome, "plugins"); // create tmp dir
+		File pluginDir = new File(JcoderHome, "web"); // create web dir
 		if (!pluginDir.exists()) {
 			pluginDir.mkdirs();
 		}
