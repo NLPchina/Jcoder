@@ -43,7 +43,7 @@
 						</div>
 						<div class="form-group has-error col-md-1" style="float: right">
 									<label class="control-label" for="inputError1">&nbsp;</label>
-									<a id="submit_maven" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save">Save And Reload</i></a>
+									<a id="submit_maven" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save">Save&Reload</i></a>
 								</div>
 						</form>
 					</div>
