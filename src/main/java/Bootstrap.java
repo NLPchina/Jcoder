@@ -93,6 +93,8 @@ public class Bootstrap {
 			context.setWar("src/main/webapp");
 		}
 		
+		context.setInitParameter("org.eclipse.jetty.servlet.DefaultServlet.useFileMappedBuffer", "false");
+		
 		HandlerList list = new HandlerList() ;
 
 		WebAppContext web = new WebAppContext(); //add a web site in jcoder 

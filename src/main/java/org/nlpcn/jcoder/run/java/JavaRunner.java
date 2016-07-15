@@ -156,7 +156,7 @@ public class JavaRunner {
 	private void _instance() {
 		try {
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
-
+			
 			objInstance = codeInfo.getClassz().newInstance();
 
 			Ioc ioc = StaticValue.getUserIoc();
@@ -171,11 +171,13 @@ public class JavaRunner {
 			for (Field field : mirror.getFields()) {
 				Inject inject = field.getAnnotation(Inject.class);
 				if (inject != null) {
+					field.setAccessible(true);
 					if (field.getType().equals(Logger.class)) {
 						mirror.setValue(objInstance, field, Logger.getLogger(codeInfo.getClassz()));
 					} else {
 						mirror.setValue(objInstance, field, ioc.get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
 					}
+					field.setAccessible(false);
 				}
 			}
 			Thread.currentThread().setContextClassLoader(defaultClassLoader);
