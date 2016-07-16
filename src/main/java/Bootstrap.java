@@ -34,7 +34,7 @@ public class Bootstrap {
 				System.err.println("are you sure ? -f not -f=file ! it not can use!");
 			}
 		}
-		
+
 		for (String arg : args) {
 			if (arg.startsWith("--") && arg.contains("=")) {
 				String[] dim = arg.split("=");
@@ -61,7 +61,7 @@ public class Bootstrap {
 		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
 
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
-	
+
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
 		System.setProperty("java.awt.headless", "true"); //support kaptcha
@@ -81,7 +81,7 @@ public class Bootstrap {
 		context.setTempDirectory(new File(jcoderHome, "tmp"));
 		context.setContextPath("/");
 		context.setServer(server);
-		
+
 		context.setWelcomeFiles(new String[] { "Home.jsp" });
 
 		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());
@@ -92,19 +92,21 @@ public class Bootstrap {
 		} else {
 			context.setWar("src/main/webapp");
 		}
-		
-		context.setInitParameter("org.eclipse.jetty.servlet.DefaultServlet.useFileMappedBuffer", "false");
-		
-		HandlerList list = new HandlerList() ;
+
+		HandlerList list = new HandlerList();
 
 		WebAppContext web = new WebAppContext(); //add a web site in jcoder 
-		
+
 		web.setContextPath("/web/");
-		
-		web.setInitParameter("org.eclipse.jetty.servlet.DefaultServlet.useFileMappedBuffer", "false");
-		
-		web.setWar(new File(jcoderHome,"web").getAbsolutePath());
-		
+
+		web.setWar(new File(jcoderHome, "web").getAbsolutePath());
+
+		// Fix for Windows, so Jetty doesn't lock files
+		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+			context.setInitParameter("org.eclipse.jetty.servlet.Default.useFileMappedBuffer", "false");
+			web.setInitParameter("org.eclipse.jetty.servlet.Default.useFileMappedBuffer", "false");
+		}
+
 		list.addHandler(web);
 
 		list.addHandler(context);
