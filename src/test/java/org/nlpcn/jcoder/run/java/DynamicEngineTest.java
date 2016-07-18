@@ -9,6 +9,7 @@ import java.net.URLClassLoader;
 
 import org.junit.Test;
 import org.nlpcn.jcoder.run.CodeException;
+import org.nlpcn.jcoder.scheduler.TaskException;
 
 public class DynamicEngineTest {
 
@@ -19,7 +20,12 @@ public class DynamicEngineTest {
 				new File("D:/Program Files/gradle-2.14/caches/modules-2/files-2.1/org.nutz/nutz/1.r.56.r3/d0300412d4907542477e663d916bc32baae1d6e/nutz-1.r.56.r3-sources.jar").toURI().toURL() },
 				ClassLoader.getSystemClassLoader());
 
-		DynamicEngine.flush(ucl);
+		try {
+			DynamicEngine.flush(ucl);
+		} catch (TaskException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		DynamicEngine de = DynamicEngine.getInstance();
 

@@ -1,12 +1,5 @@
 package org.nlpcn.jcoder.run.java;
 
-import org.apache.log4j.Logger;
-import org.nlpcn.commons.lang.util.StringUtil;
-import org.nlpcn.jcoder.run.CodeException;
-
-import com.google.common.base.Joiner;
-
-import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -17,31 +10,52 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.ToolProvider;
+
+import org.apache.log4j.Logger;
+import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.run.CodeException;
+import org.nlpcn.jcoder.scheduler.TaskException;
+import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.StaticValue;
+
+import com.google.common.base.Joiner;
+
 @SuppressWarnings("all")
 public class DynamicEngine {
 
 	private static final Logger LOG = Logger.getLogger(DynamicEngine.class);
-	
-	private static DynamicEngine ourInstance ;
+
+	private static DynamicEngine ourInstance;
 
 	public static DynamicEngine getInstance() {
 		return ourInstance;
 	}
-	
+
 	/**
 	 * 刷新instance
+	 * @throws TaskException 
 	 */
-	public static void flush(URLClassLoader classLoader){
-		ourInstance = new DynamicEngine(classLoader) ;
+	public static void flush(URLClassLoader classLoader) throws TaskException {
+		ourInstance = new DynamicEngine(classLoader);
+		// 如果classloader被改变.全站的动态代码全部刷新一遍.
+		synchronized (StaticValue.MAPPING) {
+			StaticValue.MAPPING.removeAll();
+			StaticValue.getBean(TaskService.class, "taskService").initTaskFromDB();
+		}
+
 	}
-	
-	
-	public static void close() throws IOException{
+
+	public static void close() throws IOException {
 		ourInstance.parentClassLoader.close();
 	}
 
 	private URLClassLoader parentClassLoader;
-	
+
 	private String classpath;
 
 	private DynamicEngine(URLClassLoader classLoader) {
@@ -51,8 +65,8 @@ public class DynamicEngine {
 
 	private void buildClassPath() {
 		this.classpath = null;
-		Set<String> classPathSet = new HashSet<>() ;
-		
+		Set<String> classPathSet = new HashSet<>();
+
 		for (URL url : this.parentClassLoader.getURLs()) {
 			try {
 				String p = new File(url.toURI()).getAbsolutePath();
@@ -61,9 +75,9 @@ public class DynamicEngine {
 				e.printStackTrace();
 			}
 		}
-		
-		URLClassLoader classLoader = (URLClassLoader) this.getClass().getClassLoader() ;
-		
+
+		URLClassLoader classLoader = (URLClassLoader) this.getClass().getClassLoader();
+
 		for (URL url : classLoader.getURLs()) {
 			try {
 				String p = new File(url.toURI()).getAbsolutePath();
@@ -72,8 +86,8 @@ public class DynamicEngine {
 				e.printStackTrace();
 			}
 		}
-		
-		this.classpath = Joiner.on(File.pathSeparator).join(classPathSet) ;
+
+		this.classpath = Joiner.on(File.pathSeparator).join(classPathSet);
 	}
 
 	public Class<?> javaCodeToClass(String fullClassName, String javaCode) throws IOException, CodeException {
@@ -89,7 +103,7 @@ public class DynamicEngine {
 		options.add("UTF-8");
 		options.add("-classpath");
 		options.add(this.classpath);
-		options.add("-parameters") ;
+		options.add("-parameters");
 
 		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, jfiles);
 		boolean success = task.call();
@@ -165,5 +179,5 @@ public class DynamicEngine {
 	public URLClassLoader getParentClassLoader() {
 		return parentClassLoader;
 	}
-	
+
 }

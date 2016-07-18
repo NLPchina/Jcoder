@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
@@ -34,7 +35,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	protected Map<String, ActionInvoker> map;
 
 	public ApiUrlMappingImpl() {
-		this.map = new HashMap<String, ActionInvoker>();
+		this.map = new ConcurrentHashMap<String, ActionInvoker>();
 	}
 
 	public void add(ActionChainMaker maker, ActionInfo ai, NutConfig config) {
@@ -175,7 +176,13 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				}
 			}
 		}
-
+	}
+	
+	/**
+	 * 删除全部访问地址,相当于全站reload
+	 */
+	public void removeAll(){
+		map.clear(); 
 	}
 
 	@Override

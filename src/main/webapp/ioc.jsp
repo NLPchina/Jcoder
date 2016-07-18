@@ -44,7 +44,7 @@
 									<div class="form-group has-error col-md-11" >&nbsp;</div>
 									<div class="form-group has-error col-md-1" style="float: right">
 										<label class="control-label" for="inputError1">&nbsp;</label>
-										<a id="submit_ioc" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save">保存加载</i></a>
+										<a id="submit_ioc" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save">Save&Reload</i></a>
 									</div>
 								</div>
 
@@ -68,7 +68,7 @@
 					<p id="dialog_message"></p>
 				</div>
 				<div class="modal-footer">
-					<a href="#" class="btn btn-primary" data-dismiss="modal">确定</a>
+					<a href="#" class="btn btn-primary" data-dismiss="modal">Confirm</a>
 				</div>
 			</div>
 		</div>
@@ -89,29 +89,14 @@
 	<script src="${ctx }/editor/mode/javascript/javascript.js"></script>
 	<script>
 		CodeMirror.commands.save = function() {
-			alert("Saving");
 		};
 		var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 			lineNumbers : true,
 			mode : "javascript",
 			matchBrackets : true,
 			theme : "monokai",
-			showCursorWhenSelecting : true,
-			extraKeys : {
-				"F11" : function(cm) {
-					cm.setOption("fullScreen", !cm.getOption("fullScreen"));
-				},
-				"Esc" : function(cm) {
-					if (cm.getOption("fullScreen"))
-						cm.setOption("fullScreen", false);
-				},
-				"Ctrl-S" : function(cm) {
-
-				},
-				"Ctrl-G" : function(cm) {
-					$("#script_start").click();
-				}
-			}
+			showCursorWhenSelecting : true
+			
 		});
 
 
@@ -125,12 +110,12 @@
 		$('#submit_ioc').click(function() {
 			$("#code").val(editor.getValue());
 			var d = $("#iocForm").serialize();
-			$.messager.confirm("提示", "确定要保存！", function() { 
+			$.messager.confirm("Alert", "Are you sure to save it ?", function() { 
 				$.post("${ctx }/ioc/save", d, function(result) {
 					$('#dialog_message').text(result.message);
 					$('#myModal').modal('show');
 				}, "json").error(function() {
-					$('#dialog_message').text('保存失败！可能是服务器没有响应！');
+					$('#dialog_message').text('Save err ！');
 					$('#myModal').modal('show');
 				});
 			});

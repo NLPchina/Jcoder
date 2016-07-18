@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
@@ -16,6 +18,8 @@ import org.nlpcn.jcoder.run.CodeRuntimeException;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.run.annotation.Single;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -44,7 +48,7 @@ public class JavaRunner {
 	 */
 	public JavaRunner compile() {
 
-		if (codeInfo.getClassz() != null || !codeInfo.classLoaderChanged()) {
+		if (codeInfo.getClassz() != null) {
 			return this;
 		}
 
@@ -92,6 +96,7 @@ public class JavaRunner {
 							codeInfo.addMethod(method);
 							mc.add(method.getName());
 						}
+
 					}
 
 					if (mc.size() == 0) {
@@ -145,7 +150,7 @@ public class JavaRunner {
 		}
 
 		synchronized (codeInfo) {
-			if (codeInfo.getJavaObject() == null) {
+			if (codeInfo.getJavaObject() == null || codeInfo.iocChanged()) {
 				_instance();
 			}
 		}
@@ -156,7 +161,7 @@ public class JavaRunner {
 	private void _instance() {
 		try {
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
-			
+
 			objInstance = codeInfo.getClassz().newInstance();
 
 			Ioc ioc = StaticValue.getUserIoc();
@@ -209,12 +214,15 @@ public class JavaRunner {
 	 */
 	public Object execute() {
 		try {
+			task.setMessage(task.getName() + " at　" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " begin runging");
 			Object invoke = this.codeInfo.getDefaultMethod().invoke(objInstance, DEFAULT_ARG);
+			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.task.updateError();
+			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 			throw new CodeRuntimeException(e);
 		}
 	}
@@ -228,12 +236,15 @@ public class JavaRunner {
 	 */
 	public Object execute(Method method, Object[] args) {
 		try {
+			task.setMessage(task.getName() + " at　" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " begin runging");
 			Object invoke = method.invoke(objInstance, args);
+			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.task.updateError();
+			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 			throw new CodeRuntimeException(e);
 		}
 	}

@@ -23,6 +23,7 @@ import org.apache.log4j.Logger;
 import org.nlpcn.commons.lang.util.IOUtil;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
+import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 
@@ -88,7 +89,11 @@ public class JarService {
 			e1.printStackTrace();
 		}
 		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
-		DynamicEngine.flush(classLoader);
+		try {
+			DynamicEngine.flush(classLoader);
+		} catch (TaskException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -106,8 +111,8 @@ public class JarService {
 		if (StringUtil.isBlank(mavenPath)) {
 			mavenPath = System.getProperty(StaticValue.PREFIX + "maven");
 		}
-		
-		if(StringUtil.isBlank(mavenPath)){
+
+		if (StringUtil.isBlank(mavenPath)) {
 			String home = getPathByVar("MAVEN_HOME");
 			if (StringUtil.isBlank(home)) {
 				home = getPathByVar("M2_HOME");
@@ -118,7 +123,7 @@ public class JarService {
 				mavenPath = home + "/bin/mvn";
 			}
 		}
-		
+
 		return mavenPath;
 	}
 

@@ -5,7 +5,6 @@ import java.util.ResourceBundle;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.commons.lang.util.MD5;
-import org.nlpcn.jcoder.App;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
@@ -139,8 +138,13 @@ public class StaticValue {
 		}
 		return userIoc;
 	}
+	
+	// default ioc is userIoc
+	public static Ioc getIoc(){
+		return getUserIoc() ;
+	}
 
-	private static Ioc getSystemIoc() {
+	public static Ioc getSystemIoc() {
 		if (systemIoc == null) {
 			systemIoc = Mvcs.getIoc();
 		}

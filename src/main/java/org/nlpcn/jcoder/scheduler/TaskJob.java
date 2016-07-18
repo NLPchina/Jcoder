@@ -1,13 +1,8 @@
 package org.nlpcn.jcoder.scheduler;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.run.CodeRunner;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.ExceptionUtil;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 
 public class TaskJob extends Thread {
 
@@ -37,15 +32,10 @@ public class TaskJob extends Thread {
 	public void run() {
 		over = false;
 		try {
-			task.setMessage(task.getName() + " at　" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " begin runging");
-			CodeRunner.run(task);
-			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
-			task.updateSuccess();
+			new JavaRunner(task).compile().instance().execute() ;
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e);
-			task.updateError();
-			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 		} finally {
 			over = true;
 			ThreadManager.removeTaskIfOver(this.getName());
