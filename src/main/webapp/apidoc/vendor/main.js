@@ -2,7 +2,7 @@ var apiApp = angular.module('apiApp', []);
 apiApp.controller('apiCtrl', function($scope, $http, $location) {
 	
 	//'vendor/api.json'
-	$http.get('/api').success(function(response) { 
+	$http.get('/apidoc/info').success(function(response) { 
 		$scope.datas = response;
 		
 		$scope.atx = $location.$$protocol+"://"+$location.$$host+":"+$location.$$port;

@@ -23,7 +23,7 @@ class QuartzSchedulerManager {
 
 	private static final Logger LOG = Logger.getLogger(QuartzSchedulerManager.class);
 
-	private static Scheduler scheduler = init();
+	private static Scheduler scheduler ;
 
 	/**
 	 * 初始化
@@ -57,7 +57,7 @@ class QuartzSchedulerManager {
 	 * @param scheduleStr
 	 * @throws SchedulerException
 	 */
-	public static synchronized boolean addJob(Task task) throws SchedulerException {
+	protected static synchronized boolean addJob(Task task) throws SchedulerException {
 		// ｔａｓｋ已激活
 		if (task.getStatus() == 0) {
 			LOG.info(task.getName() + " status not active to skip!");
@@ -75,12 +75,12 @@ class QuartzSchedulerManager {
 		}
 	}
 
-	public static JobDetail makeJobDetail(Task task) {
+	protected static JobDetail makeJobDetail(Task task) {
 		JobDetail job = JobBuilder.newJob(QuartzJob.class).withIdentity(task.getName()).build();
 		return job;
 	}
 
-	public static Trigger makeTrigger(Task task) {
+	protected static Trigger makeTrigger(Task task) {
 		String scheduleStr = task.getScheduleStr();
 		if (StringUtil.isBlank(task.getScheduleStr()) || "while".equalsIgnoreCase(scheduleStr)) {
 			return TriggerBuilder.newTrigger().build();
@@ -96,7 +96,7 @@ class QuartzSchedulerManager {
 	 * @throws SchedulerException
 	 * @throws Exception
 	 */
-	public static synchronized boolean stopTaskJob(String taskName) throws SchedulerException {
+	protected static synchronized boolean stopTaskJob(String taskName) throws SchedulerException {
 		scheduler.deleteJob(JobKey.jobKey(taskName));
 		return true;
 	}
@@ -117,14 +117,16 @@ class QuartzSchedulerManager {
 	 * 
 	 * @throws SchedulerException
 	 */
-	public static void startScheduler() throws SchedulerException {
+	protected static void startScheduler() throws SchedulerException {
 		scheduler = init();
 	}
 
-	public static void stopScheduler() throws SchedulerException {
-		scheduler.clear();
-		scheduler.shutdown();
-		scheduler = null;
+	protected static void stopScheduler() throws SchedulerException {
+		if (scheduler != null) {
+			scheduler.clear();
+			scheduler.shutdown();
+			scheduler = null;
+		}
 
 	}
 
@@ -134,7 +136,7 @@ class QuartzSchedulerManager {
 	 * @return
 	 * @throws SchedulerException
 	 */
-	public static List<Task> getTaskList() throws SchedulerException {
+	protected static List<Task> getTaskList() throws SchedulerException {
 		if (scheduler == null) {
 			return Collections.emptyList();
 		}

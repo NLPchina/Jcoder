@@ -31,7 +31,6 @@ public class StaticValue {
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
 
-
 	private static Ioc systemIoc;
 
 	private static Ioc userIoc;
@@ -68,6 +67,9 @@ public class StaticValue {
 
 	private static String getValueOrCreate(String key, String def) {
 		String value = System.getProperty(PREFIX + key);
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("get property " + key + ":" + value);
+		}
 		if (value == null) {
 			return def;
 		} else {
@@ -138,10 +140,10 @@ public class StaticValue {
 		}
 		return userIoc;
 	}
-	
+
 	// default ioc is userIoc
-	public static Ioc getIoc(){
-		return getUserIoc() ;
+	public static Ioc getIoc() {
+		return getUserIoc();
 	}
 
 	public static Ioc getSystemIoc() {

@@ -9,8 +9,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.ProtectionDomain;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -21,17 +19,17 @@ public class Bootstrap {
 
 	private static final String PREFIX = "jcoder_";
 
-	private static final Map<String, String> ENV_MAP = new HashMap<>();
-
 	public static void main(String[] args) throws Exception {
 
 		for (String arg : args) {
-			if (arg.startsWith("-f") && arg.contains("=")) {
-				String[] dim = arg.split("=");
-				parseFile(dim[1]);
-				break;
-			} else {
-				System.err.println("are you sure ? -f not -f=file ! it not can use!");
+			if (arg.startsWith("-f")) {
+				if (arg.contains("=")) {
+
+					String[] dim = arg.split("=");
+					parseFile(dim[1]);
+				} else {
+					System.err.println("are you sure ? -f not -f=file ! it not can use!");
+				}
 			}
 		}
 
@@ -40,15 +38,15 @@ public class Bootstrap {
 				String[] dim = arg.split("=");
 				if (dim.length >= 2) {
 					if (dim[0].equals("--host")) {
-						ENV_MAP.put(PREFIX + "host", dim[1]);
+						putEnv(PREFIX + "host", dim[1]);
 					} else if (dim[0].equals("--port")) {
-						ENV_MAP.put(PREFIX + "port", dim[1]);
+						putEnv(PREFIX + "port", dim[1]);
 					} else if (dim[0].equals("--home")) {
-						ENV_MAP.put(PREFIX + "home", dim[1]);
+						putEnv(PREFIX + "home", dim[1]);
 					} else if (dim[0].equals("--log")) {
-						ENV_MAP.put(PREFIX + "log", dim[1]);
+						putEnv(PREFIX + "log", dim[1]);
 					} else if (dim[0].equals("--maven")) {
-						ENV_MAP.put(PREFIX + "maven", dim[1]);
+						putEnv(PREFIX + "maven", dim[1]);
 					}
 				}
 			} else if (!arg.startsWith("-f")) {
@@ -64,7 +62,7 @@ public class Bootstrap {
 
 		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
 
-		System.setProperty("java.awt.headless", "true"); //support kaptcha
+		System.setProperty("java.awt.headless", "true"); // support kaptcha
 
 		Server server = new Server(port);
 
@@ -95,7 +93,7 @@ public class Bootstrap {
 
 		HandlerList list = new HandlerList();
 
-		WebAppContext web = new WebAppContext(); //add a web site in jcoder 
+		WebAppContext web = new WebAppContext(); // add a web site in jcoder
 
 		web.setContextPath("/web/");
 
@@ -132,16 +130,14 @@ public class Bootstrap {
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout.Encoding=UTF-8\n" + "log4j.appender.R.Encoding=UTF-8\n"
-				+ "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n" + "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n"
-				+ "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
+		sb.append("log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout.Encoding=utf-8\n" + "log4j.appender.R.Encoding=utf-8\n" + "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n"
+				+ "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n" + "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
 				+ "log4j.appender.R=org.apache.log4j.DailyRollingFileAppender\n" + "log4j.appender.R.File=");
 
 		sb.append(logPath);
 
 		sb.append("\n" + "log4j.appender.R.DatePattern = '.'yyyy-MM-dd\n" + "log4j.appender.R.layout=org.apache.log4j.PatternLayout\n"
-				+ "log4j.appender.R.layout.ConversionPattern=%d{HH:mm:ss} %c{1} %-5p %m%n\n" + "\n" + "## Disable other log  \n"
-				+ "log4j.logger.org.atmosphere.cpr.AsynchronousProcessor=FATAL");
+				+ "log4j.appender.R.layout.ConversionPattern=%d{HH:mm:ss} %c{1} %-5p %m%n\n" + "\n" + "## Disable other log  \n" + "log4j.logger.org.atmosphere.cpr.AsynchronousProcessor=FATAL");
 
 		wirteFile(log4jFile.getAbsolutePath(), "utf-8", sb.toString());
 
@@ -170,7 +166,7 @@ public class Bootstrap {
 					if (!key.startsWith(PREFIX)) {
 						key = PREFIX + key;
 					}
-					ENV_MAP.put(key, split[1].trim());
+					putEnv(key, split[1].trim());
 				} else {
 					System.err.println(temp + " format err");
 				}
@@ -184,12 +180,11 @@ public class Bootstrap {
 		if (!libDir.exists()) {
 			libDir.mkdirs();
 			wirteFile(new File(libDir, "pom.xml").getAbsolutePath(), "utf-8",
-					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-							+ "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>1.2</version>\n"
-							+ "	<description>use maven to down jars</description>\n" + "  \n" + "	<dependencies>\n" + "\n" + "	</dependencies>\n" + "\n" + "	<build>  \n"
-							+ "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n" + "</project>");
+					"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" + "	<modelVersion>4.0.0</modelVersion>\n"
+							+ "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>1.2</version>\n" + "	<description>use maven to down jars</description>\n"
+							+ "  \n" + "	<dependencies>\n" + "\n" + "	</dependencies>\n" + "\n" + "	<build>  \n" + "		<defaultGoal>compile</defaultGoal>\n" + "	</build>\n"
+							+ "</project>");
 		}
 
 		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
@@ -216,31 +211,45 @@ public class Bootstrap {
 		createLog4jConfig(new File(resourceDir, "log4j.properties"), logPath);
 	}
 
+	/**
+	 * get a env by key , if not exits , to put it 
+	 * @param key
+	 * @param def
+	 * @return
+	 */
 	private static String getOrCreateEnv(String key, String def) {
 
 		if (!key.startsWith(PREFIX)) {
 			key = PREFIX + key;
 		}
 
-		String value = ENV_MAP.get(key);
-
-		if (value == null) {
-			value = System.getProperty(key);
-		}
+		String value = System.getProperty(key);
 
 		if (value == null) {
 			value = System.getenv(key);
 		}
 
 		if (value == null) {
+			putEnv(key, def);
 			value = def;
 		}
 
+		return value;
+	}
+
+	/**
+	 * put var to java env 
+	 * @param key
+	 * @param value
+	 */
+	private static void putEnv(String key, String value) {
+		if (!key.startsWith(PREFIX)) {
+			key = PREFIX + key;
+		}
 		if (value != null) {
+			System.out.println("put env to system.propertie: "+key+" ============= "+value);
 			System.setProperty(key, value);
 		}
-
-		return value;
 	}
 
 	/**

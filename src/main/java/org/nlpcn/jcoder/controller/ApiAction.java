@@ -35,7 +35,7 @@ public class ApiAction {
 	 * 
 	 * @return api info
 	 */
-	@At("/api")
+	@At("/apidoc/info")
 	@Ok("json")
 	@Filters(@By(type = CrossOriginFilter.class))
 	public Object api(@Param(value = "type", df = "1") int type) {

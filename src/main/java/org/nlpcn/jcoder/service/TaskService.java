@@ -218,6 +218,10 @@ public class TaskService {
 		HashSet<String> taskSet = new HashSet<>();
 
 		list.forEach(ti -> taskSet.add(ti.getName()));
+		
+		ThreadManager.stopScheduler();
+		
+		ThreadManager.startScheduler(); 
 
 		for (Task task : search) {
 			try {

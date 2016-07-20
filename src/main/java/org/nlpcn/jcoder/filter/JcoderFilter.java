@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -41,9 +40,7 @@ public class JcoderFilter extends NutFilter {
 		if (path.startsWith("/api/")) {
 			_doFilter(chain, request, response);
 		} else {
-			if (host == null) {
-				super.doFilter(request, response, chain);
-			} else if (host.equals(request.getServerName())) {
+			if (host == null || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
 			} else {
 				_doAuthoErr(response);
