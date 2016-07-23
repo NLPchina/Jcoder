@@ -5,7 +5,7 @@
     <title>Jcoder Dynamic Code Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="Jcoder">
-
+	
     <!-- The styles -->
     <link id="bs-css" href="${ctx }/css/bootstrap-cerulean.min.css" rel="stylesheet">
 
@@ -75,6 +75,8 @@
 					<span class="caret"></span>
 				</button>
 				<ul class="dropdown-menu">
+					<li><a href="${ctx }/apidoc" target="_blank">ApiDoc</a></li>
+					<li class="divider"></li>
 					<li><a href="${ctx }/down/sdk">Code+Jar</a></li>
 					<li class="divider"></li>
 					<li><a href="${ctx }/down/sdk?resource=true">Code+Jar+Resource</a></li>

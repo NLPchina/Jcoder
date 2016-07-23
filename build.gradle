@@ -1,5 +1,5 @@
 group 'nlpcn.org'
-version '1.5'
+version '1.6'
 
 apply plugin: 'java'
 apply plugin: 'war'
@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.nutz:nutz:1.r.56.r3'
+    compile 'org.nutz:nutz:1.r.57'
     compile 'org.nlpcn:nlp-lang:1.7'
     compile 'org.nutz:nutz:1.r.56.r3'
     compile 'com.alibaba:fastjson:1.1.33'
