@@ -12,26 +12,25 @@ In this project you can fast publish your API and schedule task, dynamic edit yo
   * to down last release war https://github.com/NLPchina/Jcoder/releases
   * run it `java -jar jcoder-[version].war`  and visit [http://localhost:8080/](http://localhost:8080/) Login by name:admin password:admin 
    
--- ##### about config on startup
+- - ##### about config on startup
 
-  > you can make a config file named `coder.conf`
+    > you can make a config file named `coder.conf`
   
-  ````
-  #only localhost can visit Management background
-  host=localhost 
-  # default port is 8080
-  port=8080
-  # home path .default is ~/.jcoder
-  #home=~/.jcoder 
-  # mvn exepath , it is a full path like /home/maven/bin/mvn
-  maven=mvn
-  # log path 
-  log=log/jcoder.log
-  ````
-  `java -jar jcoder-[version].war -f=coder.conf` 
+    ````
+    #only localhost can visit Management background
+    host=localhost 
+    # default port is 8080
+    port=8080
+    # home path .default is ~/.jcoder
+    #home=~/.jcoder 
+    # mvn exepath , it is a full path like /home/maven/bin/mvn
+    maven=mvn
+    # log path 
+    log=log/jcoder.log
+    ````
+    now you can use it by : `java -jar jcoder-[version].war -f=coder.conf` 
  
-  Of course you can take these by args 
-  `java -jar jcoder-[version].war --home=~/.jcoder --port=9090 --host=localhost`
+    Of course you can take these by args :`java -jar jcoder-[version].war --home=~/.jcoder --port=9090 --host=localhost`
 
 	
 
