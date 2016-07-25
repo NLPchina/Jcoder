@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -158,6 +159,12 @@ public class JarAction {
 				if (jar.isDirectory() || !jar.canRead() || !jar.getName().toLowerCase().endsWith(".jar")) {
 					continue;
 				}
+
+				// skip maven jar
+				if (jar.getParentFile().getAbsolutePath().startsWith(new File(StaticValue.LIB_FILE,"target").getAbsolutePath())) {
+					continue;
+				}
+
 				String name = "jcoder_sdk/lib/" + jar.getName();
 				if (sets.contains(name)) {
 					continue;
@@ -171,6 +178,9 @@ public class JarAction {
 				}
 			}
 
+			out.putNextEntry(new ZipEntry("jcoder_sdk/src/main/java/package-info.java"));
+			out.write(("/**\n" + " * if you need make some jar file write in src package\n" + " */").getBytes());
+
 			// 写task任务
 			for (Task task : taskList) {
 				try {
@@ -179,15 +189,19 @@ public class JarAction {
 					String path = JavaSourceUtil.findPackage(code);
 					String className = JavaSourceUtil.findClassName(code);
 
-					out.putNextEntry(new ZipEntry("jcoder_sdk/src/" + path.replace(".", "/") + "/" + className + ".java"));
+					out.putNextEntry(new ZipEntry("jcoder_sdk/src/test/java/" + path.replace(".", "/") + "/" + className + ".java"));
 					out.write(code.getBytes("utf-8"));
 				} catch (RuntimeException e) {
 				}
 			}
 
+			out.putNextEntry(new ZipEntry("jcoder_sdk/pom.xml"));
+			out.write(IOUtil.getContent(new File(StaticValue.LIB_FILE, "pom.xml"), "utf-8")
+					.replace("<artifactId>jcoder</artifactId>", "<artifactId>jcoder_" + UUID.randomUUID().toString() + "</artifactId>").getBytes());
+
 			if (resource) { // is incloud resource dir
 				File file = StaticValue.RESOURCE_FILE;
-				String basePath = new File(StaticValue.HOME).getAbsolutePath();
+				String basePath = StaticValue.RESOURCE_FILE.getAbsolutePath();
 				Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
 
 					@Override
@@ -199,7 +213,11 @@ public class JarAction {
 							return FileVisitResult.CONTINUE;
 						}
 
-						String filePath = ("jcoder_sdk/" + f.getAbsolutePath().replace(basePath, "")).replace("\\", "/").replace("//", "/");
+						if (f.getParentFile().equals(StaticValue.RESOURCE_FILE) && "pom.xml".equals(f.getName())) { // skip pom.xml
+							return FileVisitResult.CONTINUE;
+						}
+
+						String filePath = ("jcoder_sdk/src/test/resources/" + f.getAbsolutePath().replace(basePath, "")).replace("\\", "/").replace("//", "/");
 
 						out.putNextEntry(new ZipEntry(filePath));
 
@@ -215,6 +233,9 @@ public class JarAction {
 						return FileVisitResult.CONTINUE;
 					}
 				});
+			} else {
+				out.putNextEntry(new ZipEntry("jcoder_sdk/src/test/resources/ioc.js"));
+				out.write(IOUtil.getContent(new File(StaticValue.RESOURCE_FILE, "ioc.js"), "utf-8").getBytes());
 			}
 		}
 

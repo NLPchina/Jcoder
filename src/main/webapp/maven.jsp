@@ -92,9 +92,7 @@
 	<script src="${ctx }/editor/addon/display/fullscreen.js"></script>
 	<script src="${ctx }/editor/mode/xml/xml.js"></script>
 	<script>
-		CodeMirror.commands.save = function() {
-			alert("Saving");
-		};
+		
 		var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 			lineNumbers : true,
 			mode : "xml",

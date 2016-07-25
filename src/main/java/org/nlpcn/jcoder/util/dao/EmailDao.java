@@ -1,24 +1,29 @@
-package org.nlpcn.jcoder.util;
+package org.nlpcn.jcoder.util.dao;
 
-import org.apache.log4j.Logger;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.Properties;
 
-import javax.mail.*;
+import javax.mail.BodyPart;
+import javax.mail.Message;
+import javax.mail.Multipart;
+import javax.mail.Session;
+import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Properties;
+
+import org.apache.log4j.Logger;
 
 /**
  * 
  * @author wang.kai@kuyun.com
  * @date 2014年10月27日
  */
-public class EmailUtil {
+public class EmailDao {
 
-	private static final Logger LOG = Logger.getLogger(EmailUtil.class);
+	private static final Logger LOG = Logger.getLogger(EmailDao.class);
 	
 	private String fromUser;
 	private String fromPassword;
@@ -29,7 +34,7 @@ public class EmailUtil {
 	 * @param fromPassword
 	 * @param smtpServer
 	 */
-	public EmailUtil(String fromUser, String fromPassword, String smtpServer) {
+	public EmailDao(String fromUser, String fromPassword, String smtpServer) {
 		this.fromUser = fromUser;
 		this.fromPassword = fromPassword;
 		this.smtpServer = smtpServer;
@@ -162,5 +167,6 @@ public class EmailUtil {
 	public void setSmtpServer(String smtpServer) {
 		this.smtpServer = smtpServer;
 	}
+	
 
 }
