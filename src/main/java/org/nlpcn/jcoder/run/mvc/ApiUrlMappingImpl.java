@@ -7,6 +7,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
@@ -33,6 +35,8 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	private static final Log log = Logs.get();
 
 	protected Map<String, ActionInvoker> map;
+
+	private Map<String, Lock> lockMap = new HashMap<>();
 
 	public ApiUrlMappingImpl() {
 		this.map = new ConcurrentHashMap<String, ActionInvoker>();
@@ -106,7 +110,18 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		ActionInvoker invoker = map.get(path);
 
 		if (invoker == null) {
-			invoker = createInvoker(config, path);
+			Lock lock = null;
+			synchronized (this) {
+				lock = lockMap.getOrDefault(path, new ReentrantLock());
+			}
+			lock.lock();
+			try {
+				if ((invoker = map.get(path)) == null) {
+					invoker = createInvoker(config, path);
+				}
+			} finally {
+				lock.unlock();
+			}
 		}
 
 		if (invoker != null) {
@@ -177,12 +192,12 @@ public class ApiUrlMappingImpl implements UrlMapping {
 			}
 		}
 	}
-	
+
 	/**
 	 * 删除全部访问地址,相当于全站reload
 	 */
-	public void removeAll(){
-		map.clear(); 
+	public void removeAll() {
+		map.clear();
 	}
 
 	@Override

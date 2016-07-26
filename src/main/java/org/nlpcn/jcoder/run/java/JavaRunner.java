@@ -152,6 +152,8 @@ public class JavaRunner {
 		synchronized (codeInfo) {
 			if (codeInfo.getJavaObject() == null || codeInfo.iocChanged()) {
 				_instance();
+			}else{
+				this.objInstance = codeInfo.getJavaObject() ;
 			}
 		}
 
