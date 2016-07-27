@@ -6,7 +6,7 @@
 <div class="col-lg-12 col-sm-12">
     <footer class="row">
         <p class="col-md-9 col-sm-9 col-xs-12 copyright">&nbsp;&nbsp;&nbsp;&nbsp;&copy; <a href="http://www.nlpcn.org" target="_blank">JCoder
-                Dev</a> 2016 - 2056</p>
+                Dev</a> 2016 - 2056 &nbsp;&nbsp;&nbsp;&nbsp; <b>Version</b> : ${VERSION }</p>
 
         <p class="col-md-3 col-sm-3 col-xs-12 powered-by">Powered by: <a
                 href="http://www.nlpcn.org">NLPCN</a>&nbsp;&nbsp;&nbsp;&nbsp;</p>

@@ -130,14 +130,16 @@ public class Bootstrap {
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout.Encoding=utf-8\n" + "log4j.appender.R.Encoding=utf-8\n" + "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n"
-				+ "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n" + "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
+		sb.append("log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout.Encoding=utf-8\n" + "log4j.appender.R.Encoding=utf-8\n"
+				+ "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n" + "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n"
+				+ "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
 				+ "log4j.appender.R=org.apache.log4j.DailyRollingFileAppender\n" + "log4j.appender.R.File=");
 
 		sb.append(logPath);
 
 		sb.append("\n" + "log4j.appender.R.DatePattern = '.'yyyy-MM-dd\n" + "log4j.appender.R.layout=org.apache.log4j.PatternLayout\n"
-				+ "log4j.appender.R.layout.ConversionPattern=%d{HH:mm:ss} %c{1} %-5p %m%n\n" + "\n" + "## Disable other log  \n" + "log4j.logger.org.atmosphere.cpr.AsynchronousProcessor=FATAL");
+				+ "log4j.appender.R.layout.ConversionPattern=%d{HH:mm:ss} %c{1} %-5p %m%n\n" + "\n" + "## Disable other log  \n"
+				+ "log4j.logger.org.atmosphere.cpr.AsynchronousProcessor=FATAL");
 
 		wirteFile(log4jFile.getAbsolutePath(), "utf-8", sb.toString());
 
@@ -181,13 +183,14 @@ public class Bootstrap {
 			libDir.mkdirs();
 			wirteFile(new File(libDir, "pom.xml").getAbsolutePath(), "utf-8",
 					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" + "	<modelVersion>4.0.0</modelVersion>\n"
-							+ "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>0.1</version>\n" + "	\n" + "	<dependencies>\n" + "	</dependencies>\n" + "\n"
-							+ "	<build>\n" + "		<sourceDirectory>src/main/java</sourceDirectory>\n" + "		<testSourceDirectory>src/test/java</testSourceDirectory>\n" + "		\n"
-							+ "		<plugins>\n" + "			<plugin>\n" + "				<artifactId>maven-compiler-plugin</artifactId>\n" + "				<version>3.3</version>\n"
-							+ "				<configuration>\n" + "					<source>1.8</source>\n" + "					<target>1.8</target>\n"
-							+ "					<encoding>UTF-8</encoding>\n" + "					<compilerArguments>\n" + "						<extdirs>lib</extdirs>\n"
-							+ "					</compilerArguments>\n"+"				</configuration>\n" + "			</plugin>\n" + "		</plugins>\n" + "	</build>\n" + "</project>\n" + "");
+							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>0.1</version>\n"
+							+ "	\n" + "	<dependencies>\n" + "	</dependencies>\n" + "\n" + "	<build>\n" + "		<sourceDirectory>src/main/java</sourceDirectory>\n"
+							+ "		<testSourceDirectory>src/test/java</testSourceDirectory>\n" + "		\n" + "		<plugins>\n" + "			<plugin>\n"
+							+ "				<artifactId>maven-compiler-plugin</artifactId>\n" + "				<version>3.3</version>\n" + "				<configuration>\n"
+							+ "					<source>1.8</source>\n" + "					<target>1.8</target>\n" + "					<encoding>UTF-8</encoding>\n"
+							+ "					<compilerArguments>\n" + "						<extdirs>lib</extdirs>\n" + "					</compilerArguments>\n"
+							+ "				</configuration>\n" + "			</plugin>\n" + "		</plugins>\n" + "	</build>\n" + "</project>\n" + "");
 		}
 
 		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
@@ -215,7 +218,8 @@ public class Bootstrap {
 	}
 
 	/**
-	 * get a env by key , if not exits , to put it 
+	 * get a env by key , if not exits , to put it
+	 * 
 	 * @param key
 	 * @param def
 	 * @return
@@ -241,7 +245,8 @@ public class Bootstrap {
 	}
 
 	/**
-	 * put var to java env 
+	 * put var to java env
+	 * 
 	 * @param key
 	 * @param value
 	 */

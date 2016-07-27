@@ -53,11 +53,10 @@ dependencies {
 
 	war{
 	
-		def configFile = file('jcoder.properties') ;
+		def configFile = file('src/main/resources/jcoder.properties') ;
 		
-		configFile.write("123");
+		configFile.write("version="+version+"_"+new Date().format('yyyyMMddHHmm'));
 		
-	
 		def schemaJarFile = project.configurations.providedCompile 
 		
 		schemaJarFile.each{source ->
@@ -84,6 +83,7 @@ dependencies {
 			into 'WEB-INF/lib'
 		}
 	}
+	
 	
 	
 	tasks.withType(JavaCompile) {  

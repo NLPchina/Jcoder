@@ -29,6 +29,8 @@ public class SiteSetup implements Setup {
 
 		H2Server.startServer(nc);
 		
+		//set version
+		nc.getServletContext().setAttribute("VERSION", StaticValue.VERSION);
 
 		// 初始化Jar环境
 		LOG.info("begin Jar init!");

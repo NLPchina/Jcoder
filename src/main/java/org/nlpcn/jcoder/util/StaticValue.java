@@ -30,6 +30,8 @@ public class StaticValue {
 	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
+	
+	public static final String VERSION = getResource("version") ;
 
 	private static Ioc systemIoc;
 
@@ -197,7 +199,7 @@ public class StaticValue {
 	 * @return
 	 */
 	public static String getResource(String key) {
-		ResourceBundle bundle = ResourceBundle.getBundle("config");
+		ResourceBundle bundle = ResourceBundle.getBundle("jcoder");
 		if (bundle.containsKey(key)) {
 			return bundle.getString(key);
 		} else {
