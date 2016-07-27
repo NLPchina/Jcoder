@@ -53,6 +53,11 @@ dependencies {
 
 	war{
 	
+		def configFile = file('jcoder.properties') ;
+		
+		configFile.write("123");
+		
+	
 		def schemaJarFile = project.configurations.providedCompile 
 		
 		schemaJarFile.each{source ->
