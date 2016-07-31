@@ -163,6 +163,7 @@ In this project you can fast publish your API and schedule task, dynamic edit yo
   * incremental update task from jcoder server
   * publish a restful api by db table
   * Perfect the documents
+  * add Dasboard page view task use time ,times ,err  or other system info 
   
 
 * [创建中文分词服务例子](http://www.jianshu.com/p/1fcf5327107a)
