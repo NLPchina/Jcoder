@@ -4,6 +4,8 @@ import java.io.StringReader;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.Task;
@@ -63,6 +65,25 @@ public class ApiAction {
 		return result;
 
 	}
+	
+	@At("/api_maven/repository/*")
+	@Ok("raw")
+	public Object mavenRepository(HttpServletRequest req){
+		String path = req.getServletPath() ;
+		
+		if(path.endsWith(".pom")){
+			return "" ;
+		}
+		
+//		<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+//		  <modelVersion>4.0.0</modelVersion>
+//		  <groupId>org.nlpcn.jcoder</groupId>
+//		  <artifactId>jcoder-rpc-client</artifactId>
+//		  <version>1.0</version>
+//		</project>
+		
+		return req.getContextPath();
+	} 
 
 	/**
 	 * 执行测试用户的api

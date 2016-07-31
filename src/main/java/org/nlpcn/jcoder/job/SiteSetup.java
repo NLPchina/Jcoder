@@ -2,7 +2,7 @@ package org.nlpcn.jcoder.job;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.scheduler.TaskException;
-import org.nlpcn.jcoder.service.H2Server;
+import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;

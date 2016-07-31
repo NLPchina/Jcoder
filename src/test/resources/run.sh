@@ -5,7 +5,7 @@ start()
 }
 stop()
 {
-  kill  `cat jcoder..pid`
+  kill  `cat jcoder.pid`
 }
 
 

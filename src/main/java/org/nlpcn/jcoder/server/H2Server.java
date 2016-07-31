@@ -1,4 +1,4 @@
-package org.nlpcn.jcoder.service;
+package org.nlpcn.jcoder.server;
 
 import java.io.File;
 import java.sql.SQLException;
