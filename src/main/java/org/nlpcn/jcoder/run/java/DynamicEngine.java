@@ -141,6 +141,65 @@ public class DynamicEngine {
 
 		return clazz;
 	}
+	
+	
+	public byte[] javaCode2Bytes(String fullClassName, String javaCode) throws IOException, CodeException {
+		Class<?> clazz = null;
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<JavaFileObject>();
+		ClassFileManager fileManager = new ClassFileManager(compiler.getStandardFileManager(diagnostics, null, null));
+		List<JavaFileObject> jfiles = new ArrayList<JavaFileObject>();
+		jfiles.add(new CharSequenceJavaFileObject(fullClassName, javaCode));
+
+		List<String> options = new ArrayList<String>();
+		
+		options.add("-source");
+		options.add("1.6");
+		options.add("-target");
+		options.add("1.6");
+		options.add("-encoding");
+		options.add("UTF-8");
+		options.add("-classpath");
+		options.add(this.classpath);
+		options.add("-parameters");
+		    
+
+		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, jfiles);
+		boolean success = task.call();
+		if (success) {
+			JavaClassObject jco = fileManager.getMainJavaClassObject();
+			DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.parentClassLoader);
+			try {
+				List<JavaClassObject> innerClassJcos = fileManager.getInnerClassJavaClassObject();
+				if (innerClassJcos != null && innerClassJcos.size() > 0) {
+					for (JavaClassObject inner : innerClassJcos) {
+						String name = inner.getName();
+						name = name.substring(1, name.length() - 6).replace("/", ".");
+						dynamicClassLoader.loadClass(name, inner);
+					}
+				}
+				return jco.getBytes() ;
+			} catch (Exception e) {
+				e.printStackTrace();
+				LOG.error(e);
+			} catch (Error e) {
+				LOG.error(e);
+				throw new CodeException(e.toString());
+			} finally {
+				if (dynamicClassLoader != null) {
+					dynamicClassLoader.close();
+				}
+			}
+		} else {
+			StringBuilder error = new StringBuilder();
+			for (Diagnostic<?> diagnostic : diagnostics.getDiagnostics()) {
+				error.append(compilePrint(diagnostic));
+			}
+			throw new CodeException(error.toString());
+		}
+
+		return null ;
+	}
 
 	public <T> T javaCodeToObject(String fullClassName, String javaCode) throws IllegalAccessException, InstantiationException, IOException, CodeException {
 		return (T) javaCodeToClass(fullClassName, javaCode).newInstance();
@@ -178,6 +237,11 @@ public class DynamicEngine {
 
 	public URLClassLoader getParentClassLoader() {
 		return parentClassLoader;
+	}
+
+	public Class<?> javaCodeToClassFile(String string, String sourcePath) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

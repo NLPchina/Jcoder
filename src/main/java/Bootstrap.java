@@ -24,7 +24,6 @@ public class Bootstrap {
 		for (String arg : args) {
 			if (arg.startsWith("-f")) {
 				if (arg.contains("=")) {
-
 					String[] dim = arg.split("=");
 					parseFile(dim[1]);
 				} else {
@@ -41,6 +40,8 @@ public class Bootstrap {
 						putEnv(PREFIX + "host", dim[1]);
 					} else if (dim[0].equals("--port")) {
 						putEnv(PREFIX + "port", dim[1]);
+					} else if (dim[0].equals("--rpcport")) {
+						putEnv(PREFIX + "rpcport", dim[1]);
 					} else if (dim[0].equals("--home")) {
 						putEnv(PREFIX + "home", dim[1]);
 					} else if (dim[0].equals("--log")) {
@@ -56,6 +57,7 @@ public class Bootstrap {
 
 		getOrCreateEnv(PREFIX + "maven", "mvn");
 		getOrCreateEnv(PREFIX + "host", null);
+		
 		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
 
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());

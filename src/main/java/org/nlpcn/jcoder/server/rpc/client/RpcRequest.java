@@ -1,7 +1,9 @@
-package org.nlpcn.jcoder.server.rpc;
+package org.nlpcn.jcoder.server.rpc.client;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+
+import org.apache.log4j.chainsaw.Main;
 
 public class RpcRequest implements Serializable {
 	private static final long serialVersionUID = 1L;
@@ -11,16 +13,18 @@ public class RpcRequest implements Serializable {
 	private String methodName;
 	private Object[] arguments;
 
-	private boolean jsonStr = false;
-
-	private long timeout = 10000;
-
-	public RpcRequest(String messageId, Class<?> clz, Method method, Object[] arguments) {
+	private boolean syn = true; // 是否同步
+	private boolean jsonStr = false; // 是否jsonstr返回
+	private long timeout = 10000; // 超时时间,<=0为不做限制
+	
+	public RpcRequest(String messageId, Class<?> clz, Method method, boolean syn, boolean jsonStr, long timeout, Object[] arguments) {
 		this.messageId = messageId;
-		this.className = clz.getName();
+		this.className = clz.getSimpleName();
 		this.methodName = method.getName();
 		this.arguments = arguments;
-
+		this.syn = syn;
+		this.jsonStr = jsonStr;
+		this.timeout = timeout;
 	}
 
 	public String getMessageId() {
@@ -58,10 +62,6 @@ public class RpcRequest implements Serializable {
 	public boolean isJsonStr() {
 		return jsonStr;
 	}
-	
-	public long getTimeout() {
-		return timeout;
-	}
 
 	public void setTimeout(long timeout) {
 		this.timeout = timeout;
@@ -69,6 +69,18 @@ public class RpcRequest implements Serializable {
 
 	public void setJsonStr(boolean jsonStr) {
 		this.jsonStr = jsonStr;
+	}
+
+	public void setSyn(boolean syn) {
+		this.syn = syn;
+	}
+
+	public boolean isSyn() {
+		return syn;
+	}
+
+	public long getTimeout() {
+		return timeout;
 	}
 
 }

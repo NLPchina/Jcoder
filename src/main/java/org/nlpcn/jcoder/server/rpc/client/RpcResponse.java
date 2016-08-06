@@ -1,4 +1,4 @@
-package org.nlpcn.jcoder.server.rpc;
+package org.nlpcn.jcoder.server.rpc.client;
 
 import java.io.Serializable;
 

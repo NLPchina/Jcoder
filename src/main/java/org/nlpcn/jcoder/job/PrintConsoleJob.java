@@ -23,7 +23,8 @@ public class PrintConsoleJob implements Runnable {
 			try {
 				if (WebSocketConsole.count() > 0 && file.exists()) {
 					try (FileInputStream fis = new FileInputStream(file)) {
-						fis.skip(file.length()-5000);
+						long length = file.length() - 5000;
+						fis.skip(length <= 0 ? 0 : length);
 						try (BufferedReader br = IOUtil.getReader(fis, "utf-8")) {
 
 							String line = null;

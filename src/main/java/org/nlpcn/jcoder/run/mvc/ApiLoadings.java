@@ -74,9 +74,6 @@ public abstract class ApiLoadings {
 		evalEncoding(ai, Mirror.getAnnotationDeep(method, Encoding.class));
 		evalHttpAdaptor(ai, Mirror.getAnnotationDeep(method, AdaptBy.class));
 		evalActionFilters(ai, Mirror.getAnnotationDeep(method, Filters.class));
-		evalOk(ai, Mirror.getAnnotationDeep(method, Ok.class));
-		evalFail(ai, Mirror.getAnnotationDeep(method, Fail.class));
-		evalAt(ai, Mirror.getAnnotationDeep(method, At.class), method.getName());
 		evalActionChainMaker(ai, Mirror.getAnnotationDeep(method, Chain.class));
 		evalHttpMethod(ai, method, Mirror.getAnnotationDeep(method, Execute.class), Mirror.getAnnotationDeep(method, DefaultExecute.class));
 		ai.setMethod(method);

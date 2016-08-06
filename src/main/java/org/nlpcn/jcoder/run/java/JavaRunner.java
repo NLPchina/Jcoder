@@ -5,10 +5,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
+import org.apache.log4j.chainsaw.Main;
 import org.nlpcn.commons.lang.util.MapCount;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.CodeInfo;
@@ -24,6 +26,8 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
+
+import com.google.common.collect.Sets;
 
 public class JavaRunner {
 
@@ -88,15 +92,15 @@ public class JavaRunner {
 						if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
 							continue;
 						}
-
-						if (Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
-							codeInfo.setDefaultMethod(method);
+						DefaultExecute dExecute = null;
+						Execute execute = null;
+						if ((dExecute = Mirror.getAnnotationDeep(method, DefaultExecute.class)) != null) {
+							codeInfo.setDefaultMethod(method, Sets.newHashSet(Arrays.asList(dExecute.methods())), dExecute.rpc(), dExecute.restful());
 							mc.add(method.getName());
-						} else if (Mirror.getAnnotationDeep(method, Execute.class) != null) { // 先default
-							codeInfo.addMethod(method);
+						} else if ((execute = Mirror.getAnnotationDeep(method, Execute.class)) != null) { // 先default
+							codeInfo.addMethod(method, Sets.newHashSet(Arrays.asList(execute.methods())), execute.rpc(), execute.restful());
 							mc.add(method.getName());
 						}
-
 					}
 
 					if (mc.size() == 0) {
@@ -152,8 +156,8 @@ public class JavaRunner {
 		synchronized (codeInfo) {
 			if (codeInfo.getJavaObject() == null || codeInfo.iocChanged()) {
 				_instance();
-			}else{
-				this.objInstance = codeInfo.getJavaObject() ;
+			} else {
+				this.objInstance = codeInfo.getJavaObject();
 			}
 		}
 
@@ -215,18 +219,7 @@ public class JavaRunner {
 	 * @throws CodeException
 	 */
 	public Object execute() {
-		try {
-			task.setMessage(task.getName() + " at　" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " begin runging");
-			Object invoke = this.codeInfo.getDefaultMethod().invoke(objInstance, DEFAULT_ARG);
-			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
-			this.task.updateSuccess();
-			return invoke;
-		} catch (Exception e) {
-			e.printStackTrace();
-			this.task.updateError();
-			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
-			throw new CodeRuntimeException(e);
-		}
+		return execute(this.codeInfo.getDefaultMethod().getMethod(), DEFAULT_ARG);
 	}
 
 	/**
@@ -237,16 +230,18 @@ public class JavaRunner {
 	 * @throws CodeException
 	 */
 	public Object execute(Method method, Object[] args) {
+		long start = System.currentTimeMillis();
 		try {
-			task.setMessage(task.getName() + " at　" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + " begin runging");
 			Object invoke = method.invoke(objInstance, args);
-			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " succesed");
+			String endInfo = "Execute OK  " + task.getName() + "/" + method.getName() + " succesed ! use Time : " + (System.currentTimeMillis() - start);
+			task.setMessage(endInfo);
+			LOG.info(endInfo);
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.task.updateError();
-			task.setMessage("The last time at " + DateUtils.formatDate(new Date(), DateUtils.SDF_STANDARD) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
+			task.setMessage("Execute ERR  " + task.getName() + "/" + method.getName() + " useTime " + (System.currentTimeMillis() - start) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 			throw new CodeRuntimeException(e);
 		}
 	}
@@ -308,5 +303,15 @@ public class JavaRunner {
 
 		return true;
 
+	}
+	
+	
+	public static void main(String[] args) {
+		long start = System.currentTimeMillis() ;
+		for (int i = 0; i < 1000000; i++) {
+//			System.out.println("1234567890");
+			LOG.info("1234567890");
+		}
+		System.out.println(System.currentTimeMillis()-start);
 	}
 }

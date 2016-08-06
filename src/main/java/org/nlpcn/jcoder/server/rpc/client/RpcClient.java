@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.server.rpc.client;
 
 import java.net.InetSocketAddress;
+import java.rmi.ServerException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -8,12 +9,9 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.log4j.Logger;
-import org.nlpcn.jcoder.server.rpc.RpcRequest;
-import org.nlpcn.jcoder.server.rpc.RpcResponse;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -24,38 +22,98 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.serialization.ClassResolvers;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
 
 /**
- * rpc client for remote
+ * rpc client for remote,目前采用单例唯一,未来可能做连接池或者其他方式
  * 
  * @author ansj
  *
  */
 public class RpcClient {
 
-	private static final Logger LOG = Logger.getLogger(RpcClient.class);
+	private final int parallel = Runtime.getRuntime().availableProcessors() * 2; // cpu number * 2
 
-	private final static int PARALLEL = Runtime.getRuntime().availableProcessors() * 2; //cpu number * 2
+	protected final ConcurrentHashMap<String, ResultCallBack> callBackMap = new ConcurrentHashMap<String, ResultCallBack>();
 
-	/**
-	 * result back
-	 */
-	protected static final ConcurrentHashMap<String, ResultCallBack> CALL_BACK_MAP = new ConcurrentHashMap<String, ResultCallBack>();
+	private InetSocketAddress serverAddress = null;
 
-	private InetSocketAddress serverAddress = InetSocketAddress.createUnresolved("localhost", 9999);
-
-	private static final EventLoopGroup group = new NioEventLoopGroup(PARALLEL);
+	private EventLoopGroup group = new NioEventLoopGroup(parallel);
 
 	private Bootstrap bootstrap = null;
 
-	public RpcClient() throws InterruptedException {
-		connect(false);
+	private Channel channel = null;
+
+	/**
+	 * 单例模式
+	 */
+	private static RpcClient instance = new RpcClient();
+
+	/**
+	 * 连续错误5次以上进行重连
+	 */
+	protected volatile int errCount = 0;
+
+	/**
+	 * 连接到服务器
+	 * @param serverAddress
+	 * @return
+	 * @throws InterruptedException
+	 */
+	public static RpcClient connect(InetSocketAddress serverAddress) throws InterruptedException {
+		instance.serverAddress = serverAddress;
+		instance.disconnect();
+		instance.connect(false);
+		return instance;
 	}
 
-	protected volatile int errCount = 0;
+	public static RpcClient connect(String host, int port) throws InterruptedException {
+		instance.serverAddress = InetSocketAddress.createUnresolved(host, port);
+		instance.disconnect();
+		instance.connect(false);
+		return instance;
+	}
+
+	public static void shutdown() {
+		RpcClient.instance._shutdown();
+	}
+
+	/**
+	 * 获得对象,在此之前对象必须初始化,就是调用静态方法的connect() ;
+	 * @return
+	 */
+	public static RpcClient getInstance() {
+		return instance;
+	}
+
+	private RpcClient() {
+	}
+
+	/**
+	 * 一个假的构造方法
+	 * @throws InterruptedException 
+	 */
+	public RpcClient(String host, int port) throws InterruptedException {
+		connect(host, port);
+	}
+
+	/**
+	 * 又一个假的构造方法
+	 * @throws InterruptedException 
+	 */
+	public RpcClient(InetSocketAddress address) throws InterruptedException {
+		connect(address);
+	}
+
+	public synchronized void disconnect() {
+		if (channel != null) {
+			channel.disconnect();
+		}
+	}
+
+	private void _shutdown() {
+		disconnect();
+		group.shutdownGracefully();
+	}
 
 	private synchronized void connect(boolean errConn) throws InterruptedException {
 
@@ -63,53 +121,60 @@ public class RpcClient {
 			return;
 		}
 
-		LOG.info("conn server " + serverAddress);
-
-		bootstrap = new Bootstrap();
-
-		bootstrap.group(group).channel(NioSocketChannel.class).option(ChannelOption.SO_KEEPALIVE, true);
-
-		bootstrap.handler(new ChannelInitializer<Channel>() {
-			@Override
-			protected void initChannel(Channel channel) throws Exception {
-				ChannelPipeline pipeline = channel.pipeline();
-				pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
-				pipeline.addLast(new LengthFieldPrepender(4));
-				pipeline.addLast(new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.weakCachingConcurrentResolver(this.getClass().getClassLoader())));
-				pipeline.addLast(new ObjectEncoder());
-				pipeline.addLast(new ClientHandler());
+		try {
+			if (group != null && group.isShuttingDown()) {
+				group = new NioEventLoopGroup(parallel);
 			}
-		});
-		channel = bootstrap.connect(serverAddress.getHostString(), serverAddress.getPort()).sync().channel();
 
-		errCount = 0;
+			bootstrap = new Bootstrap();
+
+			bootstrap.group(group).channel(NioSocketChannel.class).option(ChannelOption.SO_KEEPALIVE, true);
+
+			bootstrap.handler(new ChannelInitializer<Channel>() {
+				@Override
+				protected void initChannel(Channel channel) throws Exception {
+					ChannelPipeline pipeline = channel.pipeline();
+					pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+					pipeline.addLast(new LengthFieldPrepender(4));
+					pipeline.addLast(new RpcDecoder(RpcResponse.class));
+					pipeline.addLast(new RpcEncoder(RpcRequest.class));
+					pipeline.addLast(new ClientHandler());
+				}
+			});
+			channel = bootstrap.connect(serverAddress.getHostString(), serverAddress.getPort()).sync().channel();
+
+			errCount = 0;
+		} catch (Exception e) {
+			if (group != null) {
+				group.shutdownGracefully();
+			}
+			throw e;
+		}
+
 	}
 
-	Channel channel = null;
-
-	protected Object proxy(RpcRequest rpcRequest) throws Throwable {
+	public Object proxy(RpcRequest rpcRequest) throws Throwable {
 
 		String messageId = rpcRequest.getMessageId();
 
 		try {
 			ResultCallBack callBack = new ResultCallBack(rpcRequest);
-			CALL_BACK_MAP.put(messageId, callBack);
-			channel.writeAndFlush(rpcRequest);
-			Object result = callBack.getResult();
+			callBackMap.put(messageId, callBack);
+			channel.writeAndFlush(rpcRequest).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			Object result = null;
+			if (rpcRequest.isSyn()) {
+				result = callBack.getResult();
+			}
 			errCount = 0;
 			return result;
 		} catch (Exception e) {
-			LOG.error(e);
 			errCount++;
-			System.out.println(errCount + "\t" + this);
 			if (errCount > 5) {
-				LOG.info(e.getMessage() + " now reconnect server!");
 				connect(true);
-				LOG.info("reconnect server ok !");
 			}
 			throw e;
 		} finally {
-			CALL_BACK_MAP.remove(messageId);
+			callBackMap.remove(messageId);
 		}
 
 	}
@@ -118,12 +183,13 @@ public class RpcClient {
 
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, RpcResponse rep) throws Exception {
-			ResultCallBack resultCallBack = CALL_BACK_MAP.get(rep.getMessageId());
+			ResultCallBack resultCallBack = callBackMap.get(rep.getMessageId());
 			resultCallBack.over(rep);
 		}
 
 		@Override
 		public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+			cause.printStackTrace();
 			ctx.close();
 		}
 	}
@@ -164,8 +230,9 @@ public class RpcClient {
 		 * @return
 		 * @throws InterruptedException
 		 * @throws TimeoutException
+		 * @throws ServerException 
 		 */
-		public Object getResult() throws InterruptedException, TimeoutException {
+		public Object getResult() throws InterruptedException, TimeoutException, ServerException {
 			try {
 				lock.lock();
 				if (response == null) {
@@ -176,6 +243,9 @@ public class RpcClient {
 					}
 				}
 				if (this.response != null) {
+					if (response.getError() != null) {
+						throw new ServerException(response.getError());
+					}
 					return this.response.getResult();
 				} else {
 					throw new TimeoutException(request.getMessageId() + ":" + request.getClassName() + "/" + request.getMethodName() + " time out of : " + request.getTimeout());

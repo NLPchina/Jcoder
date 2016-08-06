@@ -20,7 +20,7 @@ import org.nutz.mvc.impl.processor.EncodingProcessor;
 public class ApiActionChainMaker implements ActionChainMaker {
 
 	// 该接口只有一个方法
-	public ActionChain eval(NutConfig config, ActionInfo ai) {
+	public JcoderActionChain eval(NutConfig config, ActionInfo ai) {
 		// 提醒: config可以获取ioc等信息, ai可以获取方法上的各种配置及方法本身
 		// 正常处理的列表
 		List<Processor> list = new ArrayList<>();
@@ -28,7 +28,8 @@ public class ApiActionChainMaker implements ActionChainMaker {
 		list.add(init(config, ai, new ApiModuleProcessor())); // 获取入口类的对象,从ioc或直接new
 		list.add(init(config, ai, new ActionFiltersProcessor())); // 处理@Filters
 		list.add(init(config, ai, new ApiAdaptorProcessor())); // 处理@Adaptor
-		list.add(init(config, ai, new ApiMethodInvokeProcessor())); // 执行入口方法
+		ApiMethodInvokeProcessor apiMethodInvokeProcessor = new ApiMethodInvokeProcessor();
+		list.add(init(config, ai, apiMethodInvokeProcessor)); // 执行入口方法
 		list.add(init(config, ai, new ApiViewProcessor())); // 对入口方法进行渲染@Ok
 
 		// 最后是专门负责兜底的异常处理器,这个处理器可以认为是全局异常处理器,对应@Fail
@@ -39,7 +40,7 @@ public class ApiActionChainMaker implements ActionChainMaker {
 			e.printStackTrace();
 		}
 
-		return new NutActionChain(list, error, ai);
+		return new JcoderActionChain(list, apiMethodInvokeProcessor, error, ai);
 	}
 
 	public Processor init(NutConfig config, ActionInfo ai, Processor p) {

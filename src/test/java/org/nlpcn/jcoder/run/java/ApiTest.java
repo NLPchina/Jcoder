@@ -15,21 +15,9 @@ import org.nutz.ioc.loader.annotation.Inject;
  *
  */
 @Single(true)
-public class ApiTest {
-	
-	@Inject
-	private Logger log;
+public class ApiTest {@Inject private Logger log;
 
-	/**
-	 * 输入姓名返回ok字符串
-	 * @param name 输入的名字
-	 * @return {"message":"hello jcoder! ","ok":true}
-	 * @throws InterruptedException 线程停止时抛出
-	 */
-	@DefaultExecute
-	@Cache
-	public Object defaultTest(HttpServletRequest req,String name) throws InterruptedException {
-		return Restful.instance("hello jcoder! ", null) ;
-	}
+	@DefaultExecute @Cache
+	public Object defaultTest(HttpServletRequest req,String name) throws InterruptedException {return Restful.instance("hello jcoder! ", null) ;}
 
 }

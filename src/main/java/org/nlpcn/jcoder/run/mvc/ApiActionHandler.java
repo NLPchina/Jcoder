@@ -4,12 +4,13 @@ import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.config.FilterNutConfig;
-import org.nutz.mvc.impl.ActionInvoker;
 
 public class ApiActionHandler {
 
@@ -30,7 +31,7 @@ public class ApiActionHandler {
 
 		Mvcs.setActionContext(ac);
 
-		ActionInvoker invoker = mapping.getOrCreate(config, ac);
+		ApiActionInvoker invoker = mapping.getOrCreate(config, ac);
 
 		if (null == invoker) {
 			return false;

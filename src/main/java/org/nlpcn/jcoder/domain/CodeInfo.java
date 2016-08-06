@@ -1,8 +1,12 @@
 package org.nlpcn.jcoder.domain;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.run.CodeRuntimeException;
@@ -24,13 +28,13 @@ public class CodeInfo {
 
 	private Object JavaObject;
 
-	private List<Method> executeMethods = new ArrayList<>();
+	private Map<String, ExecuteMethod> executeMethods = new HashMap<>();
 
-	private Method defaultMethod;
+	private ExecuteMethod defaultMethod;
 
 	private Ioc ioc;
-	
-	private ClassLoader classLoader ;
+
+	private ClassLoader classLoader;
 
 	private boolean single = true;
 
@@ -45,7 +49,6 @@ public class CodeInfo {
 	public void setioc(Ioc ioc) {
 		this.ioc = ioc;
 	}
-	
 
 	public void setClassLoader(ClassLoader classLoader) {
 		this.classLoader = classLoader;
@@ -67,17 +70,17 @@ public class CodeInfo {
 		JavaObject = javaObject;
 	}
 
-	public List<Method> getExecuteMethods() {
-		return executeMethods;
+	public Collection<ExecuteMethod> getExecuteMethods() {
+		return executeMethods.values();
 	}
 
-	public void setDefaultMethod(Method method) {
+	public void setDefaultMethod(Method method, Set<String> methodTypeSet, boolean rpc, boolean restful) {
 		if (defaultMethod == null) {
-			this.defaultMethod = method;
+			this.defaultMethod = new ExecuteMethod(method, methodTypeSet, rpc, restful);
 		} else {
 			LOG.warn(classz.getName() + " has being more than one @DefaultExecute annotation method : " + defaultMethod.getName() + " so skip method : " + method.getName());
 		}
-		addMethod(method);
+		addMethod(defaultMethod);
 	}
 
 	public boolean isSingle() {
@@ -88,19 +91,93 @@ public class CodeInfo {
 		this.single = single;
 	}
 
-	public void addMethod(Method method) {
-		this.executeMethods.add(method);
+	public void addMethod(ExecuteMethod method) {
+		this.executeMethods.put(method.getName(), method);
 	}
 
-	public Method getDefaultMethod() {
+	public void addMethod(Method method, Set<String> methodTypeSet, boolean rpc, boolean restful) {
+		addMethod(new ExecuteMethod(method, methodTypeSet, rpc, restful));
+	}
+
+	public ExecuteMethod getDefaultMethod() {
 		if (defaultMethod == null) {
 			if (executeMethods.size() == 0) {
 				throw new CodeRuntimeException(classz.getName() + " not have any @Execute or @DefaultExecute annotation you must set one ");
 			}
-			defaultMethod = executeMethods.get(0);
-			LOG.warn(defaultMethod.getDeclaringClass().getName() + " none @DefaultExecute annotation method : so set the firest method to DefaultExecute function:" + defaultMethod.getName());
+			defaultMethod = executeMethods.entrySet().iterator().next().getValue();
+			LOG.warn(defaultMethod.getMethod().getDeclaringClass().getName() + " none @DefaultExecute annotation method : so set the firest method to DefaultExecute function:"
+					+ defaultMethod.getName());
 		}
 		return defaultMethod;
+	}
+
+	/**
+	 * 通过方法名称获得方法
+	 * @param methodName
+	 * @return
+	 */
+	public ExecuteMethod getExecuteMethod(String methodName) {
+		return executeMethods.get(methodName);
+	}
+
+	/**
+	 * 执行方法的抽象类
+	 * @author Ansj
+	 *
+	 */
+	public class ExecuteMethod {
+		private Method method;
+		private Set<String> methodTypeSet = new HashSet<>();
+		private boolean rpc;
+		private boolean restful;
+
+		public ExecuteMethod(Method method, Set<String> methodTypeSet, boolean rpc, boolean restful) {
+			super();
+			this.method = method;
+			this.methodTypeSet = methodTypeSet;
+			this.rpc = rpc;
+			this.restful = restful;
+		}
+
+		public Method getMethod() {
+			return method;
+		}
+
+		public void setMethod(Method method) {
+			this.method = method;
+		}
+
+		public Set<String> getMethodTypeSet() {
+			return methodTypeSet;
+		}
+
+		public void setMethodTypeSet(Set<String> methodTypeSet) {
+			this.methodTypeSet = methodTypeSet;
+		}
+
+		public boolean isRpc() {
+			return rpc;
+		}
+
+		public void setRpc(boolean rpc) {
+			this.rpc = rpc;
+		}
+
+		public boolean isRestful() {
+			return restful;
+		}
+
+		public void setRestful(boolean restful) {
+			this.restful = restful;
+		}
+
+		public String getName() {
+			return this.method.getName();
+		}
+
+		public Object invoke(Object obj, Object... args) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+			return this.method.invoke(obj, args);
+		}
 	}
 
 }

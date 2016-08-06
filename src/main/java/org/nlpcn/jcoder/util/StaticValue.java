@@ -5,6 +5,7 @@ import java.util.ResourceBundle;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.commons.lang.util.MD5;
+import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
@@ -24,14 +25,19 @@ public class StaticValue {
 
 	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 	public static final String HOST = getValueOrCreate("host", null);
+
+	public static final int PORT = ObjConver.getIntValue(getValueOrCreate("port", "8080"));
+
+	public static final int RPCPORT = ObjConver.getIntValue(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
+
 	public static final String LOG_PATH = getValueOrCreate("log", "log/jcoder.log");
 
 	public static final File HOME_FILE = new File(HOME);
 	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
-	
-	public static final String VERSION = getResource("version") ;
+
+	public static final String VERSION = getResource("version");
 
 	private static Ioc systemIoc;
 

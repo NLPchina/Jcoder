@@ -21,4 +21,18 @@ public @interface DefaultExecute {
      * 需要映射的HTTP方法,例如POST GET 等等
      */
     String[] methods() default {};
+    
+    /**
+	 * is publish as restful
+	 * 
+	 * @return true
+	 */
+	boolean restful() default true;
+
+	/**
+	 * is publish as rpc
+	 * 
+	 * @return true
+	 */
+	boolean rpc() default true;
 }

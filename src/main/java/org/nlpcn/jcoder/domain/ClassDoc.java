@@ -1,10 +1,7 @@
 package org.nlpcn.jcoder.domain;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -69,7 +66,7 @@ public class ClassDoc extends ApiDoc {
 
 		private String retrunContent;
 
-		private Set<String> methods;
+		private Set<String> methods = new HashSet<>();
 		
 		public boolean isDefaultExecute() {
 			return defaultExecute;
@@ -88,11 +85,6 @@ public class ClassDoc extends ApiDoc {
 		}
 
 		public Set<String> getMethods() {
-			if (methods == null) {
-				Set<String> temp = new HashSet<>();
-				temp.add("*");
-				return temp;
-			}
 			return methods;
 		}
 
@@ -101,9 +93,6 @@ public class ClassDoc extends ApiDoc {
 		}
 
 		public void addMethod(String method) {
-			if (methods == null) {
-				methods = new HashSet<>();
-			}
 			methods.add(method);
 		}
 
@@ -162,56 +151,3 @@ public class ClassDoc extends ApiDoc {
 
 }
 
-abstract class ApiDoc {
-
-	private String name;
-	private String content;
-	protected List<ApiDoc> sub;
-	protected Map<String, String> attr;
-
-	public ApiDoc(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getContent() {
-		return content;
-	}
-
-	public void setContent(String content) {
-		this.content = content;
-	}
-
-	public List<ApiDoc> getSub() {
-		return sub;
-	}
-
-	public void setSub(List<ApiDoc> sub) {
-		this.sub = sub;
-	}
-
-	public Map<String, String> getAttr() {
-		return attr;
-	}
-
-	public void setAttr(Map<String, String> attr) {
-		this.attr = attr;
-	}
-
-	public void addAttr(String key, String value) {
-		if (this.attr == null) {
-			this.attr = new HashMap<>();
-		}
-		attr.put(key, value);
-	}
-
-	public abstract ApiDoc createSubDoc(String name);
-
-}

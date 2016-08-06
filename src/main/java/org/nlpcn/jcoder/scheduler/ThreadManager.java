@@ -214,7 +214,7 @@ public class ThreadManager {
 					task = new Task();
 				}
 				task.setRunStatus("Runging");
-				taskInfo = new TaskInfo(key, task, DateUtils.getDate(split[2], "yyyyMMddHHmmss").getTime());
+				taskInfo = new TaskInfo(key, task, DateUtils.getDate(split[3], "yyyyMMddHHmmss").getTime());
 			} catch (Exception e) {
 				taskInfo = new TaskInfo();
 				taskInfo.setMessage(ExceptionUtil.printStackTrace(e));

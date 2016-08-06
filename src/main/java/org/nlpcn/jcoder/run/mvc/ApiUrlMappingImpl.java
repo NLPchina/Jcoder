@@ -11,9 +11,13 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.nlpcn.jcoder.domain.CodeInfo;
+import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.http.Http;
 import org.nutz.lang.Lang;
 import org.nutz.lang.Strings;
 import org.nutz.log.Log;
@@ -27,6 +31,7 @@ import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.RequestPath;
 import org.nutz.mvc.UrlMapping;
 import org.nutz.mvc.annotation.BlankAtException;
+import org.nutz.mvc.config.FilterNutConfig;
 import org.nutz.mvc.impl.ActionInvoker;
 import org.nutz.mvc.impl.Loadings;
 
@@ -34,12 +39,12 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 	private static final Log log = Logs.get();
 
-	protected Map<String, ActionInvoker> map;
+	protected Map<String, ApiActionInvoker> map;
 
 	private Map<String, Lock> lockMap = new HashMap<>();
 
 	public ApiUrlMappingImpl() {
-		this.map = new ConcurrentHashMap<String, ActionInvoker>();
+		this.map = new ConcurrentHashMap<String, ApiActionInvoker>();
 	}
 
 	public void add(ActionChainMaker maker, ActionInfo ai, NutConfig config) {
@@ -60,25 +65,19 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		for (String path : ai.getPaths()) {
 
 			// 尝试获取，看看有没有创建过这个 URL 调用者
-			ActionInvoker invoker = map.get(path);
+			ApiActionInvoker invoker = map.get(path);
 
 			// 如果没有增加过这个 URL 的调用者，为其创建备忘记录，并加入索引
 			if (null == invoker) {
-				invoker = new ActionInvoker();
+				invoker = new ApiActionInvoker();
 				map.put(path, invoker);
 				// 记录一下方法与 url 的映射
 				config.getAtMap().addMethod(path, ai.getMethod());
 			}
 
 			// 将动作链，根据特殊的 HTTP 方法，保存到调用者内部
-			if (ai.isForSpecialHttpMethod()) {
-				for (String httpMethod : ai.getHttpMethods())
-					invoker.addChain(httpMethod, chain);
-			}
-			// 否则，将其设置为默认动作链
-			else {
-				invoker.setDefaultChain(chain);
-			}
+			invoker.setDefaultChain(chain);
+
 		}
 
 		printActionMapping(ai);
@@ -94,7 +93,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		throw new RuntimeException(this.getClass() + " not support this function ! ");
 	}
 
-	public ActionInvoker getOrCreate(NutConfig config, ActionContext ac) {
+	public ApiActionInvoker getOrCreate(NutConfig config, ActionContext ac) {
 		RequestPath rp = Mvcs.getRequestPathObject(ac.getRequest());
 
 		String path = rp.getPath();
@@ -107,22 +106,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 		ac.setSuffix(rp.getSuffix());
 
-		ActionInvoker invoker = map.get(path);
-
-		if (invoker == null) {
-			Lock lock = null;
-			synchronized (this) {
-				lock = lockMap.getOrDefault(path, new ReentrantLock());
-			}
-			lock.lock();
-			try {
-				if ((invoker = map.get(path)) == null) {
-					invoker = createInvoker(config, path);
-				}
-			} finally {
-				lock.unlock();
-			}
-		}
+		ApiActionInvoker invoker = getOrCreate(config, path);
 
 		if (invoker != null) {
 			setActionSomeArgs(ac, path);
@@ -139,12 +123,38 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		return null;
 	}
 
+	/**
+	 * 获得一个ApiActionInvoker如果不存在则创建一个
+	 * @param config
+	 * @param path
+	 * @return
+	 */
+	private ApiActionInvoker getOrCreate(NutConfig config, String path) {
+		ApiActionInvoker invoker = map.get(path);
+
+		if (invoker == null) {
+			Lock lock = null;
+			synchronized (this) {
+				lock = lockMap.getOrDefault(path, new ReentrantLock());
+			}
+			lock.lock();
+			try {
+				if ((invoker = map.get(path)) == null) {
+					invoker = createInvoker(config, path);
+				}
+			} finally {
+				lock.unlock();
+			}
+		}
+		return invoker;
+	}
+
 	private void setActionSomeArgs(ActionContext ac, String path) {
 		ac.setPath(path);
 		ac.setPathArgs(new LinkedList<String>());
 	}
 
-	private ActionInvoker createInvoker(NutConfig config, String path) {
+	private ApiActionInvoker createInvoker(NutConfig config, String path) {
 		String[] split = path.split("/");
 		Task task = TaskService.findTaskByCache(split[2]);
 
@@ -152,15 +162,21 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 			CodeInfo codeInfo = new JavaRunner(task).compile().instance().getTask().codeInfo();
 
-			ApiActionChainMaker aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[] {});
+			ApiActionChainMaker aacm = null;
+
+			if (config != null) {
+				aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[] {});
+			} else {
+				aacm = new ApiActionChainMaker();
+			}
 
 			Class<?> module = codeInfo.getClassz();
 
-			Method dm = codeInfo.getDefaultMethod();
+			ExecuteMethod dm = codeInfo.getDefaultMethod();
 
-			for (Method method : codeInfo.getExecuteMethods()) {
+			for (ExecuteMethod method : codeInfo.getExecuteMethods()) {
 				// 增加到映射中
-				ActionInfo info = ApiLoadings.createInfo(method);
+				ActionInfo info = ApiLoadings.createInfo(method.getMethod());
 
 				info.setModuleType(module);
 
@@ -181,7 +197,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	 * 从映射表中删除一个api
 	 */
 	public void remove(String name) {
-		Iterator<Entry<String, ActionInvoker>> iterator = map.entrySet().iterator();
+		Iterator<Entry<String, ApiActionInvoker>> iterator = map.entrySet().iterator();
 		String path = null;
 		synchronized (map) {
 			while (iterator.hasNext()) {
@@ -194,6 +210,24 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	}
 
 	/**
+	 * 通过一个地址获取ActionInvoker
+	 * @param className
+	 * @param methodName
+	 * @return
+	 */
+	public ApiActionInvoker getOrCreateByUrl(String className, String methodName) {
+		String path = "/api/" + className + "/" + methodName;
+		ApiActionInvoker apiActionInvoker = map.get(path);
+
+		if (apiActionInvoker == null) { // 调用http接口进行渲染填充map
+			Http.get("http://127.0.0.1:" + System.getProperty(StaticValue.PREFIX + "port") + path + "?_rpc_init");
+			apiActionInvoker = map.get(path);
+		}
+
+		return apiActionInvoker;
+	}
+
+	/**
 	 * 删除全部访问地址,相当于全站reload
 	 */
 	public void removeAll() {
@@ -202,7 +236,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 	@Override
 	public void add(String path, ActionInvoker invoker) {
-		map.put(path, invoker);
+		throw new RuntimeException(this.getClass() + " not support this function ! ");
 	}
 
 	protected void printActionMapping(ActionInfo ai) {

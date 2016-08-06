@@ -1,7 +1,13 @@
-package org.nlpcn.jcoder.server.rpc;
+package org.nlpcn.jcoder.server.rpc.server;
 
 import java.nio.channels.spi.SelectorProvider;
 import java.util.concurrent.ThreadFactory;
+
+import org.apache.log4j.Logger;
+import org.nlpcn.jcoder.server.rpc.client.RpcDecoder;
+import org.nlpcn.jcoder.server.rpc.client.RpcEncoder;
+import org.nlpcn.jcoder.server.rpc.client.RpcRequest;
+import org.nlpcn.jcoder.server.rpc.client.RpcResponse;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -25,6 +31,8 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
  *
  */
 public class RpcServer {
+	
+	private static final Logger LOG = Logger.getLogger(RpcServer.class) ;
 
 	private static ServerBootstrap bootstrap = null;
 
@@ -41,6 +49,9 @@ public class RpcServer {
 	 * @throws Exception
 	 */
 	public static void startServer(int port) throws Exception {
+		
+		LOG.info("to start rpc server ");
+		
 		ThreadFactory threadRpcFactory = new NamedThreadFactory("NettyRPC ThreadFactory");
 
 		boss = new NioEventLoopGroup(PARALLEL);
@@ -54,22 +65,25 @@ public class RpcServer {
 					ChannelPipeline pipeline = socketChannel.pipeline();
 					pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, MESSAGE_LENGTH, 0, MESSAGE_LENGTH));
 					pipeline.addLast(new LengthFieldPrepender(MESSAGE_LENGTH));
-					pipeline.addLast(new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.weakCachingConcurrentResolver(this.getClass().getClassLoader())));
-					pipeline.addLast(new ObjectEncoder());
+					pipeline.addLast(new RpcDecoder(RpcRequest.class));
+					pipeline.addLast(new RpcEncoder(RpcResponse.class));
 					pipeline.addLast(new ExecuteHandler());
 				}
 			}).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);
 
 			ChannelFuture future = bootstrap.bind(port).sync();
 
-			future.channel().closeFuture().sync();
+			future.channel().closeFuture();
+			
+			LOG.info("start rpc server ok");
 
 		} finally {
-			stopServer();
+		
 		}
 	}
 
 	public static void stopServer() {
+		LOG.info("to stop rpc server");
 		if (!worker.isShutdown()) {
 			worker.shutdownGracefully();
 		}
@@ -77,6 +91,7 @@ public class RpcServer {
 		if (!boss.isShutdown()) {
 			boss.shutdownGracefully();
 		}
+		LOG.info("stop rpc server ok");
 	}
 
 }

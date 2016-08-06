@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.job;
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
+import org.nlpcn.jcoder.server.rpc.server.RpcServer;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -17,6 +18,7 @@ public class SiteSetup implements Setup {
 	@Override
 	public void destroy(NutConfig nc) {
 		H2Server.stopServer();
+		RpcServer.stopServer();
 	}
 
 	@Override
@@ -28,8 +30,8 @@ public class SiteSetup implements Setup {
 		StaticValue.setSystemIoc(nc.getIoc());
 
 		H2Server.startServer(nc);
-		
-		//set version
+
+		// set version
 		nc.getServletContext().setAttribute("VERSION", StaticValue.VERSION);
 
 		// 初始化Jar环境
@@ -53,7 +55,7 @@ public class SiteSetup implements Setup {
 			LOG.error(e);
 		}
 
-		// task 检查集群中其他机器的运行状况
+		// task 其他定时任务的运行状况
 		new Thread(new CheckTaskJob()).start();
 
 		LOG.info("begin run task quene!");
@@ -63,6 +65,19 @@ public class SiteSetup implements Setup {
 		LOG.info("begin print console job!");
 		// 运行日志打印到websocket任务
 		new Thread(new PrintConsoleJob()).start();
+
+		// 启动rpc服务,默认是当前端口+1 ;
+		LOG.info("begin start rpc server! on port " + StaticValue.RPCPORT);
+		try {
+			RpcServer.startServer(StaticValue.RPCPORT);
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+			LOG.error(StaticValue.PREFIX + "port not set in system property");
+		} catch (Exception e) {
+			LOG.error("rpc server stop fail ", e);
+		}
+
+		LOG.info("start all ok , goodluck");
 
 	}
 
