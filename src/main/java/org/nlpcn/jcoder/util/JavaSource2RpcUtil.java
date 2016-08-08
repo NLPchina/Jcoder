@@ -40,6 +40,11 @@ public class JavaSource2RpcUtil {
 			+ "		this.__JCODER__timeout = timeout;\n" + "	}\n" + "\n" + "	private boolean __JCODER__syn = true;\n" + "\n" + "	private long __JCODER__timeout = 60000L;\n" + "\n"
 			+ "	public void set__JCODER__syn(boolean syn) {\n" + "		this.__JCODER__syn = syn;\n" + "	}\n" + "\n" + "	public void set__JCODER__timeout(long timeout) {\n"
 			+ "		this.__JCODER__timeout = timeout;\n" + "	}\n";
+	
+	
+	public static void main(String[] args) {
+		System.out.println(METHOD_TEMPLATE);
+	}
 
 	public static String makeRpcSource(Task task) throws Exception {
 		if (task.codeInfo().getClassz() == null) {
@@ -140,8 +145,17 @@ public class JavaSource2RpcUtil {
 			args = Joiner.on(" , ").join(parameters);
 			argsName = Joiner.on(" , ").join(parameters.stream().map(p -> p.getId()).collect(Collectors.toList()));
 		}
+		
+		String returnType = method.getType().toString() ;
+		
+		
+		if("void".equals(returnType)){
+			methodCode = methodCode.replace("return ([RETURN]) ", "");
+		}
+		
+		methodCode = methodCode.replace("[RETURN]", returnType) ;
 
-		return methodCode.replace("[RETURN]", method.getType().toString()).replace("[METHOD_NAME]", method.getName()).replace("[ARGS]", args).replace("[ARGS_NAME]", argsName);
+		return methodCode.replace("[METHOD_NAME]", method.getName()).replace("[ARGS]", args).replace("[ARGS_NAME]", argsName);
 
 	}
 

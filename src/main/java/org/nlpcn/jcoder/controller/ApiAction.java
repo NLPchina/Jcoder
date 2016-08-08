@@ -294,14 +294,20 @@ public class ApiAction {
 		rep.setContentType("application/octet-stream");
 
 		String pom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-				+ "		  <modelVersion>4.0.0</modelVersion>\n" + "		  <groupId>org.nlpcn.jcoder</groupId>\n" + "		  <artifactId>jcoder-rpc-client</artifactId>\n"
-				+ "		  <version>1.0</version>\n" + "\n" + "\n" + "	<dependencies>\n" + "\n" + "		<dependency>\n" + "			<groupId>io.netty</groupId>\n"
-				+ "			<artifactId>netty-all</artifactId>\n" + "			<version>4.1.2.Final</version>\n" + "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n"
-				+ "		<dependency>\n" + "			<groupId>com.dyuproject.protostuff</groupId>\n" + "			<artifactId>protostuff-core</artifactId>\n" + "			<version>1.0.10</version>\n"
-				+ "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n" + "		<dependency>\n" + "			<groupId>com.dyuproject.protostuff</groupId>\n"
-				+ "			<artifactId>protostuff-runtime</artifactId>\n" + "			<version>1.0.10</version>\n" + "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n"
-				+ "		<dependency>\n" + "			<groupId>org.objenesis</groupId>\n" + "			<artifactId>objenesis</artifactId>\n" + "			<version>2.4</version>\n"
-				+ "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n" + "	</dependencies>\n" + "</project>";
+				+ "                  <modelVersion>4.0.0</modelVersion>\n" + "                  <groupId>org.nlpcn.jcoder</groupId>\n"
+				+ "                  <artifactId>jcoder-rpc-client</artifactId>\n" + "                  <version>1.0</version>\n" + "\n" + "\n" + "        <dependencies>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>io.netty</groupId>\n" + "                        <artifactId>netty-all</artifactId>\n"
+				+ "                        <version>4.1.2.Final</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>io.protostuff</groupId>\n"
+				+ "                        <artifactId>protostuff-core</artifactId>\n" + "                        <version>1.4.4</version>\n"
+				+ "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n" + "                <dependency>\n"
+				+ "                        <groupId>io.protostuff</groupId>\n" + "                        <artifactId>protostuff-runtime</artifactId>\n"
+				+ "                        <version>1.4.4</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>org.objenesis</groupId>\n" + "                        <artifactId>objenesis</artifactId>\n"
+				+ "                        <version>2.4</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>org.jasypt</groupId>\n" + "                        <artifactId>jasypt</artifactId>\n"
+				+ "                        <version>1.9.2</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "        </dependencies>\n" + "</project>";
 
 		ServletOutputStream outputStream = rep.getOutputStream();
 
@@ -329,6 +335,7 @@ public class ApiAction {
 
 	/**
 	 * 编译class类到jar中
+	 * 
 	 * @return
 	 * @throws IOException
 	 */
@@ -394,6 +401,7 @@ public class ApiAction {
 
 	/**
 	 * 编译class类到jar中
+	 * 
 	 * @return
 	 * @throws IOException
 	 */
@@ -434,6 +442,7 @@ public class ApiAction {
 
 	/**
 	 * 执行测试用户的api
+	 * 
 	 * @param jsonTask
 	 * @return
 	 */
@@ -506,14 +515,21 @@ public class ApiAction {
 
 	public static void main(String[] args) {
 		String pom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-				+ "		  <modelVersion>4.0.0</modelVersion>\n" + "		  <groupId>org.nlpcn.jcoder</groupId>\n" + "		  <artifactId>jcoder-rpc-client</artifactId>\n"
-				+ "		  <version>1.0</version>\n" + "\n" + "\n" + "	<dependencies>\n" + "\n" + "		<dependency>\n" + "			<groupId>io.netty</groupId>\n"
-				+ "			<artifactId>netty-all</artifactId>\n" + "			<version>4.1.2.Final</version>\n" + "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n"
-				+ "		<dependency>\n" + "			<groupId>com.dyuproject.protostuff</groupId>\n" + "			<artifactId>protostuff-core</artifactId>\n" + "			<version>1.0.10</version>\n"
-				+ "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n" + "		<dependency>\n" + "			<groupId>com.dyuproject.protostuff</groupId>\n"
-				+ "			<artifactId>protostuff-runtime</artifactId>\n" + "			<version>1.0.10</version>\n" + "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n"
-				+ "		<dependency>\n" + "			<groupId>org.objenesis</groupId>\n" + "			<artifactId>objenesis</artifactId>\n" + "			<version>2.4</version>\n"
-				+ "			<scope>compile</scope>\n" + "		</dependency>\n" + "\n" + "	</dependencies>\n" + "</project>";
+				+ "                  <modelVersion>4.0.0</modelVersion>\n" + "                  <groupId>org.nlpcn.jcoder</groupId>\n"
+				+ "                  <artifactId>jcoder-rpc-client</artifactId>\n" + "                  <version>1.0</version>\n" + "\n" + "\n" + "        <dependencies>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>io.netty</groupId>\n" + "                        <artifactId>netty-all</artifactId>\n"
+				+ "                        <version>4.1.2.Final</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>io.protostuff</groupId>\n"
+				+ "                        <artifactId>protostuff-core</artifactId>\n" + "                        <version>1.4.4</version>\n"
+				+ "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n" + "                <dependency>\n"
+				+ "                        <groupId>io.protostuff</groupId>\n" + "                        <artifactId>protostuff-runtime</artifactId>\n"
+				+ "                        <version>1.4.4</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>org.objenesis</groupId>\n" + "                        <artifactId>objenesis</artifactId>\n"
+				+ "                        <version>2.4</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "                <dependency>\n" + "                        <groupId>org.jasypt</groupId>\n" + "                        <artifactId>jasypt</artifactId>\n"
+				+ "                        <version>1.9.2</version>\n" + "                        <scope>compile</scope>\n" + "                </dependency>\n" + "\n"
+				+ "        </dependencies>\n" + "</project>";
+
 		System.out.println(pom);
 	}
 }
