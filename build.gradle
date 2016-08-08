@@ -1,5 +1,5 @@
 group 'nlpcn.org'
-version '1.6'
+version '1.7'
 
 apply plugin: 'java'
 apply plugin: 'war'
@@ -29,7 +29,8 @@ dependencies {
     compile 'com.google.guava:guava:18.0'
     compile 'com.github.javaparser:javaparser-core:2.4.0'
     compile 'com.github.axet:kaptcha:0.0.9'
-    compile 'org.javassist:javassist:3.20.0-GA'
+	compile 'org.jasypt:jasypt:1.9.2'
+    
     
     //java serizable
     compile 'io.protostuff:protostuff-core:1.4.4'

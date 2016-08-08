@@ -1,13 +1,20 @@
 package org.nlpcn.jcoder.server.rpc.client;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.rmi.ServerException;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.nlpcn.jcoder.util.ExceptionUtil;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -43,6 +50,8 @@ public class RpcClient {
 
 	private Channel channel = null;
 
+	private Channel fileChannel = null;
+
 	/**
 	 * 单例模式
 	 */
@@ -55,6 +64,7 @@ public class RpcClient {
 
 	/**
 	 * 连接到服务器
+	 * 
 	 * @param serverAddress
 	 * @return
 	 * @throws InterruptedException
@@ -79,6 +89,7 @@ public class RpcClient {
 
 	/**
 	 * 获得对象,在此之前对象必须初始化,就是调用静态方法的connect() ;
+	 * 
 	 * @return
 	 */
 	public static RpcClient getInstance() {
@@ -90,7 +101,8 @@ public class RpcClient {
 
 	/**
 	 * 一个假的构造方法
-	 * @throws InterruptedException 
+	 * 
+	 * @throws InterruptedException
 	 */
 	public RpcClient(String host, int port) throws InterruptedException {
 		connect(host, port);
@@ -98,7 +110,8 @@ public class RpcClient {
 
 	/**
 	 * 又一个假的构造方法
-	 * @throws InterruptedException 
+	 * 
+	 * @throws InterruptedException
 	 */
 	public RpcClient(InetSocketAddress address) throws InterruptedException {
 		connect(address);
@@ -137,11 +150,16 @@ public class RpcClient {
 					pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
 					pipeline.addLast(new LengthFieldPrepender(4));
 					pipeline.addLast(new RpcDecoder(RpcResponse.class));
+					pipeline.addLast(new RpcDecoder(RpcResponse.class));
 					pipeline.addLast(new RpcEncoder(RpcRequest.class));
 					pipeline.addLast(new ClientHandler());
 				}
 			});
 			channel = bootstrap.connect(serverAddress.getHostString(), serverAddress.getPort()).sync().channel();
+
+			fileChannel = bootstrap.connect(serverAddress.getHostString(), serverAddress.getPort()).sync().channel();
+
+			channel.closeFuture();
 
 			errCount = 0;
 		} catch (Exception e) {
@@ -154,13 +172,12 @@ public class RpcClient {
 	}
 
 	public Object proxy(RpcRequest rpcRequest) throws Throwable {
-
 		String messageId = rpcRequest.getMessageId();
 
 		try {
 			ResultCallBack callBack = new ResultCallBack(rpcRequest);
 			callBackMap.put(messageId, callBack);
-			channel.writeAndFlush(rpcRequest).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			channel.writeAndFlush(rpcRequest).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE).sync();
 			Object result = null;
 			if (rpcRequest.isSyn()) {
 				result = callBack.getResult();
@@ -183,8 +200,111 @@ public class RpcClient {
 
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, RpcResponse rep) throws Exception {
-			ResultCallBack resultCallBack = callBackMap.get(rep.getMessageId());
-			resultCallBack.over(rep);
+			if (rep.isFile()) {
+				write2Server(ctx, rep);
+			} else {
+				ResultCallBack resultCallBack = callBackMap.get(rep.getMessageId());
+				resultCallBack.over(rep);
+			}
+		}
+
+		@Override
+		public void channelActive(ChannelHandlerContext ctx) throws Exception {
+			// TODO Auto-generated method stub
+			super.channelActive(ctx);
+		}
+
+		/**
+		 * write a stream to server
+		 * 
+		 * @param ctx
+		 * @param rep
+		 * @throws IOException
+		 * @throws InterruptedException
+		 */
+		private void write2Server(ChannelHandlerContext ctx, RpcResponse rep) throws IOException, InterruptedException {
+			VFile file = (VFile) rep.getResult();
+
+			if (!file.check()) {
+				RpcRequest rpcRequest = new RpcRequest(file.getId(), VFile.VFILE, VFile.VFILE, true, false, 0, new Object[] { "verification err" });
+				fileChannel.writeAndFlush(rpcRequest).sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			}
+
+			if (file.isFile()) {
+				writeFromFile(file);
+			} else {
+				writeFromStream(file);
+			}
+
+		}
+
+		private void writeFromStream(VFile file) throws InterruptedException, IOException {
+
+			byte[] bytes = null;
+
+			try {
+				byte[] b = new byte[file.getLen()];
+
+				InputStream inputStream = VFile.STREAM_MAP.get(file.getId());
+
+				int len = inputStream.read(b);
+
+				if (len <= 0) {
+					bytes = null;
+					inputStream.close();
+					VFile.STREAM_MAP.remove(file.getId());
+				} else if (len == b.length) {
+					bytes = b;
+				} else {
+					bytes = Arrays.copyOfRange(b, 0, len);
+				}
+
+				RpcRequest rpcRequest = new RpcRequest(file.getId(), VFile.VFILE, VFile.VFILE, true, false, 0, new Object[] { bytes });
+
+				fileChannel.writeAndFlush(rpcRequest).sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+
+			} catch (Exception e) {
+				try {
+					RpcRequest rpcRequest = new RpcRequest(file.getId(), VFile.VFILE, VFile.VFILE, true, false, 0, new Object[] { ExceptionUtil.printStackTraceWithOutLine(e) });
+					fileChannel.writeAndFlush(rpcRequest).sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+				} finally {
+					VFile.STREAM_MAP.remove(file.getId());
+				}
+
+			}
+		}
+
+		private void writeFromFile(VFile file) throws InterruptedException, IOException {
+			FileInputStream fis = null;
+
+			byte[] bytes = null;
+
+			try {
+				byte[] b = new byte[file.getLen()];
+				fis = new FileInputStream(new File(file.getClientLocalPath()));
+				fis.skip(file.getOff());
+				int len = fis.read(b);
+
+				if (len <= 0) {
+					bytes = null;
+				} else if (len == b.length) {
+					bytes = b;
+				} else {
+					bytes = Arrays.copyOfRange(b, 0, len);
+				}
+
+				RpcRequest rpcRequest = new RpcRequest(file.getId(), VFile.VFILE, VFile.VFILE, true, false, 0, new Object[] { bytes });
+
+				fileChannel.writeAndFlush(rpcRequest).sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+
+			} catch (Exception e) {
+				RpcRequest rpcRequest = new RpcRequest(file.getId(), VFile.VFILE, VFile.VFILE, true, false, 0, new Object[] { ExceptionUtil.printStackTraceWithOutLine(e) });
+				fileChannel.writeAndFlush(rpcRequest).sync().addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+			} finally {
+				if (fis != null) {
+					fis.close();
+				}
+			}
 		}
 
 		@Override
@@ -230,7 +350,7 @@ public class RpcClient {
 		 * @return
 		 * @throws InterruptedException
 		 * @throws TimeoutException
-		 * @throws ServerException 
+		 * @throws ServerException
 		 */
 		public Object getResult() throws InterruptedException, TimeoutException, ServerException {
 			try {
@@ -255,6 +375,10 @@ public class RpcClient {
 			}
 		}
 
+	}
+
+	public Channel getChannel() {
+		return channel;
 	}
 
 }

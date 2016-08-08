@@ -30,7 +30,7 @@ public class RpcDecoder extends ByteToMessageDecoder {
 		byte[] data = new byte[dataLength];
 		byteBuf.readBytes(data);
 
-		Object obj = SerializationUtil.deserializer(data, genericClass);
+		Object obj = SerializationUtil.deserialize(data, genericClass);
 		list.add(obj);
 	}
 }

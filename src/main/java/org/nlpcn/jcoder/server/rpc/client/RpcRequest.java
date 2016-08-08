@@ -3,8 +3,6 @@ package org.nlpcn.jcoder.server.rpc.client;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 
-import org.apache.log4j.chainsaw.Main;
-
 public class RpcRequest implements Serializable {
 	private static final long serialVersionUID = 1L;
 
@@ -17,10 +15,22 @@ public class RpcRequest implements Serializable {
 	private boolean jsonStr = false; // 是否jsonstr返回
 	private long timeout = 10000; // 超时时间,<=0为不做限制
 	
+	public RpcRequest(){}
+	
 	public RpcRequest(String messageId, Class<?> clz, Method method, boolean syn, boolean jsonStr, long timeout, Object[] arguments) {
 		this.messageId = messageId;
 		this.className = clz.getSimpleName();
 		this.methodName = method.getName();
+		this.arguments = arguments;
+		this.syn = syn;
+		this.jsonStr = jsonStr;
+		this.timeout = timeout;
+	}
+	
+	public RpcRequest(String messageId, String className, String methodName, boolean syn, boolean jsonStr, long timeout, Object[] arguments) {
+		this.messageId = messageId;
+		this.className = className;
+		this.methodName = methodName;
 		this.arguments = arguments;
 		this.syn = syn;
 		this.jsonStr = jsonStr;

@@ -24,8 +24,6 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.google.common.base.Joiner;
 
-import javassist.NotFoundException;
-
 /**
  * 根据java文件解析
  * 
@@ -103,7 +101,7 @@ public class JavaSource2RpcUtil {
 		return sb.toString();
 	}
 
-	private static List<Method> findAllRpcMthod(Method[] methods) throws ClassNotFoundException, NotFoundException {
+	private static List<Method> findAllRpcMthod(Method[] methods) throws ClassNotFoundException {
 
 		List<Method> rpcMethod = new ArrayList<>();
 

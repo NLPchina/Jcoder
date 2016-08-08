@@ -20,9 +20,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.serialization.ClassResolvers;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
 
 /**
  * rpc server
@@ -67,6 +64,7 @@ public class RpcServer {
 					pipeline.addLast(new LengthFieldPrepender(MESSAGE_LENGTH));
 					pipeline.addLast(new RpcDecoder(RpcRequest.class));
 					pipeline.addLast(new RpcEncoder(RpcResponse.class));
+					pipeline.addLast(new ContextHandler());
 					pipeline.addLast(new ExecuteHandler());
 				}
 			}).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);

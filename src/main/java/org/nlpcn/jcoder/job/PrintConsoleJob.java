@@ -31,7 +31,7 @@ public class PrintConsoleJob implements Runnable {
 							while (WebSocketConsole.count() > 0) {
 								line = br.readLine();
 
-								if (count++ > 100) {
+								if (count++ > 1000) {
 									LOG.info("read about 100 times for log !");
 									count = 0;
 								}
