@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html ng-app="apiApp" ng-controller="apiCtrl">
+<head>
+	<title>Jcoder Api Doc</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<link href="vendor/bootstrap.min.css" rel="stylesheet" media="screen">
+	<link href="vendor/prettify.css" rel="stylesheet" media="screen">
+	<link href="vendor/style.css" rel="stylesheet" media="screen, print">
+	<script type="text/javascript" src="vendor/jquery.min.js"></script>
+	<script type="text/javascript" src="vendor/angular.min.js"></script>
+	<script type="text/javascript">
+	$(function(){
+		
+		// Content-Scroll on Navigation click.
+	    $('.sidenav1').find('a').on('click', function(e) {
+	        e.preventDefault();
+	        var id = $(this).attr('href');
+	        if ($(id).length > 0)
+	            $('html,body').animate({ scrollTop: parseInt($(id).offset().top) }, 400);
+	        window.location.hash = $(this).attr('href');
+	    });
+		
+	});
+	
+	</script>
+	<style>
+	
+	</style>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div id="sidenav" class="span2">
+		<nav id="scrollingNav">
+		  <ul class="sidenav nav nav-list">
+	        <li class="{{x.isGroup?'nav-header':''}} {{x.isActive?'active':''}}" 
+	        	ng-repeat="x in nav_datas" ng-click="clickNav(x)">
+	        	<a href="{{x.href}}" class="{{x.status==false?'alert-error':''}}">{{x.name}}</a>
+	        </li>
+	        
+	        <li class="nav-header {{x.isActive?'active':''}}"><a href="#maven_response">Virtual Maven</a></li>
+		  </ul>
+		</nav>
+	</div>
+	<div id="content">
+		<div id="project">
+		  <div class="pull-left">
+		    <h1>Jcoder Api Doc</h1>
+		  </div>
+		  <div class="clearfix"></div>
+		</div>
+		<div id="header">
+			<div id="api-_">
+				<h2 id="welcome-to-apidoc"></h2>
+			</div>
+		</div>
+		<div id="sections">
+
+<section id="{{x.name}}" ng-repeat="x in datas">
+	<h1 class="{{x.status==false?'alert-error':''}}">{{x.name}}</h1>
+	<p>version: {{x.version}}</p>
+	<div id="{{x.name}}_{{y.name}}" ng-repeat="y in x.sub">
+		<article id="api-User-GetUser-0.3.0" data-group="User" data-name="GetUser" data-version="0.3.0">
+		    <div class="pull-left">
+		      <h1>{{y.name}}</h1>
+		    </div>
+		    <div class="clearfix"></div>
+		
+		      <p></p><p>{{y.content}}</p> <p></p>
+		
+			<span class="method {{m|lowercase}}" ng-repeat="m in y.methods">{{m}}</span>
+			
+		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{atx}}/api/{{x.name}}/{{y.name}}</span></code></pre>
+		
+		      <h2 ng-show="y.sub.length>0">Parameter</h2>
+		      <table ng-show="y.sub.length>0">
+		        <thead>
+		          <tr>
+		            <th style="width: 30%">Field</th>
+		            <th style="width: 10%">Type</th>
+		            <th style="width: 70%">Description</th>
+		          </tr>
+		        </thead>
+		        <tbody>
+		          <tr ng-repeat="s in y.sub">
+		            <td class="code">{{s.name}}</td>
+		            <td>{{s.type}}</td>
+		            <td>{{s.content}}</td>
+		          </tr>
+		        </tbody>
+		      </table>
+		      
+		      <h2 ng-show="y.attr">Attribute</h2>
+		      <table ng-show="y.attr">
+		        <thead>
+		          <tr>
+		            <th style="width: 30%">Field</th>
+		            <th style="width: 70%">Value</th>
+		          </tr>
+		        </thead>
+		        <tbody>
+		          <tr ng-repeat="(key,value) in y.attr">
+		            <td class="code">{{key}}</td>
+		            <td>{{value}}</td>
+		          </tr>
+		        </tbody>
+		      </table>
+		      
+		        <h2 ng-show="y.retrunContent">Return</h2>
+		        <pre class="prettyprint prettyprinted" ng-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
+		      
+		</article>
+	</div>
+</section>
+
+
+<div>
+<section id="maven_response">
+<h2 >Virtual Maven Response</h2>
+<pre class="prettyprint prettyprinted"><code>&lt;!--jcoder virtual respository--&gt;
+&lt;repositories&gt;
+	&lt;repository&gt;
+		&lt;id&gt;jcoder&lt;/id&gt;
+		&lt;url&gt;{{atx}}/api_maven/repository/&lt;/url&gt;
+	&lt;/repository&gt;
+&lt;/repositories&gt;
+
+&lt;!-- jcoder rpc sdk --&gt;
+&lt;dependency&gt;
+	&lt;groupId&gt;org.nlpcn.jcoder&lt;/groupId&gt;
+	&lt;artifactId&gt;jcoder-rpc-sdk&lt;/artifactId&gt;
+	&lt;version&gt;2.0.5&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;!-- make a package all class to a jar --&gt;
+&lt;dependency&gt;
+	&lt;groupId&gt;org.nlpcn.jcoder.package&lt;/groupId&gt;
+	&lt;artifactId&gt;[com.domain.package]&lt;/artifactId&gt;
+	&lt;version&gt;[any version]&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;!-- put updateData jar to you maven --&gt;
+&lt;dependency&gt;
+	&lt;groupId&gt;org.nlpcn.jcoder.jar&lt;/groupId&gt;
+	&lt;artifactId&gt;[your jar file name]&lt;/artifactId&gt;
+	&lt;version&gt;[your jar version]&lt;/version&gt;
+&lt;/dependency&gt;					
+</code></pre>
+</section>
+</div>
+		</div>
+		<div id="generator">
+			<div class="content">
+		        Generated with <a href="#">Jcoder Api Doc</a> 
+		    </div>
+		</div>
+	</div>
+  </div>
+</div>
+
+
+
+
+<script type="text/javascript" src="vendor/main.js"></script>
+</body></html>

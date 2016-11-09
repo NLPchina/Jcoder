@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+	version="3.0">
+	
+	<filter>
+		<filter-name>nutz</filter-name>
+		<filter-class>org.nlpcn.jcoder.filter.JcoderFilter</filter-class>
+		<init-param>
+			<param-name>modules</param-name>
+			<param-value>org.nlpcn.jcoder.App</param-value>
+		</init-param>
+	</filter>
+
+	<filter-mapping>
+		<filter-name>nutz</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+
+	<!-- websocket -->
+	<servlet>
+		<servlet-name>AtmosphereServlet</servlet-name>
+		<servlet-class>org.atmosphere.cpr.AtmosphereServlet</servlet-class>
+		<init-param>
+			<param-name>org.atmosphere.cpr.packages</param-name>
+			<param-value>org.nlpcn.jcoder.util.websocket</param-value>
+		</init-param>
+		<init-param>
+			<param-name>org.atmosphere.websocket.messageContentType</param-name>
+			<param-value>application/json</param-value>
+		</init-param>
+		<init-param>
+			<param-name>org.atmosphere.cpr.asyncSupport</param-name>
+			<param-value>org.atmosphere.container.Jetty9AsyncSupportWithWebSocket</param-value>
+		</init-param>
+		<load-on-startup>0</load-on-startup>
+		<async-supported>true</async-supported>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>AtmosphereServlet</servlet-name>
+		<url-pattern>/console/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>VerificationCode</servlet-name>
+		<servlet-class>com.google.code.kaptcha.servlet.KaptchaServlet</servlet-class>
+		<!-- 设置是否有边框 -->
+		<init-param>
+			<param-name>kaptcha.border</param-name>
+			<param-value>yes</param-value>
+		</init-param>
+		<!-- 设置边框颜色 -->
+		<init-param>
+			<param-name>kaptcha.border.color</param-name>
+			<param-value>105,179,90</param-value>
+		</init-param>
+		<!-- 设置验证码宽度 -->
+		<init-param>
+			<param-name>kaptcha.image.width</param-name>
+			<param-value>150</param-value>
+		</init-param>
+		<!-- 设置验证码高度 -->
+		<init-param>
+			<param-name>kaptcha.image.height</param-name>
+			<param-value>50</param-value>
+		</init-param>
+		<!-- 设置字体大小 -->
+		<init-param>
+			<param-name>kaptcha.textproducer.font.size</param-name>
+			<param-value>40</param-value>
+		</init-param>
+		<!-- 设置字体个数 -->
+		<init-param>
+			<param-name>kaptcha.textproducer.char.length</param-name>
+			<param-value>4</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>VerificationCode</servlet-name>
+		<url-pattern>/verification_code.jpg</url-pattern>
+	</servlet-mapping>
+
+
+	<session-config>
+		<session-timeout>14400</session-timeout>
+	</session-config>
+
+
+</web-app>

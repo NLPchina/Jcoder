@@ -1,0 +1,16 @@
+out/
+.classpath
+.project
+.settings/
+bin/
+.ext*
+log/
+/build/
+/target
+bak/
+code/
+/.gradle/
+.gradle/
+.DS_Store
+jcoder.properties
+
