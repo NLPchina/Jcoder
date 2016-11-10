@@ -19,7 +19,6 @@ import org.nutz.lang.random.R;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-//@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
 @ServerEndpoint(value = "/console", configurator = WebSocketConfigurator.class)
 @IocBean(create = "init", depose = "depose")
 public class WebsocketService extends Endpoint {

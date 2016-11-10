@@ -61,8 +61,8 @@ dependencies {
     providedCompile 'org.eclipse.jetty:jetty-jsp:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty:jetty-continuation:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.2.v20140723'
-    
-    
+    providedCompile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.2.2.v20140723'
+
 
 	testCompile 'junit:junit:4.12'
 

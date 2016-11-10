@@ -1,16 +1,32 @@
 package org.nlpcn.jcoder.job;
 
+import java.util.Arrays;
+
+import javax.servlet.ServletContext;
+import javax.websocket.DeploymentException;
+import javax.websocket.Endpoint;
+import javax.websocket.server.ServerEndpoint;
+
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.rpc.server.RpcServer;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.service.WebsocketService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.IocException;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sun.el.stream.Stream;
 
 public class SiteSetup implements Setup {
 
@@ -80,7 +96,23 @@ public class SiteSetup implements Setup {
 		} catch (Exception e) {
 			LOG.error("rpc server stop fail ", e);
 		}
-
+		
+		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext() ;
+		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler() ;
+		ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext) ;
+		Arrays.stream(nc.getIoc().getNames()).forEach(name ->{
+			Object object = nc.getIoc().get(Object.class, name) ;
+			if(object.getClass().getAnnotation(ServerEndpoint.class)!=null){
+				try {
+					configureContext.addEndpoint(object.getClass());
+					LOG.info("add "+object.getClass()+" in websocket container");
+				} catch (Exception e) {
+					LOG.error("add "+object.getClass()+" in websocket container fail!!",e);
+				}
+			}
+		});
+		
+		
 		LOG.info("start all ok , goodluck");
 
 	}

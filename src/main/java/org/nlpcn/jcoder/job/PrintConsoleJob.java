@@ -35,13 +35,11 @@ public class PrintConsoleJob implements Runnable {
 							
 							while (websocketService.count() > 0) {
 								line = br.readLine();
-
-								if (count++ > 1000) {
-									LOG.debug("read about 100 times for log !");
-									count = 0;
+								if (StringUtil.isBlank(line)) {
+									Thread.sleep(10L);
+								} else {
+									websocketService.sendMessage(line);
 								}
-								
-								websocketService.sendMessage(line);
 							}
 
 						} catch (Exception e) {
