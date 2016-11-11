@@ -18,7 +18,6 @@ import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.rpc.server.RpcServer;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.service.WebsocketService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.IocException;
 import org.nutz.mvc.NutConfig;

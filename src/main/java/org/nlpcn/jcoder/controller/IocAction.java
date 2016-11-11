@@ -4,6 +4,7 @@ import java.io.File;
 
 import org.nlpcn.commons.lang.util.IOUtil;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.util.JsonResult;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
@@ -30,11 +31,7 @@ public class IocAction {
 	@Ok("json")
 	public JsonResult save(@Param("code") String code) {
 		IOUtil.Writer(StaticValue.HOME + "/resource/ioc.js", IOUtil.UTF8, code);
-		Ioc ioc = new NutIoc(new JsonLoader(StaticValue.HOME + "/resource/ioc.js"));
-		if(StaticValue.getUserIoc()!=null){
-			StaticValue.getUserIoc().depose();	
-		}
-		StaticValue.setUserIoc(ioc);
+		JarService.flushIOC();
 		return StaticValue.okMessageJson("保存并加载成功！");
 	}
 }

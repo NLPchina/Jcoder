@@ -43,7 +43,7 @@ public class DynamicEngine {
 	 */
 	public static void flush(URLClassLoader classLoader) throws TaskException {
 		ourInstance = new DynamicEngine(classLoader);
-		// 如果classloader被改变.全站的动态代码全部刷新一遍.
+		// if class load change , to flush all task
 		synchronized (StaticValue.MAPPING) {
 			StaticValue.getBean(TaskService.class, "taskService").initTaskFromDB();
 		}

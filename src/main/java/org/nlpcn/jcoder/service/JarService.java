@@ -25,6 +25,9 @@ import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.ioc.Ioc;
+import org.nutz.ioc.impl.NutIoc;
+import org.nutz.ioc.loader.json.JsonLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +79,7 @@ public class JarService {
 	 * 统计并加载jar包
 	 */
 	public static void flushClassLoader() {
+		LOG.info("to flush classloader");
 		URL[] urls = null;
 		try {
 			List<File> findJars = findJars();
@@ -92,9 +96,21 @@ public class JarService {
 		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
 		try {
 			DynamicEngine.flush(classLoader);
+			flushIOC();
 		} catch (TaskException e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	
+
+	public static void flushIOC() {
+		LOG.info("to flush ioc");
+		Ioc ioc = new NutIoc(new JsonLoader(StaticValue.HOME + "/resource/ioc.js"));
+		if(StaticValue.getUserIoc()!=null){
+			StaticValue.getUserIoc().depose();	
+		}
+		StaticValue.setUserIoc(ioc);		
 	}
 
 	/**
@@ -396,5 +412,6 @@ public class JarService {
 
 		return systemFiles;
 	}
+
 
 }

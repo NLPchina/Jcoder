@@ -6,7 +6,7 @@ import java.io.FileInputStream;
 
 import org.nlpcn.commons.lang.util.IOUtil;
 import org.nlpcn.commons.lang.util.StringUtil;
-import org.nlpcn.jcoder.service.WebsocketService;
+import org.nlpcn.jcoder.controller.ConsoleAction;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +21,7 @@ public class PrintConsoleJob implements Runnable {
 	public void run() {
 		File file = new File(StaticValue.LOG_PATH);
 		
-		WebsocketService websocketService = StaticValue.getSystemIoc().get(WebsocketService.class) ;
+		ConsoleAction websocketService = StaticValue.getSystemIoc().get(ConsoleAction.class) ;
 		
 		while (true) {
 			try {

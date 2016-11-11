@@ -4,7 +4,6 @@ import javax.servlet.FilterConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.ActionContext;

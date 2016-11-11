@@ -31,7 +31,6 @@ import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.RequestPath;
 import org.nutz.mvc.UrlMapping;
 import org.nutz.mvc.annotation.BlankAtException;
-import org.nutz.mvc.config.FilterNutConfig;
 import org.nutz.mvc.impl.ActionInvoker;
 import org.nutz.mvc.impl.Loadings;
 
@@ -158,7 +157,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		String[] split = path.split("/");
 		Task task = TaskService.findTaskByCache(split[2]);
 
-		if (task != null && task.getStatus() == 1) {
+		if (task != null && task.getStatus() == 1 && task.getType() == 1) {
 
 			CodeInfo codeInfo = new JavaRunner(task).compile().instance().getTask().codeInfo();
 
