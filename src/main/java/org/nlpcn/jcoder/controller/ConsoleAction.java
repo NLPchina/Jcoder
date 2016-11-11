@@ -66,39 +66,8 @@ public class ConsoleAction extends Endpoint {
 
 	public void depose() {
 
-		System.out.println("===============1===========");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("=================2=========");
 	}
 	
-	
-	
-
-	@Override
-	protected void finalize() throws Throwable {
-		super.finalize();
-		
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-		System.out.println("==========================");
-	}
-
 	public int count() {
 		return sessions.size();
 	}
