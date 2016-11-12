@@ -130,8 +130,10 @@
 				},
 				'beforeSend' : function(XMLHttpRequest) {
 				},
-				'error' : function(e) {
-					alert("PassWord Or Acount Err！");
+				'error' : function(data) {
+					reflush();
+					$('#message').addClass("alert alert-danger");
+					$('#message').text(data.message) 
 				},
 				'success' : function(data) {
 					if(data.ok){

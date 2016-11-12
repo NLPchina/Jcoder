@@ -1,11 +1,11 @@
 package cn.com.infcn.api.test;
 
-import java.util.concurrent.ExecutorService;
-
 import org.apache.log4j.Logger;
-import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.filter.TokenFilter;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nutz.ioc.loader.annotation.Inject;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
 import org.nutz.mvc.annotation.Param;
 
 /**
@@ -19,15 +19,10 @@ public class TestApi {
 	@Inject
 	private Logger log;
 
-	@Inject
-	private ExecutorService threadPool;
-
-	@Inject
-	private User user;
-
 	@Execute
-	public User test(@Param("_name") String name) {
-		return user;
+	@Filters(@By(type=TokenFilter.class))
+	public String test(@Param("_name") String name) {
+		return name;
 	}
 
 }

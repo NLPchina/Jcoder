@@ -23,9 +23,6 @@ public class User {
 
 	@Column
 	private String mail; // 用户邮箱
-	
-//	@Column
-//	private String token ;
 
 	@Column("create_time")
 	private Date createTime; // 创建时间
@@ -77,13 +74,5 @@ public class User {
 	public void setCreateTime(Date createTime) {
 		this.createTime = createTime;
 	}
-
-//	public String getToken() {
-//		return token;
-//	}
-//
-//	public void setToken(String token) {
-//		this.token = token;
-//	}
 
 }

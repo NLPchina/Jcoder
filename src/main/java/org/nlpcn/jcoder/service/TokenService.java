@@ -1,12 +1,14 @@
 package org.nlpcn.jcoder.service;
 
+import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.nlpcn.jcoder.domain.Token;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.util.SharedSpace;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * api token mananger
@@ -15,17 +17,39 @@ import com.google.common.cache.CacheBuilder;
  *
  */
 public class TokenService {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(TokenService.class) ;
 
-	private static final Cache<String, Token> TOKEN_CACHE = CacheBuilder.newBuilder().expireAfterAccess(20, TimeUnit.MINUTES).build();
 
 	public static Token getToken(String key) throws ExecutionException {
-		Token token = TOKEN_CACHE.get(key, () -> {
-			return Token.NULL;
-		});
-		return token;
+		return SharedSpace.getToken(key) ;
 	}
-
-	public static void putToken(String key, Token token) {
-		TOKEN_CACHE.put(key, token);
+	
+	/**
+	 * regeidt a token by user
+	 * @param user
+	 * @return
+	 * @throws ExecutionException 
+	 */
+	public static String regToken(User user) throws ExecutionException{
+		LOG.info(user.getName()+" to create a key");
+		String key = UUID.randomUUID().toString();
+		Token token = new Token();
+		token.setToken(key);
+		token.setCreateTime(new Date());
+		token.setUser(user);
+		SharedSpace.regToken(token) ;
+		return token.getToken();
+	}
+	
+	/**
+	 * login out by token
+	 * @param key
+	 * @return
+	 */
+	public static Token removeToken(String key){
+		Token token = SharedSpace.removeToken(key) ;
+		LOG.info(token+" to create a key");
+		return token ;
 	}
 }

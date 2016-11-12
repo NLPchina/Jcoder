@@ -2,11 +2,20 @@ package org.nlpcn.jcoder.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.domain.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 /**
  * 共享内存空间。不能在多线程中调用。因为终止线程可能会终止redis的连接池。做一个队列来分离线程
@@ -25,7 +34,9 @@ public class SharedSpace {
 	private static final Map<Long, AtomicLong> TASK_SUCCESS = new HashMap<>();
 
 	private static final Map<Long, AtomicLong> TASK_ERR = new HashMap<>();
-
+	
+	private static final Cache<String, Token> TOKEN_CACHE = CacheBuilder.newBuilder().expireAfterAccess(20, TimeUnit.MINUTES).build();
+	
 	/**
 	 * 发布一个taskqueue
 	 *
@@ -112,5 +123,17 @@ public class SharedSpace {
 
 	public static void updateSuccess(Long id) {
 		getSuccessOrCreate(id).incrementAndGet();
+	}
+
+	public static Token getToken(String key) throws ExecutionException {
+		return TOKEN_CACHE.getIfPresent(key);
+	}
+
+	public static void regToken(Token token) {
+		TOKEN_CACHE.put(token.getToken(), token);		
+	}
+
+	public static Token removeToken(String key) {
+		return TOKEN_CACHE.asMap().remove(key) ;
 	}
 }

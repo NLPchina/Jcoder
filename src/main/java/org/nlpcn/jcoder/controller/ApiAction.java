@@ -10,12 +10,10 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
@@ -30,8 +28,6 @@ import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.Token;
-import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.ClassUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
@@ -39,13 +35,10 @@ import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.service.TokenService;
 import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.JavaDocUtil;
 import org.nlpcn.jcoder.util.JavaSource2RpcUtil;
-import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.dao.Cnd;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -493,40 +486,5 @@ public class ApiAction {
 		}
 	}
 
-	/**
-	 * 更新一个task
-	 * 
-	 * @param project
-	 * @param api
-	 * @param filePath
-	 * @param ref
-	 * @param userName
-	 * @param password
-	 * @return
-	 * @throws Exception
-	 */
-	@At("/api_token/?")
-	@Ok("json")
-	public Object apiToken(Long taskId, String userName, String password) throws Exception {
-
-		User user = StaticValue.systemDao.findByCondition(User.class, Cnd.where("name", "=", userName).and("password", "=", StaticValue.passwordEncoding(password)));
-
-		if (user == null) {
-			String ip = StaticValue.getRemoteHost(Mvcs.getReq());
-			LOG.warn(ip + " get token err !");
-			return Restful.instance(false, ip + " : err userName or password");
-		}
-
-		String key = UUID.randomUUID().toString();
-
-		Token token = new Token();
-		token.setToken(key);
-		token.setCreateTime(new Date());
-		token.setUser(user);
-
-		TokenService.putToken(key, token);
-
-		return Restful.instance(token);
-	}
 
 }

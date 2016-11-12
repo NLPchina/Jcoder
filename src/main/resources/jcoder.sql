@@ -75,7 +75,6 @@ CREATE TABLE `user` (
   `password` varchar(255) DEFAULT NULL,
   `type` int(11) NOT NULL,
   `mail` varchar(255) DEFAULT NULL,
-  `token` varchar(255) DEFAULT NULL,
   `create_time` datetime DEFAULT NULL
 ) ;
 

@@ -1,16 +1,22 @@
 package org.nlpcn.jcoder.controller;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.domain.UserGroup;
+import org.nlpcn.jcoder.filter.IpErrorCountFilter;
+import org.nlpcn.jcoder.service.TokenService;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
@@ -18,12 +24,15 @@ import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
 import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @IocBean
+@Filters(@By(type = IpErrorCountFilter.class, args = {"20"}))
 public class LoginAction {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(LoginAction.class) ;
@@ -35,8 +44,9 @@ public class LoginAction {
 	public String login(HttpServletRequest req, @Param("name") String name, @Param("password") String password, @Param("verification_code") String verificationCode) {
 
 		String sessionCode = (String) req.getSession().getAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY);
-		if (!sessionCode.equalsIgnoreCase(verificationCode)) {
-			return StaticValue.errMessage("Login fail please validate verification code ");
+		
+		if (StringUtil.isBlank(sessionCode)||!sessionCode.equalsIgnoreCase(verificationCode)) {
+			return StaticValue.errMessage("Login fail please validate verification code err times:"+IpErrorCountFilter.err());
 		}
 
 		Condition con = Cnd.where("name", "=", name);
@@ -68,27 +78,42 @@ public class LoginAction {
 
 			return StaticValue.OK;
 		} else {
-			LOG.info("user " + name + "login err");
+			LOG.info("user " + name + "login err ,times : "+IpErrorCountFilter.err());
 			return StaticValue.errMessage("login fail please validate your name or password");
 		}
 	}
-
-	@At("/register")
-	@Ok("redirect:/login.jsp")
-	public void register(@Param("name") String name, @Param("password") String password, @Param("authority") Integer authority) {
-		Integer userAuth = (Integer) Mvcs.getHttpSession().getAttribute("authority");
-		if (userAuth.equals(1)) {
-			User user = new User();
-			user.setName(name);
-			user.setPassword(password);
-			user.setCreateTime(new Date());
-			try {
-				basicDao.save(user);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+	
+	
+	@At("/login/api")
+	@Ok("json")
+	public Restful loginApi(HttpServletRequest req, @Param("name") String name, @Param("password") String password) throws ExecutionException {
+		Condition con = Cnd.where("name", "=", name);
+		User user = basicDao.findByCondition(User.class, con);
+		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
+			return Restful.instance(TokenService.regToken(user));
+		} else {
+			LOG.info("user " + name + "login err , times : "+IpErrorCountFilter.err());
+			return Restful.instance(false, "login fail please validate your name or password", null, ApiException.Unauthorized);
 		}
 	}
+	
+	@At("/loginOut/api")
+	@Ok("json")
+	public Restful loginOutApi(HttpServletRequest req) {
+		String token = req.getHeader("authorization");
+		if(StringUtil.isBlank(token)){
+			return Restful.instance(false,"token 'authorization' not in header ") ;
+		}else{
+			Token removeToken = TokenService.removeToken(token) ;
+			if(removeToken==null){
+				return Restful.instance(false,"token not in server ") ;
+			}else{
+				return Restful.instance(true,removeToken.getUser().getName()+" login out ok") ;
+			}
+			
+		}
+	}
+
 
 	@At("/loginOut")
 	@Ok("redirect:/login.jsp")
@@ -100,15 +125,4 @@ public class LoginAction {
 		session.removeAttribute("userType");
 	}
 
-	@At("/checkName/?")
-	@Ok("raw")
-	public boolean checkName(@Param("name") String name) {
-		Condition con = Cnd.where("name", "=", name);
-		User user = basicDao.findByCondition(User.class, con);
-		if (user == null) {
-			return true;
-		} else {
-			return false;
-		}
-	}
 }
