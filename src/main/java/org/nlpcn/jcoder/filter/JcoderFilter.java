@@ -14,6 +14,7 @@ import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
@@ -75,7 +76,7 @@ public class JcoderFilter extends NutFilter {
 
 			if (!apiHandler.handle(request, response)) {
 				try {
-					new JsonView(ApiException.NotFound, "api not found ! may be it not actived!").render(request, response, null);
+					new JsonView().render(request, response, Restful.instance(false, "api not found ! may be it not actived!", null, ApiException.NotFound));
 				} catch (Throwable e) {
 					nextChain(request, response, chain);
 				}

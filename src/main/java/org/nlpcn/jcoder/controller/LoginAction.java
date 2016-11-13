@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.nlpcn.commons.lang.util.StringUtil;
@@ -14,6 +15,7 @@ import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.filter.IpErrorCountFilter;
+import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.service.TokenService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
@@ -40,13 +42,12 @@ public class LoginAction {
 	public BasicDao basicDao = StaticValue.systemDao;
 
 	@At("/login")
-	@Ok("raw")
-	public String login(HttpServletRequest req, @Param("name") String name, @Param("password") String password, @Param("verification_code") String verificationCode) {
+	public void login(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password, @Param("verification_code") String verificationCode) throws Throwable {
 
 		String sessionCode = (String) req.getSession().getAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY);
 		
 		if (StringUtil.isBlank(sessionCode)||!sessionCode.equalsIgnoreCase(verificationCode)) {
-			return StaticValue.errMessage("Login fail please validate verification code err times:"+IpErrorCountFilter.err());
+			new JsonView().render(req, resp, Restful.instance(false, "Login fail please validate verification code err times:"+IpErrorCountFilter.err(),null,ApiException.NotFound));
 		}
 
 		Condition con = Cnd.where("name", "=", name);
@@ -76,10 +77,11 @@ public class LoginAction {
 			}
 			LOG.info("user " + name + "login ok");
 
-			return StaticValue.OK;
+			new JsonView().render(req, resp, Restful.OK);
 		} else {
-			LOG.info("user " + name + "login err ,times : "+IpErrorCountFilter.err());
-			return StaticValue.errMessage("login fail please validate your name or password");
+			int err = IpErrorCountFilter.err() ;
+			LOG.info("user " + name + "login err ,times : "+err);
+			new JsonView().render(req, resp, Restful.instance(false, "login fail please validate your name or password times : "+err,null,ApiException.NotFound));
 		}
 	}
 	
@@ -92,8 +94,9 @@ public class LoginAction {
 		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
 			return Restful.instance(TokenService.regToken(user));
 		} else {
-			LOG.info("user " + name + "login err , times : "+IpErrorCountFilter.err());
-			return Restful.instance(false, "login fail please validate your name or password", null, ApiException.Unauthorized);
+			int err = IpErrorCountFilter.err() ;
+			LOG.info("user " + name + "login err , times : "+err);
+			return Restful.instance(false, "login fail please validate your name or password ,times : "+err, null, ApiException.Unauthorized);
 		}
 	}
 	

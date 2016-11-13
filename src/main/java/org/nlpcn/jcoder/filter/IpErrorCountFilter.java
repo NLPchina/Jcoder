@@ -70,7 +70,7 @@ public class IpErrorCountFilter implements ActionFilter {
 			AtomicInteger count = IP_CACHW.get(key, () -> {
 				return new AtomicInteger();
 			});
-			int err = count.getAndIncrement() ;
+			int err = count.incrementAndGet() ;
 			LOG.info(key + " err times " + err);
 			return err ;
 		} catch (ExecutionException e) {

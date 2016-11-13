@@ -3,14 +3,13 @@ package org.nlpcn.jcoder.run.mvc.processor;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.run.mvc.view.JsonpView;
 import org.nlpcn.jcoder.run.mvc.view.TextView;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.View;
-import org.nutz.mvc.impl.processor.AbstractProcessor;
+import org.nutz.mvc.impl.processor.ViewProcessor;
 
-public class ApiViewProcessor extends AbstractProcessor {
+public class ApiViewProcessor extends ViewProcessor {
 
 	private View jsonView;
 	private View textView;
@@ -25,6 +24,10 @@ public class ApiViewProcessor extends AbstractProcessor {
 	public void process(ActionContext ac) throws Throwable {
 		Object re = ac.getMethodReturn();
 		Throwable err = ac.getError();
+		
+		if(re instanceof View){
+			((View) re).render(ac.getRequest(), ac.getResponse(), null);
+		}else{
 
 		View view = jsonView;
 
@@ -39,6 +42,7 @@ public class ApiViewProcessor extends AbstractProcessor {
 			view.render(ac.getRequest(), ac.getResponse(), re);
 		} else if (err == null) {
 			view.render(ac.getRequest(), ac.getResponse(), null);
+		}
 		}
 
 		doNext(ac);

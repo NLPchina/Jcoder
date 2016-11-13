@@ -20,7 +20,7 @@ public class JsonView implements View {
 	private int httpStatus = ApiException.OK;
 	private Object result;
 
-	public JsonView(int httpStatus, Object result) {
+	public JsonView(int httpStatus, Restful result) {
 		this.result = result;
 		this.httpStatus = httpStatus;
 	}

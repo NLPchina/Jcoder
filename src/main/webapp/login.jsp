@@ -130,10 +130,10 @@
 				},
 				'beforeSend' : function(XMLHttpRequest) {
 				},
-				'error' : function(data) {
-					reflush();
+				'error' : function(e) {
 					$('#message').addClass("alert alert-danger");
-					$('#message').text(data.message) 
+					$('#message').text($.parseJSON(e.responseText).message) 
+					reflush();
 				},
 				'success' : function(data) {
 					if(data.ok){
