@@ -29,7 +29,8 @@ public class TokenFilter implements ActionFilter {
 		}
 
 		try {
-			if (TokenService.getToken(token) == Token.NULL) {
+			Token token2 = TokenService.getToken(token) ;
+			if (token2==null || token2 == Token.NULL) {
 				LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token not access");
 				return new JsonView(Restful.instance(false, "token not access",null,ApiException.Unauthorized));
 			}

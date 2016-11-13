@@ -89,12 +89,12 @@ public class LoginAction {
 	@At("/login/api")
 	@Ok("json")
 	public Restful loginApi(HttpServletRequest req, @Param("name") String name, @Param("password") String password) throws ExecutionException {
+		int err = IpErrorCountFilter.err() ;// for client login to many times , 
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);
 		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
 			return Restful.instance(TokenService.regToken(user));
 		} else {
-			int err = IpErrorCountFilter.err() ;
 			LOG.info("user " + name + "login err , times : "+err);
 			return Restful.instance(false, "login fail please validate your name or password ,times : "+err, null, ApiException.Unauthorized);
 		}

@@ -2,15 +2,12 @@ package org.nlpcn.jcoder.util;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.Token;
-import org.nlpcn.jcoder.domain.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
