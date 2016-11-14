@@ -54,16 +54,19 @@ dependencies {
 	compile 'javax.inject:javax.inject:1'
 	compile 'javax:javaee-api:7.0'
 	compile 'io.netty:netty-all:4.1.2.Final'
+	compile 'org.eclipse.jetty:jetty-servlet:9.2.2.v20140723'
+
+	
  	
  	
     // web server
-   	providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
+    providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty:jetty-jsp:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty:jetty-continuation:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.2.2.v20140723'
 
-
+    
 	testCompile 'junit:junit:4.12'
 
 	war{
@@ -75,12 +78,6 @@ dependencies {
 		def schemaJarFile = project.configurations.providedCompile 
 		
 		schemaJarFile.each{source ->
-			println source 
-			if(source.name=='javax.servlet-api-3.1.0.jar'){
-    			from(source){
-    				into 'WEB-INF/lib'
-    			}
-    		}
 			from zipTree(source)
 			exclude("**/*.SF")
 		}

@@ -84,6 +84,11 @@ public class Bootstrap {
 		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
+		context.setServerClasses(new String[] { 
+				"org.objectweb.asm.", // hide asm used by jetty
+				"org.eclipse.jdt.", // hide jdt used by jetty
+				"-org.eclipse.jetty." // hide other jetty classes
+		});
 
 		context.setWelcomeFiles(new String[] { "Home.jsp" });
 
