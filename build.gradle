@@ -32,8 +32,7 @@ dependencies {
 	
 	//log
 	//support old version
-	compile 'log4j:log4j:1.2.16'
-    compile 'org.slf4j:slf4j-log4j12:1.6.1'
+	//compile 'log4j:log4j:1.2.16'
   	//new version use log
     compile 'org.slf4j:slf4j-api:1.7.21'
     compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.6.2'
@@ -54,16 +53,19 @@ dependencies {
 	compile 'javax.inject:javax.inject:1'
 	compile 'javax:javaee-api:7.0'
 	compile 'io.netty:netty-all:4.1.2.Final'
+	compile 'org.eclipse.jetty:jetty-servlet:9.2.2.v20140723'
+
+	
  	
  	
     // web server
-   	providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
+    providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty:jetty-jsp:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty:jetty-continuation:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.2.v20140723'
     providedCompile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.2.2.v20140723'
 
-
+    
 	testCompile 'junit:junit:4.12'
 
 	war{
@@ -75,12 +77,6 @@ dependencies {
 		def schemaJarFile = project.configurations.providedCompile 
 		
 		schemaJarFile.each{source ->
-			println source 
-			if(source.name=='javax.servlet-api-3.1.0.jar'){
-    			from(source){
-    				into 'WEB-INF/lib'
-    			}
-    		}
 			from zipTree(source)
 			exclude("**/*.SF")
 		}

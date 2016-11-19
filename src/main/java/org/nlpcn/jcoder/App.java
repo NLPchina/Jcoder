@@ -8,9 +8,8 @@ import org.nutz.mvc.annotation.SetupBy;
 import org.nutz.mvc.ioc.provider.ComboIocProvider;
 
 @Modules(packages = { "org.nlpcn.jcoder.controller" }, scanPackage = true)
-@IocBy(type = ComboIocProvider.class, args = {"*anno", "org.nlpcn.jcoder" })
+@IocBy(type = ComboIocProvider.class, args = { "*anno", "org.nlpcn.jcoder" })
 @Encoding(input = "UTF-8", output = "UTF-8")
 @SetupBy(SiteSetup.class)
 public class App {
-
 }

@@ -20,7 +20,7 @@ public class Bootstrap {
 	private static final String PREFIX = "jcoder_";
 
 	public static void main(String[] args) throws Exception {
-
+		
 		for (String arg : args) {
 			if (arg.startsWith("-f")) {
 				if (arg.contains("=")) {
@@ -84,6 +84,11 @@ public class Bootstrap {
 		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
+		context.setServerClasses(new String[] { 
+				"org.objectweb.asm.", // hide asm used by jetty
+				"org.eclipse.jdt.", // hide jdt used by jetty
+				"-org.eclipse.jetty." // hide other jetty classes
+		});
 
 		context.setWelcomeFiles(new String[] { "Home.jsp" });
 
