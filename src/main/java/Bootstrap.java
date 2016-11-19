@@ -20,7 +20,7 @@ public class Bootstrap {
 	private static final String PREFIX = "jcoder_";
 
 	public static void main(String[] args) throws Exception {
-		
+
 		for (String arg : args) {
 			if (arg.startsWith("-f")) {
 				if (arg.contains("=")) {
@@ -84,8 +84,7 @@ public class Bootstrap {
 		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
-		context.setServerClasses(new String[] { 
-				"org.objectweb.asm.", // hide asm used by jetty
+		context.setServerClasses(new String[] { "org.objectweb.asm.", // hide asm used by jetty
 				"org.eclipse.jdt.", // hide jdt used by jetty
 				"-org.eclipse.jetty." // hide other jetty classes
 		});
@@ -126,32 +125,30 @@ public class Bootstrap {
 	}
 
 	/**
-	 * config log4j setting
+	 * config log4j2 setting
 	 * 
 	 * @param logPath
 	 * @throws IOException
 	 * @throws FileNotFoundException
 	 */
-	private static void createLog4jConfig(File log4jFile, String logPath) throws FileNotFoundException, IOException {
+	private static void createLog4j2Config(File log4jFile, String logPath) throws FileNotFoundException, IOException {
 
 		if (log4jFile.exists()) {
 			return;
 		}
 
-		StringBuilder sb = new StringBuilder();
+		String logTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<Configuration status=\"INFO\">\n" + "	<properties>\n"
+				+ "		<property name=\"LOG_PATH\">{{LOG_PATH}}</property>\n" + "	</properties>\n" + "	<Appenders>\n"
+				+ "		<Console name=\"Console\" target=\"SYSTEM_OUT\">\n" + "			<PatternLayout pattern=\"%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\" />\n"
+				+ "		</Console>\n" + "		<RollingRandomAccessFile name=\"File\"\n"
+				+ "			fileName=\"${LOG_PATH}\" filePattern=\"${LOG_PATH}.-%d{yyyyMMddHHmm}-%i\">\n"
+				+ "			<PatternLayout pattern=\"%d{HH:mm:ss} %c{1} %-5p %m%n\" />\n" + "			<Policies>\n"
+				+ "				<TimeBasedTriggeringPolicy interval=\"10\" />\n" + "				<SizeBasedTriggeringPolicy size=\"1024 MB\" />\n" + "			</Policies>\n"
+				+ "			<DefaultRolloverStrategy max=\"50\" />\n" + "		</RollingRandomAccessFile>\n" + "	</Appenders>\n" + "	<Loggers>\n"
+				+ "		<Root level=\"info\">\n" + "			<AppenderRef ref=\"Console\" />\n" + "			<AppenderRef ref=\"File\" />\n" + "		</Root>\n"
+				+ "	</Loggers>\n" + "</Configuration>\n" + "";
 
-		sb.append("log4j.rootLogger=info, stdout,R\n" + "log4j.appender.stdout.Encoding=utf-8\n" + "log4j.appender.R.Encoding=utf-8\n"
-				+ "log4j.appender.stdout=org.apache.log4j.ConsoleAppender\n" + "log4j.appender.stdout.layout=org.apache.log4j.PatternLayout  \n"
-				+ "log4j.appender.stdout.layout.ConversionPattern=%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\n" + "\n"
-				+ "log4j.appender.R=org.apache.log4j.DailyRollingFileAppender\n" + "log4j.appender.R.File=");
-
-		sb.append(logPath);
-
-		sb.append("\n" + "log4j.appender.R.DatePattern = '.'yyyy-MM-dd\n" + "log4j.appender.R.layout=org.apache.log4j.PatternLayout\n"
-				+ "log4j.appender.R.layout.ConversionPattern=%d{HH:mm:ss} %c{1} %-5p %m%n\n" + "\n" + "## Disable other log  \n"
-				+ "log4j.logger.org.atmosphere.cpr.AsynchronousProcessor=FATAL");
-
-		wirteFile(log4jFile.getAbsolutePath(), "utf-8", sb.toString());
+		wirteFile(log4jFile.getAbsolutePath(), "utf-8", logTemplate.replace("{{LOG_PATH}}", logPath));
 
 	}
 
@@ -236,7 +233,7 @@ public class Bootstrap {
 			wirteFile(iocFile.getAbsolutePath(), "utf-8", "var ioc = {\n\n};");
 		}
 
-		createLog4jConfig(new File(resourceDir, "log4j.properties"), logPath);
+		createLog4j2Config(new File(resourceDir, "log4j2.xml"), logPath);
 	}
 
 	/**
