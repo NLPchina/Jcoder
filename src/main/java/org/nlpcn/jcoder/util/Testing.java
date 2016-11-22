@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.util;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class Testing {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Testing.class);
-	
+
 	public static final String CODE_RUN = "123__CODE__RUN";
 
 	/**
@@ -52,9 +53,9 @@ public class Testing {
 				if (field.getType().equals(org.apache.log4j.Logger.class)) {
 					LOG.warn("org.apache.log4j.Logger Deprecated please use org.slf4j.Logger by LoggerFactory");
 					mirror.setValue(obj, field, org.apache.log4j.Logger.getLogger(c));
-				} else if(field.getType().equals(org.slf4j.Logger.class)){
+				} else if (field.getType().equals(org.slf4j.Logger.class)) {
 					mirror.setValue(obj, field, LoggerFactory.getLogger(c));
-				}else {
+				} else {
 					mirror.setValue(obj, field, ioc.get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
 				}
 			}
@@ -64,7 +65,22 @@ public class Testing {
 	}
 
 	public static <T> T instance(Class<T> c) throws Exception {
-		return instance(c, "resource/ioc.js");
+
+		File find = new File("src/test/resources/ioc.js");
+
+		if (!find.exists()) {
+			LOG.warn("ioc config not find in {} , will find it ", find.getAbsolutePath());
+			find = FileFinder.find("ioc.js", 1);
+			if (find != null)
+				LOG.info("ioc config find in " + find.getAbsolutePath());
+		}
+
+		if (find != null && find.exists()) {
+			return instance(c, find.getAbsolutePath());
+		} else {
+			throw new FileNotFoundException("ioc.js not found in your classpath ");
+		}
+
 	}
 
 	/**
@@ -94,7 +110,7 @@ public class Testing {
 		map.put("code", code);
 		map.put("name", rb.getString("name"));
 		map.put("password", StaticValue.passwordEncoding(rb.getString("password")));
-		
+
 		try {
 			RpcClient.connect(host, port);
 			RpcRequest req = new RpcRequest();
@@ -110,5 +126,5 @@ public class Testing {
 		}
 
 	}
-	
+
 }
