@@ -12,6 +12,7 @@ import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.mvc.cache.CacheEntry;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.ActionContext;
@@ -34,9 +35,12 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 	}
 
 	public void process(ActionContext ac) throws Throwable {
-		
-		if(ac.getRequest().getParameter("_clean_cache") != null){
-			cacheEntry = null ;
+
+		if (ac.getRequest().getParameter("_clean_cache") != null) {
+			ac.setMethodReturn(Restful.OK);
+			cacheEntry = null;
+			doNext(ac);
+			return;
 		}
 
 		if (ac.getRequest().getParameter("_rpc_init") != null) {
@@ -44,20 +48,19 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 			doNext(ac);
 			return;
 		}
-		
+
 		String threadName = null;
 		Task module = (Task) ac.getModule();
 		Method method = ac.getMethod();
 		Object[] args = ac.getMethodArgs();
-		
-		
 
 		if (!module.codeInfo().getExecuteMethod(method.getName()).isRestful()) {
 			throw new IllegalAccessException(module.getName() + "/" + method.getName() + " is not public by restful");
 		}
-		
+
 		try {
-			threadName = module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@" + al.getAndIncrement();
+			threadName = module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@"
+					+ al.getAndIncrement();
 			ThreadManager.add2ActionTask(threadName, Thread.currentThread());
 			Object result = executeByCache(module, method, args);
 			ac.setMethodReturn(result);
@@ -75,6 +78,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 
 	/**
 	 * 执行一个task,利用缓存,rpc框架也调用这个
+	 * 
 	 * @param task
 	 * @param method
 	 * @param args
