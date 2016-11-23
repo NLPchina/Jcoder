@@ -34,13 +34,17 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 	}
 
 	public void process(ActionContext ac) throws Throwable {
+		
+		if(ac.getRequest().getParameter("_clean_cache") != null){
+			cacheEntry = null ;
+		}
 
 		if (ac.getRequest().getParameter("_rpc_init") != null) {
 			ac.setMethodReturn(StaticValue.okMessage("rpc init ok"));
 			doNext(ac);
 			return;
 		}
-
+		
 		String threadName = null;
 		Task module = (Task) ac.getModule();
 		Method method = ac.getMethod();
