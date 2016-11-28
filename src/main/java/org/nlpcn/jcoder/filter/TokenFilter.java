@@ -25,14 +25,14 @@ public class TokenFilter implements ActionFilter {
 
 		if (StringUtil.isBlank(token)) {
 			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header");
-			return new JsonView(Restful.instance(false, "token 'authorization' not in header ",null,ApiException.Unauthorized));
+			return new JsonView(Restful.instance(false, "token 'authorization' not in header ", null, ApiException.Unauthorized));
 		}
 
 		try {
 			Token token2 = TokenService.getToken(token) ;
 			if (token2==null || token2 == Token.NULL) {
 				LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token not access");
-				return new JsonView(Restful.instance(false, "token not access",null,ApiException.Unauthorized));
+				return new JsonView(Restful.instance(false, "token not access", null, ApiException.TokenAuthorNotFound));
 			}
 		} catch (ExecutionException e) {
 			e.printStackTrace();

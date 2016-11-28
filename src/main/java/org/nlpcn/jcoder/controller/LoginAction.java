@@ -34,20 +34,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @IocBean
-@Filters(@By(type = IpErrorCountFilter.class, args = {"20"}))
+@Filters(@By(type = IpErrorCountFilter.class, args = { "20" }))
 public class LoginAction {
-	
-	private static final Logger LOG = LoggerFactory.getLogger(LoginAction.class) ;
+
+	private static final Logger LOG = LoggerFactory.getLogger(LoginAction.class);
 
 	public BasicDao basicDao = StaticValue.systemDao;
 
 	@At("/login")
-	public void login(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password, @Param("verification_code") String verificationCode) throws Throwable {
+	public void login(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password,
+			@Param("verification_code") String verificationCode) throws Throwable {
 
 		String sessionCode = (String) req.getSession().getAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY);
-		
-		if (StringUtil.isBlank(sessionCode)||!sessionCode.equalsIgnoreCase(verificationCode)) {
-			new JsonView().render(req, resp, Restful.instance(false, "Login fail please validate verification code err times:"+IpErrorCountFilter.err(),null,ApiException.NotFound));
+
+		if (StringUtil.isBlank(sessionCode) || !sessionCode.equalsIgnoreCase(verificationCode)) {
+			new JsonView().render(req, resp,
+					Restful.instance(false, "Login fail please validate verification code err times:" + IpErrorCountFilter.err(), null, ApiException.NotFound));
 		}
 
 		Condition con = Cnd.where("name", "=", name);
@@ -79,44 +81,52 @@ public class LoginAction {
 
 			new JsonView().render(req, resp, Restful.OK);
 		} else {
-			int err = IpErrorCountFilter.err() ;
-			LOG.info("user " + name + "login err ,times : "+err);
-			new JsonView().render(req, resp, Restful.instance(false, "login fail please validate your name or password times : "+err,null,ApiException.NotFound));
+			int err = IpErrorCountFilter.err();
+			LOG.info("user " + name + "login err ,times : " + err);
+			new JsonView().render(req, resp, Restful.instance(false, "login fail please validate your name or password times : " + err, null, ApiException.NotFound));
 		}
 	}
-	
-	
+
 	@At("/login/api")
 	@Ok("json")
 	public Restful loginApi(HttpServletRequest req, @Param("name") String name, @Param("password") String password) throws ExecutionException {
-		int err = IpErrorCountFilter.err() ;// for client login to many times , 
+		int err = IpErrorCountFilter.err();// for client login to many times , 
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);
 		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
 			return Restful.instance(TokenService.regToken(user));
 		} else {
-			LOG.info("user " + name + "login err , times : "+err);
-			return Restful.instance(false, "login fail please validate your name or password ,times : "+err, null, ApiException.Unauthorized);
+			LOG.info("user " + name + "login err , times : " + err);
+			return Restful.instance(false, "login fail please validate your name or password ,times : " + err, null, ApiException.Unauthorized);
 		}
 	}
-	
+
 	@At("/loginOut/api")
 	@Ok("json")
 	public Restful loginOutApi(HttpServletRequest req) {
 		String token = req.getHeader("authorization");
-		if(StringUtil.isBlank(token)){
-			return Restful.instance(false,"token 'authorization' not in header ") ;
-		}else{
-			Token removeToken = TokenService.removeToken(token) ;
-			if(removeToken==null){
-				return Restful.instance(false,"token not in server ") ;
-			}else{
-				return Restful.instance(true,removeToken.getUser().getName()+" login out ok") ;
+		if (StringUtil.isBlank(token)) {
+			return Restful.instance(false, "token 'authorization' not in header ");
+		} else {
+			Token removeToken = TokenService.removeToken(token);
+			if (removeToken == null) {
+				return Restful.instance(false, "token not in server ");
+			} else {
+				return Restful.instance(true, removeToken.getUser().getName() + " login out ok");
 			}
-			
+
 		}
 	}
 
+	@At("/validation/token")
+	public void validation(String token) throws ExecutionException {
+		Token t = TokenService.getToken("token");
+		if (t == null) {
+			new JsonView(ApiException.NotFound);
+		} else {
+			new JsonView();
+		}
+	}
 
 	@At("/loginOut")
 	@Ok("redirect:/login.jsp")

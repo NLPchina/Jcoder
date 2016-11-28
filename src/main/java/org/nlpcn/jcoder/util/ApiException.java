@@ -36,6 +36,11 @@ public class ApiException extends ExecutionException {
 	 * 请求格式不正确
 	 */
 	public static final int UnprocessableEntity = 422;
+	
+	/**
+	 * 请求格式不正确
+	 */
+	public static final int TokenAuthorNotFound = 450;
 
 	/**
 	 * 服务器错误
