@@ -137,16 +137,35 @@ public class Bootstrap {
 			return;
 		}
 
-		String logTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<Configuration status=\"INFO\">\n" + "	<properties>\n"
-				+ "		<property name=\"LOG_PATH\">{{LOG_PATH}}</property>\n" + "	</properties>\n" + "	<Appenders>\n"
-				+ "		<Console name=\"Console\" target=\"SYSTEM_OUT\">\n" + "			<PatternLayout pattern=\"%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\" />\n"
-				+ "		</Console>\n" + "		<RollingRandomAccessFile name=\"File\"\n"
-				+ "			fileName=\"${LOG_PATH}\" filePattern=\"${LOG_PATH}.-%d{yyyyMMddHHmm}-%i\">\n"
-				+ "			<PatternLayout pattern=\"%d{HH:mm:ss} %c{1} %-5p %m%n\" />\n" + "			<Policies>\n"
-				+ "				<TimeBasedTriggeringPolicy interval=\"10\" />\n" + "				<SizeBasedTriggeringPolicy size=\"1024 MB\" />\n" + "			</Policies>\n"
-				+ "			<DefaultRolloverStrategy max=\"50\" />\n" + "		</RollingRandomAccessFile>\n" + "	</Appenders>\n" + "	<Loggers>\n"
-				+ "		<Root level=\"info\">\n" + "			<AppenderRef ref=\"Console\" />\n" + "			<AppenderRef ref=\"File\" />\n" + "		</Root>\n"
-				+ "	</Loggers>\n" + "</Configuration>\n" + "";
+		String logTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
+				"<Configuration status=\"INFO\">\n" + 
+				"	<properties>\n" + 
+				"		<property name=\"LOG_PATH\">{{LOG_PATH}}</property>\n" + 
+				"	</properties>\n" + 
+				"	<Appenders>\n" + 
+				"		<Console name=\"Console\" target=\"SYSTEM_OUT\">\n" + 
+				"			<PatternLayout pattern=\"%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\" />\n" + 
+				"		</Console>\n" + 
+				"\n" + 
+				"		<RollingRandomAccessFile name=\"File\" fileName=\"${LOG_PATH}\"\n" + 
+				"			filePattern=\"${LOG_PATH}.-%d{yyyyMMdd}\">\n" + 
+				"			<PatternLayout pattern=\"%m%n\" />\n" + 
+				"			<Policies>\n" + 
+				"				<TimeBasedTriggeringPolicy interval=\"1\"\n" + 
+				"					modulate=\"true\" />\n" + 
+				"			</Policies>\n" + 
+				"		</RollingRandomAccessFile>\n" + 
+				"\n" + 
+				"	</Appenders>\n" + 
+				"\n" + 
+				"\n" + 
+				"	<Loggers>\n" + 
+				"		<Root level=\"info\">\n" + 
+				"			<AppenderRef ref=\"Console\" />\n" + 
+				"			<AppenderRef ref=\"File\" />\n" + 
+				"		</Root>\n" + 
+				"	</Loggers>\n" + 
+				"</Configuration>";
 
 		wirteFile(log4jFile.getAbsolutePath(), "utf-8", logTemplate.replace("{{LOG_PATH}}", logPath));
 
