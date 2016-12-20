@@ -124,7 +124,7 @@
 										<td class="center">${task.runStatus}</td>
 										<td class="center">${task.message}</td>
 										<td class="center">
-											<a class="btn btn-info" href="${ctx }/task/editor/${task.groupId }/${task.name}"> <i class="glyphicon glyphicon-edit icon-white"></i> Edit </a> 
+											<a class="btn btn-info" href="${ctx }/task/editor/${task.groupId }/${task.id}"> <i class="glyphicon glyphicon-edit icon-white"></i> Edit </a> 
 										</td>
 									</tr>
 									</c:if>

@@ -473,9 +473,9 @@ public class ApiAction {
 
 		String taskName = null;
 		try {
-			LOG.info(taskName + " will be to stop ! ");
 			JSONObject json = JSONObject.parseObject(jsonTask);
-			taskName = json.getString("task.name") + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
+			taskName = JavaSourceUtil.findClassName(json.getString("task.code")) + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
+			LOG.info(taskName + " will be to stop ! ");
 			ThreadManager.stop(taskName);
 			LOG.info(taskName + " stoped ! ");
 			return StaticValue.OK;

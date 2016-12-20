@@ -30,7 +30,7 @@
 					<div class="box-inner">
 						<div class="box-header well " data-original-title="">
 							<h2>
-								<i class="glyphicon glyphicon-edit"></i> Code Platform
+								<i class="glyphicon glyphicon-edit"></i> Code Platform - ${task.name }.java
 							</h2>
 							<i class="col-md-6"></i>
 							<h2 class="progress" class="col-md-4">

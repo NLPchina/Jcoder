@@ -154,43 +154,28 @@ $(function() {
 	});
 
 	$("#script_start").click(function() {
-		if (status) {
-			$("#code").val(editor.getValue());
-			var json = $("#taskForm").serializeJson()
-			if (status) {
-				$.post("/run_api", {
-					"json" : JSON.stringify(json)
-				}, function(result) {
-					content.append("<p>" + JSON.stringify(result) + "</p>");
-				}, "json").error(function() {
-					content.append("<p>run err !</p>");
-				});
-			} else {
-				content.append("<p>server has beein break ! please reconnect</p>");
-			}
-		} else {
-			content.append("<p>server has beein break ! please reconnect</p>");
-		}
+		$("#code").val(editor.getValue());
+		var json = $("#taskForm").serializeJson();
+
+		$.post("/run_api", {
+			"json" : JSON.stringify(json)
+		}, function(result) {
+			content.append("<p>" + JSON.stringify(result) + "</p>");
+		}, "json").error(function() {
+			content.append("<p>run err !</p>");
+		});
 	});
 
 	$("#script_stop").click(function() {
-		if (status) {
-			$("#code").val(editor.getValue());
-			var json = $("#taskForm").serializeJson()
-			if (status) {
-				$.post("/stop_api", {
-					"json" : JSON.stringify(json)
-				}, function(result) {
-					content.append("<p>" + JSON.stringify(result) + "</p>");
-				}, "json").error(function() {
-					content.append("<p>run err !" + JSON.stringify(result) + "</p>");
-				});
-			} else {
-				content.append("<p>server has beein break ! please reconnect</p>");
-			}
-		} else {
-			content.append("<p>server has beein break ! please reconnect</p>");
-		}
+		$("#code").val(editor.getValue());
+		var json = $("#taskForm").serializeJson();
+		$.post("/stop_api", {
+			"json" : JSON.stringify(json)
+		}, function(result) {
+			content.append("<p>" + JSON.stringify(result) + "</p>");
+		}, "json").error(function() {
+			content.append("<p>run err !" + JSON.stringify(result) + "</p>");
+		});
 	});
 
 	$("#socket_connected").click(function() {
