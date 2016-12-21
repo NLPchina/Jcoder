@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.run.mvc;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.nlpcn.jcoder.run.mvc.processor.ApiActionFiltersProcessor;
 import org.nlpcn.jcoder.run.mvc.processor.ApiAdaptorProcessor;
 import org.nlpcn.jcoder.run.mvc.processor.ApiCrossOriginProcessor;
 import org.nlpcn.jcoder.run.mvc.processor.ApiFailProcessor;
@@ -26,7 +27,7 @@ public class ApiActionChainMaker implements ActionChainMaker {
 		list.add(init(config, ai, new EncodingProcessor())); // 设置编码信息@Encoding
 		list.add(init(config, ai, new ApiCrossOriginProcessor())) ;//增加跨域支持
 		list.add(init(config, ai, new ApiModuleProcessor())); // 获取入口类的对象,从ioc或直接new
-		list.add(init(config, ai, new ActionFiltersProcessor())); // 处理@Filters
+		list.add(init(config, ai, new ApiActionFiltersProcessor())); // 处理@Filters
 		list.add(init(config, ai, new ApiAdaptorProcessor())); // 处理@Adaptor
 		ApiMethodInvokeProcessor apiMethodInvokeProcessor = new ApiMethodInvokeProcessor();
 		list.add(init(config, ai, apiMethodInvokeProcessor)); // 执行入口方法

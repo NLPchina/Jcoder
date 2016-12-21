@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +50,7 @@ public abstract class ApiLoadings {
 		ActionInfo ai = new ActionInfo();
 		evalEncoding(ai, Mirror.getAnnotationDeep(type, Encoding.class));
 		evalHttpAdaptor(ai, Mirror.getAnnotationDeep(type, AdaptBy.class));
-		evalActionFilters(ai, Mirror.getAnnotationDeep(type, Filters.class));
+		evalActionFilters(ai, Mirror.getAnnotationDeep(type, Filters.class), null);
 		evalPathMap(ai, Mirror.getAnnotationDeep(type, PathMap.class));
 		evalOk(ai, Mirror.getAnnotationDeep(type, Ok.class));
 		evalFail(ai, Mirror.getAnnotationDeep(type, Fail.class));
@@ -73,127 +74,12 @@ public abstract class ApiLoadings {
 		ActionInfo ai = new ActionInfo();
 		evalEncoding(ai, Mirror.getAnnotationDeep(method, Encoding.class));
 		evalHttpAdaptor(ai, Mirror.getAnnotationDeep(method, AdaptBy.class));
-		evalActionFilters(ai, Mirror.getAnnotationDeep(method, Filters.class));
+		evalActionFilters(ai, Mirror.getAnnotationDeep(ai.getModuleType(), Filters.class), Mirror.getAnnotationDeep(method, Filters.class));
 		evalActionChainMaker(ai, Mirror.getAnnotationDeep(method, Chain.class));
 		evalHttpMethod(ai, method, Mirror.getAnnotationDeep(method, Execute.class), Mirror.getAnnotationDeep(method, DefaultExecute.class));
 		ai.setMethod(method);
 		return ai;
 	}
-
-	// public static Set<Class<?>> scanModules(Ioc ioc, Class<?> mainModule) {
-	// Modules ann = mainModule.getAnnotation(Modules.class);
-	// boolean scan = null == ann ? true : ann.scanPackage();
-	// // 准备扫描列表
-	// Set<Class<?>> forScans = new HashSet<Class<?>>();
-	//
-	// // 准备存放模块类的集合
-	// Set<Class<?>> modules = new HashSet<Class<?>>();
-	//
-	// // 添加主模块，简直是一定的
-	// forScans.add(mainModule);
-	//
-	// // 根据配置，扩展扫描列表
-	// if (null != ann) {
-	// // 指定的类，这些类可以作为种子类，如果 ann.scanPackage 为 true 还要递归搜索所有子包
-	// for (Class<?> module : ann.value()) {
-	// forScans.add(module);
-	// }
-	//
-	// // 如果定义了扩展扫描接口 ...
-	// for (String str : ann.by()) {
-	// ModuleScanner ms;
-	// // 扫描器来自 Ioc 容器
-	// if (str.startsWith("ioc:")) {
-	// String nm = str.substring("ioc:".length());
-	// ms = ioc.get(ModuleScanner.class, nm);
-	// }
-	// // 扫描器直接无参创建
-	// else {
-	// try {
-	// Class<?> klass = Lang.loadClass(str);
-	// Mirror<?> mi = Mirror.me(klass);
-	// ms = (ModuleScanner) mi.born();
-	// }
-	// catch (ClassNotFoundException e) {
-	// throw Lang.wrapThrow(e);
-	// }
-	// }
-	// // 执行扫描，并将结果计入搜索结果
-	// Collection<Class<?>> col = ms.scan();
-	// if (null != col)
-	// for (Class<?> type : col) {
-	// if (isModule(type)) {
-	// modules.add(type);
-	// }
-	// }
-	// }
-	//
-	// // 扫描包，扫描出的类直接计入结果
-	// if (ann.packages() != null && ann.packages().length > 0) {
-	// for (String packageName : ann.packages()) {
-	// scanModuleInPackage(modules, packageName);
-	// }
-	// }
-	// }
-	//
-	// for (Class<?> type : forScans) {
-	// // mawm 为了兼容maven,根据这个type来加载该type所在jar的加载
-	// try {
-	// URL location = type.getProtectionDomain().getCodeSource().getLocation();
-	// if (log.isDebugEnabled())
-	// log.debugf("module class location '%s'", location);
-	// }
-	// catch (NullPointerException e) {
-	// // Android上无法拿到getProtectionDomain,just pass
-	// }
-	// Scans.me().registerLocation(type);
-	// }
-	//
-	// // 执行扫描
-	// for (Class<?> type : forScans) {
-	// // 扫描子包
-	// if (scan) {
-	// scanModuleInPackage(modules, type.getPackage().getName());
-	// }
-	// // 仅仅加载自己
-	// else {
-	// if (isModule(type)) {
-	// if (log.isDebugEnabled())
-	// log.debugf(" > add '%s'", type.getName());
-	// modules.add(type);
-	// } else if (log.isTraceEnabled()) {
-	// log.tracef(" > ignore '%s'", type.getName());
-	// }
-	// }
-	// }
-	// return modules;
-	// }
-
-	// protected static void scanModuleInPackage(Set<Class<?>> modules, String
-	// packageName) {
-	// if (log.isDebugEnabled())
-	// log.debugf(" > scan '%s'", packageName);
-	//
-	// List<Class<?>> subs = Scans.me().scanPackage(packageName);
-	// checkModule(modules, subs);
-	// }
-
-	// /**
-	// * @param modules
-	// * @param subs
-	// */
-	// private static void checkModule(Set<Class<?>> modules, List<Class<?>>
-	// subs) {
-	// for (Class<?> sub : subs) {
-	// if (isModule(sub)) {
-	// if (log.isDebugEnabled())
-	// log.debugf(" >> add '%s'", sub.getName());
-	// modules.add(sub);
-	// } else if (log.isTraceEnabled()) {
-	// log.tracef(" >> ignore '%s'", sub.getName());
-	// }
-	// }
-	// }
 
 	public static void evalHttpMethod(ActionInfo ai, Method method, Execute execute, DefaultExecute de) {
 		if (Mirror.getAnnotationDeep(method, GET.class) != null)
@@ -205,12 +91,12 @@ public abstract class ApiLoadings {
 		if (Mirror.getAnnotationDeep(method, DELETE.class) != null)
 			ai.getHttpMethods().add("DELETE");
 
-		if (execute != null){
+		if (execute != null) {
 			for (String m : execute.methods()) {
 				ai.getHttpMethods().add(m.toUpperCase());
 			}
 		}
-		if (de != null){
+		if (de != null) {
 			for (String m : de.methods()) {
 				ai.getHttpMethods().add(m.toUpperCase());
 			}
@@ -279,14 +165,20 @@ public abstract class ApiLoadings {
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public static void evalActionFilters(ActionInfo ai, Filters filters) {
+	public static void evalActionFilters(ActionInfo ai, Filters classFilters, Filters filters) {
+		List<ObjectInfo<? extends ActionFilter>> list = new ArrayList<ObjectInfo<? extends ActionFilter>>();
+		if (null != classFilters) {
+			for (By by : classFilters.value()) {
+				list.add(new ObjectInfo(by.type(), by.args()));
+			}
+		}
 		if (null != filters) {
-			List<ObjectInfo<? extends ActionFilter>> list = new ArrayList<ObjectInfo<? extends ActionFilter>>(filters.value().length);
 			for (By by : filters.value()) {
 				list.add(new ObjectInfo(by.type(), by.args()));
 			}
-			ai.setFilterInfos(list.toArray(new ObjectInfo[list.size()]));
 		}
+		ai.setFilterInfos(list.toArray(new ObjectInfo[list.size()]));
+
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
