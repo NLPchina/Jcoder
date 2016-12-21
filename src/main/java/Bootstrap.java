@@ -148,7 +148,7 @@ public class Bootstrap {
 				"		</Console>\n" + 
 				"\n" + 
 				"		<RollingRandomAccessFile name=\"File\" fileName=\"${LOG_PATH}\"\n" + 
-				"			filePattern=\"${LOG_PATH}.-%d{yyyyMMdd}\">\n" + 
+				"			filePattern=\"${LOG_PATH}-%d{yyyyMMdd}\">\n" + 
 				"			<PatternLayout pattern=\"%m%n\" />\n" + 
 				"			<Policies>\n" + 
 				"				<TimeBasedTriggeringPolicy interval=\"1\"\n" + 
