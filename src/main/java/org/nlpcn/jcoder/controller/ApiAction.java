@@ -10,6 +10,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,6 +39,7 @@ import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.JavaDocUtil;
 import org.nlpcn.jcoder.util.JavaSource2RpcUtil;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -57,7 +59,7 @@ import com.google.common.collect.Sets;
 @IocBean
 public class ApiAction {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ApiAction.class) ;
+	private static final Logger LOG = LoggerFactory.getLogger(ApiAction.class);
 
 	private static final Set<String> DEFAULT_METHODS = Sets.newHashSet("GET", "POST", "PUT", "DELETE");
 
@@ -81,7 +83,7 @@ public class ApiAction {
 				new JavaRunner(t).compile();
 				compile = true;
 			} catch (Exception e1) {
-				LOG.error(e1.getMessage(),e1);
+				LOG.error(e1.getMessage(), e1);
 			}
 			try {
 				cd = JavaDocUtil.parse(new StringReader(t.getCode()));
@@ -486,5 +488,30 @@ public class ApiAction {
 		}
 	}
 
+	/**
+	 * 停止一个api任务
+	 * 
+	 * @param jsonTask
+	 * @return
+	 */
+	@At("/api_diff")
+	@Ok("json")
+	public Object diff(String name, String code) {
+
+		Task task = TaskService.findTaskByCache(name);
+
+		if (task == null) {
+			return Restful.instance(false, "notFound");
+		}
+
+		if (code.trim().equals(task.getCode().trim())) {
+			return Restful.instance(true, "same");
+		}
+
+		Date updateTime = task.getUpdateTime();
+
+		return Restful.instance(false, "unSame", updateTime);
+
+	}
 
 }

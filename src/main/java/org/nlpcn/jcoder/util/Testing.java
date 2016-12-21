@@ -2,9 +2,18 @@ package org.nlpcn.jcoder.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
@@ -14,6 +23,7 @@ import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.server.rpc.client.RpcClient;
 import org.nlpcn.jcoder.server.rpc.client.RpcRequest;
+import org.nutz.http.Http;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -21,6 +31,8 @@ import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.lang.Mirror;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.alibaba.fastjson.JSONObject;
 
 /**
  * Test your task
@@ -125,6 +137,48 @@ public class Testing {
 			RpcClient.shutdown();
 		}
 
+	}
+
+	/**
+	 * 对比本地代码和线上代码的不同
+	 * 
+	 * @param apiPath 本地代码路径
+	 * @param apiPath 线上api地址
+	 * @return
+	 * @throws IOException
+	 */
+	public static void diffCode(String apiPath, String ipPort) throws IOException {
+
+		List<Path> lists = new ArrayList<>();
+
+		Files.walkFileTree(new File(apiPath).toPath(), new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+				if (file.toString().endsWith(".java")) {
+					lists.add(file);
+				}
+				return FileVisitResult.CONTINUE;
+			}
+		});
+
+		lists.forEach(p -> {
+			Map<String, Object> params = new HashMap<>();
+			File f = p.toFile();
+			String fileName = f.getName();
+			params.put("name", fileName.substring(0, fileName.length() - 5));
+			params.put("code", IOUtil.getContent(f, "utf-8"));
+			JSONObject parse = JSONObject.parseObject(Http.post("http://" + ipPort + "/api_diff", params, 30000));
+
+			if (parse.getBooleanValue("ok")) {
+				System.out.println(f.getAbsolutePath() + "\t same");
+			} else if (parse.getDate("obj") != null) {
+				System.err.println(f.getAbsolutePath() + "\t notsame,  online time: " + DateUtils.formatDate(parse.getDate("obj"), "yyyyMMddHHmmss") + " localfile time:"
+						+ DateUtils.formatDate(f.lastModified(), "yyyyMMddHHmmss"));
+			} else {
+				System.err.println(f.getAbsolutePath() + " not found online");
+			}
+
+		});
 	}
 
 }

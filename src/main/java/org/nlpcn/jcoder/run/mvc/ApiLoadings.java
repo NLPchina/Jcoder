@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +73,7 @@ public abstract class ApiLoadings {
 		ActionInfo ai = new ActionInfo();
 		evalEncoding(ai, Mirror.getAnnotationDeep(method, Encoding.class));
 		evalHttpAdaptor(ai, Mirror.getAnnotationDeep(method, AdaptBy.class));
-		evalActionFilters(ai, Mirror.getAnnotationDeep(ai.getModuleType(), Filters.class), Mirror.getAnnotationDeep(method, Filters.class));
+		evalActionFilters(ai, Mirror.getAnnotationDeep(method.getDeclaringClass(), Filters.class), Mirror.getAnnotationDeep(method, Filters.class));
 		evalActionChainMaker(ai, Mirror.getAnnotationDeep(method, Chain.class));
 		evalHttpMethod(ai, method, Mirror.getAnnotationDeep(method, Execute.class), Mirror.getAnnotationDeep(method, DefaultExecute.class));
 		ai.setMethod(method);
