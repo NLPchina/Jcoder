@@ -45,9 +45,6 @@ public class ApiActionFiltersProcessor extends AbstractProcessor {
                 }
             }
         }
-        
-        //取到类中的filter
-        
     }
 
     public void process(ActionContext ac) throws Throwable {
