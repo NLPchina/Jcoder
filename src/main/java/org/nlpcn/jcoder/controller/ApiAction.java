@@ -9,6 +9,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -493,18 +494,22 @@ public class ApiAction {
 	 * 
 	 * @param jsonTask
 	 * @return
+	 * @throws UnsupportedEncodingException 
 	 */
 	@At("/api_diff")
 	@Ok("json")
-	public Object diff(String name, String code) {
+	public Object diff(String name, String code) throws UnsupportedEncodingException {
 
 		Task task = TaskService.findTaskByCache(name);
 
 		if (task == null) {
 			return Restful.instance(false, "notFound");
 		}
-
-		if (code.trim().equals(task.getCode().trim())) {
+		
+		code = code.replace("\r", "") ;
+		String tCode = task.getCode().replaceAll("\r", "") ;
+		
+		if (code.trim().equals(tCode.trim())) {
 			return Restful.instance(true, "same");
 		}
 
