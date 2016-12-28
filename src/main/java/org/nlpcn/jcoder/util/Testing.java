@@ -56,6 +56,9 @@ public class Testing {
 	public static <T> T instance(Class<T> c, String iocPath) throws Exception {
 		Ioc ioc = new NutIoc(new JsonLoader(iocPath));
 
+		StaticValue.setSystemIoc(ioc);
+		StaticValue.setUserIoc(ioc);
+
 		Mirror<?> mirror = Mirror.me(c);
 		T obj = c.newInstance();
 
