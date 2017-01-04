@@ -88,7 +88,7 @@ public class JcoderFilter extends NutFilter {
 			Mvcs.set(null, null, null);
 			Mvcs.ctx().removeReqCtx();
 			Mvcs.setServletContext(null);
-			if (request.getSession().getAttribute("user") == null) { //if session is empty 
+			if (request.getSession(false) != null && request.getSession(false).getAttribute("user") == null) { //if session is empty 
 				request.getSession().invalidate();
 			}
 		}
