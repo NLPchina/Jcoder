@@ -7,6 +7,8 @@ import org.nlpcn.jcoder.filter.TokenFilter;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.Testing;
+import org.nutz.http.Http;
+import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.mvc.annotation.By;
 import org.nutz.mvc.annotation.Filters;
@@ -33,12 +35,19 @@ public class TestApi {
 	 * @return 拼接好的字符串
 	 */
 	@Execute
-	@Filters(@By(type=TokenFilter.class) )
 	public Restful test(String name, Date aaa) {
 		return Restful.instance("ok");
 	}
 
 	public static void main(String[] args) throws IOException {
-		Testing.diffCode("/Users/sunjian/Documents/workspace/jcoder/src/test/java", "localhost:8080");
+		for (int i = 0; i < 1000000; i++) {
+			try {
+				Response response = Http.get("http://localhost:9085/IFCMonitorServlet") ;
+				
+				System.out.println(response.getContent());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 }

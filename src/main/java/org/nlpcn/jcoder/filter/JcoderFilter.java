@@ -45,12 +45,13 @@ public class JcoderFilter extends NutFilter {
 			if (host == null || "*".equals(host) || StringUtil.isBlank("host") || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
 			} else {
-				_doAuthoErr(response);
+				_doAuthoErr(request, response);
 			}
 		}
+
 	}
 
-	private void _doAuthoErr(HttpServletResponse response) throws IOException {
+	private void _doAuthoErr(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
 			response.setStatus(403);
 			response.setHeader("Cache-Control", "no-cache");
@@ -62,6 +63,7 @@ public class JcoderFilter extends NutFilter {
 		} finally {
 			response.getOutputStream().flush();
 			response.getOutputStream().close();
+			request.getSession().invalidate();
 		}
 	}
 
@@ -86,6 +88,9 @@ public class JcoderFilter extends NutFilter {
 			Mvcs.set(null, null, null);
 			Mvcs.ctx().removeReqCtx();
 			Mvcs.setServletContext(null);
+			if (request.getSession().getAttribute("user") == null) { //if session is empty 
+				request.getSession().invalidate();
+			}
 		}
 	}
 
