@@ -7,6 +7,8 @@ import io.netty.channel.ChannelHandlerContext;
 
 public class RpcContext {
 
+	public static final String Json = "Json";
+
 	private ChannelHandlerContext chContext;
 
 	private RpcRequest req;
@@ -14,6 +16,8 @@ public class RpcContext {
 	private RpcResponse rep;
 
 	private Map<Object, Object> map = null;
+	
+	private String returnType ;
 
 	public RpcContext(ChannelHandlerContext ctx) {
 		this.chContext = ctx;
@@ -57,4 +61,12 @@ public class RpcContext {
 		this.rep = rep;
 	}
 
+	public String getReturnType() {
+		return returnType;
+	}
+
+	public void setReturnType(String returnType) {
+		this.returnType = returnType;
+	}
+	
 }

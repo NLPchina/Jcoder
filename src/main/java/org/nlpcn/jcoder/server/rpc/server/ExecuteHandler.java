@@ -17,6 +17,7 @@ import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.run.mvc.processor.ApiMethodInvokeProcessor;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.server.rpc.client.RpcContext;
 import org.nlpcn.jcoder.server.rpc.client.RpcRequest;
 import org.nlpcn.jcoder.server.rpc.client.RpcResponse;
 import org.nlpcn.jcoder.server.rpc.client.Rpcs;
@@ -72,7 +73,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 				try {
 					executeCode(ctx, request, threadName);
 				} catch (Exception e) {
-					LOG.error(e.getMessage(),e);
+					LOG.error(e.getMessage(), e);
 					try {
 						writeError(ctx, request, e.getMessage());
 					} catch (Exception e1) {
@@ -91,7 +92,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 				try {
 					executeTask(ctx, request, threadName);
 				} catch (Exception e) {
-					LOG.error(e.getMessage(),e);
+					LOG.error(e.getMessage(), e);
 					try {
 						writeError(ctx, request, e.getMessage());
 					} catch (Exception e1) {
@@ -257,7 +258,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 				throw new IOException(result.toString());
 			}
 		} catch (Exception e) {
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 			vfile.addBytes(VFile.ERR_BYTE);
 			throw e;
 		}
@@ -314,7 +315,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
 		} catch (Exception e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 			response.setError("server err :" + e.getMessage());
 		}
 		ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
@@ -355,7 +356,9 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
 			if (method.isRpc()) {
 				Object result = invokeProcessor.executeByCache(task, method.getMethod(), request.getArguments());
-				if (request.isJsonStr()) {
+				if (RpcContext.Json.equals(Rpcs.getContext().getReturnType())) { //说明对方调用是通过socket方式
+					response.setResult(result);
+				} else if (request.isJsonStr()) {
 					response.setResult(JSON.toJSONString(result));
 				} else {
 					response.setResult(result);
@@ -366,7 +369,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 			response.setError("server err :" + e.getMessage());
 		}
 		ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);

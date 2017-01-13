@@ -25,8 +25,18 @@ public class ChannelManager {
 	 * 
 	 * @return
 	 */
-	public Collection<ClientChannel> getChannels() {
+	public static Collection<ClientChannel> getChannels() {
 		return CLIENT_ID_MAP.values();
+	}
+
+	/**
+	 * get channell by clientId
+	 * 
+	 * @param clientId
+	 * @return
+	 */
+	public static ClientChannel getChannel(String clientId) {
+		return CLIENT_ID_MAP.get(clientId);
 	}
 
 	/**
@@ -57,7 +67,6 @@ public class ChannelManager {
 		try {
 			LOCK.lock();
 			ClientChannel clientChannel = null;
-
 			if ((clientChannel = CLIENT_ID_MAP.get(clientId)) == null) {
 				clientChannel = new ClientChannel(clientId, channel);
 				CLIENT_ID_MAP.put(clientId, clientChannel);

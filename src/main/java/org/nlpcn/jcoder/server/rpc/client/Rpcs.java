@@ -10,34 +10,33 @@ public class Rpcs {
 
 	protected static final ThreadLocal<RpcContext> RPC_CONTEXT = new ThreadLocal<>();
 
-	public static void setContext(RpcContext rpcCtx) {
-		RPC_CONTEXT.set(rpcCtx);
-	}
-
-	public static RpcContext getContext() {
-		return RPC_CONTEXT.get();
-	}
-
 	public Object getContext(Object key) {
-		return getContextOutOfNull().get(key);
+		return getContext().get(key);
 	}
 
-	public void getContext(Object key, Object value) {
+	public void put(Object key, Object value) {
 		getContext().put(key, value);
 	}
 
 	public static RpcRequest getReq() {
-		return getContextOutOfNull().getReq();
+		return getContext().getReq();
 	}
 
 	public static RpcResponse getRep() {
-		return getContextOutOfNull().getRep();
+		return getContext().getRep();
 	}
 
-	private static RpcContext getContextOutOfNull() {
-		RpcContext context = getContext();
+	public static RpcContext getContext() {
+		RpcContext context = RPC_CONTEXT.get();
 		if (context == null) {
-			return new RpcContext(null);
+			synchronized (Thread.currentThread()) {
+				context = RPC_CONTEXT.get();
+				if (context != null) {
+					return context;
+				}
+				context = new RpcContext(null);
+				RPC_CONTEXT.set(context);
+			}
 		}
 		return context;
 	}

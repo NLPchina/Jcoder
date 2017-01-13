@@ -9,17 +9,13 @@ import java.io.InputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.nlpcn.jcoder.util.JcoderIOUtil;
-
-import com.google.common.base.Joiner;
 
 /**
  * 类相关的工具类

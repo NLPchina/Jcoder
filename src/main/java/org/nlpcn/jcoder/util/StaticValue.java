@@ -9,8 +9,6 @@ import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.IocException;
-import org.nutz.ioc.impl.NutIoc;
-import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,9 +153,6 @@ public class StaticValue {
 	}
 
 	public static Ioc getUserIoc() {
-		if (userIoc == null) {
-			userIoc = new NutIoc(new JsonLoader(StaticValue.HOME + "/resource/ioc.js"));
-		}
 		return userIoc;
 	}
 
@@ -179,22 +174,12 @@ public class StaticValue {
 	 * @param name
 	 * @return
 	 */
-	public static Object getBean(String name) {
-		return getBean(null, name);
-	}
-
-	/**
-	 * 從ｉｏｃ容器中獲取ｂｅａｎ
-	 * 
-	 * @param name
-	 * @return
-	 */
 	public static <T> T getBean(Class<T> t, String name) {
 		T object = null;
 		try {
 			object = getUserIoc().get(t, name);
 		} catch (IocException e) {
-			LOG.info(e.getMessage());
+			LOG.error(e.getMessage());
 		}
 		if (object == null) {
 			object = getSystemIoc().get(t, name);

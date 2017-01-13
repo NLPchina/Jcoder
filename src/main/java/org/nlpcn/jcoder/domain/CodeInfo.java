@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CodeInfo {
 
-	private static final Logger LOG = LoggerFactory.getLogger(CodeInfo.class) ;
+	private static final Logger LOG = LoggerFactory.getLogger(CodeInfo.class);
 
 	private Class<?> classz;
 
@@ -113,6 +113,7 @@ public class CodeInfo {
 
 	/**
 	 * 通过方法名称获得方法
+	 * 
 	 * @param methodName
 	 * @return
 	 */
@@ -122,6 +123,7 @@ public class CodeInfo {
 
 	/**
 	 * 执行方法的抽象类
+	 * 
 	 * @author Ansj
 	 *
 	 */

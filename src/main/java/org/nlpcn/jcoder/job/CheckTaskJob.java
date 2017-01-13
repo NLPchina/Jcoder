@@ -17,7 +17,7 @@ public class CheckTaskJob implements Runnable {
 	@Override
 	public void run() {
 
-		TaskService taskService = StaticValue.getBean(TaskService.class, "taskService");
+		TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class, "taskService");
 
 		while (true) {
 			try {

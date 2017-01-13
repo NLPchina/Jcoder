@@ -20,7 +20,7 @@ import com.alibaba.fastjson.JSONObject;
 @IocBean
 public class BackupService {
 
-	private TaskService taskService = StaticValue.getBean(TaskService.class, "taskService");
+	private TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class, "taskService");
 
 	public String backup() {
 		StringBuilder sb = new StringBuilder();

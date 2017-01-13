@@ -46,6 +46,11 @@ public class ApiException extends ExecutionException {
 	 * 服务器错误
 	 */
 	public static final int ServerException = 500;
+	
+	/**
+	 * 未注册
+	 */
+	public static final int Unregistered = 550;
 
 	private int status;
 

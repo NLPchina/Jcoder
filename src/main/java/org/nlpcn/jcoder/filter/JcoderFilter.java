@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.ApiException;
@@ -71,9 +72,9 @@ public class JcoderFilter extends NutFilter {
 		Mvcs.setIoc(StaticValue.getUserIoc()); // reset ioc
 
 		Mvcs.setServletContext(sc);
-
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-
+			Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
 			Mvcs.set(this.selfName, request, response);
 
 			if (!apiHandler.handle(request, response)) {
@@ -85,6 +86,7 @@ public class JcoderFilter extends NutFilter {
 			}
 
 		} finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
 			Mvcs.set(null, null, null);
 			Mvcs.ctx().removeReqCtx();
 			Mvcs.setServletContext(null);

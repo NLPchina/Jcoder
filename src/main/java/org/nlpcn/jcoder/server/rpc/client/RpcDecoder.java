@@ -40,7 +40,8 @@ public class RpcDecoder extends ByteToMessageDecoder {
 		Object obj = null;
 
 		if (data[0] == 'J' && data[1] == 's' && data[2] == 'o' && data[3] == 'n') {
-			obj = JSONObject.toJavaObject((JSON) JSONObject.parse(data, 4, data.length-4, CHARSET.newDecoder()), genericClass);
+			obj = JSONObject.toJavaObject((JSON) JSONObject.parse(data, 4, data.length - 4, CHARSET.newDecoder()), genericClass);
+			Rpcs.getContext().setReturnType(RpcContext.Json);
 		} else if (data[0] == 'F' && data[1] == 'i' && data[2] == 'l' && data[3] == 'e') {
 			RpcRequest rpcRequest = new RpcRequest();
 			rpcRequest.setClassName(VFile.VFILE_LOCAL);

@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
 
+import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.processor.ApiMethodInvokeProcessor;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.ActionChain;
@@ -46,7 +47,7 @@ public class JcoderActionChain implements ActionChain {
 	}
 
 	public void doChain(ActionContext ac) {
-		if (null != head)
+		if (null != head) {
 			try {
 				head.process(ac);
 			} catch (Throwable e) {
@@ -57,8 +58,9 @@ public class JcoderActionChain implements ActionChain {
 					throw Lang.wrapThrow(ee);
 				}
 			}
+		}
 	}
-	
+
 	public ApiMethodInvokeProcessor getInvokeProcessor() {
 		return invokeProcessor;
 	}

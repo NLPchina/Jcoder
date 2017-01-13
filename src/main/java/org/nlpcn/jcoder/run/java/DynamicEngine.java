@@ -39,13 +39,14 @@ public class DynamicEngine {
 
 	/**
 	 * 刷新instance
-	 * @throws TaskException 
+	 * 
+	 * @throws TaskException
 	 */
 	public static void flush(URLClassLoader classLoader) throws TaskException {
 		ourInstance = new DynamicEngine(classLoader);
 		// if class load change , to flush all task
 		synchronized (StaticValue.MAPPING) {
-			StaticValue.getBean(TaskService.class, "taskService").initTaskFromDB();
+			StaticValue.getSystemIoc().get(TaskService.class, "taskService").initTaskFromDB();
 		}
 
 	}
@@ -122,9 +123,9 @@ public class DynamicEngine {
 				clazz = dynamicClassLoader.loadClass(fullClassName, jco);
 			} catch (Exception e) {
 				e.printStackTrace();
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 			} catch (Error e) {
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 				throw new CodeException(e.toString());
 			} finally {
 				if (dynamicClassLoader != null) {
@@ -141,8 +142,7 @@ public class DynamicEngine {
 
 		return clazz;
 	}
-	
-	
+
 	public byte[] javaCode2Bytes(String fullClassName, String javaCode) throws IOException, CodeException {
 		Class<?> clazz = null;
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
@@ -152,7 +152,7 @@ public class DynamicEngine {
 		jfiles.add(new CharSequenceJavaFileObject(fullClassName, javaCode));
 
 		List<String> options = new ArrayList<String>();
-		
+
 		options.add("-source");
 		options.add("1.6");
 		options.add("-target");
@@ -162,7 +162,6 @@ public class DynamicEngine {
 		options.add("-classpath");
 		options.add(this.classpath);
 		options.add("-parameters");
-		    
 
 		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, jfiles);
 		boolean success = task.call();
@@ -178,12 +177,12 @@ public class DynamicEngine {
 						dynamicClassLoader.loadClass(name, inner);
 					}
 				}
-				return jco.getBytes() ;
+				return jco.getBytes();
 			} catch (Exception e) {
 				e.printStackTrace();
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 			} catch (Error e) {
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 				throw new CodeException(e.toString());
 			} finally {
 				if (dynamicClassLoader != null) {
@@ -198,7 +197,7 @@ public class DynamicEngine {
 			throw new CodeException(error.toString());
 		}
 
-		return null ;
+		return null;
 	}
 
 	public <T> T javaCodeToObject(String fullClassName, String javaCode) throws IllegalAccessException, InstantiationException, IOException, CodeException {
@@ -237,11 +236,6 @@ public class DynamicEngine {
 
 	public URLClassLoader getParentClassLoader() {
 		return parentClassLoader;
-	}
-
-	public Class<?> javaCodeToClassFile(String string, String sourcePath) {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

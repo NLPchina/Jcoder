@@ -49,7 +49,7 @@ public class SystemAction {
 	@Ok("raw")
 	public void export(HttpServletResponse response) throws IOException {
 
-		BackupService backupService = StaticValue.getBean(BackupService.class, "backupService");
+		BackupService backupService = StaticValue.getSystemIoc().get(BackupService.class, "backupService");
 
 		String timeStamp = DateUtils.formatDate(new Date(), "yyyyMMddHHmmss");
 		response.setContentType("application/octet-stream");
@@ -67,7 +67,7 @@ public class SystemAction {
 			throw new Exception("up file can not empty");
 		}
 
-		BackupService backupService = StaticValue.getBean(BackupService.class, "backupService");
+		BackupService backupService = StaticValue.getSystemIoc().get(BackupService.class, "backupService");
 
 		StringBuilder sb = new StringBuilder();
 
