@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.server.rpc.server;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.concurrent.ThreadFactory;
 
+import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.server.rpc.client.RpcDecoder;
 import org.nlpcn.jcoder.server.rpc.client.RpcEncoder;
 import org.nlpcn.jcoder.server.rpc.client.RpcRequest;
@@ -21,6 +22,9 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 
 /**
  * rpc server
@@ -29,8 +33,8 @@ import io.netty.handler.codec.LengthFieldPrepender;
  *
  */
 public class RpcServer {
-	
-	private static final Logger LOG = LoggerFactory.getLogger(RpcServer.class) ;
+
+	private static final Logger LOG = LoggerFactory.getLogger(RpcServer.class);
 
 	private static ServerBootstrap bootstrap = null;
 
@@ -42,14 +46,16 @@ public class RpcServer {
 
 	private static final int MESSAGE_LENGTH = 4;
 
+	private static final String WEBSOCKET_PATH = "/";
+
 	/**
 	 * 
 	 * @throws Exception
 	 */
 	public static void startServer(int port) throws Exception {
-		
+
 		LOG.info("to start rpc server ");
-		
+
 		ThreadFactory threadRpcFactory = new NamedThreadFactory("NettyRPC ThreadFactory");
 
 		boss = new NioEventLoopGroup(PARALLEL);
@@ -61,8 +67,8 @@ public class RpcServer {
 				@Override
 				protected void initChannel(SocketChannel socketChannel) throws Exception {
 					ChannelPipeline pipeline = socketChannel.pipeline();
-					pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, MESSAGE_LENGTH, 0, MESSAGE_LENGTH));
-					pipeline.addLast(new LengthFieldPrepender(MESSAGE_LENGTH));
+					pipeline.addLast(new HttpServerCodec());
+					pipeline.addLast(new WebSocketServerProtocolHandler(WEBSOCKET_PATH, null, true));
 					pipeline.addLast(new RpcDecoder(RpcRequest.class));
 					pipeline.addLast(new RpcEncoder(RpcResponse.class));
 					pipeline.addLast(new ContextHandler());
@@ -73,11 +79,11 @@ public class RpcServer {
 			ChannelFuture future = bootstrap.bind(port).sync();
 
 			future.channel().closeFuture();
-			
+
 			LOG.info("start rpc server ok");
 
 		} finally {
-		
+
 		}
 	}
 

@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.server.rpc.client;
 
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.util.List;
 
 import com.alibaba.fastjson.JSON;
@@ -34,22 +33,26 @@ public class RpcDecoder extends ByteToMessageDecoder {
 		if (byteBuf.readableBytes() < dataLength) {
 			byteBuf.resetReaderIndex();
 		}
-		byte[] data = new byte[dataLength];
+
+		int type = byteBuf.readByte();
+
+		byte[] data = new byte[dataLength - 1];
 		byteBuf.readBytes(data);
 
 		Object obj = null;
 
-		if (data[0] == 'J' && data[1] == 's' && data[2] == 'o' && data[3] == 'n') {
+		if (type == RpcContext.OBJ) {
+			obj = SerializationUtil.deserialize(data, genericClass);
+			Rpcs.getContext().setType(RpcContext.OBJ);
+		} else if (type == RpcContext.JSON) {
 			obj = JSONObject.toJavaObject((JSON) JSONObject.parse(data, 4, data.length - 4, CHARSET.newDecoder()), genericClass);
-			Rpcs.getContext().setReturnType(RpcContext.Json);
-		} else if (data[0] == 'F' && data[1] == 'i' && data[2] == 'l' && data[3] == 'e') {
+			Rpcs.getContext().setType(RpcContext.JSON);
+		} else if (type == RpcContext.OBJ) {
 			RpcRequest rpcRequest = new RpcRequest();
 			rpcRequest.setClassName(VFile.VFILE_LOCAL);
 			rpcRequest.setMethodName(VFile.VFILE_LOCAL);
 			rpcRequest.setArguments(new Object[] { data });
 			obj = rpcRequest;
-		} else {
-			obj = SerializationUtil.deserialize(data, genericClass);
 		}
 
 		list.add(obj);
