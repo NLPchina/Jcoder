@@ -16,6 +16,7 @@ import org.nlpcn.jcoder.server.rpc.domain.RpcResponse;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.slf4j.Logger;
@@ -43,8 +44,11 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		cause.printStackTrace();
 		LOG.error(cause.getMessage());
-		ctx.close();
-		ChannelManager.remove(ctx.channel());
+		try {
+			ctx.channel().writeAndFlush(encoder(new RpcResponse("unknow", Restful.instance(false, ExceptionUtil.printStackTrace(cause),null,500))));
+		} catch (Exception e) {
+			LOG.error("send to client errMessage err :" + e.getMessage());
+		}
 	}
 
 	@Override
@@ -117,7 +121,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 			if (task == null) {
 				throw new ApiException(404, "not find api by name " + request.getClassName() + " in mapping");
 			}
-			
+
 			ExecuteMethod method = task.codeInfo().getExecuteMethod(request.getMethodName());
 
 			if (method == null) {
