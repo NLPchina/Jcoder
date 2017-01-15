@@ -1,4 +1,4 @@
-package org.nlpcn.jcoder.server.rpc.server;
+package org.nlpcn.jcoder.server.rpc.domain;
 
 /**
  * @filename:NamedThreadFactory.java

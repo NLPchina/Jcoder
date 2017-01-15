@@ -1,10 +1,11 @@
-package org.nlpcn.jcoder.server.rpc.server;
+package org.nlpcn.jcoder.server.rpc;
 
 import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.nlpcn.jcoder.server.rpc.domain.ClientChannel;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

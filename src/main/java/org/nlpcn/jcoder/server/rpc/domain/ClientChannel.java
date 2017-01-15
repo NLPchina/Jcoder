@@ -1,9 +1,4 @@
-package org.nlpcn.jcoder.server.rpc.server;
-
-import java.beans.Transient;
-import java.util.Set;
-
-import com.google.common.collect.Sets;
+package org.nlpcn.jcoder.server.rpc.domain;
 
 import io.netty.channel.Channel;
 
@@ -20,12 +15,12 @@ public class ClientChannel {
 	private Channel channel;
 
 	private long loginTime;
-	
-	private long lastHeartTime ;
 
-	public ClientChannel(String clientId,Channel channel) {
-		this.clientId = clientId ;
-		this.channel = channel ;
+	private long lastHeartTime;
+
+	public ClientChannel(String clientId, Channel channel) {
+		this.clientId = clientId;
+		this.channel = channel;
 		this.loginTime = System.currentTimeMillis();
 	}
 
