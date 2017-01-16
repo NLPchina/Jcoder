@@ -2,20 +2,14 @@ package org.nlpcn.jcoder.job;
 
 import java.util.Arrays;
 
-import javax.servlet.ServletContext;
-import javax.websocket.DeploymentException;
-import javax.websocket.Endpoint;
 import javax.websocket.server.ServerEndpoint;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
-import org.nlpcn.jcoder.server.rpc.server.RpcServer;
+import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -25,8 +19,6 @@ import org.nutz.mvc.Setup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sun.el.stream.Stream;
-
 public class SiteSetup implements Setup {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SiteSetup.class);
@@ -34,7 +26,7 @@ public class SiteSetup implements Setup {
 	@Override
 	public void destroy(NutConfig nc) {
 		H2Server.stopServer();
-		RpcServer.stopServer();
+		WebSocketServer.stopServer();
 	}
 
 	@Override
@@ -88,7 +80,7 @@ public class SiteSetup implements Setup {
 		// 启动rpc服务,默认是当前端口+1 ;
 		LOG.info("begin start rpc server! on port " + StaticValue.RPCPORT);
 		try {
-			RpcServer.startServer(StaticValue.RPCPORT);
+			WebSocketServer.startServer(StaticValue.RPCPORT);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 			LOG.error(StaticValue.PREFIX + "port not set in system property");

@@ -1,4 +1,4 @@
-package org.nlpcn.jcoder.server.rpc.client;
+package org.nlpcn.jcoder.server.rpc.domain;
 
 import java.util.HashMap;
 import java.util.Map;
