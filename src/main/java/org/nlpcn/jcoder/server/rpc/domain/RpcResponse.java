@@ -2,29 +2,21 @@ package org.nlpcn.jcoder.server.rpc.domain;
 
 import java.io.Serializable;
 
-import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.server.rpc.Rpcs;
 import org.nlpcn.jcoder.util.Restful;
+
+import com.alibaba.fastjson.JSONObject;
+
+import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 public class RpcResponse implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private String messageId;
-	private boolean ok = true;
-	private Object obj;
-	private String message;
-	private int code = ApiException.OK;
-
-	public RpcResponse() {
-	}
-
-	public RpcResponse(String messageId, Restful restful) {
-		this.messageId = messageId;
-		this.ok = restful.isOk();
-		this.obj = restful.getObj();
-		this.message = restful.getMessage();
-		this.code = restful.code();
-	}
 
 	public RpcResponse(String messageId) {
 		this.messageId = messageId;
@@ -38,49 +30,18 @@ public class RpcResponse implements Serializable {
 		this.messageId = messageId;
 	}
 
-	public boolean isOk() {
-		return ok;
+	public void write(Restful restful) {
+		Rpcs.getContext().getChContext().channel().writeAndFlush(new TextWebSocketFrame(JSONObject.toJSONString(restful)))
+				.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 	}
 
-	public void setOk(boolean ok) {
-		this.ok = ok;
+	public void write(String str) {
+		Rpcs.getContext().getChContext().channel().writeAndFlush(new TextWebSocketFrame(str)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 	}
 
-	public Object getObj() {
-		return obj;
-	}
-
-	/**
-	 * if obj instanceof Restful , it parse it field to self
-	 * 
-	 * @param obj
-	 */
-	public void setObj(Object obj) {
-		if (obj instanceof Restful) {
-			Restful restful = (Restful) obj;
-			this.ok = restful.isOk();
-			this.obj = restful.getObj();
-			this.message = restful.getMessage();
-			this.code = restful.code();
-		} else {
-			this.obj = obj;
-		}
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public int getCode() {
-		return code;
-	}
-
-	public void setCode(int code) {
-		this.code = code;
+	public void write(byte[] bytes) {
+		Rpcs.getContext().getChContext().channel().writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(bytes)))
+				.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 	}
 
 }

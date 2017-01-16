@@ -6,6 +6,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
+import org.nlpcn.jcoder.server.rpc.RpcFilter;
+import org.nlpcn.jcoder.server.rpc.Rpcs;
+import org.nlpcn.jcoder.server.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -25,7 +28,7 @@ import com.google.common.cache.CacheBuilder;
  * @author ansj
  *
  */
-public class IpErrorCountFilter implements ActionFilter {
+public class IpErrorCountFilter implements ActionFilter, RpcFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(IpErrorCountFilter.class);
 
@@ -47,14 +50,14 @@ public class IpErrorCountFilter implements ActionFilter {
 		String ip = StaticValue.getRemoteHost(actionContext.getRequest());
 
 		AtomicInteger times = IP_CACHW.getIfPresent(ip);
-		
-		if(times==null){
+
+		if (times == null) {
 			return null;
 		}
 
 		if (times.get() >= maxCount) {
 			LOG.info(ip + "err times gather than " + maxCount);
-			return new JsonView(Restful.instance(false, "your err times gather than " + maxCount + " please wait 20 minute try again",null,ApiException.Unauthorized));
+			return new JsonView(Restful.instance(false, "your err times gather than " + maxCount + " please wait 20 minute try again", null, ApiException.Unauthorized));
 		}
 
 		return null;
@@ -70,14 +73,33 @@ public class IpErrorCountFilter implements ActionFilter {
 			AtomicInteger count = IP_CACHW.get(key, () -> {
 				return new AtomicInteger();
 			});
-			int err = count.incrementAndGet() ;
+			int err = count.incrementAndGet();
 			LOG.info(key + " err times " + err);
-			return err ;
+			return err;
 		} catch (ExecutionException e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		}
-		return 0 ;
+		return 0;
+	}
+
+	@Override
+	public Restful match(RpcRequest req) {
+
+		String ip = Rpcs.getContext().remoteAddress();
+
+		AtomicInteger times = IP_CACHW.getIfPresent(ip);
+
+		if (times == null) {
+			return null;
+		}
+
+		if (times.get() >= maxCount) {
+			LOG.info(ip + "err times gather than " + maxCount);
+			return Restful.instance(false, "your err times gather than " + maxCount + " please wait 20 minute try again", null, ApiException.Unauthorized);
+		}
+
+		return null;
 	}
 
 }

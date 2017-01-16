@@ -3,16 +3,13 @@ package org.nlpcn.jcoder.server.rpc.websocket;
 import java.util.Date;
 
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
-import org.nlpcn.jcoder.filter.TokenFilter;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.run.mvc.processor.ApiMethodInvokeProcessor;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.server.rpc.ChannelManager;
 import org.nlpcn.jcoder.server.rpc.Rpcs;
-import org.nlpcn.jcoder.server.rpc.domain.RpcContext;
 import org.nlpcn.jcoder.server.rpc.domain.RpcRequest;
-import org.nlpcn.jcoder.server.rpc.domain.RpcResponse;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.DateUtils;
@@ -22,13 +19,8 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
-
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 /**
  * execute request
@@ -45,7 +37,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 		cause.printStackTrace();
 		LOG.error(cause.getMessage());
 		try {
-			ctx.channel().writeAndFlush(encoder(new RpcResponse("unknow", Restful.instance(false, ExceptionUtil.printStackTrace(cause),null,500))));
+			Rpcs.getRep().write(Restful.instance(false, ExceptionUtil.printStackTrace(cause)));
 		} catch (Exception e) {
 			LOG.error("send to client errMessage err :" + e.getMessage());
 		}
@@ -54,7 +46,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		super.channelInactive(ctx);
-		LOG.error("close");
+		LOG.warn("close");
 		ChannelManager.remove(ctx.channel());
 	}
 
@@ -69,7 +61,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 			} catch (Exception e) {
 				LOG.error(e.getMessage(), e);
 				try {
-					writeError(ctx, request, e.getMessage());
+					Rpcs.getRep().write(Restful.instance(false, e.getMessage()));
 				} catch (Exception e1) {
 					e1.printStackTrace();
 				}
@@ -81,23 +73,6 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 	}
 
 	/**
-	 * 写错误流到服务器端
-	 * 
-	 * @param ctx
-	 * @param request
-	 * @param message
-	 */
-	private void writeError(ChannelHandlerContext ctx, RpcRequest request, String message) {
-		RpcResponse response = Rpcs.getRep();
-		if (response == null) {
-			response = new RpcResponse(request.getMessageId());
-		}
-		response.setOk(false);
-		response.setMessage("server has err : " + message);
-		ctx.channel().writeAndFlush(encoder(response)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-	}
-
-	/**
 	 * 具体的执行一个task
 	 * 
 	 * @param ctx
@@ -106,7 +81,7 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 	 */
 	private void executeTask(ChannelHandlerContext ctx, RpcRequest request, String threadName) {
 
-		RpcResponse response = Rpcs.getRep();
+		Restful restful = new Restful();
 
 		try {
 
@@ -132,21 +107,19 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
 			if (method.isRpc()) {
 				Object result = invokeProcessor.executeByCache(task, method.getMethod(), request.getArguments());
-				response.setObj(result);
+				restful.setObj(result);
 			} else {
-				response.setOk(false);
-				response.setMessage("server err : request " + request.getClassName() + "/" + request.getMethodName() + " not a rpc api");
+				restful.setOk(false);
+				restful.setMessage("server err : request " + request.getClassName() + "/" + request.getMethodName() + " not a rpc api");
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);
-			response.setOk(false);
-			response.setMessage("server err :" + e.getMessage());
+			restful.setOk(false);
+			restful.setMessage("server err :" + e.getMessage());
 		}
-		ctx.channel().writeAndFlush(encoder(response)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+
+		Rpcs.getRep().write(restful);
 	}
 
-	private TextWebSocketFrame encoder(RpcResponse rep) {
-		return new TextWebSocketFrame(JSONObject.toJSONString(rep));
-	}
 }

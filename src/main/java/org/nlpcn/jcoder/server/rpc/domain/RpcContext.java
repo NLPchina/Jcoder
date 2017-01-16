@@ -1,7 +1,10 @@
 package org.nlpcn.jcoder.server.rpc.domain;
 
+import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.nlpcn.jcoder.server.rpc.Rpcs;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -16,8 +19,8 @@ public class RpcContext {
 	private RpcResponse rep;
 
 	private Map<Object, Object> map = null;
-	
-	private int type ;
+
+	private int type;
 
 	public RpcContext(ChannelHandlerContext ctx) {
 		this.chContext = ctx;
@@ -69,6 +72,12 @@ public class RpcContext {
 		this.type = type;
 	}
 
+	public String remoteAddress() {
+		return ((InetSocketAddress) getChContext().channel().remoteAddress()).getAddress().getHostAddress() ;
+	}
 	
-	
+	public String localAddress() {
+		return ((InetSocketAddress) getChContext().channel().localAddress()).getAddress().getHostAddress() ;
+	}
+
 }

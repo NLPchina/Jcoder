@@ -9,8 +9,9 @@ public class RpcRequest implements Serializable {
 	private String messageId;
 	private String className;
 	private String methodName;
+	private String tokenStr ;
 	private Object[] arguments;
-
+	
 	public RpcRequest() {
 	}
 
@@ -46,4 +47,13 @@ public class RpcRequest implements Serializable {
 		this.arguments = arguments;
 	}
 
+	public String getTokenStr() {
+		return tokenStr;
+	}
+
+	public void setTokenStr(String tokenStr) {
+		this.tokenStr = tokenStr;
+	}
+
+	
 }

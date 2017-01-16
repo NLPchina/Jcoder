@@ -49,9 +49,10 @@ public final class WebSocketServer {
 				pipeline.addLast(new HttpObjectAggregator(65536));
 				pipeline.addLast(new WebSocketServerProtocolHandler(WEBSOCKET_PATH, null, true));
 				pipeline.addLast(new ContextHandler());
+				pipeline.addLast(new FilterHandler());
 				pipeline.addLast(new ExecuteHandler());
 			}
-
+			
 		}).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.SO_KEEPALIVE, true);
 
 		ChannelFuture future = bootstrap.bind(port).sync();
