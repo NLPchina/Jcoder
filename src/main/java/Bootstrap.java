@@ -10,9 +10,16 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.security.ProtectionDomain;
 
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class Bootstrap {
@@ -50,6 +57,8 @@ public class Bootstrap {
 						putEnv(PREFIX + "maven", dim[1]);
 					} else if (dim[0].equals("--upload")) {
 						putEnv(PREFIX + "upload", dim[1]);
+					} else if (dim[0].equals("--ssl")) {
+						putEnv(PREFIX + "ssl", dim[1]);
 					}
 				}
 			} else if (!arg.startsWith("-f")) {
@@ -75,6 +84,39 @@ public class Bootstrap {
 		URL location = domain.getCodeSource().getLocation();
 
 		WebAppContext context = new WebAppContext();
+
+//		//server for ssl ,default not open 
+//		String sslport = getOrCreateEnv(PREFIX + "ssl", "433");
+//		if (sslport != null) {
+//			// HTTP Configuration
+//	        HttpConfiguration http_config = new HttpConfiguration();
+//	        http_config.setSecureScheme("https");
+//	        http_config.setSecurePort(Integer.parseInt(sslport));
+//	        
+//			SslContextFactory contextFactory = new SslContextFactory();
+////			sslContextFactory.setKeyStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
+////	        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+////	        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+////	        sslContextFactory.setTrustStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
+////	        sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+////	        sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
+////	                "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+////	                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+////	                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+////	                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+////	                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+//			
+//			 // SSL HTTP Configuration
+//	        HttpConfiguration https_config = new HttpConfiguration(http_config);
+//	        https_config.addCustomizer(new SecureRequestCustomizer());
+//
+//	        // SSL Connector
+//	        ServerConnector sslConnector = new ServerConnector(server,
+//	            new SslConnectionFactory(contextFactory,HttpVersion.HTTP_1_1.asString()),
+//	            new HttpConnectionFactory(https_config));
+//	        sslConnector.setPort(8443);
+//	        server.addConnector(sslConnector);
+//		}
 
 		File jcoderHome = new File(home);
 
@@ -137,35 +179,14 @@ public class Bootstrap {
 			return;
 		}
 
-		String logTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + 
-				"<Configuration status=\"INFO\">\n" + 
-				"	<properties>\n" + 
-				"		<property name=\"LOG_PATH\">{{LOG_PATH}}</property>\n" + 
-				"	</properties>\n" + 
-				"	<Appenders>\n" + 
-				"		<Console name=\"Console\" target=\"SYSTEM_OUT\">\n" + 
-				"			<PatternLayout pattern=\"%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\" />\n" + 
-				"		</Console>\n" + 
-				"\n" + 
-				"		<RollingRandomAccessFile name=\"File\" fileName=\"${LOG_PATH}\"\n" + 
-				"			filePattern=\"${LOG_PATH}-%d{yyyyMMdd}\">\n" + 
-				"			<PatternLayout pattern=\"%m%n\" />\n" + 
-				"			<Policies>\n" + 
-				"				<TimeBasedTriggeringPolicy interval=\"1\"\n" + 
-				"					modulate=\"true\" />\n" + 
-				"			</Policies>\n" + 
-				"		</RollingRandomAccessFile>\n" + 
-				"\n" + 
-				"	</Appenders>\n" + 
-				"\n" + 
-				"\n" + 
-				"	<Loggers>\n" + 
-				"		<Root level=\"info\">\n" + 
-				"			<AppenderRef ref=\"Console\" />\n" + 
-				"			<AppenderRef ref=\"File\" />\n" + 
-				"		</Root>\n" + 
-				"	</Loggers>\n" + 
-				"</Configuration>";
+		String logTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<Configuration status=\"INFO\">\n" + "	<properties>\n"
+				+ "		<property name=\"LOG_PATH\">{{LOG_PATH}}</property>\n" + "	</properties>\n" + "	<Appenders>\n"
+				+ "		<Console name=\"Console\" target=\"SYSTEM_OUT\">\n" + "			<PatternLayout pattern=\"%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\" />\n"
+				+ "		</Console>\n" + "\n" + "		<RollingRandomAccessFile name=\"File\" fileName=\"${LOG_PATH}\"\n" + "			filePattern=\"${LOG_PATH}-%d{yyyyMMdd}\">\n"
+				+ "			<PatternLayout pattern=\"%m%n\" />\n" + "			<Policies>\n" + "				<TimeBasedTriggeringPolicy interval=\"1\"\n"
+				+ "					modulate=\"true\" />\n" + "			</Policies>\n" + "		</RollingRandomAccessFile>\n" + "\n" + "	</Appenders>\n" + "\n" + "\n"
+				+ "	<Loggers>\n" + "		<Root level=\"info\">\n" + "			<AppenderRef ref=\"Console\" />\n" + "			<AppenderRef ref=\"File\" />\n"
+				+ "		</Root>\n" + "	</Loggers>\n" + "</Configuration>";
 
 		wirteFile(log4jFile.getAbsolutePath(), "utf-8", logTemplate.replace("{{LOG_PATH}}", logPath));
 

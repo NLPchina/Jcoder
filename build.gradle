@@ -38,12 +38,6 @@ dependencies {
 	compile 'org.apache.logging.log4j:log4j-core:2.6.2'
 	compile 'org.apache.logging.log4j:log4j-web:2.6.2'
     
-    //java serizable
-    compile 'io.protostuff:protostuff-core:1.4.4'
-    compile 'io.protostuff:protostuff-runtime:1.4.4'
-    compile 'org.objenesis:objenesis:2.4'
-    
-    
     //javaee support
     compile 'javax.servlet:javax.servlet-api:3.1.0'
     compile 'javax.servlet:jstl:1.2'
