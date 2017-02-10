@@ -1,17 +1,13 @@
 package cn.com.infcn.api.test;
 
 import java.io.IOException;
-import java.util.Date;
 
-import org.nlpcn.jcoder.filter.TokenFilter;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.nlpcn.jcoder.run.annotation.Execute;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.Testing;
-import org.nutz.http.Http;
-import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 
 /**
@@ -33,21 +29,28 @@ public class TestApi {
 	 * @param name 姓名
 	 * @param aaa 日期
 	 * @return 拼接好的字符串
+	 * @throws IOException 
 	 */
 	@Execute
-	public Restful test(String name, Date aaa) {
-		return Restful.instance("ok");
+	public void test() throws IOException {
+		HttpServletRequest request = Mvcs.getReq() ;
+		HttpServletResponse response = Mvcs.getResp() ;
+		
+		String characterEncode = request.getCharacterEncoding();
+		String agent = request.getHeader("User-Agent");
+        boolean isMSIE = (agent != null && agent.indexOf("Firefox") != -1);
+     
+        String filename = java.net.URLEncoder.encode("我爱北京天安门.doc");
+        
+        response.setCharacterEncoding(characterEncode);  
+		response.setContentType("application/octet-stream");
+		String exportType = "rdf";
+		
+        response.setHeader("Content-Disposition", "attachment;fileName="+filename+"."+exportType); 
+        response.getOutputStream().write("aaaaaaaaaaaa".getBytes());
+        response.getOutputStream().flush();
+        
 	}
 
-	public static void main(String[] args) throws IOException {
-		for (int i = 0; i < 1000000; i++) {
-			try {
-				Response response = Http.get("http://localhost:9085/IFCMonitorServlet") ;
-				
-				System.out.println(response.getContent());
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
+	
 }

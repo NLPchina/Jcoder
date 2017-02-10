@@ -24,25 +24,25 @@ public class ApiViewProcessor extends ViewProcessor {
 	public void process(ActionContext ac) throws Throwable {
 		Object re = ac.getMethodReturn();
 		Throwable err = ac.getError();
-		
-		if(re instanceof View){
+
+		if (re instanceof View) {
 			((View) re).render(ac.getRequest(), ac.getResponse(), null);
-		}else{
+		} else {
 
-		View view = jsonView;
+			View view = jsonView;
 
-		String temp = null;
-		if ((temp = ac.getRequest().getParameter("_callback")) != null) {
-			view = new JsonpView(temp);
-		} else if (ac.getRequest().getParameter("_text") != null) {
-			view = textView;
-		}
+			String temp = null;
+			if ((temp = ac.getRequest().getParameter("_callback")) != null) {
+				view = new JsonpView(temp);
+			} else if (ac.getRequest().getParameter("_text") != null) {
+				view = textView;
+			}
 
-		if (re != null) {
-			view.render(ac.getRequest(), ac.getResponse(), re);
-		} else if (err == null) {
-			view.render(ac.getRequest(), ac.getResponse(), null);
-		}
+			if (re != null) {
+				view.render(ac.getRequest(), ac.getResponse(), re);
+			} else if (err != null) {
+				view.render(ac.getRequest(), ac.getResponse(), err);
+			}
 		}
 
 		doNext(ac);
