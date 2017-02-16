@@ -30,6 +30,7 @@ import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
+import org.nutz.mvc.impl.processor.EncodingProcessor;
 import org.nutz.resource.Scans;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,6 +106,10 @@ public class TestingFilter extends NutFilter {
 				throw new ApiException(404, "api not found " + apiPath);
 			}
 
+			// add encoding
+			request.setCharacterEncoding("utf-8");
+			response.setCharacterEncoding("utf-8");
+
 			new ApiCrossOriginProcessor().process(ac); // add cross origin
 
 			Method method = keyValue.getKey();
@@ -128,10 +133,7 @@ public class TestingFilter extends NutFilter {
 				Inject inject = field.getAnnotation(Inject.class);
 				if (inject != null) {
 					field.setAccessible(true);
-					if (field.getType().equals(org.apache.log4j.Logger.class)) {
-						LOG.warn("org.apache.log4j.Logger Deprecated please use org.slf4j.Logger by LoggerFactory");
-						mirror.setValue(ac.getModule(), field, org.apache.log4j.Logger.getLogger(ac.getModule().getClass()));
-					} else if (field.getType().equals(org.slf4j.Logger.class)) {
+					if (field.getType().equals(org.slf4j.Logger.class)) {
 						mirror.setValue(ac.getModule(), field, LoggerFactory.getLogger(ac.getModule().getClass()));
 					} else {
 						mirror.setValue(ac.getModule(), field,
@@ -166,5 +168,5 @@ public class TestingFilter extends NutFilter {
 	public void destroy() {
 		System.out.println("destroy");
 	}
-	
+
 }

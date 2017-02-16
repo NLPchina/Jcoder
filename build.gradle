@@ -45,9 +45,6 @@ dependencies {
 	compile 'javax:javaee-api:7.0'
 	compile 'io.netty:netty-all:4.1.2.Final'
 	compile 'org.eclipse.jetty:jetty-servlet:9.2.2.v20140723'
-
-	
- 	
  	
     // web server
     providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
