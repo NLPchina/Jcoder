@@ -47,22 +47,27 @@ public class TestingFilter extends NutFilter {
 			list.forEach(cla -> {
 				Object obj = null;
 				Single single = Mirror.getAnnotationDeep(cla, Single.class);
-				if (single == null || !single.value()) {
-					try {
-						obj = cla.newInstance();
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
 
 				for (Method method : cla.getMethods()) {
 					if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != cla) {
 						continue;
 					}
+
 					if (Mirror.getAnnotationDeep(method, Execute.class) != null || Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
-						tempMethods.put(cla.getSimpleName() + "/" + method.getName(), KeyValue.with(method, obj));
+						if (obj == null && (single == null || single.value())) { //用懒加载方式
+							try {
+								obj = cla.newInstance();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+						String path = cla.getSimpleName() + "/" + method.getName();
+						LOG.info("find api : " + path);
+						tempMethods.put(path, KeyValue.with(method, obj));
 					}
 				}
+
+				obj = null;
 			});
 		}
 
@@ -161,5 +166,5 @@ public class TestingFilter extends NutFilter {
 	public void destroy() {
 		System.out.println("destroy");
 	}
-
+	
 }
