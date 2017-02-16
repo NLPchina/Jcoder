@@ -55,7 +55,13 @@ public class ApiAction {
 	@Filters(@By(type = CrossOriginFilter.class))
 	public Object api(@Param(value = "type", df = "1") int type) {
 
-		List<ClassDoc> result = TaskService.findTaskList(type).stream().sorted((t1,t2)-> (int)(t1.getGroupId()-t2.getGroupId())).map((t) -> {
+		List<ClassDoc> result = TaskService.findTaskList(type).stream().sorted((t1, t2) -> {
+			int v = (int) (t1.getGroupId() - t2.getGroupId());
+			if (v != 0) {
+				return v;
+			}
+			return (int) (t1.getId() - t2.getId());
+		}).map((t) -> {
 			boolean compile = false;
 			ClassDoc cd = null;
 			try {

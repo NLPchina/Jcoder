@@ -38,8 +38,6 @@
 	        	ng-repeat="x in nav_datas" ng-click="clickNav(x)">
 	        	<a href="{{x.href}}" class="{{x.status==false?'alert-error':''}}">{{x.name}}</a>
 	        </li>
-	        
-	        <li class="nav-header {{x.isActive?'active':''}}"><a href="#maven_response">Virtual Maven</a></li>
 		  </ul>
 		</nav>
 	</div>
@@ -115,40 +113,6 @@
 </section>
 
 
-<div>
-<section id="maven_response">
-<h2 >Virtual Maven Response</h2>
-<pre class="prettyprint prettyprinted"><code>&lt;!--jcoder virtual respository--&gt;
-&lt;repositories&gt;
-	&lt;repository&gt;
-		&lt;id&gt;jcoder&lt;/id&gt;
-		&lt;url&gt;{{atx}}/api_maven/repository/&lt;/url&gt;
-	&lt;/repository&gt;
-&lt;/repositories&gt;
-
-&lt;!-- jcoder rpc sdk --&gt;
-&lt;dependency&gt;
-	&lt;groupId&gt;org.nlpcn.jcoder&lt;/groupId&gt;
-	&lt;artifactId&gt;jcoder-rpc-sdk&lt;/artifactId&gt;
-	&lt;version&gt;2.0.5&lt;/version&gt;
-&lt;/dependency&gt;
-
-&lt;!-- make a package all class to a jar --&gt;
-&lt;dependency&gt;
-	&lt;groupId&gt;org.nlpcn.jcoder.package&lt;/groupId&gt;
-	&lt;artifactId&gt;[com.domain.package]&lt;/artifactId&gt;
-	&lt;version&gt;[any version]&lt;/version&gt;
-&lt;/dependency&gt;
-
-&lt;!-- put updateData jar to you maven --&gt;
-&lt;dependency&gt;
-	&lt;groupId&gt;org.nlpcn.jcoder.jar&lt;/groupId&gt;
-	&lt;artifactId&gt;[your jar file name]&lt;/artifactId&gt;
-	&lt;version&gt;[your jar version]&lt;/version&gt;
-&lt;/dependency&gt;					
-</code></pre>
-</section>
-</div>
 		</div>
 		<div id="generator">
 			<div class="content">
