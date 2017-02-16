@@ -140,11 +140,11 @@ public class Testing {
 	}
 
 	/**
-	 * 以本地测试服务的方式启动
+	 * test local api by server
 	 * 
-	 * @param port
-	 * @param iocPath
-	 * @param jcoderHome
+	 * @param port default 8080
+	 * @param iocPath your ioc path
+	 * @param jcoderHome if you need resource , you need it
 	 * @throws Exception
 	 */
 	public static void startServer(int port, String iocPath, String jcoderHome, String[] packages) throws Exception {
@@ -176,14 +176,23 @@ public class Testing {
 
 		server.start();
 
-		System.out.println("jcoder testing server start ok");
+		System.out.println("jcoder testing server start ok on http://127.0.0.1:" + port);
 
 		server.join();
 
 	}
-
-	public static void main(String[] args) throws Exception {
-		Testing.startServer(8080, "/Users/sunjian/Documents/workspace/infcn_mobile/src/test/resources/ioc.js", null, new String[]{"cn"});
+	
+	/**
+	 * test local api by server
+	 * 
+	 * @param port default 8080
+	 * @param iocPath your ioc path
+	 * @param jcoderHome if you need resource , you need it
+	 * @throws Exception
+	 */
+	public static void startServer(String iocPath, String[] packages) throws Exception {
+		startServer(8080, iocPath, null, packages);
 	}
+	
 
 }

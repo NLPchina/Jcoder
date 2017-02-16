@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URL;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,14 +17,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.commons.lang.util.tuples.KeyValue;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
-import org.nlpcn.jcoder.run.java.ClassUtil;
-import org.nlpcn.jcoder.run.java.DynamicEngine;
+import org.nlpcn.jcoder.run.annotation.Single;
 import org.nlpcn.jcoder.run.mvc.processor.ApiAdaptorProcessor;
 import org.nlpcn.jcoder.run.mvc.processor.ApiCrossOriginProcessor;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
 import org.nutz.mvc.ActionContext;
@@ -40,24 +37,36 @@ import org.slf4j.LoggerFactory;
 public class TestingFilter extends NutFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TestingFilter.class);
-	
-	private static Map<String,Method> methods = null ;
+
+	private static Map<String, KeyValue<Method, Object>> methods = null;
 
 	public static void init(String... packages) throws IOException {
-		Map<String,Method> tempMethods = new HashMap<>() ;
+		Map<String, KeyValue<Method, Object>> tempMethods = new HashMap<>();
 		for (String pk : packages) {
 			List<Class<?>> list = Scans.me().scanPackage(pk);
-
 			list.forEach(cla -> {
+				Object obj = null;
+				Single single = Mirror.getAnnotationDeep(cla, Single.class);
+				if (single == null || !single.value()) {
+					try {
+						obj = cla.newInstance();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
 				for (Method method : cla.getMethods()) {
-					String name = cla.getSimpleName() ;
-					if (method.getAnnotationsByType(Execute.class) != null || method.getAnnotationsByType(DefaultExecute.class) != null) {
-						
-						tempMethods.put(cla.getName().substring(beginIndex, endIndex), value)
+					if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != cla) {
+						continue;
+					}
+					if (Mirror.getAnnotationDeep(method, Execute.class) != null || Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
+						tempMethods.put(cla.getSimpleName() + "/" + method.getName(), KeyValue.with(method, obj));
 					}
 				}
 			});
 		}
+
+		methods = tempMethods;
 	}
 
 	@Override
@@ -74,54 +83,42 @@ public class TestingFilter extends NutFilter {
 		Mvcs.setIoc(StaticValue.getUserIoc()); // reset ioc
 
 		Mvcs.setServletContext(sc);
+
 		ActionContext ac = new ActionContext();
+
+		String apiPath = request.getServletPath().substring(5);
+
 		try {
 			Mvcs.set("testing_filter", request, response);
 
 			ac.setRequest(request).setResponse(response).setServletContext(request.getServletContext());
 			Mvcs.setActionContext(ac);
 
-			new ApiCrossOriginProcessor().process(ac);
+			KeyValue<Method, Object> keyValue = methods.get(apiPath);
 
-			Class<?> clz = Class.forName("cn.com.infcn.mobile.api.LoginAction");
-
-			ac.setModule(clz.newInstance());
-
-			Map<String, Method> methodMap = new HashMap<>();
-			for (Method method : clz.getMethods()) {
-				if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
-					continue;
-				}
-
-				if (Mirror.getAnnotationDeep(method, DefaultExecute.class) != null || Mirror.getAnnotationDeep(method, Execute.class) != null) {
-
-					if (methodMap.containsKey(method.getName())) {
-						throw new RuntimeException("method name repeated: " + method.getName());
-					}
-
-					methodMap.put(method.getName(), method);
-				}
+			if (keyValue == null) {
+				throw new ApiException(404, "api not found " + apiPath);
 			}
 
-			Method method = methodMap.get("login");
+			new ApiCrossOriginProcessor().process(ac); // add cross origin
 
-			if (method == null) {
-				throw new RuntimeException("not found method : ");
-			}
+			Method method = keyValue.getKey();
+			Class<?> clz = method.getDeclaringClass();
 
-			ac.setMethod(methodMap.get("login"));
+			ac.setModule(keyValue.getValue() == null ? clz.newInstance() : keyValue.getValue());
+			ac.setMethod(method);
 
 			ActionInfo actionInfo = new ActionInfo();
-
-			actionInfo.setMethod(ac.getMethod());
+			actionInfo.setMethod(method);
 			actionInfo.setModuleType(clz);
 
+			//set url to args
 			ApiAdaptorProcessor apiAdaptorProcessor = new ApiAdaptorProcessor();
 			apiAdaptorProcessor.init(Mvcs.getNutConfig(), actionInfo);
 			apiAdaptorProcessor.process(ac);
 
+			//ioc set
 			Mirror<?> mirror = Mirror.me(clz);
-
 			for (Field field : mirror.getFields()) {
 				Inject inject = field.getAnnotation(Inject.class);
 				if (inject != null) {
@@ -147,7 +144,6 @@ public class TestingFilter extends NutFilter {
 			try {
 				new JsonView().render(request, response, e);
 			} catch (Throwable e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		} finally {

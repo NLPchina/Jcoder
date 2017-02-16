@@ -85,39 +85,6 @@ public class Bootstrap {
 
 		WebAppContext context = new WebAppContext();
 
-//		//server for ssl ,default not open 
-//		String sslport = getOrCreateEnv(PREFIX + "ssl", "433");
-//		if (sslport != null) {
-//			// HTTP Configuration
-//	        HttpConfiguration http_config = new HttpConfiguration();
-//	        http_config.setSecureScheme("https");
-//	        http_config.setSecurePort(Integer.parseInt(sslport));
-//	        
-//			SslContextFactory contextFactory = new SslContextFactory();
-////			sslContextFactory.setKeyStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
-////	        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-////	        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-////	        sslContextFactory.setTrustStorePath(jetty_home + "/../../../jetty-server/src/test/config/etc/keystore");
-////	        sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-////	        sslContextFactory.setExcludeCipherSuites("SSL_RSA_WITH_DES_CBC_SHA",
-////	                "SSL_DHE_RSA_WITH_DES_CBC_SHA", "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-////	                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-////	                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-////	                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-////	                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-//			
-//			 // SSL HTTP Configuration
-//	        HttpConfiguration https_config = new HttpConfiguration(http_config);
-//	        https_config.addCustomizer(new SecureRequestCustomizer());
-//
-//	        // SSL Connector
-//	        ServerConnector sslConnector = new ServerConnector(server,
-//	            new SslConnectionFactory(contextFactory,HttpVersion.HTTP_1_1.asString()),
-//	            new HttpConnectionFactory(https_config));
-//	        sslConnector.setPort(8443);
-//	        server.addConnector(sslConnector);
-//		}
-
 		File jcoderHome = new File(home);
 
 		makeFiles(jcoderHome, logPath);

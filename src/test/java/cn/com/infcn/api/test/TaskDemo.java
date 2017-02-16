@@ -2,6 +2,7 @@ package cn.com.infcn.api.test;
 
 import org.apache.log4j.Logger;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 
 public class TaskDemo {
@@ -10,7 +11,7 @@ public class TaskDemo {
 	private Logger log;
 
 	@DefaultExecute
-	public void execute() {
-		log.info("message on " + System.currentTimeMillis());
+	public Object execute() {
+		return StaticValue.getUserIoc().getNames();
 	}
 }
