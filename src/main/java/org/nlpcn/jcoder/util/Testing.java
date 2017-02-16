@@ -10,18 +10,18 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.UUID;
 
+import javax.servlet.DispatcherType;
+
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.nlpcn.commons.lang.util.FileFinder;
 import org.nlpcn.commons.lang.util.IOUtil;
-import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.commons.lang.util.StringUtil;
-import org.nlpcn.jcoder.server.rpc.domain.RpcRequest;
 import org.nutz.http.Http;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
@@ -43,7 +43,7 @@ public class Testing {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Testing.class);
 
-	public static final String CODE_RUN = "123__CODE__RUN";
+	private static final String IOC_PATH = "src/test/resources/ioc.js";
 
 	/**
 	 * instan task by ioc
@@ -97,7 +97,6 @@ public class Testing {
 
 	}
 
-
 	/**
 	 * 对比本地代码和线上代码的不同
 	 * 
@@ -138,6 +137,53 @@ public class Testing {
 			}
 
 		});
+	}
+
+	/**
+	 * 以本地测试服务的方式启动
+	 * 
+	 * @param port
+	 * @param iocPath
+	 * @param jcoderHome
+	 * @throws Exception
+	 */
+	public static void startServer(int port, String iocPath, String jcoderHome, String[] packages) throws Exception {
+		if (port <= 0) {
+			port = 8080;
+		}
+		if (StringUtil.isBlank(iocPath)) {
+			iocPath = IOC_PATH;
+		}
+
+		if (StringUtil.isBlank(jcoderHome)) {
+			jcoderHome = new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath();
+		}
+
+		System.setProperty(StaticValue.PREFIX + "home", jcoderHome);
+		System.setProperty(StaticValue.PREFIX + "port", String.valueOf(port));
+
+		Server server = new Server(port);
+
+		Ioc ioc = new NutIoc(new JsonLoader(iocPath));
+		StaticValue.setSystemIoc(ioc);
+		StaticValue.setUserIoc(ioc);
+
+		TestingFilter.init(packages);
+
+		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+		context.addFilter(TestingFilter.class, "/api/*", EnumSet.of(DispatcherType.REQUEST));
+		server.setHandler(context);
+
+		server.start();
+
+		System.out.println("jcoder testing server start ok");
+
+		server.join();
+
+	}
+
+	public static void main(String[] args) throws Exception {
+		Testing.startServer(8080, "/Users/sunjian/Documents/workspace/infcn_mobile/src/test/resources/ioc.js", null, new String[]{"cn"});
 	}
 
 }

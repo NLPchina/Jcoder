@@ -302,12 +302,4 @@ public class JavaRunner {
 	}
 	
 	
-	public static void main(String[] args) {
-		long start = System.currentTimeMillis() ;
-		for (int i = 0; i < 1000000; i++) {
-//			System.out.println("1234567890");
-			LOG.info("1234567890");
-		}
-		System.out.println(System.currentTimeMillis()-start);
-	}
 }
