@@ -30,8 +30,13 @@ public class IocAction {
 	@At("/ioc/save")
 	@Ok("json")
 	public JsonResult save(@Param("code") String code) {
-		IOUtil.Writer(StaticValue.HOME + "/resource/ioc.js", IOUtil.UTF8, code);
-		JarService.flushIOC();
-		return StaticValue.okMessageJson("保存并加载成功！");
+		try {
+			IOUtil.Writer(StaticValue.HOME + "/resource/ioc.js", IOUtil.UTF8, code);
+			JarService.flushIOC();
+			return StaticValue.okMessageJson("保存并加载成功！");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return StaticValue.okMessageJson("保存失败！" + e.getMessage());
+		}
 	}
 }
