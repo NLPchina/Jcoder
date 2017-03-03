@@ -41,6 +41,7 @@ public class BasicDao {
 		ds.setUrl(jdbcUrl);
 		ds.setUsername(username);
 		ds.setPassword(password);
+		ds.setMaxWait(60000);
 		this.dao = new NutDao(ds);
 	}
 
