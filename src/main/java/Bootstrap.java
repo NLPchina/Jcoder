@@ -98,6 +98,10 @@ public class Bootstrap {
 				"-org.eclipse.jetty." // hide other jetty classes
 		});
 
+		//设置session过期时间
+		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(7200);
+		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName("JCODER"+port);
+
 		context.setWelcomeFiles(new String[] { "Home.jsp" });
 
 		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());

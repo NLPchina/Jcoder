@@ -8,6 +8,7 @@ import org.nlpcn.jcoder.util.Restful;
 import com.alibaba.fastjson.JSONObject;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -31,8 +32,7 @@ public class RpcResponse implements Serializable {
 	}
 
 	public void write(Restful restful) {
-		Rpcs.getContext().getChContext().channel().writeAndFlush(new TextWebSocketFrame(JSONObject.toJSONString(restful)))
-				.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+		write(JSONObject.toJSONString(restful));
 	}
 
 	public void write(String str) {
@@ -42,6 +42,18 @@ public class RpcResponse implements Serializable {
 	public void write(byte[] bytes) {
 		Rpcs.getContext().getChContext().channel().writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(bytes)))
 				.addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+	}
+
+	public static void write(Channel channel, Restful restful) {
+		write(channel, JSONObject.toJSONString(restful));
+	}
+
+	public static void write(Channel channel, String str) {
+		channel.writeAndFlush(new TextWebSocketFrame(str)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+	}
+
+	public static void write(Channel channel, byte[] bytes) {
+		channel.writeAndFlush(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(bytes))).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 	}
 
 }

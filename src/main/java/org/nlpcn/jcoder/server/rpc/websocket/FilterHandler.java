@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.server.rpc.RpcFilter;
 import org.nlpcn.jcoder.server.rpc.Rpcs;
 import org.nlpcn.jcoder.server.rpc.domain.RpcRequest;
@@ -30,6 +31,10 @@ public class FilterHandler extends SimpleChannelInboundHandler<RpcRequest> {
 		if (task == null) {
 			Rpcs.getRep().write(Restful.instance(false, "not find task by " + req.getClassName(), null, 404));
 			return;
+		}
+
+		if (task.codeInfo().getClassz() == null) { //class not compile 
+			new JavaRunner(task).compile();
 		}
 
 		Filters classFilters = task.codeInfo().getClassz().getAnnotation(Filters.class);

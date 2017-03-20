@@ -107,7 +107,11 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
 			if (method.isRpc()) {
 				Object result = invokeProcessor.executeByCache(task, method.getMethod(), request.getArguments());
-				restful.setObj(result);
+				if (result instanceof Restful) {
+					restful = (Restful) result;
+				} else {
+					restful.setObj(result);
+				}
 			} else {
 				restful.setOk(false);
 				restful.setMessage("server err : request " + request.getClassName() + "/" + request.getMethodName() + " not a rpc api");
