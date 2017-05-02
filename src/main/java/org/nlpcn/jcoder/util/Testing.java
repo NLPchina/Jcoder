@@ -64,10 +64,7 @@ public class Testing {
 		for (Field field : mirror.getFields()) {
 			Inject inject = field.getAnnotation(Inject.class);
 			if (inject != null) {
-				if (field.getType().equals(org.apache.log4j.Logger.class)) {
-					LOG.warn("org.apache.log4j.Logger Deprecated please use org.slf4j.Logger by LoggerFactory");
-					mirror.setValue(obj, field, org.apache.log4j.Logger.getLogger(c));
-				} else if (field.getType().equals(org.slf4j.Logger.class)) {
+				if (field.getType().equals(org.slf4j.Logger.class)) {
 					mirror.setValue(obj, field, LoggerFactory.getLogger(c));
 				} else {
 					mirror.setValue(obj, field, ioc.get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));

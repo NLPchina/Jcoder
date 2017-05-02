@@ -14,7 +14,7 @@ public class ApiCrossOriginProcessor extends AbstractProcessor {
 
 	private static final String origin = "*";
 	private static final String methods = "get, post, put, delete, options";
-	private static final String headers = "origin, content-type, accept";
+	private static final String headers = "origin, content-type, accept, authorization";
 	private static final String credentials = "true";
 
 	@Override
