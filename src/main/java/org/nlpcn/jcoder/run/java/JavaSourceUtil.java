@@ -74,7 +74,7 @@ public class JavaSourceUtil {
 				Matcher matcher = PAT.matcher(temp);
 
 				if (matcher.find()) {
-					temp = temp.split("[\\s+?;]")[2];
+					temp = temp.split("[\\s+?;{]")[2];
 					return temp;
 				}
 			}
