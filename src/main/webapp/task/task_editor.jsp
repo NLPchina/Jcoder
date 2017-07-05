@@ -59,7 +59,7 @@
 										</select>
 									</div>
 								</div>
-								<div class="form-group has-warning col-md-4">
+								<div class="form-group has-warning col-md-3">
 									<label class="control-label" for="inputWarning1">Description</label> <input
 										type="text" class="form-control" name="task.description"
 										value="${task.description}" />
@@ -85,7 +85,6 @@
 									</select>
 								</div>
 								
-								<c:if test="${userType==1 ||AUTH_MAP[temp.id]==2 }">
 								<div class="form-group has-error col-md-1" id="">
 									<label class="control-label" >versions</label>
 									 <select class="form-control" id="change_version" >
@@ -94,7 +93,12 @@
 										</c:forEach>
 									</select>
 								</div>
-								</c:if>
+								
+								
+								<div class="form-group has-error col-md-1">
+										<label class="control-label" for="inputWarning1">Different</label>
+										<a id="diff_task" class="btn btn-info" href="#"><i class="glyphicon glyphicon-zoom-in icon-white"></i>Diff</a>
+									</div>
 								
 								<c:if test="${userType==1 || AUTH_MAP[groupId]==2}">
 									<div class="form-group has-error col-md-1">
@@ -104,9 +108,35 @@
 								</c:if>
 								
 								<br>
-								<div id="codeDiv" class="input-group col-md-12"
-									style="padding: 1em;">
+								<div id="codeDiv" class="input-group col-md-12" style="padding: 1em;">
 									<textarea id="code" style="width:100%; " name="task.code">${task.code}</textarea>
+								</div>
+
+								<div id="diffDiv" class="input-group col-md-12" >
+									<table  style="width: 100%;">
+										<tr>
+											<td style="width: 50%;">
+												<select class="form-control" id="lt_version" >
+													<option value="current" selected="selected">Current Version</option>
+													<c:forEach items="${versions}" var="v" varStatus="i">
+														<option value="${v}">${v}</option>
+													</c:forEach>
+												</select>
+											</td>
+											<td style="width: 50%;">
+												<select class="form-control" id="rt_version" >
+													<option value="current">Current Version</option>
+													<c:forEach items="${versions}" var="v" varStatus="i">
+														<option ${i.index==0?'selected="selected"':''} value="${v}">${v}</option>
+													</c:forEach>
+												</select>
+											</td>
+										</tr>
+									</table>
+									<div id="mergely-resizer">
+										<div id="compare">
+										</div>
+									</div>
 								</div>
 
 							</div>
@@ -155,10 +185,12 @@
 	<script src="${ctx }/editor/keymap/vim.js"></script>
 	<script src="${ctx }/editor/addon/display/fullscreen.js"></script>
 	<script src="${ctx }/editor/mode/python/python.js"></script>
+	
+	<!-- Requires Mergely -->
+	<script type="text/javascript" src="${ctx }/js/mergely.min.js"></script>
+	<link type="text/css" rel="stylesheet" href="${ctx }/css/mergely.css" />
+	
 	<script>
-		CodeMirror.commands.save = function() {
-			alert("Saving");
-		};
 		var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 			lineNumbers : true,
 			mode : "python",
@@ -270,6 +302,61 @@
 				window.location.href=url;
 			});
 		} 
+		
+		
+		$(document).ready(function () {
+			$('#compare').mergely({
+				cmsettings: { readOnly: false },
+				width: 'auto',
+				height: 450
+			});
+			$("#diffDiv").toggle() ;
+		});
+		
+		
+		$("#lt_version").change(function() {
+			var version = $("#lt_version").val() ;
+			if(version=="current"){
+				$('#compare').mergely('lhs', editor.getValue());
+			}else{
+				$.post("${ctx}/task/find/${task.groupId}/${task.taskId==null?task.id:task.taskId}?version="+$("#lt_version").val(),function(data){
+						$('#compare').mergely('lhs', data.task.code);
+					},"json"
+				);
+			}
+			
+		}) ;
+		
+		$("#rt_version").change(function() {
+			var version = $("#rt_version").val() ;
+			if(version=="current"){
+				$('#compare').mergely('rhs', editor.getValue());
+			}else{
+				$.post("${ctx}/task/find/${task.groupId}/${task.taskId==null?task.id:task.taskId}?version="+$("#rt_version").val(),function(data){
+						$('#compare').mergely('rhs', data.task.code);
+					},"json"
+				);
+			}
+		}) ;
+		
+		$('#diff_task').click(function(){
+			$("#codeDiv").toggle() ;
+			$("#diffDiv").toggle() ;
+			if($('#compare').mergely('get', 'rhs')==''){
+				$("#rt_version").change() ;
+			}
+			
+			if($('#compare').mergely('get', 'lhs')==''){
+				$("#lt_version").change() ;
+			}
+			
+			if('current'==$("#lt_version").val()){
+				$("#lt_version").change() ;
+			}
+			
+		}) ;
+		
+		
 	</script>
 	</body>
 </html>

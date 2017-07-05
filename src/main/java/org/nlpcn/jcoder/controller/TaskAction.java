@@ -30,7 +30,7 @@ import com.alibaba.fastjson.JSONObject;
 @Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))
 public class TaskAction {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class) ;
+	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
 
 	@Inject
 	private TaskService taskService;
@@ -72,6 +72,24 @@ public class TaskAction {
 
 		List<String> versions = taskService.versions(taskId, 100);
 		Mvcs.getReq().setAttribute("versions", versions);
+	}
+
+	@At("/task/find/?/?")
+	@Ok("json")
+	public JSONObject findApi(Long groupId, Long taskId, @Param("version") String version) {
+		JSONObject result = new JSONObject();
+		Mvcs.getReq().setAttribute("groupId", groupId);
+		if (!StringUtil.isBlank(version)) {
+			TaskHistory task = TaskService.findTaskByDBHistory(taskId, version);
+			result.put("task", task);
+			taskId = task.getTaskId();
+		} else {
+			Task task = TaskService.findTaskByDB(taskId);
+			result.put("task", new TaskHistory(task));
+			version = task.getVersion();
+			taskId = task.getId();
+		}
+		return result;
 	}
 
 	@At("/task/_new/?")
@@ -142,8 +160,7 @@ public class TaskAction {
 	 * 获得task列表
 	 * 
 	 * @param groupId
-	 * @param taskType
-	 *            0、垃圾；1、独立；2、计划；3、调度
+	 * @param taskType 0、垃圾；1、独立；2、计划；3、调度
 	 */
 	@At("/task/type/?")
 	@Ok("raw")
