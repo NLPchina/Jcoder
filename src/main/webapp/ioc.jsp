@@ -16,6 +16,7 @@
 	overflow: none;
 	font-size: 18px;
 	height: 800px;
+	width: 1128px;
 }
 </style>
 <!-- topbar ends -->
@@ -96,13 +97,6 @@
 			
 		});
 
-
-		$('#code_type').change(function() {
-			codeEditorFullCode();
-		});
-
-
-		
 
 		$('#submit_ioc').click(function() {
 			$("#code").val(editor.getValue());
