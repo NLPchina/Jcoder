@@ -184,7 +184,7 @@
 	<script src="${ctx }/editor/addon/edit/matchbrackets.js"></script>
 	<script src="${ctx }/editor/keymap/vim.js"></script>
 	<script src="${ctx }/editor/addon/display/fullscreen.js"></script>
-	<script src="${ctx }/editor/mode/python/python.js"></script>
+	<script src="${ctx }/editor/mode/javascript/javascript.js"></script>
 	
 	<!-- Requires Mergely -->
 	<script type="text/javascript" src="${ctx }/js/mergely.min.js"></script>
@@ -193,7 +193,7 @@
 	<script>
 		var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
 			lineNumbers : true,
-			mode : "python",
+			mode : "javascript",
 			matchBrackets : true,
 			theme : "monokai",
 			showCursorWhenSelecting : true,
@@ -306,7 +306,7 @@
 		
 		$(document).ready(function () {
 			$('#compare').mergely({
-				cmsettings: { readOnly: false },
+				cmsettings: { mode: 'javascript',theme : "monokai",readOnly: false },
 				width: 'auto',
 				height: 450
 			});
