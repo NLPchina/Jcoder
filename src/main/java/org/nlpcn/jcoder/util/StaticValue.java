@@ -21,9 +21,10 @@ public class StaticValue {
 	private static final Logger LOG = LoggerFactory.getLogger(StaticValue.class);
 
 	public static final String PREFIX = "jcoder_";
+	public static final String SELF_HOST = "127.0.0.1";
 
 	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
-	public static final String HOST = getValueOrCreate("host", "*");
+	private static final String HOST = getValueOrCreate("host", "*");
 	public static final int PORT = ObjConver.getIntValue(getValueOrCreate("port", "8080"));
 	public static final int RPCPORT = ObjConver.getIntValue(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
 	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
@@ -243,6 +244,13 @@ public class StaticValue {
 			ip = request.getRemoteAddr();
 		}
 		return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;
+	}
+
+	public static String getHost() {
+		if ("*".equals(HOST)) {
+			return SELF_HOST;
+		}
+		return HOST;
 	}
 
 }

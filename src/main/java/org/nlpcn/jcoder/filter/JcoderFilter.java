@@ -31,7 +31,7 @@ public class JcoderFilter extends NutFilter {
 	public void init(FilterConfig conf) throws ServletException {
 		super.init(conf);
 		apiHandler = new ApiActionHandler(conf);
-		host = StaticValue.HOST;
+		host = StaticValue.getHost();
 	}
 
 	@Override

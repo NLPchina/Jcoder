@@ -44,7 +44,7 @@ public class LoginAction {
 	@At("/login")
 	public void login(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password,
 			@Param("verification_code") String verificationCode) throws Throwable {
-
+		
 		String sessionCode = (String) req.getSession().getAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY);
 
 		if (StringUtil.isBlank(sessionCode) || !sessionCode.equalsIgnoreCase(verificationCode)) {
@@ -86,10 +86,21 @@ public class LoginAction {
 			new JsonView().render(req, resp, Restful.instance(false, "login fail please validate your name or password times : " + err, null, ApiException.NotFound));
 		}
 	}
+	
+
+	private static final String origin = "*";
+	private static final String methods = "get, post, put, delete, options";
+	private static final String headers = "origin, content-type, accept, authorization";
+	private static final String credentials = "true";
 
 	@At("/login/api")
 	@Ok("json")
-	public Restful loginApi(HttpServletRequest req, @Param("name") String name, @Param("password") String password) throws ExecutionException {
+	public Restful loginApi(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws ExecutionException {
+		resp.addHeader("Access-Control-Allow-Origin", origin);
+		resp.addHeader("Access-Control-Allow-Methods", methods);
+		resp.addHeader("Access-Control-Allow-Headers", headers);
+		resp.addHeader("Access-Control-Allow-Credentials", credentials);
+		
 		int err = IpErrorCountFilter.err();// for client login to many times , 
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);

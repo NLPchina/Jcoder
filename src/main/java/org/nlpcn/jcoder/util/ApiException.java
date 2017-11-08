@@ -37,8 +37,15 @@ public class ApiException extends ExecutionException {
 	 */
 	public static final int UnprocessableEntity = 422;
 	
+
 	/**
-	 * 请求格式不正确
+	 * tonken不支持当前接口
+	 */
+	public static final int TokenNoPermissions = 450;
+	
+
+	/**
+	 * token没有此接口权限
 	 */
 	public static final int TokenAuthorNotFound = 450;
 

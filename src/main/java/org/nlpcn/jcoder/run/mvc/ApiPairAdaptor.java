@@ -76,12 +76,20 @@ public class ApiPairAdaptor extends PairAdaptor {
 
 	public ApiPairAdaptor(String path) {
         String appRoot = Mvcs.getServletContext().getRealPath("/");
+        if(appRoot==null){
+        	appRoot = "" ;
+        }
         if (path.isEmpty()) {
             path = "${app.root}/WEB-INF/tmp/nutzupload2";
         }
-        if (path.contains("${app.root}"))
+        if (path.contains("${app.root}")){
             path = path.replace("${app.root}", appRoot);
-        uploadCtx = new UploadingContext(new UU32FilePool(path));
+        }
+        try{
+        	uploadCtx = new UploadingContext(new UU32FilePool(path));
+        }catch (Exception e) {
+        	log.error(e.getMessage());
+		}
     }
 
     public ApiPairAdaptor(FilePool pool) {

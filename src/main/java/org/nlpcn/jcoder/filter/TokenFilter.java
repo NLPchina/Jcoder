@@ -24,8 +24,9 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 
 	@Override
 	public View match(ActionContext actionContext) {
-		String token = actionContext.getRequest().getHeader("authorization");
 
+		String token = actionContext.getRequest().getHeader("authorization");
+		
 		if (StringUtil.isBlank(token)) {
 			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header");
 			return new JsonView(Restful.instance(false, "token 'authorization' not in header ", null, ApiException.Unauthorized));
@@ -37,6 +38,15 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 				LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token not access");
 				return new JsonView(Restful.instance(false, "token not access", null, ApiException.TokenAuthorNotFound));
 			}
+
+			String path = actionContext.getPath();
+
+			String[] split = path.split("/");
+
+			if (!token2.authorize(split[1]) && !token2.authorize(split[1] + "/" + split[2])) {
+				return new JsonView(Restful.instance(false, "token not access visit for " + path, null, ApiException.TokenNoPermissions));
+			}
+
 		} catch (ExecutionException e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);

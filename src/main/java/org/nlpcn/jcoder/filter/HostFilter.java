@@ -20,12 +20,12 @@ public class HostFilter implements ActionFilter, RpcFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(IpErrorCountFilter.class);
 
-	private static final String host = StaticValue.HOST;
+	private static final String host = StaticValue.getHost();
 
 	@Override
 	public View match(ActionContext actionContext) {
 
-		if (StringUtil.isBlank(host) || "*".equals(host)) {
+		if (StringUtil.isBlank(host) || StaticValue.SELF_HOST.equals(host)) {
 			return null;
 		}
 

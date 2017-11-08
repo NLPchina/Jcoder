@@ -1,6 +1,8 @@
 package org.nlpcn.jcoder.domain;
 
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * token entity
@@ -9,10 +11,10 @@ import java.util.Date;
  *
  */
 public class Token {
-	
+
 	public static final Token NULL = new Token();
 
-	private String token; 
+	private String token;
 
 	private User user;
 
@@ -21,6 +23,11 @@ public class Token {
 	private Date createTime;
 
 	private long times;
+
+	/**
+	 * 权限数组。* 为全部
+	 */
+	private Set<String> authorizes = new HashSet<>();
 
 	public long addTimes() {
 		return ++times;
@@ -60,6 +67,27 @@ public class Token {
 
 	public long getTimes() {
 		return times;
+	}
+
+	public void addAuthorize(String authorize) {
+		if (!authorize.contains("/")) {
+			authorize = authorize + "/*";
+		}
+		authorizes.add(authorize);
+	}
+
+	public void rmAuthorize(String authorize) {
+		authorizes.remove(authorize);
+	}
+
+	public boolean authorize(String authorize) {
+		if (authorizes.size() == 0) {
+			return true;
+		}
+		if (!authorize.contains("/")) {
+			authorize = authorize + "/*";
+		}
+		return authorizes.contains(authorize);
 	}
 
 }
