@@ -246,6 +246,10 @@ public class StaticValue {
 		return ip.equals("0:0:0:0:0:0:0:1") ? "127.0.0.1" : ip;
 	}
 
+	/**
+	 * 获得host如果host为* 则返回127.0.0.1
+	 * @return
+	 */
 	public static String getHost() {
 		if ("*".equals(HOST)) {
 			return SELF_HOST;
@@ -253,4 +257,11 @@ public class StaticValue {
 		return HOST;
 	}
 
+	/**
+	 * 获得用户配置的host
+	 * @return
+	 */
+	public static String getConfigHost() {
+		return HOST;
+	}
 }

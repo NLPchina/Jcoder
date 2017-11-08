@@ -31,7 +31,7 @@ public class JcoderFilter extends NutFilter {
 	public void init(FilterConfig conf) throws ServletException {
 		super.init(conf);
 		apiHandler = new ApiActionHandler(conf);
-		host = StaticValue.getHost();
+		host = StaticValue.getConfigHost();
 	}
 
 	@Override
@@ -43,7 +43,7 @@ public class JcoderFilter extends NutFilter {
 		if (path.startsWith("/api/")) {
 			_doFilter(chain, request, response);
 		} else {
-			if (host == null || "*".equals(host) || StringUtil.isBlank("host") || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
+			if (StringUtil.isBlank("host") || "*".equals(host) || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
 			} else {
 				_doAuthoErr(request, response);
@@ -54,6 +54,7 @@ public class JcoderFilter extends NutFilter {
 
 	private void _doAuthoErr(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		try {
+			request.getSession().invalidate();
 			response.setStatus(403);
 			response.setHeader("Cache-Control", "no-cache");
 			response.setContentType("text/html");
@@ -64,7 +65,6 @@ public class JcoderFilter extends NutFilter {
 		} finally {
 			response.getOutputStream().flush();
 			response.getOutputStream().close();
-			request.getSession().invalidate();
 		}
 	}
 

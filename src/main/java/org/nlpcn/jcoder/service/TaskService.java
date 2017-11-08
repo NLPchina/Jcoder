@@ -1,11 +1,14 @@
 package org.nlpcn.jcoder.service;
 
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpSession;
 
@@ -15,9 +18,11 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.domain.UserGroup;
+import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -25,6 +30,7 @@ import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
+import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,7 +217,7 @@ public class TaskService {
 	 * @throws TaskException
 	 */
 	public void initTaskFromDB() throws TaskException {
-		
+
 		List<Task> search = this.basicDao.search(Task.class, "id");
 
 		// 取得目前正在运行的task
@@ -220,7 +226,6 @@ public class TaskService {
 		HashSet<String> taskSet = new HashSet<>();
 
 		list.forEach(ti -> taskSet.add(ti.getTaskName()));
-		
 
 		ThreadManager.stopScheduler();
 
@@ -238,7 +243,7 @@ public class TaskService {
 						LOG.warn(task.getName() + " in runing in! so not to publish it!");
 						continue;
 					}
-					
+
 					if (ThreadManager.add(task)) {
 						task.setMessage("regedit ok ! cornStr : " + task.getScheduleStr());
 					}
@@ -249,7 +254,7 @@ public class TaskService {
 			} catch (Exception e) {
 				e.printStackTrace();
 				task.setMessage(e.toString());
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 			}
 		}
 	}
@@ -386,5 +391,78 @@ public class TaskService {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
+	 * 
+	 * @param className
+	 * @param methodName
+	 * @param params
+	 * @return
+	 * @throws ExecutionException
+	 */
+	public static <T> T executeTask(String className, String methodName, Map<String, Object> params) throws ExecutionException {
+		Task task = findTaskByCache(className);
+		if (task == null) {
+			throw new ApiException(ApiException.NotFound, methodName + " not found");
+		}
+		task = new JavaRunner(task).compile().instance().getTask();
+
+		ExecuteMethod method = task.codeInfo().getExecuteMethod(methodName);
+
+		if (method == null) {
+			throw new ApiException(ApiException.NotFound, methodName + "/" + methodName + " not found");
+		}
+
+		Parameter[] parameters = method.getMethod().getParameters();
+
+		Object[] args = new Object[parameters.length];
+
+		for (int i = 0; i < parameters.length; i++) {
+			String name = null;
+			Parameter parameter = parameters[i];
+			Param annotation = parameter.getAnnotation(Param.class);
+			if (annotation != null) {
+				name = annotation.value();
+			}
+			if (StringUtil.isBlank(name)) {
+				name = parameter.getName();
+			}
+			args[i] = params.get(name);
+		}
+
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+	}
+
+	/**
+	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
+	 * 
+	 * @param className
+	 * @param methodName
+	 * @param args 请求参数。严格符合顺序，如果确定参数不变可以使用此方式。否则慎用
+	 * @return
+	 * @throws ExecutionException
+	 */
+	public static <T> T executeTask(String className, String methodName, Object... args) throws ExecutionException {
+		Task task = findTaskByCache(className);
+		if (task == null) {
+			throw new ApiException(ApiException.NotFound, methodName + " not found");
+		}
+		task = new JavaRunner(task).compile().instance().getTask();
+
+		ExecuteMethod method = task.codeInfo().getExecuteMethod(methodName);
+
+		if (method == null) {
+			throw new ApiException(ApiException.NotFound, methodName + "/" + methodName + " not found");
+		}
+
+		Parameter[] parameters = method.getMethod().getParameters();
+
+		if (parameters.length != args.length) {
+			throw new IllegalArgumentException("args err you input length is " + args.length + " method length is " + parameters);
+		}
+
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
 }
