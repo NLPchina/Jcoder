@@ -59,6 +59,8 @@ public class Bootstrap {
 						putEnv(PREFIX + "upload", dim[1]);
 					} else if (dim[0].equals("--ssl")) {
 						putEnv(PREFIX + "ssl", dim[1]);
+					} else if  (dim[0].equals("--token")) {
+						putEnv(PREFIX + "token", dim[1]);
 					}
 				}
 			} else if (!arg.startsWith("-f")) {
@@ -68,6 +70,7 @@ public class Bootstrap {
 
 		getOrCreateEnv(PREFIX + "maven", "mvn");
 		getOrCreateEnv(PREFIX + "host", null);
+		
 
 		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
 

@@ -35,7 +35,7 @@ public class ApiTest {
 	 * @throws Exception
 	 */
 	@DefaultExecute
-	@Filters(@By(type=TokenFilter.class))
+	@Filters(@By(type = TokenFilter.class, args = { "true" }))
 	public Object test(int i, String content) throws Exception {
 		return TaskService.executeTask("TaskDemo", "execute", "ansj", 20, '男');
 	}

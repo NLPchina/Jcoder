@@ -27,12 +27,15 @@ public class StaticValue {
 	private static final String HOST = getValueOrCreate("host", "*");
 	public static final int PORT = ObjConver.getIntValue(getValueOrCreate("port", "8080"));
 	public static final int RPCPORT = ObjConver.getIntValue(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
+	//default token
+	public static final String TOKEN = getValueOrCreate("token", null);
 	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
 	public static final File HOME_FILE = new File(HOME);
 	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
 	public static final String VERSION = getResource("version");
+
 	public static final File UPLOAD_DIR = new File(getValueOrCreate("upload", new File(HOME_FILE, "upload").getAbsolutePath()));
 
 	static {
@@ -248,6 +251,7 @@ public class StaticValue {
 
 	/**
 	 * 获得host如果host为* 则返回127.0.0.1
+	 * 
 	 * @return
 	 */
 	public static String getHost() {
@@ -259,6 +263,7 @@ public class StaticValue {
 
 	/**
 	 * 获得用户配置的host
+	 * 
 	 * @return
 	 */
 	public static String getConfigHost() {

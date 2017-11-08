@@ -22,21 +22,43 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TokenFilter.class);
 
+	private boolean def = true;
+
+	public TokenFilter(boolean def) {
+		this.def = def;
+	}
+
+	public TokenFilter() {
+	}
+
 	@Override
 	public View match(ActionContext actionContext) {
 
 		String token = actionContext.getRequest().getHeader("authorization");
-		
+
+		if (token == null) { //尝试从参数中获取
+			token = actionContext.getRequest().getParameter("_authorization");
+		}
+
 		if (StringUtil.isBlank(token)) {
-			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header");
-			return new JsonView(Restful.instance(false, "token 'authorization' not in header ", null, ApiException.Unauthorized));
+			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header and '_authorization' not in _authorization");
+			return new JsonView(Restful.instance(false, " token 'authorization' not in header and '_authorization' not in _authorization", null, ApiException.Unauthorized));
+		}
+
+		if (def && StaticValue.TOKEN != null && token.equals(StaticValue.TOKEN)) {
+			return null;
 		}
 
 		try {
 			Token token2 = TokenService.getToken(token);
 			if (token2 == null || token2 == Token.NULL) {
-				LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token not access");
-				return new JsonView(Restful.instance(false, "token not access", null, ApiException.TokenAuthorNotFound));
+				String message = "token not access";
+				if (token.equals(StaticValue.TOKEN)) {
+					message += " this api can not visti by default token";
+				}
+
+				LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token not access visit " + actionContext.getPath());
+				return new JsonView(Restful.instance(false, message, null, ApiException.TokenAuthorNotFound));
 			}
 
 			String path = actionContext.getPath();
@@ -63,6 +85,10 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 		if (StringUtil.isBlank(token)) {
 			LOG.info(Rpcs.getContext().remoteAddress() + " token 'authorization' not in header");
 			return Restful.instance(false, "token 'authorization' not in header ", null, ApiException.Unauthorized);
+		}
+
+		if (token.equals(StaticValue.TOKEN)) {
+			return null;
 		}
 
 		try {
