@@ -3,6 +3,9 @@ package org.nlpcn.jcoder.run.mvc.processor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.nlpcn.jcoder.filter.TokenFilter;
+import org.nutz.log.Log;
+import org.nutz.log.Logs;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionFilter;
 import org.nutz.mvc.ActionInfo;
@@ -20,6 +23,8 @@ import org.nutz.mvc.impl.processor.AbstractProcessor;
  *
  */
 public class ApiActionFiltersProcessor extends AbstractProcessor {
+
+	private static final Log log = Logs.get();
 
 	protected List<ActionFilter> filters = new ArrayList<ActionFilter>();
 
@@ -49,13 +54,17 @@ public class ApiActionFiltersProcessor extends AbstractProcessor {
 
 	public void process(ActionContext ac) throws Throwable {
 
-		for (ActionFilter filter : filters) {
-			View view = filter.match(ac);
-			if (null != view) {
-				ac.setMethodReturn(view);
-				renderView(ac);
-				return;
+		if (ac.getRequest().getParameter("_rpc_init") == null) { //如果是null说明是调用激活此时放过
+			for (ActionFilter filter : filters) {
+				View view = filter.match(ac);
+				if (null != view) {
+					ac.setMethodReturn(view);
+					renderView(ac);
+					return;
+				}
 			}
+		} else {
+			log.info("to instance by init " + ac.getPath());
 		}
 
 		if (proxyProcessor == null) {

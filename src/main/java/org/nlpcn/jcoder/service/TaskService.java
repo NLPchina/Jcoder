@@ -1,6 +1,8 @@
 package org.nlpcn.jcoder.service;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -10,9 +12,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.nlpcn.commons.lang.util.MapCount;
+import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
@@ -26,10 +31,12 @@ import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
+import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
+import org.nutz.mvc.adaptor.PairAdaptor;
 import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -429,7 +436,13 @@ public class TaskService {
 			if (StringUtil.isBlank(name)) {
 				name = parameter.getName();
 			}
-			args[i] = params.get(name);
+			
+			Object val = params.get(name) ;
+			if (val == null && annotation.df() != null) {
+				params.put(name, annotation.df()) ;
+			}
+
+			args[i] = Castors.me().castTo(params.get(name), parameter.getType());
 		}
 
 		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
@@ -440,11 +453,11 @@ public class TaskService {
 	 * 
 	 * @param className
 	 * @param methodName
-	 * @param args 请求参数。严格符合顺序，如果确定参数不变可以使用此方式。否则慎用
+	 * @param params
 	 * @return
 	 * @throws ExecutionException
 	 */
-	public static <T> T executeTask(String className, String methodName, Object... args) throws ExecutionException {
+	public static <T> T executeTaskByArgs(String className, String methodName, Object... params) throws ExecutionException {
 		Task task = findTaskByCache(className);
 		if (task == null) {
 			throw new ApiException(ApiException.NotFound, methodName + " not found");
@@ -459,10 +472,29 @@ public class TaskService {
 
 		Parameter[] parameters = method.getMethod().getParameters();
 
-		if (parameters.length != args.length) {
-			throw new IllegalArgumentException("args err you input length is " + args.length + " method length is " + parameters);
+		Object[] args = new Object[parameters.length];
+
+		if (args.length != params.length) {
+			throw new IllegalArgumentException("args.length " + args.length + " not equal params.length " + params.length);
+		}
+		for (int i = 0; i < parameters.length; i++) {
+			String name = null;
+			Parameter parameter = parameters[i];
+			Param annotation = parameter.getAnnotation(Param.class);
+			if (annotation != null) {
+				name = annotation.value();
+			}
+			if (StringUtil.isBlank(name)) {
+				name = parameter.getName();
+			}
+			if (params[i] == null && annotation.df() != null) {
+				params[i] = annotation.df();
+			}
+
+			args[i] = Castors.me().castTo(params[i], parameter.getType());
 		}
 
 		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
+	
 }

@@ -29,8 +29,8 @@ public class Restful {
 		this.message = message;
 	}
 
-	public Object getObj() {
-		return obj;
+	public <T> T getObj() {
+		return (T) obj;
 	}
 
 	public void setObj(Object obj) {
@@ -91,6 +91,7 @@ public class Restful {
 		return new Restful(message, obj);
 	}
 
+	@Deprecated
 	public static Restful instance(String message) {
 		return new Restful(message);
 	}
@@ -102,4 +103,15 @@ public class Restful {
 	public static Restful instance(Object obj) {
 		return new Restful(obj);
 	}
+	
+	public Restful msg(String message){
+		this.message = message ;
+		return this ;
+	}
+	
+	public Restful obj(Object obj){
+		this.obj = obj ;
+		return this ;
+	}
+	
 }

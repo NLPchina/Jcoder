@@ -22,8 +22,8 @@ public class TaskDemo {
 	 * @return {"FBI":[{"name":"rose","age":"25"},{"name":"jack","age":"23"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}]}
 	 */
 	@DefaultExecute
-	
-	public Object execute(String name, Integer age, char sex) {
+	@Filters(@By(type = TokenFilter.class, args = { "false" }))
+	public Object execute(String name, Integer age, Character sex) {
 		return "name:" + name +" age:"+age+" sex:"+sex;
 	}
 }

@@ -1,5 +1,7 @@
 package org.nlpcn.jcoder.filter;
 
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.concurrent.ExecutionException;
 
 import org.nlpcn.commons.lang.util.StringUtil;
@@ -35,14 +37,14 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 	public View match(ActionContext actionContext) {
 
 		String token = actionContext.getRequest().getHeader("authorization");
-
-		if (token == null) { //尝试从参数中获取
+		
+		if ("null".equals(token) || token == null) { //尝试从参数中获取
 			token = actionContext.getRequest().getParameter("_authorization");
 		}
 
 		if (StringUtil.isBlank(token)) {
-			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header and '_authorization' not in _authorization");
-			return new JsonView(Restful.instance(false, " token 'authorization' not in header and '_authorization' not in _authorization", null, ApiException.Unauthorized));
+			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header and '_authorization' not in parameters");
+			return new JsonView(Restful.instance(false, " token 'authorization' not in header and '_authorization' not in parameters", null, ApiException.Unauthorized));
 		}
 
 		if (def && StaticValue.TOKEN != null && token.equals(StaticValue.TOKEN)) {

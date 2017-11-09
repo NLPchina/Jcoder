@@ -15,6 +15,8 @@ import org.nutz.mvc.annotation.By;
 import org.nutz.mvc.annotation.Filters;
 
 import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 测试文档搜索
@@ -35,9 +37,10 @@ public class ApiTest {
 	 * @throws Exception
 	 */
 	@DefaultExecute
-	@Filters(@By(type = TokenFilter.class, args = { "true" }))
 	public Object test(int i, String content) throws Exception {
-		return TaskService.executeTask("TaskDemo", "execute", "ansj", 20, '男');
+		Map<String,Object> hm = new HashMap<>() ;
+		hm.put("name", "ansj") ;
+		return TaskService.executeTask("TaskDemo", "execute", hm);
 	}
 
 }

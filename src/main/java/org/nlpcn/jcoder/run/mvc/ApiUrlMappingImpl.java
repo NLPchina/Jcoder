@@ -219,7 +219,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		ApiActionInvoker apiActionInvoker = map.get(path);
 
 		if (apiActionInvoker == null) { // 调用http接口进行渲染填充map
-			Http.get("http://127.0.0.1:" + System.getProperty(StaticValue.PREFIX + "port") + path + "?_rpc_init");
+			Http.get("http://127.0.0.1:" + System.getProperty(StaticValue.PREFIX + "port") + path + "?_rpc_init=true");
 			apiActionInvoker = map.get(path);
 		}
 
