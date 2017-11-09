@@ -427,19 +427,13 @@ public class TaskService {
 		Object[] args = new Object[parameters.length];
 
 		for (int i = 0; i < parameters.length; i++) {
-			String name = null;
 			Parameter parameter = parameters[i];
-			Param annotation = parameter.getAnnotation(Param.class);
-			if (annotation != null) {
-				name = annotation.value();
-			}
-			if (StringUtil.isBlank(name)) {
-				name = parameter.getName();
-			}
+			String name = parameter.getName();
 
-			if (annotation != null) {
-				if (params.get(name) == null && annotation.df() != null) {
-					params.put(name, annotation.df());
+			if (!params.containsKey(name)) {
+				Param annotation = parameter.getAnnotation(Param.class);
+				if (annotation != null) {
+					name = annotation.value();
 				}
 			}
 
@@ -479,21 +473,7 @@ public class TaskService {
 			throw new IllegalArgumentException("args.length " + args.length + " not equal params.length " + params.length);
 		}
 		for (int i = 0; i < parameters.length; i++) {
-			String name = null;
 			Parameter parameter = parameters[i];
-			Param annotation = parameter.getAnnotation(Param.class);
-			if (annotation != null) {
-				name = annotation.value();
-			}
-			if (StringUtil.isBlank(name)) {
-				name = parameter.getName();
-			}
-			if (annotation != null) {
-				if (params[i] == null && annotation.df() != null) {
-					params[i] = annotation.df();
-				}
-			}
-
 			args[i] = Castors.me().castTo(params[i], parameter.getType());
 		}
 
