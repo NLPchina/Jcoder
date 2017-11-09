@@ -436,10 +436,11 @@ public class TaskService {
 			if (StringUtil.isBlank(name)) {
 				name = parameter.getName();
 			}
-			
-			Object val = params.get(name) ;
-			if (val == null && annotation.df() != null) {
-				params.put(name, annotation.df()) ;
+
+			if (annotation != null) {
+				if (params.get(name) == null && annotation.df() != null) {
+					params.put(name, annotation.df());
+				}
 			}
 
 			args[i] = Castors.me().castTo(params.get(name), parameter.getType());
@@ -487,8 +488,10 @@ public class TaskService {
 			if (StringUtil.isBlank(name)) {
 				name = parameter.getName();
 			}
-			if (params[i] == null && annotation.df() != null) {
-				params[i] = annotation.df();
+			if (annotation != null) {
+				if (params[i] == null && annotation.df() != null) {
+					params[i] = annotation.df();
+				}
 			}
 
 			args[i] = Castors.me().castTo(params[i], parameter.getType());
@@ -496,5 +499,5 @@ public class TaskService {
 
 		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
-	
+
 }

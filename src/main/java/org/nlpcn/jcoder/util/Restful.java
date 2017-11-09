@@ -78,6 +78,10 @@ public class Restful {
 	public Restful(Object obj) {
 		this.obj = obj;
 	}
+	
+	public static Restful instance(){
+		return new Restful() ;
+	}
 
 	public static Restful instance(boolean ok, String message, Object obj, int code) {
 		return new Restful(ok, message, obj, code);
@@ -111,6 +115,16 @@ public class Restful {
 	
 	public Restful obj(Object obj){
 		this.obj = obj ;
+		return this ;
+	}
+	
+	public Restful code(int code){
+		this.code = code ;
+		return this ;
+	}
+	
+	public Restful ok(boolean ok){
+		this.ok = ok ;
 		return this ;
 	}
 	
