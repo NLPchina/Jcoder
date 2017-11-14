@@ -192,8 +192,4 @@ public class Testing {
 	}
 	
 	
-	public static void main(String[] args) throws Exception {
-		startServer("D:\\git\\mss-api\\src\\test\\resources\\ioc.js", new String[]{"cn"});
-	}
-
 }

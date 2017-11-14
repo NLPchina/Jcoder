@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.filter;
 
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.concurrent.ExecutionException;
 
 import org.nlpcn.commons.lang.util.StringUtil;
@@ -37,14 +36,14 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 	public View match(ActionContext actionContext) {
 
 		String token = actionContext.getRequest().getHeader("authorization");
-		
-		if ("null".equals(token) || token == null) { //尝试从参数中获取
+
+		if (token == null) { //尝试从参数中获取
 			token = actionContext.getRequest().getParameter("_authorization");
 		}
 
 		if (StringUtil.isBlank(token)) {
 			LOG.info(StaticValue.getRemoteHost(actionContext.getRequest()) + " token 'authorization' not in header and '_authorization' not in parameters");
-			return new JsonView(Restful.instance(false, " token 'authorization' not in header and '_authorization' not in parameters", null, ApiException.Unauthorized));
+			return new JsonView(Restful.instance(false, " token 'authorization' not in header and '_authorization' not in parameters", null, ApiException.TokenAuthorNotFound));
 		}
 
 		if (def && StaticValue.TOKEN != null && token.equals(StaticValue.TOKEN)) {
@@ -65,13 +64,18 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 
 			String path = actionContext.getPath();
 
-			String[] split = path.split("/");
+			String[] split = path.replace("/api/", "").split("/");
+			
+			
+			if(split.length<2){
+				split = new String[]{split[0],null} ;
+			}
 
-			if (!token2.authorize(split[1]) && !token2.authorize(split[1] + "/" + split[2])) {
+			if (!token2.authorize(split[0], split[1])) {
 				return new JsonView(Restful.instance(false, "token not access visit for " + path, null, ApiException.TokenNoPermissions));
 			}
 
-		} catch (ExecutionException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);
 			return new JsonView(Restful.instance(false, e.getMessage(), e, ApiException.ServerException));
@@ -84,21 +88,37 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 	public Restful match(RpcRequest req) {
 		String token = req.getTokenStr();
 
-		if (StringUtil.isBlank(token)) {
-			LOG.info(Rpcs.getContext().remoteAddress() + " token 'authorization' not in header");
-			return Restful.instance(false, "token 'authorization' not in header ", null, ApiException.Unauthorized);
+		if (token == null) { //尝试从参数中获取
+			token = (String) Rpcs.getContext().get("_authorization");
 		}
 
-		if (token.equals(StaticValue.TOKEN)) {
+		if (StringUtil.isBlank(token)) {
+			LOG.info(req.getMessageId() + " " + Rpcs.getContext().remoteAddress() + " token 'authorization' not in header and '_authorization' not in parameters");
+			return Restful.instance(false, req.getMessageId() + " token 'authorization' not in header and '_authorization' not in parameters", null,
+					ApiException.TokenAuthorNotFound);
+		}
+
+		if (def && StaticValue.TOKEN != null && token.equals(StaticValue.TOKEN)) {
 			return null;
 		}
 
 		try {
 			Token token2 = TokenService.getToken(token);
 			if (token2 == null || token2 == Token.NULL) {
-				LOG.info(Rpcs.getContext().remoteAddress() + " token not access");
-				return Restful.instance(false, "token not access", null, ApiException.TokenAuthorNotFound);
+				String message = "token not access";
+				if (token.equals(StaticValue.TOKEN)) {
+					message += " this api can not visti by default token";
+				}
+
+				LOG.info(req.getMessageId() + " " + Rpcs.getContext().remoteAddress() + " token not access visit " + req.getClassName() + "/" + req.getMethodName());
+				return Restful.instance(false, message, null, ApiException.TokenAuthorNotFound);
 			}
+
+			if (!token2.authorize(req.getClassName(), req.getMethodName())) {
+				return Restful.instance(false, req.getMessageId() + " token not access visit for " + req.getClassName() + "/" + req.getMethodName(), null,
+						ApiException.TokenNoPermissions);
+			}
+
 		} catch (ExecutionException e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);

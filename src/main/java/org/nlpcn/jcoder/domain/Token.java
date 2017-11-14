@@ -80,6 +80,16 @@ public class Token {
 		authorizes.remove(authorize);
 	}
 
+	public boolean authorize(String className, String methodName) {
+		if (authorizes.size() == 0) {
+			return true;
+		}
+		if (authorizes.contains(className + "/*")) {
+			return true;
+		}
+		return authorizes.contains(className + "/" + methodName);
+	}
+
 	public boolean authorize(String authorize) {
 		if (authorizes.size() == 0) {
 			return true;

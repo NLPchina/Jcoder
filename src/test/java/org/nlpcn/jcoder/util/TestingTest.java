@@ -8,8 +8,7 @@ public class TestingTest {
 
 	@Test
 	public void test() throws InterruptedException, Exception {
-		Mvcs.getServletContext().getRealPath("/") ;
-		Testing.startServer(null, new String[]{"cn.com.infcn"});
+		Testing.startServer(null, new String[]{"cn.com.infcn.api.test"});
 	}
 
 }

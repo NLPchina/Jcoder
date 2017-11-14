@@ -2,7 +2,6 @@ package org.nlpcn.jcoder.service;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -12,31 +11,29 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.nlpcn.commons.lang.util.MapCount;
-import org.nlpcn.commons.lang.util.ObjConver;
 import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.commons.lang.util.tuples.KeyValue;
+import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.domain.UserGroup;
-import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.TestingFilter;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.adaptor.PairAdaptor;
 import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -412,6 +409,10 @@ public class TaskService {
 	public static <T> T executeTask(String className, String methodName, Map<String, Object> params) throws ExecutionException {
 		Task task = findTaskByCache(className);
 		if (task == null) {
+			if (TestingFilter.methods != null) {
+				LOG.info("use testing method to run ");
+				return executeTaskByTest(className, methodName, params);
+			}
 			throw new ApiException(ApiException.NotFound, methodName + " not found");
 		}
 		task = new JavaRunner(task).compile().instance().getTask();
@@ -422,7 +423,91 @@ public class TaskService {
 			throw new ApiException(ApiException.NotFound, methodName + "/" + methodName + " not found");
 		}
 
-		Parameter[] parameters = method.getMethod().getParameters();
+		Object[] args = map2Args(params, method.getMethod());
+
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+	}
+
+	
+
+	/**
+	 * 通过test方式执行内部调用
+	 * @param className
+	 * @param methodName
+	 * @param params
+	 * @return
+	 * @throws ApiException
+	 */
+	public static <T> T executeTaskByArgs(String className, String methodName, Object... params) throws ExecutionException {
+		Task task = findTaskByCache(className);
+		if (task == null) {
+			if (TestingFilter.methods != null) {
+				LOG.info("use testing method to run ");
+				return executeTaskByArgsByTest(className, methodName, params);
+			}
+			throw new ApiException(ApiException.NotFound, methodName + " not found");
+		}
+		task = new JavaRunner(task).compile().instance().getTask();
+
+		ExecuteMethod method = task.codeInfo().getExecuteMethod(methodName);
+
+		if (method == null) {
+			throw new ApiException(ApiException.NotFound, methodName + "/" + methodName + " not found");
+		}
+
+		Object[] args = array2Args(method.getMethod(), params);
+
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+	}
+
+	private static <T> T executeTaskByArgsByTest(String className, String methodName, Object[] params) throws ApiException {
+		KeyValue<Method, Object> kv = TestingFilter.methods.get(className + "/" + methodName);
+		if (kv == null) {
+			throw new ApiException(ApiException.NotFound, methodName + " not found");
+		}
+		Object[] args = array2Args(kv.getKey(), params) ;
+
+		try {
+			return (T) kv.getKey().invoke(kv.getValue(), args);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ApiException(500, e.getMessage());
+		}
+	}
+	
+	
+	/**
+	 * 通过test方式执行内部调用
+	 * @param className
+	 * @param methodName
+	 * @param params
+	 * @return
+	 * @throws ApiException
+	 */
+	private static <T> T executeTaskByTest(String className, String methodName, Map<String, Object> params) throws ApiException {
+		KeyValue<Method, Object> kv = TestingFilter.methods.get(className + "/" + methodName);
+		if (kv == null) {
+			throw new ApiException(ApiException.NotFound, methodName + " not found");
+		}
+		Object[] args = map2Args(params, kv.getKey());
+
+		try {
+			return (T) kv.getKey().invoke(kv.getValue(), args);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new ApiException(500, e.getMessage());
+		}
+	}
+
+	/**
+	 * 将map转换为参数
+	 * 
+	 * @param params
+	 * @param method
+	 * @return
+	 */
+	private static Object[] map2Args(Map<String, Object> params, Method method) {
+		Parameter[] parameters = method.getParameters();
 
 		Object[] args = new Object[parameters.length];
 
@@ -439,33 +524,18 @@ public class TaskService {
 
 			args[i] = Castors.me().castTo(params.get(name), parameter.getType());
 		}
-
-		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+		return args;
 	}
 
 	/**
-	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
+	 * 将对象数组转换为参数
 	 * 
-	 * @param className
-	 * @param methodName
+	 * @param method
 	 * @param params
 	 * @return
-	 * @throws ExecutionException
 	 */
-	public static <T> T executeTaskByArgs(String className, String methodName, Object... params) throws ExecutionException {
-		Task task = findTaskByCache(className);
-		if (task == null) {
-			throw new ApiException(ApiException.NotFound, methodName + " not found");
-		}
-		task = new JavaRunner(task).compile().instance().getTask();
-
-		ExecuteMethod method = task.codeInfo().getExecuteMethod(methodName);
-
-		if (method == null) {
-			throw new ApiException(ApiException.NotFound, methodName + "/" + methodName + " not found");
-		}
-
-		Parameter[] parameters = method.getMethod().getParameters();
+	private static Object[] array2Args(Method method, Object... params) {
+		Parameter[] parameters = method.getParameters();
 
 		Object[] args = new Object[parameters.length];
 
@@ -476,8 +546,7 @@ public class TaskService {
 			Parameter parameter = parameters[i];
 			args[i] = Castors.me().castTo(params[i], parameter.getType());
 		}
-
-		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+		return args;
 	}
 
 }

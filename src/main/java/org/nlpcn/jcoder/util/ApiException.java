@@ -41,7 +41,7 @@ public class ApiException extends ExecutionException {
 	/**
 	 * tonken不支持当前接口
 	 */
-	public static final int TokenNoPermissions = 450;
+	public static final int TokenNoPermissions = 451;
 	
 
 	/**

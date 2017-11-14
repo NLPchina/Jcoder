@@ -55,5 +55,4 @@ public class RpcRequest implements Serializable {
 		this.tokenStr = tokenStr;
 	}
 
-	
 }

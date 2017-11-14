@@ -3,7 +3,6 @@ package org.nlpcn.jcoder.run.mvc.processor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.nlpcn.jcoder.filter.TokenFilter;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 import org.nutz.mvc.ActionContext;

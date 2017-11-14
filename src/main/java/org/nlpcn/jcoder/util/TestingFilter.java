@@ -39,7 +39,7 @@ public class TestingFilter extends NutFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TestingFilter.class);
 
-	private static Map<String, KeyValue<Method, Object>> methods = null;
+	public static Map<String, KeyValue<Method, Object>> methods = null;
 
 	public static void init(String... packages) throws IOException {
 		Map<String, KeyValue<Method, Object>> tempMethods = new HashMap<>();
