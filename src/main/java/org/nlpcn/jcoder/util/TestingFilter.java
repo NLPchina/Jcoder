@@ -30,7 +30,6 @@ import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
-import org.nutz.mvc.impl.processor.EncodingProcessor;
 import org.nutz.resource.Scans;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,7 @@ public class TestingFilter extends NutFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TestingFilter.class);
 
-	public static Map<String, KeyValue<Method, Object>> methods = null;
+	public static Map<String, KeyValue<Method, Object>> methods = new HashMap<>();
 
 	public static void init(String... packages) throws IOException {
 		Map<String, KeyValue<Method, Object>> tempMethods = new HashMap<>();
