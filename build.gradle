@@ -1,8 +1,9 @@
 group 'nlpcn.org'
-version '3.1.7'
+version '5.0.0'
 
 apply plugin: 'java'
 apply plugin: 'war'
+apply plugin: 'idea'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
@@ -28,9 +29,10 @@ dependencies {
     compile 'com.github.javaparser:javaparser-core:2.4.0'
     compile 'com.github.axet:kaptcha:0.0.9'
 	compile 'org.jasypt:jasypt:1.9.2'
-	
-	
-  	//new version use log
+	compile 'org.apache.zookeeper:zookeeper:3.4.11'
+
+
+	//new version use log
     compile 'org.slf4j:slf4j-api:1.7.21'
     compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.6.2'
 	compile 'org.apache.logging.log4j:log4j-jcl:2.6.2'
@@ -44,47 +46,49 @@ dependencies {
 	compile 'javax.inject:javax.inject:1'
 	compile 'javax:javaee-api:7.0'
 	compile 'io.netty:netty-all:4.1.2.Final'
-	compile 'org.eclipse.jetty:jetty-servlet:9.2.2.v20140723'
+	compile 'org.eclipse.jetty:jetty-servlet:9.4.8.v20171121'
  	
     // web server
-    providedCompile 'org.eclipse.jetty:jetty-webapp:9.2.2.v20140723'
-    providedCompile 'org.eclipse.jetty:jetty-jsp:9.2.2.v20140723'
-    providedCompile 'org.eclipse.jetty:jetty-continuation:9.2.2.v20140723'
-    providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.2.2.v20140723'
-    providedCompile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.2.2.v20140723'
+	providedCompile 'org.eclipse.jetty:jetty-webapp:9.4.8.v20171121'
+	providedCompile 'org.eclipse.jetty:jetty-continuation:9.4.8.v20171121'
+	providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.4.8.v20171121'
+    providedCompile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.4.8.v20171121'
+	providedCompile 'org.eclipse.jetty:apache-jsp:9.4.8.v20171121'
+	providedCompile 'com.sun.el:el-ri:1.0'
 
-    
+
 	testCompile 'junit:junit:4.12'
 
 	war{
-	
+
 		def configFile = file('src/main/resources/jcoder.properties') ;
-		
+
 		configFile.write("version="+version+"_"+new Date().format('yyyyMMddHHmm'));
-		
-		def schemaJarFile = project.configurations.providedCompile 
-		
+
+		def schemaJarFile = project.configurations.providedCompile
+
 		schemaJarFile.each{source ->
 			from zipTree(source)
 			exclude("**/*.SF")
 		}
-		
-		from('build/classes/main/Bootstrap.class')
+
+		from('build/classes/main/Bootstrap.class') ;//eclipse
+		from('build/classes/java/main/Bootstrap.class') ; //idea
 		manifest {
         	attributes 'Implementation-Title': 'Jcoder Webserver', 'Implementation-Version': version,  'Main-Class':'Bootstrap'
     	}
-    	
-    	
+
+
     	classpath = classpath - sourceSets.main.output
-    	
+
 
 		from (jar) {
 			into 'WEB-INF/lib'
 		}
 	}
-	
-	
-	
+
+
+
 	tasks.withType(JavaCompile) {  
     	options.encoding = "UTF-8"  
 	}

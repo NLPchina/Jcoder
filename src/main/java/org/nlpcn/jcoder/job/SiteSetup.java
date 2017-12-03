@@ -2,6 +2,7 @@ package org.nlpcn.jcoder.job;
 
 import java.util.Arrays;
 
+import javax.servlet.ServletException;
 import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -90,18 +91,23 @@ public class SiteSetup implements Setup {
 		
 		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext() ;
 		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler() ;
-		ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext) ;
-		Arrays.stream(nc.getIoc().getNames()).forEach(name ->{
-			Object object = nc.getIoc().get(Object.class, name) ;
-			if(object.getClass().getAnnotation(ServerEndpoint.class)!=null){
-				try {
-					configureContext.addEndpoint(object.getClass());
-					LOG.info("add "+object.getClass()+" in websocket container");
-				} catch (Exception e) {
-					LOG.error("add "+object.getClass()+" in websocket container fail!!",e);
+		try {
+			final ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
+			Arrays.stream(nc.getIoc().getNames()).forEach(name ->{
+				Object object = nc.getIoc().get(Object.class, name) ;
+				if(object.getClass().getAnnotation(ServerEndpoint.class)!=null){
+					try {
+						configureContext.addEndpoint(object.getClass());
+						LOG.info("add "+object.getClass()+" in websocket container");
+					} catch (Exception e) {
+						LOG.error("add "+object.getClass()+" in websocket container fail!!",e);
+					}
 				}
-			}
-		});
+			});
+		} catch (ServletException e) {
+			e.printStackTrace();
+		}
+
 		
 		
 		LOG.info("start all ok , goodluck");
