@@ -93,7 +93,9 @@ public class JarService {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader().getParent());
+
+		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader().getParent()); //不在和系统的classload共享jar包，用来解决jar冲突
+
 		try {
 			DynamicEngine.flush(classLoader);
 			flushIOC();

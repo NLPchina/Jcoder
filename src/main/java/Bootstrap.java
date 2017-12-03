@@ -7,16 +7,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
+import java.net.*;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.tomcat.InstanceManager;
+import org.apache.tomcat.SimpleInstanceManager;
+import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -59,7 +61,7 @@ public class Bootstrap {
 						putEnv(PREFIX + "upload", dim[1]);
 					} else if (dim[0].equals("--ssl")) {
 						putEnv(PREFIX + "ssl", dim[1]);
-					} else if  (dim[0].equals("--token")) {
+					} else if (dim[0].equals("--token")) {
 						putEnv(PREFIX + "token", dim[1]);
 					}
 				}
@@ -70,13 +72,22 @@ public class Bootstrap {
 
 		getOrCreateEnv(PREFIX + "maven", "mvn");
 		getOrCreateEnv(PREFIX + "host", null);
-		
+
 
 		String logPath = getOrCreateEnv(PREFIX + "log", "log/jcoder.log");
 
 		String home = getOrCreateEnv(PREFIX + "home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 
-		int port = Integer.parseInt(getOrCreateEnv(PREFIX + "port", "8080"));
+		String portStr = getEnv(PREFIX + "port");
+
+		int port = 9095;
+		if (portStr == null || "".equals(portStr)) {
+			port = findPort(port);
+			putEnv(PREFIX + "port", String.valueOf(port));
+		} else {
+			putEnv(PREFIX + "port", portStr);
+		}
+
 
 		System.setProperty("java.awt.headless", "true"); // support kaptcha
 
@@ -96,16 +107,26 @@ public class Bootstrap {
 		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
-		context.setServerClasses(new String[] { "org.objectweb.asm.", // hide asm used by jetty
+		context.setServerClasses(new String[]{"org.objectweb.asm.", // hide asm used by jetty
 				"org.eclipse.jdt.", // hide jdt used by jetty
 				"-org.eclipse.jetty." // hide other jetty classes
 		});
 
-		//设置session过期时间
-		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(7200);
-		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName("JCODER"+port);
+		/*
+		 * Configure the application to support the compilation of JSP files.
+		 * We need a new class loader and some stuff so that Jetty can call the
+		 * onStartup() methods as required.
+		 */
+		context.setAttribute("org.eclipse.jetty.containerInitializers", jspInitializers());
+		context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
+		context.addBean(new ServletContainerInitializersStarter(context), true);
+//		context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
 
-		context.setWelcomeFiles(new String[] { "Home.jsp" });
+		//设置session过期时间
+		context.getSessionHandler().getSessionCookieConfig().setMaxAge(7200);
+		context.getSessionHandler().getSessionCookieConfig().setName("JCODER" + port);
+
+		context.setWelcomeFiles(new String[]{"Home.jsp"});
 
 		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());
 
@@ -140,9 +161,53 @@ public class Bootstrap {
 		server.join();
 	}
 
+	private static List<ContainerInitializer> jspInitializers() {
+		JettyJasperInitializer sci = new JettyJasperInitializer();
+		ContainerInitializer initializer = new ContainerInitializer(sci, null);
+		List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
+		initializers.add(initializer);
+		return initializers;
+	}
+
+
+	/**
+	 * 從指定port開始尋找可以使用的端口
+	 *
+	 * @param port
+	 * @return
+	 */
+	private static int findPort(int port) throws UnknownHostException {
+		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1)) {
+			port = port + 2;
+		}
+		return port;
+	}
+
+	/***
+	 *  true:already in using  false:not using
+	 * @param host
+	 * @param port
+	 * @throws UnknownHostException
+	 */
+	private static boolean isPortUsing(String host, int port) throws UnknownHostException {
+		Socket socket = new Socket();
+		try {
+			socket.connect(new InetSocketAddress(host, port));
+		} catch (Exception e) {
+			return false;
+		} finally {
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return true;
+	}
+
 	/**
 	 * config log4j2 setting
-	 * 
+	 *
 	 * @param logPath
 	 * @throws IOException
 	 * @throws FileNotFoundException
@@ -252,7 +317,7 @@ public class Bootstrap {
 
 	/**
 	 * get a env by key , if not exits , to put it
-	 * 
+	 *
 	 * @param key
 	 * @param def
 	 * @return
@@ -263,11 +328,7 @@ public class Bootstrap {
 			key = PREFIX + key;
 		}
 
-		String value = System.getProperty(key);
-
-		if (value == null) {
-			value = System.getenv(key);
-		}
+		String value = getEnv(key);
 
 		if (value == null) {
 			putEnv(key, def);
@@ -278,8 +339,27 @@ public class Bootstrap {
 	}
 
 	/**
+	 * 獲得環境變量中的一個值
+	 *
+	 * @param key
+	 * @return
+	 */
+	private static String getEnv(String key) {
+		if (!key.startsWith(PREFIX)) {
+			key = PREFIX + key;
+		}
+
+		String value = System.getProperty(key);
+
+		if (value == null) {
+			value = System.getenv(key);
+		}
+		return value;
+	}
+
+	/**
 	 * put var to java env
-	 * 
+	 *
 	 * @param key
 	 * @param value
 	 */
@@ -294,7 +374,7 @@ public class Bootstrap {
 
 	/**
 	 * 写文件
-	 * 
+	 *
 	 * @param filePath
 	 * @param encoding
 	 * @param content
