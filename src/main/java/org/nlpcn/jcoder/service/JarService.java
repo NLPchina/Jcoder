@@ -93,7 +93,7 @@ public class JarService {
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
+		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader().getParent());
 		try {
 			DynamicEngine.flush(classLoader);
 			flushIOC();
