@@ -1,28 +1,14 @@
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.*;
-import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.tomcat.InstanceManager;
-import org.apache.tomcat.SimpleInstanceManager;
-import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
-import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
+
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.security.ProtectionDomain;
 
 public class Bootstrap {
 
@@ -88,7 +74,6 @@ public class Bootstrap {
 			putEnv(PREFIX + "port", portStr);
 		}
 
-
 		System.setProperty("java.awt.headless", "true"); // support kaptcha
 
 		Server server = new Server(port);
@@ -112,19 +97,9 @@ public class Bootstrap {
 				"-org.eclipse.jetty." // hide other jetty classes
 		});
 
-		/*
-		 * Configure the application to support the compilation of JSP files.
-		 * We need a new class loader and some stuff so that Jetty can call the
-		 * onStartup() methods as required.
-		 */
-		context.setAttribute("org.eclipse.jetty.containerInitializers", jspInitializers());
-		context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
-		context.addBean(new ServletContainerInitializersStarter(context), true);
-//		context.setClassLoader(new URLClassLoader(new URL[0], Thread.currentThread().getContextClassLoader()));
-
 		//设置session过期时间
-		context.getSessionHandler().getSessionCookieConfig().setMaxAge(7200);
-		context.getSessionHandler().getSessionCookieConfig().setName("JCODER" + port);
+		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(7200);
+		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName("JCODER" + port);
 
 		context.setWelcomeFiles(new String[]{"Home.jsp"});
 
@@ -161,15 +136,6 @@ public class Bootstrap {
 		server.join();
 	}
 
-	private static List<ContainerInitializer> jspInitializers() {
-		JettyJasperInitializer sci = new JettyJasperInitializer();
-		ContainerInitializer initializer = new ContainerInitializer(sci, null);
-		List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
-		initializers.add(initializer);
-		return initializers;
-	}
-
-
 	/**
 	 * 從指定port開始尋找可以使用的端口
 	 *
@@ -204,6 +170,7 @@ public class Bootstrap {
 		}
 		return true;
 	}
+
 
 	/**
 	 * config log4j2 setting

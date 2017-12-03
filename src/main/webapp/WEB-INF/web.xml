@@ -10,6 +10,7 @@
 			<param-name>modules</param-name>
 			<param-value>org.nlpcn.jcoder.App</param-value>
 		</init-param>
+		<async-supported>true</async-supported>
 	</filter>
 
 	<filter-mapping>
@@ -20,6 +21,7 @@
 	<servlet>
 		<servlet-name>VerificationCode</servlet-name>
 		<servlet-class>com.google.code.kaptcha.servlet.KaptchaServlet</servlet-class>
+		<async-supported>true</async-supported>
 		<!-- 设置是否有边框 -->
 		<init-param>
 			<param-name>kaptcha.border</param-name>
@@ -56,7 +58,6 @@
 		<servlet-name>VerificationCode</servlet-name>
 		<url-pattern>/verification_code.jpg</url-pattern>
 	</servlet-mapping>
-
 
 	<session-config>
 		<session-timeout>14400</session-timeout>

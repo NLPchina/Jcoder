@@ -14,6 +14,8 @@ import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
+import org.nlpcn.jcoder.service.ProxyService;
+import org.nlpcn.jcoder.servlet.JcoderProxyServlet;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -39,6 +41,11 @@ public class JcoderFilter extends NutFilter {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
 		String path = request.getServletPath();
+
+		if (1 == 1) {
+			new ProxyService().service(request, response);
+			return;
+		}
 
 		if (path.startsWith("/api/")) {
 			_doFilter(chain, request, response);
