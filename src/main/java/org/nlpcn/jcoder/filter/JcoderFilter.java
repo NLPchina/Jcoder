@@ -1,26 +1,20 @@
 package org.nlpcn.jcoder.filter;
 
-import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.servlet.JcoderProxyServlet;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class JcoderFilter extends NutFilter {
 
@@ -42,8 +36,13 @@ public class JcoderFilter extends NutFilter {
 		HttpServletResponse response = (HttpServletResponse) resp;
 		String path = request.getServletPath();
 
-		if (1 == 1) {
-			new ProxyService().service(request, response);
+
+		/**
+		 * 先走代理服务
+		 */
+		if (StaticValue.getSystemIoc().get(ProxyService.class,"proxyService").service(request, response ,"http://www.sina.com")) {
+			response.getOutputStream().flush();
+			response.getOutputStream().close();
 			return;
 		}
 
@@ -97,7 +96,7 @@ public class JcoderFilter extends NutFilter {
 			Mvcs.set(null, null, null);
 			Mvcs.ctx().removeReqCtx();
 			Mvcs.setServletContext(null);
-			if (request.getSession(false) != null && request.getSession(false).getAttribute("user") == null) { //if session is empty 
+			if (request.getSession(false) != null && request.getSession(false).getAttribute("user") == null) { //if session is empty
 				request.getSession().invalidate();
 			}
 		}

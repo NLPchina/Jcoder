@@ -1,28 +1,11 @@
 package org.nlpcn.jcoder.run.mvc;
 
-import java.io.File;
-import java.io.InputStream;
-import java.io.Reader;
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
-import java.util.Map;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import org.nutz.filepool.FilePool;
 import org.nutz.filepool.UU32FilePool;
 import org.nutz.ioc.Ioc;
 import org.nutz.json.Json;
 import org.nutz.lang.Lang;
+import org.nutz.lang.Mirror;
 import org.nutz.lang.Strings;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
@@ -31,38 +14,27 @@ import org.nutz.mvc.Scope;
 import org.nutz.mvc.ViewModel;
 import org.nutz.mvc.adaptor.PairAdaptor;
 import org.nutz.mvc.adaptor.ParamInjector;
-import org.nutz.mvc.adaptor.injector.AllAttrInjector;
-import org.nutz.mvc.adaptor.injector.AppAttrInjector;
-import org.nutz.mvc.adaptor.injector.CookieInjector;
-import org.nutz.mvc.adaptor.injector.HttpInputStreamInjector;
-import org.nutz.mvc.adaptor.injector.HttpReaderInjector;
-import org.nutz.mvc.adaptor.injector.IocInjector;
-import org.nutz.mvc.adaptor.injector.IocObjInjector;
-import org.nutz.mvc.adaptor.injector.ReqHeaderInjector;
-import org.nutz.mvc.adaptor.injector.RequestAttrInjector;
-import org.nutz.mvc.adaptor.injector.RequestInjector;
-import org.nutz.mvc.adaptor.injector.ResponseInjector;
-import org.nutz.mvc.adaptor.injector.ServletContextInjector;
-import org.nutz.mvc.adaptor.injector.SessionAttrInjector;
-import org.nutz.mvc.adaptor.injector.SessionInjector;
-import org.nutz.mvc.adaptor.injector.ViewModelInjector;
-import org.nutz.mvc.annotation.Attr;
-import org.nutz.mvc.annotation.Cookie;
-import org.nutz.mvc.annotation.IocObj;
-import org.nutz.mvc.annotation.Param;
-import org.nutz.mvc.annotation.ReqHeader;
+import org.nutz.mvc.adaptor.Params;
+import org.nutz.mvc.adaptor.injector.*;
+import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.upload.FastUploading;
-import org.nutz.mvc.upload.FieldMeta;
-import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadException;
 import org.nutz.mvc.upload.UploadingContext;
-import org.nutz.mvc.upload.injector.FileInjector;
-import org.nutz.mvc.upload.injector.FileMetaInjector;
-import org.nutz.mvc.upload.injector.InputStreamInjector;
-import org.nutz.mvc.upload.injector.MapSelfInjector;
-import org.nutz.mvc.upload.injector.ReaderInjector;
-import org.nutz.mvc.upload.injector.TempFileArrayInjector;
-import org.nutz.mvc.upload.injector.TempFileInjector;
+
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import java.io.InputStream;
+import java.io.Reader;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Map;
 
 public class ApiPairAdaptor extends PairAdaptor {
 	
@@ -191,6 +163,11 @@ public class ApiPairAdaptor extends PairAdaptor {
 					}
 
 					@Override
+					public String locale() {
+						return "";
+					}
+
+					@Override
 					public boolean array_auto_split() {
 						return true;
 					}
@@ -207,7 +184,7 @@ public class ApiPairAdaptor extends PairAdaptor {
 			}
 			if (param != null) {
 				String tmp = param.df();
-				if (tmp != null && !tmp.equals(ParamDefailtTag))
+				if (tmp != null && !tmp.equals(Params.ParamDefaultTag))
 					defaultValues[i] = tmp;
 			}
 		}
@@ -223,52 +200,59 @@ public class ApiPairAdaptor extends PairAdaptor {
             return new RequestAttrInjector(attr.value());
         return new AllAttrInjector(attr.value());
     }
-	
-	@SuppressWarnings("deprecation")
+
+
 	protected ParamInjector evalInjectorBy(Type type, Param param) {
-        // TODO 这里的实现感觉很丑, 感觉可以直接用type进行验证与传递
-        // TODO 这里将Type的影响局限在了 github issue #30 中提到的局部范围
-        Class<?> clazz = Lang.getTypeClass(type);
-        if (clazz == null) {
-            if (log.isWarnEnabled())
-                log.warnf("!!Fail to get Type Class : type=%s , param=%s", type, param);
-            return null;
-        }
+		// TODO 这里的实现感觉很丑, 感觉可以直接用type进行验证与传递
+		// TODO 这里将Type的影响局限在了 github issue #30 中提到的局部范围
+		Class<?> clazz = Lang.getTypeClass(type);
+		if (null == clazz) {
+			if (log.isWarnEnabled())
+				log.warnf("!!Fail to get Type Class : type=%s , param=%s", type, param);
+			return null;
+		}
 
-        // Map
-        if (Map.class.isAssignableFrom(clazz))
-            return new MapSelfInjector();
+		Type[] paramTypes = null;
+		if (type instanceof ParameterizedType)
+			paramTypes = ((ParameterizedType) type).getActualTypeArguments();
 
-        if (null == param)
-            return super.evalInjectorBy(type, null);
+		// 没有声明 @Param 且 clazz 是POJO的话，使用".."
+		// 没有声明 @Param 且 clazz 不是POJO的话，使用方法的参数名称
+		// 其它情况就使用 param.value() 的值
+		String pm = null == param ? (Mirror.me(clazz).isPojo() ? ".." : getParamRealName(curIndex)) : param.value();
+		if (pm == null) {
+			pm = "arg" + curIndex;
+		}
+		String defaultValue = null == param || Params.ParamDefaultTag.equals(param.df()) ? null : param.df();
+		String datefmt = null == param ? "" : param.dfmt();
+		boolean array_auto_split = null == param || param.array_auto_split();
+		// POJO
+		if ("..".equals(pm)) {
+			if (Map.class.isAssignableFrom(clazz)) {
+				return new MapPairInjector(type);
+			}
+			return new ObjectPairInjector(null, type);
+		}
+		// POJO with prefix
+		else if (pm != null && pm.startsWith("::")) {
+			if (pm.length() > 2)
+				return new ObjectNavlPairInjector(pm.substring(2), type);
+			return new ObjectNavlPairInjector(null, type);
+		}
+		// POJO[]
+		else if (clazz.isArray()) {
+			return new ArrayInjector(pm,
+					null,
+					type,
+					paramTypes,
+					defaultValue,
+					array_auto_split);
+		}
 
-        String paramName = param.value();
+		// Name-value
+		return getNameInjector(pm, datefmt, type, paramTypes, defaultValue);
+	}
 
-        // File
-        if (File.class.isAssignableFrom(clazz))
-            return new FileInjector(paramName);
-        // FileMeta
-        if (FieldMeta.class.isAssignableFrom(clazz))
-            return new FileMetaInjector(paramName);
-        // TempFile
-        if (TempFile.class.isAssignableFrom(clazz))
-            return new TempFileInjector(paramName);
-        // InputStream
-        if (InputStream.class.isAssignableFrom(clazz))
-            return new InputStreamInjector(paramName);
-        // Reader
-        if (Reader.class.isAssignableFrom(clazz))
-            return new ReaderInjector(paramName);
-        // List
-        //if (List.class.isAssignableFrom(clazz)) {
-        //    return new MapListInjector(paramName);
-        //}
-        if (TempFile[].class.isAssignableFrom(clazz)) {
-            return new TempFileArrayInjector(paramName);
-        }
-        // Other
-        return super.evalInjectorBy(type, param);
-    }
 
 	protected Object getReferObject(ServletContext sc, HttpServletRequest req, HttpServletResponse resp, String[] pathArgs) {
 		String type = req.getHeader("Content-Type");
