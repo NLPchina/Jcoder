@@ -47,7 +47,6 @@ class TaskRunManager {
 					}
 				} else {
 					THREAD_POOL.remove(key);
-					remove.getTask().setMessage("thread has been stopd! by interrupt!");
 					LOG.info("thread has been stopd!");
 					return true;
 				}
@@ -60,7 +59,6 @@ class TaskRunManager {
 			}
 
 			if (THREAD_POOL.containsKey(key)) {
-				remove.getTask().setMessage("线程尝试停止失败。被强制kill!");
 				remove.stop();
 			}
 
@@ -74,7 +72,6 @@ class TaskRunManager {
 			if (remove.isOver()) {
 				THREAD_POOL.remove(key);
 			} else {
-				remove.getTask().setMessage("stop Failure");
 				throw new TaskException(key + " stop Failure");
 			}
 		} else {

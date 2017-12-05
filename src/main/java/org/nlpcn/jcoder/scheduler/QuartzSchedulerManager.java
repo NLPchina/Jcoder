@@ -60,40 +60,23 @@ class QuartzSchedulerManager {
 	/**
 	 * 增加一个ｊｏｂ
 	 * 
-	 * @param jd
-	 * @param jobKey
-	 * @param scheduleStr
+	 * @param groupTaskName
 	 * @throws SchedulerException
 	 */
-	protected static synchronized boolean addJob(Task task) throws SchedulerException {
-		
-		// ｔａｓｋ已激活
-		if (task.getStatus() == 0) {
-			LOG.info(task.getName() + " status not active to skip!");
-			return false;
-		}
+	protected static synchronized boolean addJob(String groupTaskName , String scheduleStr) throws SchedulerException {
+		LOG.info(groupTaskName + " add to the schedulejob! ");
+		scheduler.scheduleJob(makeJobDetail(groupTaskName), makeTrigger(scheduleStr));
+		return true;
 
-		// ｔａｓｋ已激活，并且ｔａｓｋ是计划任务才会加入到计划任务中
-		if (task.getType() == 2) {
-			LOG.info(task.getName() + " add to the schedulejob! ");
-			scheduler.scheduleJob(makeJobDetail(task), makeTrigger(task));
-			return true;
-		} else {
-			LOG.info(task.getName() + " type not to skip!");
-			return false;
-		}
-		
-		
 	}
 
-	protected static JobDetail makeJobDetail(Task task) {
-		JobDetail job = JobBuilder.newJob(QuartzJob.class).withIdentity(task.getName()).build();
+	protected static JobDetail makeJobDetail(String groupTaskName) {
+		JobDetail job = JobBuilder.newJob(QuartzJob.class).withIdentity(groupTaskName).build();
 		return job;
 	}
 
-	protected static Trigger makeTrigger(Task task) {
-		String scheduleStr = task.getScheduleStr();
-		if (StringUtil.isBlank(task.getScheduleStr()) || "while".equalsIgnoreCase(scheduleStr)) {
+	protected static Trigger makeTrigger(String scheduleStr) {
+		if (StringUtil.isBlank(scheduleStr) || "while".equalsIgnoreCase(scheduleStr)) {
 			return TriggerBuilder.newTrigger().build();
 		} else {
 			return TriggerBuilder.newTrigger().withSchedule(CronScheduleBuilder.cronSchedule(scheduleStr)).build();
@@ -103,24 +86,24 @@ class QuartzSchedulerManager {
 	/**
 	 * 删除一个job
 	 * 
-	 * @param task
+	 * @param groupTaskName
 	 * @throws SchedulerException
 	 * @throws Exception
 	 */
-	protected static synchronized boolean stopTaskJob(String taskName) throws SchedulerException {
-		scheduler.deleteJob(JobKey.jobKey(taskName));
+	protected static synchronized boolean stopTaskJob(String groupTaskName) throws SchedulerException {
+		scheduler.deleteJob(JobKey.jobKey(groupTaskName));
 		return true;
 	}
 
 	/**
 	 * 判断一个task是否运行
 	 * 
-	 * @param task
+	 * @param groupTaskName
 	 * @return
 	 * @throws SchedulerException
 	 */
-	public static synchronized boolean checkExists(String taskName) throws SchedulerException {
-		return scheduler.checkExists(JobKey.jobKey(taskName));
+	public static synchronized boolean checkExists(String groupTaskName) throws SchedulerException {
+		return scheduler.checkExists(JobKey.jobKey(groupTaskName));
 	}
 
 	/**

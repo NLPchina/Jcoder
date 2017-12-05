@@ -230,14 +230,13 @@ public class JavaRunner {
 		try {
 			Object invoke = method.invoke(objInstance, args);
 			String endInfo = "Execute OK  " + task.getName() + "/" + method.getName() + " succesed ! use Time : " + (System.currentTimeMillis() - start);
-			task.setMessage(endInfo);
 			LOG.info(endInfo);
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
 			e.printStackTrace();
 			this.task.updateError();
-			task.setMessage("Execute ERR  " + task.getName() + "/" + method.getName() + " useTime " + (System.currentTimeMillis() - start) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
+			LOG.error("Execute ERR  " + task.getName() + "/" + method.getName() + " useTime " + (System.currentTimeMillis() - start) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 			throw new CodeRuntimeException(e);
 		}
 	}

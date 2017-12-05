@@ -118,7 +118,6 @@ public class TaskAction {
 		Task task = TaskService.findTaskByCache(name);
 		try {
 			taskService.delByDB(task);
-			SharedSpace.removeTaskMessage(task.getId());
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;

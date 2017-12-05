@@ -1,18 +1,6 @@
 package org.nlpcn.jcoder.service;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-
-import javax.servlet.http.HttpSession;
-
+import com.google.common.collect.Lists;
 import org.nlpcn.commons.lang.util.MapCount;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.commons.lang.util.tuples.KeyValue;
@@ -38,14 +26,19 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
+import javax.servlet.http.HttpSession;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 @IocBean
 public class TaskService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
 
-	private static final ConcurrentHashMap<String, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<Object, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
 	public static final String VERSION_SPLIT = "_";
 
 	private BasicDao basicDao = StaticValue.systemDao;
@@ -126,19 +119,15 @@ public class TaskService {
 	 * @throws Exception
 	 */
 	public void flush(Long id) throws Exception {
-		Task oldTask = null;
-		// 查找处old task.
-		for (Task task : TASK_MAP_CACHE.values()) {
-			if (task.getId().equals(id)) {
-				oldTask = task;
-				break;
-			}
-		}
+
+		Task oldTask = TASK_MAP_CACHE.get(id) ;
 
 		// 查找处新的task
 		Task newTask = this.basicDao.find(id, Task.class);
 
 		Task temp = new Task();
+		temp.setId(0L);
+		temp.setName("") ;
 
 		if (oldTask == null) {
 			oldTask = temp;
@@ -149,13 +138,12 @@ public class TaskService {
 
 		synchronized (oldTask) {
 			synchronized (newTask) {
-				if (StringUtil.isNotBlank(oldTask.getName())) {
-					TASK_MAP_CACHE.remove(oldTask.getName());
-				}
+				TASK_MAP_CACHE.remove(oldTask.getId());
+				TASK_MAP_CACHE.remove(oldTask.getName());
 
-				if (StringUtil.isNotBlank(newTask.getName())) {
-					TASK_MAP_CACHE.put(newTask.getName(), newTask);
-				}
+				TASK_MAP_CACHE.put(newTask.getId(), newTask);
+				TASK_MAP_CACHE.put(newTask.getName(), newTask);
+
 				ThreadManager.flush(oldTask, newTask);
 			}
 		}
@@ -237,35 +225,34 @@ public class TaskService {
 
 		for (Task task : search) {
 			try {
+				TASK_MAP_CACHE.put(task.getId(), task);
 				TASK_MAP_CACHE.put(task.getName(), task);
 				StaticValue.MAPPING.remove(task.getName());//删掉urlmapping重新加载
 				if (task.getStatus() == 0) {
-					task.setMessage("not active");
 				} else if (task.getType() == 2) {
 					// 如果只是运行一次的计划任务。并且这个任务还在活动中。那么这个任务将不再发布
 					if ((StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr().toLowerCase())) && taskSet.contains(task.getName())) {
 						LOG.warn(task.getName() + " in runing in! so not to publish it!");
 						continue;
 					}
-
-					if (ThreadManager.add(task)) {
-						task.setMessage("regedit ok ! cornStr : " + task.getScheduleStr());
-					}
-				} else {
-					task.setMessage("actived wait for server");
+					ThreadManager.add(task);
 				}
 
 			} catch (Exception e) {
 				e.printStackTrace();
-				task.setMessage(e.toString());
 				LOG.error(e.getMessage(), e);
 			}
 		}
 	}
 
+	public static synchronized Task findTaskByCache(Long id) {
+		return TASK_MAP_CACHE.get(id);
+	}
+
 	public static synchronized Task findTaskByCache(String name) {
 		return TASK_MAP_CACHE.get(name);
 	}
+
 
 	public static synchronized Task findTaskByDB(Long id) {
 		LOG.info("find task by db!");
@@ -292,7 +279,8 @@ public class TaskService {
 		if (type == null) {
 			return values;
 		}
-		List<Task> result = Lists.newArrayList();
+
+		LinkedHashSet<Task> result = new LinkedHashSet<>() ;
 		for (Task task : values) {
 			if (type.equals(task.getType())) {
 				result.add(task);
@@ -331,8 +319,8 @@ public class TaskService {
 	}
 
 	/**
-	 * @param groupId
-	 * @param name
+	 * @param taskId
+	 * @param size
 	 * @return
 	 */
 	public List<String> versions(Long taskId, int size) {
@@ -363,7 +351,7 @@ public class TaskService {
 
 	/**
 	 * 检查所有的task
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	public void checkAllTask() throws Exception {
@@ -399,7 +387,7 @@ public class TaskService {
 
 	/**
 	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
-	 * 
+	 *
 	 * @param className
 	 * @param methodName
 	 * @param params
@@ -428,10 +416,10 @@ public class TaskService {
 		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
 
-	
 
 	/**
 	 * 通过test方式执行内部调用
+	 *
 	 * @param className
 	 * @param methodName
 	 * @param params
@@ -465,7 +453,7 @@ public class TaskService {
 		if (kv == null) {
 			throw new ApiException(ApiException.NotFound, methodName + " not found");
 		}
-		Object[] args = array2Args(kv.getKey(), params) ;
+		Object[] args = array2Args(kv.getKey(), params);
 
 		try {
 			return (T) kv.getKey().invoke(kv.getValue(), args);
@@ -474,10 +462,11 @@ public class TaskService {
 			throw new ApiException(500, e.getMessage());
 		}
 	}
-	
-	
+
+
 	/**
 	 * 通过test方式执行内部调用
+	 *
 	 * @param className
 	 * @param methodName
 	 * @param params
@@ -501,7 +490,7 @@ public class TaskService {
 
 	/**
 	 * 将map转换为参数
-	 * 
+	 *
 	 * @param params
 	 * @param method
 	 * @return
@@ -529,7 +518,7 @@ public class TaskService {
 
 	/**
 	 * 将对象数组转换为参数
-	 * 
+	 *
 	 * @param method
 	 * @param params
 	 * @return

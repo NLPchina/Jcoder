@@ -171,9 +171,6 @@ public class Task {
 		this.runStatus = runStatus;
 	}
 
-	public void setMessage(String message) {
-		SharedSpace.setTaskMessage(this.getId(), message) ;
-	}
 
 	public long getSuccess() {
 		return SharedSpace.getSuccess(this.getId());
@@ -185,15 +182,11 @@ public class Task {
 	}
 
 	public void updateError() {
-		SharedSpace.updateError(this.getId());
+		SharedSpace.counter(this.getId(),false);
 	}
 
 	public void updateSuccess() {
-		SharedSpace.updateSuccess(this.getId());
-	}
-
-	public String getMessage() {
-		return SharedSpace.getTaskMessage(this.getId());
+		SharedSpace.counter(this.getId(),true);
 	}
 
 	public String getVersion() {
@@ -208,4 +201,7 @@ public class Task {
 		return codeInfo;
 	}
 
+	public void setName(String name) {
+		this.name = name ;
+	}
 }

@@ -1,9 +1,5 @@
 package org.nlpcn.jcoder.job;
 
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.TaskService;
@@ -13,21 +9,20 @@ import org.slf4j.LoggerFactory;
 
 public class RunTaskJob implements Runnable {
 
-	private static final Logger LOG = LoggerFactory.getLogger(RunTaskJob.class) ;
+	private static final Logger LOG = LoggerFactory.getLogger(RunTaskJob.class);
 
 	@Override
 	public void run() {
-		LinkedBlockingQueue<String> taskQueue = SharedSpace.getTaskQueue() ;
 		while (true) {
 			try {
-				String taskName = taskQueue.poll(Integer.MAX_VALUE,TimeUnit.DAYS);
-				if (StringUtil.isNotBlank(taskName)) {
-					LOG.info("get " + taskName + " to task_quene ! wil be run!");
-					Task task = TaskService.findTaskByCache(taskName);
+				Long id = SharedSpace.poll();
+				if (id != null) {
+					Task task = TaskService.findTaskByCache(id);
+					LOG.info("get " + task.getName() + " to task_quene ! wil be run!");
 					if (task == null) {
-						LOG.error("task " + taskName + " is not found in task cache!");
+						LOG.error("task " + id + " is not found in task cache!");
 					} else if (task.getStatus() == 0) {
-						LOG.error("task " + taskName + " status is 0 so skip !");
+						LOG.error("task " + task.getName() + " status is 0 so skip !");
 					} else {
 						ThreadManager.run(task);
 					}
@@ -35,7 +30,7 @@ public class RunTaskJob implements Runnable {
 				Thread.sleep(50L);
 			} catch (Exception e) {
 				e.printStackTrace();
-				LOG.error("run task fail",e);
+				LOG.error("run task fail", e);
 			}
 		}
 

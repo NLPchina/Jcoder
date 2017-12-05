@@ -43,9 +43,6 @@ class ActionRunManager {
 					}
 				} else {
 					THREAD_POOL.remove(key);
-					if (task != null) {
-						task.setMessage("thread has been stopd! by interrupt!");
-					}
 					LOG.info(key + " thread has been stopd!");
 					return true;
 				}
@@ -59,12 +56,12 @@ class ActionRunManager {
 
 			if (THREAD_POOL.containsKey(key)) {
 				if (task != null) {
-					task.setMessage("线程尝试停止失败。被强制kill!");
+					LOG.info(task.getName()+" 线程尝试停止失败。被强制kill!");
 				}
 				try {
 					thread.stop();
 				} catch (Exception e) {
-					task.setMessage("Thread deah!" + e.getMessage());
+					LOG.info("Thread deah!" + e.getMessage());
 					e.printStackTrace();
 					LOG.error(e.getMessage(),e);
 				}
@@ -81,7 +78,7 @@ class ActionRunManager {
 				THREAD_POOL.remove(key);
 			} else {
 				if (task != null) {
-					task.setMessage("stop Failure");
+					LOG.info(task.getName()+" stop Failure");
 				}
 				throw new TaskException(key + " stop Failure");
 			}

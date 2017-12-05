@@ -22,9 +22,9 @@ public class Group {
 
     @Column("create_time")
     private Date createTime;
-    
-    
-    private List<Map<String,Object>> users; 
+
+
+    private List<Map<String,Object>> users;
 
     public Long getId() {
         return id;
@@ -57,8 +57,8 @@ public class Group {
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
     }
-    
-    
+
+
 
     public List<Map<String, Object>> getUsers() {
 		return users;

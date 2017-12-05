@@ -61,7 +61,7 @@ public class TokenService {
 	 */
 	public static Token removeToken(String key) {
 		Token token = SharedSpace.removeToken(key);
-		LOG.info(token + " to create a key");
+		LOG.info(token + " to removed ");
 		return token;
 	}
 }

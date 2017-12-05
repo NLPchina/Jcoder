@@ -2,11 +2,14 @@ package org.nlpcn.jcoder.controller;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
+import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -14,6 +17,7 @@ import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.At;
 import org.nutz.mvc.annotation.By;
 import org.nutz.mvc.annotation.Fail;
@@ -28,6 +32,9 @@ import org.slf4j.LoggerFactory;
 public class GroupAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupAction.class);
+
+	@Inject
+	private GroupService groupService ;
 
 	public BasicDao basicDao = StaticValue.systemDao;
 
@@ -90,5 +97,57 @@ public class GroupAction {
 	@Ok("json")
 	public List<UserGroup> authUser(@Param("userId") long userId) throws Exception {
 		return basicDao.search(UserGroup.class, Cnd.where("userId", "=", userId));
+	}
+
+
+	@At("/group/nameDiff")
+	@Ok("raw")
+	public boolean groupNameDiff(@Param("name") String name) {
+		Condition con = Cnd.where("name", "=", name);
+		int count = basicDao.searchCount(Group.class, con);
+		return count == 0;
+	}
+
+
+
+	@At("/group/add")
+	@Ok("redirect:/group/list")
+	@Fail("jsp:/fail.jsp")
+	public void addG(@Param("..") Group group) throws Exception {
+		if (groupNameDiff(group.getName())) {
+			groupService.save(group) ;
+			List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
+			groups.add(group);
+			Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);
+		}
+	}
+
+	@At("/group/del")
+	@Ok("redirect:/group/list")
+	public void delG(@Param("..") Group group) {
+		groupService.delete(group);
+		List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
+		Iterator<Group> it = groups.iterator();
+		while (it.hasNext()) {
+			Group g = it.next();
+			if (g.getId() == group.getId()) {
+				it.remove();
+			}
+		}
+		Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);
+
+	}
+
+	@At("/group/modify")
+	@Ok("redirect:/group/list")
+	@Fail("jsp:/fail.jsp")
+	public void modifyG(@Param("..") Group group) throws Exception {
+		if (group == null) {
+			return;
+		}
+		boolean flag = basicDao.update(group);
+		if (flag) {
+			LOG.info("modify group:" + group.toString());
+		}
 	}
 }

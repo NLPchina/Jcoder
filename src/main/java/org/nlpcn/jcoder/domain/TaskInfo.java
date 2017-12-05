@@ -16,8 +16,6 @@ public class TaskInfo {
 
 	private Long groupId;
 
-	private String message;
-
 	private long startTime;
 
 	private Integer status;
@@ -38,7 +36,6 @@ public class TaskInfo {
 		this.success = task.getSuccess();
 		this.error = task.getError();
 		this.groupId = task.getGroupId();
-		this.message = task.getMessage();
 		this.status = task.getStatus();
 		this.runStatus = task.getRunStatus();
 		this.startTime = startTime;
@@ -98,14 +95,6 @@ public class TaskInfo {
 
 	public void setGroupId(Long groupId) {
 		this.groupId = groupId;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
 	}
 
 	public Integer getStatus() {

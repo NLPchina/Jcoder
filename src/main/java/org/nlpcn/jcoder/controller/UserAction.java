@@ -84,13 +84,6 @@ public class UserAction {
 		return count == 0;
 	}
 
-	@At("/group/nameDiff")
-	@Ok("raw")
-	public boolean groupNameDiff(@Param("name") String name) {
-		Condition con = Cnd.where("name", "=", name);
-		int count = basicDao.searchCount(Group.class, con);
-		return count == 0;
-	}
 
 	@At("/user/add")
 	@Ok("redirect:/user/list")
@@ -148,50 +141,6 @@ public class UserAction {
 		}
 	}
 
-	@At("/group/add")
-	@Ok("redirect:/group/list")
-	@Fail("jsp:/fail.jsp")
-	public void addG(@Param("..") Group group) throws Exception {
-		if (groupNameDiff(group.getName())) {
-			group.setCreateTime(new Date());
-			basicDao.save(group);
-			LOG.info("add group:" + group.getName());
-			List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
-			groups.add(group);
-			Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);
-		}
-	}
 
-	@At("/group/del")
-	@Ok("redirect:/group/list")
-	public void delG(@Param("..") Group group) {
-		basicDao.delById(group.getId(), Group.class);
-		LOG.info("del group:" + group.getName());
-		Condition con = Cnd.where("groupId", "=", group.getId());
-		int num = basicDao.delByCondition(UserGroup.class, con);
-		List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
-		Iterator<Group> it = groups.iterator();
-		while (it.hasNext()) {
-			Group g = it.next();
-			if (g.getId() == group.getId()) {
-				it.remove();
-			}
-		}
-		Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);
-		LOG.info("del userGroup's num:" + num);
-	}
-
-	@At("/group/modify")
-	@Ok("redirect:/group/list")
-	@Fail("jsp:/fail.jsp")
-	public void modifyG(@Param("..") Group group) throws Exception {
-		if (group == null) {
-			return;
-		}
-		boolean flag = basicDao.update(group);
-		if (flag) {
-			LOG.info("modify group:" + group.toString());
-		}
-	}
 
 }
