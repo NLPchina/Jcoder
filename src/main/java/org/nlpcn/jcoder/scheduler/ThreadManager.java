@@ -32,18 +32,15 @@ public class ThreadManager {
 	 * @throws SchedulerException
 	 * @throws TaskException
 	 */
-	public synchronized static boolean add(Task task) throws TaskException, SchedulerException {
-
-		boolean flag = true;
-
+	public synchronized static boolean add(String groupTaskName, String scheduleStr) throws TaskException, SchedulerException {
+		boolean flag;
 		try {
-			flag = QuartzSchedulerManager.addJob(task);
+			flag = QuartzSchedulerManager.addJob(groupTaskName,scheduleStr);
 		} catch (SchedulerException e) {
 			flag = false;
 			LOG.error(e.getMessage(),e);
 			throw new TaskException(e.getMessage());
 		}
-
 		return flag;
 	}
 
@@ -109,7 +106,6 @@ public class ThreadManager {
 	/**
 	 * 刷新task 相当于从定时任务中移除，并且重新插入,非线程安全.如果调用记得在外层锁定对象
 	 * 
-	 * @param task
 	 * @throws Exception
 	 */
 	public static void flush(Task oldTask, Task newTask) throws Exception {
@@ -124,14 +120,6 @@ public class ThreadManager {
 				stopActionAndRemove(oldTask.getName());
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
-		}
-
-		Thread.sleep(1000L);
-
-		if (newTask != null && StringUtil.isNotBlank(newTask.getName()) && newTask.getStatus() == 1) {
-			LOG.info("to start newTask " + newTask.getName() + " BEGIN! ");
-			add(newTask);
-			LOG.info("to start newTask " + newTask.getName() + " BEGIN! ");
 		}
 	}
 
@@ -228,7 +216,6 @@ public class ThreadManager {
 				taskInfo = new TaskInfo(key, task, DateUtils.getDate(split[3], "yyyyMMddHHmmss").getTime());
 			} catch (Exception e) {
 				taskInfo = new TaskInfo();
-				taskInfo.setMessage(ExceptionUtil.printStackTrace(e));
 				LOG.error(e.getMessage(),e);
 			}
 			taskInfo.setName(key);

@@ -36,6 +36,8 @@ public class StaticValue {
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
 	public static final String VERSION = getResource("version");
 
+	public static final String ZK = getResource("zk") ;
+
 	public static final File UPLOAD_DIR = new File(getValueOrCreate("upload", new File(HOME_FILE, "upload").getAbsolutePath()));
 
 	static {
@@ -48,6 +50,7 @@ public class StaticValue {
 		LOG.info("env in system.propertie: jcoder_lib : " + LIB_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_plugins : " + PLUGIN_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_upload : " + UPLOAD_DIR.getAbsolutePath());
+		LOG.info("env in system.propertie: jcoder_upload : " + ZK);
 	}
 
 	private static Ioc systemIoc;

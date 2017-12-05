@@ -17,6 +17,7 @@ import org.nutz.mvc.adaptor.ParamInjector;
 import org.nutz.mvc.adaptor.Params;
 import org.nutz.mvc.adaptor.injector.*;
 import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.impl.AdaptorErrorContext;
 import org.nutz.mvc.upload.FastUploading;
 import org.nutz.mvc.upload.UploadException;
 import org.nutz.mvc.upload.UploadingContext;
@@ -78,11 +79,25 @@ public class ApiPairAdaptor extends PairAdaptor {
 		argTypes = method.getParameterTypes();
 		injs = new ParamInjector[argTypes.length];
 		defaultValues = new String[argTypes.length];
+		errCtxIndex = -1;
+
 		Annotation[][] annss = method.getParameterAnnotations();
 		Type[] types = method.getGenericParameterTypes();
 		Parameter[] parameters = method.getParameters();
 
 		for (int i = 0; i < annss.length; i++) {
+
+			curIndex = i;
+
+			// AdaptorErrorContext 类型的参数不需要生成注入器，记录下参数的下标就好了
+			if (AdaptorErrorContext.class.isAssignableFrom(argTypes[i])) {
+				// 多个 AdaptorErrorContext 类型的参数时，以第一个为准
+				if (errCtxIndex == -1)
+					errCtxIndex = i;
+
+				continue;
+			}
+
 			Annotation[] anns = annss[i];
 			Param param = null;
 			Attr attr = null;

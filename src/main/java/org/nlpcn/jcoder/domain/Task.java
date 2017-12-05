@@ -5,6 +5,7 @@ import java.util.Date;
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.util.SharedSpace;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
@@ -48,6 +49,8 @@ public class Task {
 
 	@Column("version")
 	private String version;
+
+	private String groupName ;
 
 	private String runStatus;
 	
@@ -203,5 +206,13 @@ public class Task {
 
 	public void setName(String name) {
 		this.name = name ;
+	}
+
+	public String getGroupName(){
+		if(groupName==null) {
+			Group group = StaticValue.systemDao.find(groupId, Group.class);
+			this.groupName = group.getName();
+		}
+		return groupName ;
 	}
 }

@@ -5,14 +5,19 @@ import java.util.Arrays;
 import javax.servlet.ServletException;
 import javax.websocket.server.ServerEndpoint;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
+import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.service.impl.LocalSharedSpaceService;
+import org.nlpcn.jcoder.util.SharedSpace;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.IocException;
 import org.nutz.mvc.NutConfig;
@@ -40,6 +45,8 @@ public class SiteSetup implements Setup {
 
 		H2Server.startServer(nc);
 
+		ZKServer.startServer(nc);
+
 		// set version
 		nc.getServletContext().setAttribute("VERSION", StaticValue.VERSION);
 
@@ -56,6 +63,16 @@ public class SiteSetup implements Setup {
 			LOG.error("init all task err ",e);
 			System.exit(-1);
 		}
+
+		SharedSpaceService service = null ;
+		if(StringUtil.isNotBlank(StaticValue.ZK)){
+
+		}else{
+			service = StaticValue.getSystemIoc().get(LocalSharedSpaceService.class,"localSharedSpaceService");
+		}
+
+		SharedSpace.setService(service);
+
 
 		try {
 			Thread.sleep(1000L);
@@ -105,7 +122,8 @@ public class SiteSetup implements Setup {
 			}
 		});
 
-		LOG.info("start all ok , goodluck");
+
+		LOG.info("start all ok , goodluck youyou");
 
 	}
 

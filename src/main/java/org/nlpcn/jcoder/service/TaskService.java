@@ -228,16 +228,6 @@ public class TaskService {
 				TASK_MAP_CACHE.put(task.getId(), task);
 				TASK_MAP_CACHE.put(task.getName(), task);
 				StaticValue.MAPPING.remove(task.getName());//删掉urlmapping重新加载
-				if (task.getStatus() == 0) {
-				} else if (task.getType() == 2) {
-					// 如果只是运行一次的计划任务。并且这个任务还在活动中。那么这个任务将不再发布
-					if ((StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr().toLowerCase())) && taskSet.contains(task.getName())) {
-						LOG.warn(task.getName() + " in runing in! so not to publish it!");
-						continue;
-					}
-					ThreadManager.add(task);
-				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 				LOG.error(e.getMessage(), e);
