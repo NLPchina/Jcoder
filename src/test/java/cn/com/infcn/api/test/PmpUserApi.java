@@ -27,7 +27,7 @@ public class PmpUserApi {
 	 * @throws ExecutionException
 	 */
 	@Execute
-	public Restful login(String name, String password, String verificationCode, String cookie) throws ExecutionException {
+	public Restful login(String name, String password, String verificationCode, String cookie) throws Exception {
 		return Restful.instance(ImmutableMap.of("token", TokenService.regToken(new User()), "name", ANONYMOUS_USER));
 	}
 

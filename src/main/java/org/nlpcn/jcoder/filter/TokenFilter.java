@@ -119,7 +119,7 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 						ApiException.TokenNoPermissions);
 			}
 
-		} catch (ExecutionException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);
 			return Restful.instance(false, e.getMessage(), e, ApiException.ServerException);

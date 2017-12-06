@@ -40,7 +40,10 @@ public class JcoderFilter extends NutFilter {
 		/**
 		 * 先走代理服务
 		 */
-		if (StaticValue.ZK != null && StaticValue.getSystemIoc().get(ProxyService.class, "proxyService").service(request, response, "http://www.sina.com")) {
+
+		if (!StaticValue.IS_LOCAL
+				&& request.getHeader(ProxyService.PROXY_HEADER) == null
+				&& StaticValue.getSystemIoc().get(ProxyService.class, "proxyService").service(request, response, "http://www.sina.com")) {
 			response.getOutputStream().flush();
 			response.getOutputStream().close();
 			return;

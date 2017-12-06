@@ -1,15 +1,5 @@
 package org.nlpcn.jcoder.run.mvc;
 
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
@@ -22,17 +12,20 @@ import org.nutz.lang.Lang;
 import org.nutz.lang.Strings;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
-import org.nutz.mvc.ActionChain;
-import org.nutz.mvc.ActionChainMaker;
-import org.nutz.mvc.ActionContext;
-import org.nutz.mvc.ActionInfo;
-import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.NutConfig;
-import org.nutz.mvc.RequestPath;
-import org.nutz.mvc.UrlMapping;
+import org.nutz.mvc.*;
 import org.nutz.mvc.annotation.BlankAtException;
 import org.nutz.mvc.impl.ActionInvoker;
 import org.nutz.mvc.impl.Loadings;
+
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ApiUrlMappingImpl implements UrlMapping {
 
@@ -72,6 +65,12 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				map.put(path, invoker);
 				// 记录一下方法与 url 的映射
 				config.getAtMap().addMethod(path, ai.getMethod());
+				try {
+					StaticValue.space().addMapping(path) ;
+				} catch (Exception e) {
+					e.printStackTrace();
+					log.error("add mapping err path is :"+path,e);
+				}
 			}
 
 			// 将动作链，根据特殊的 HTTP 方法，保存到调用者内部
@@ -197,11 +196,17 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	 */
 	public void remove(String name) {
 		Iterator<Entry<String, ApiActionInvoker>> iterator = map.entrySet().iterator();
-		String path = null;
+		String path;
 		synchronized (map) {
 			while (iterator.hasNext()) {
 				if ((path = iterator.next().getKey()).startsWith("/api/" + name + "/") || path.equals("/api/" + name)) {
 					iterator.remove();
+					try {
+						StaticValue.space().removeMapping(name) ;
+					} catch (Exception e) {
+						e.printStackTrace();
+						log.error("remove path err path is :"+name,e);
+					}
 					log.info("remove api " + path);
 				}
 			}
@@ -219,6 +224,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		ApiActionInvoker apiActionInvoker = map.get(path);
 
 		if (apiActionInvoker == null) { // 调用http接口进行渲染填充map
+			//TODO: 这里可能不需要一次http请求
 			Http.get("http://127.0.0.1:" + System.getProperty(StaticValue.PREFIX + "port") + path + "?_rpc_init=true");
 			apiActionInvoker = map.get(path);
 		}

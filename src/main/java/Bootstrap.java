@@ -2,6 +2,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.nlpcn.jcoder.util.StaticValue;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -15,6 +16,9 @@ public class Bootstrap {
 	private static final String PREFIX = "jcoder_";
 
 	public static void main(String[] args) throws Exception {
+		if(args==null){
+			args = new String[0] ;
+		}
 
 		for (String arg : args) {
 			if (arg.startsWith("-f")) {
@@ -49,6 +53,8 @@ public class Bootstrap {
 						putEnv(PREFIX + "ssl", dim[1]);
 					} else if (dim[0].equals("--token")) {
 						putEnv(PREFIX + "token", dim[1]);
+					} else if (dim[0].equals("--zk")) {
+						putEnv(PREFIX + "zk", dim[1]);
 					}
 				}
 			} else if (!arg.startsWith("-f")) {
@@ -143,7 +149,7 @@ public class Bootstrap {
 	 * @return
 	 */
 	private static int findPort(int port) throws UnknownHostException {
-		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1)|| isPortUsing("127.0.0.1", port + 2)) {
+		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1) || isPortUsing("127.0.0.1", port + 2)) {
 			port = port + 3;
 		}
 		return port;

@@ -95,7 +95,7 @@ public class LoginAction {
 
 	@At("/login/api")
 	@Ok("json")
-	public Restful loginApi(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws ExecutionException {
+	public Restful loginApi(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws Exception {
 		resp.addHeader("Access-Control-Allow-Origin", origin);
 		resp.addHeader("Access-Control-Allow-Methods", methods);
 		resp.addHeader("Access-Control-Allow-Headers", headers);
@@ -105,7 +105,7 @@ public class LoginAction {
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);
 		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
-			return Restful.instance(TokenService.regToken(user));
+			return Restful.instance().obj(TokenService.regToken(user));
 		} else {
 			LOG.info("user " + name + "login err , times : " + err);
 			return Restful.instance(false, "login fail please validate your name or password ,times : " + err, null, ApiException.Unauthorized);
@@ -114,7 +114,7 @@ public class LoginAction {
 
 	@At("/loginOut/api")
 	@Ok("json")
-	public Restful loginOutApi(HttpServletRequest req) {
+	public Restful loginOutApi(HttpServletRequest req) throws Exception {
 		String token = req.getHeader("authorization");
 		if (StringUtil.isBlank(token)) {
 			return Restful.instance(false, "token 'authorization' not in header ");
@@ -130,7 +130,7 @@ public class LoginAction {
 	}
 
 	@At("/validation/token")
-	public void validation(String token) throws ExecutionException {
+	public void validation(String token) throws Exception {
 		Token t = TokenService.getToken("token");
 		if (t == null) {
 			new JsonView(ApiException.NotFound);

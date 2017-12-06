@@ -4,7 +4,6 @@ import java.util.Date;
 
 import org.nlpcn.commons.lang.util.StringUtil;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
-import org.nlpcn.jcoder.util.SharedSpace;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
@@ -176,20 +175,20 @@ public class Task {
 
 
 	public long getSuccess() {
-		return SharedSpace.getSuccess(this.getId());
+		return StaticValue.space().getSuccess(this.getId());
 	}
 
 	
 	public long getError() {
-		return SharedSpace.getError(this.getId());
+		return StaticValue.space().getError(this.getId());
 	}
 
 	public void updateError() {
-		SharedSpace.counter(this.getId(),false);
+		StaticValue.space().counter(this.getId(),false);
 	}
 
 	public void updateSuccess() {
-		SharedSpace.counter(this.getId(),true);
+		StaticValue.space().counter(this.getId(),true);
 	}
 
 	public String getVersion() {

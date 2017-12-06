@@ -12,10 +12,7 @@ import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.TestingFilter;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
@@ -211,17 +208,6 @@ public class TaskService {
 	public void initTaskFromDB() throws TaskException {
 
 		List<Task> search = this.basicDao.search(Task.class, "id");
-
-		// 取得目前正在运行的task
-		List<TaskInfo> list = ThreadManager.getAllThread();
-
-		HashSet<String> taskSet = new HashSet<>();
-
-		list.forEach(ti -> taskSet.add(ti.getTaskName()));
-
-		ThreadManager.stopScheduler();
-
-		ThreadManager.startScheduler();
 
 		for (Task task : search) {
 			try {

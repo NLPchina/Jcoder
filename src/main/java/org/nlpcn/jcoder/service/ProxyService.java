@@ -20,7 +20,7 @@ public class ProxyService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProxyService.class);
 
-	private static final String PROXY_HEADER = "PROXY_HEADER" ;
+	public static final String PROXY_HEADER = "PROXY_HEADER" ;
 
 	protected static final Set<String> HOP_HEADERS = Sets.newHashSet("Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
 			"TE", "Trailers", "Transfer-Encoding", "Upgrade","Content-Encoding");

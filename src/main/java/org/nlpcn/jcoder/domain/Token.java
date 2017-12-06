@@ -1,7 +1,9 @@
 package org.nlpcn.jcoder.domain;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -10,7 +12,7 @@ import java.util.Set;
  * @author Ansj
  *
  */
-public class Token {
+public class Token implements Serializable {
 
 	public static final Token NULL = new Token();
 
@@ -22,16 +24,12 @@ public class Token {
 
 	private Date createTime;
 
-	private long times;
+	private Map<String,Object> params ;
 
 	/**
 	 * 权限数组。* 为全部
 	 */
 	private Set<String> authorizes = new HashSet<>();
-
-	public long addTimes() {
-		return ++times;
-	}
 
 	public String getToken() {
 		return token;
@@ -65,9 +63,6 @@ public class Token {
 		this.createTime = createTime;
 	}
 
-	public long getTimes() {
-		return times;
-	}
 
 	public void addAuthorize(String authorize) {
 		if (!authorize.contains("/")) {
@@ -100,4 +95,11 @@ public class Token {
 		return authorizes.contains(authorize);
 	}
 
+	public Map<String, Object> getParams() {
+		return params;
+	}
+
+	public void setParams(Map<String, Object> params) {
+		this.params = params;
+	}
 }

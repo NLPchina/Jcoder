@@ -16,10 +16,10 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.Properties;
 
-public class ZKServer {
+public class ZKServer extends Thread {
 	private static final Logger LOG = LoggerFactory.getLogger(H2Server.class);
 
-	public static void startServer(NutConfig nc) {
+	public void startServer() {
 		Properties props = new Properties();
 		props.setProperty("tickTime", "2000");
 		props.setProperty("dataDir", new File(System.getProperty("java.io.tmpdir"), "zookeeper").getAbsolutePath());
@@ -29,19 +29,24 @@ public class ZKServer {
 
 		QuorumPeerConfig quorumConfig = new QuorumPeerConfig();
 		try {
+			LOG.info("start zk server on port : "+(StaticValue.PORT+2));
 			quorumConfig.parseProperties(props);
 			final ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
 			final ServerConfig config = new ServerConfig();
 			config.readFrom(quorumConfig);
 			zkServer.runFromConfig(config);
-			LOG.info("start zk server ok");
 		} catch (Exception e) {
 			LOG.error("Start standalone server faile", e);
 		}
 
 	}
 
-	public static void stopServer() {
+	public void stopServer() {
 		//:TODO not support
+	}
+
+	@Override
+	public void run() {
+		startServer();
 	}
 }
