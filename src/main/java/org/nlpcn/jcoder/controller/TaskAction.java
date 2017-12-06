@@ -6,7 +6,7 @@ import java.util.Map;
 
 import javax.servlet.http.HttpSession;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.service.TaskService;

@@ -4,7 +4,7 @@ import java.io.File;
 import java.sql.SQLException;
 
 import org.h2.tools.Server;
-import org.nlpcn.commons.lang.util.IOUtil;
+import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.mvc.NutConfig;

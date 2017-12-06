@@ -13,9 +13,9 @@ import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpSession;
 
-import org.nlpcn.commons.lang.util.MapCount;
-import org.nlpcn.commons.lang.util.StringUtil;
-import org.nlpcn.commons.lang.util.tuples.KeyValue;
+import org.nlpcn.jcoder.util.MapCount;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;

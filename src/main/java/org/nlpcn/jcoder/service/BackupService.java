@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.util.StaticValue;

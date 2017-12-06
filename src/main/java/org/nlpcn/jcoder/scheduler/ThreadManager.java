@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.service.TaskService;

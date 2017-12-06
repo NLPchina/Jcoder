@@ -19,7 +19,7 @@ import java.util.zip.ZipOutputStream;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.TaskService;

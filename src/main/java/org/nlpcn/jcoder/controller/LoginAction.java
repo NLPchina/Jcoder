@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.controller;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
@@ -95,7 +96,7 @@ public class LoginAction {
 
 	@At("/login/api")
 	@Ok("json")
-	public Restful loginApi(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws ExecutionException {
+	public Restful loginApi(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws ExecutionException, NoSuchAlgorithmException {
 		resp.addHeader("Access-Control-Allow-Origin", origin);
 		resp.addHeader("Access-Control-Allow-Methods", methods);
 		resp.addHeader("Access-Control-Allow-Headers", headers);

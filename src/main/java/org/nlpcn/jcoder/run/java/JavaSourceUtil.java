@@ -1,6 +1,6 @@
 package org.nlpcn.jcoder.run.java;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
