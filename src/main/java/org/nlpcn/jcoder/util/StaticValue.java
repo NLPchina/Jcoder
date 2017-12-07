@@ -311,4 +311,11 @@ public class StaticValue {
 	}
 
 
+	/**
+	 * 获得主机和ip名称 case 127.0.0.1:9095
+	 * @return
+	 */
+	public static String getHostPort() {
+		return getHost()+":"+PORT ;
+	}
 }

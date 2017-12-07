@@ -19,7 +19,7 @@ import java.util.Properties;
 public class ZKServer extends Thread {
 	private static final Logger LOG = LoggerFactory.getLogger(H2Server.class);
 
-	public void startServer() {
+	public static void startServer() {
 		Properties props = new Properties();
 		props.setProperty("tickTime", "2000");
 		props.setProperty("dataDir", new File(System.getProperty("java.io.tmpdir"), "zookeeper").getAbsolutePath());
@@ -41,7 +41,7 @@ public class ZKServer extends Thread {
 
 	}
 
-	public void stopServer() {
+	public static void stopServer() {
 		//:TODO not support
 	}
 

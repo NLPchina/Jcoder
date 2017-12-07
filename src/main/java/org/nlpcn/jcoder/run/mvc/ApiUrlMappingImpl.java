@@ -66,7 +66,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				// 记录一下方法与 url 的映射
 				config.getAtMap().addMethod(path, ai.getMethod());
 				try {
-					StaticValue.space().addMapping(path) ;
+					StaticValue.space().addMapping(path.substring(5)) ;
 				} catch (Exception e) {
 					e.printStackTrace();
 					log.error("add mapping err path is :"+path,e);
@@ -202,7 +202,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				if ((path = iterator.next().getKey()).startsWith("/api/" + name + "/") || path.equals("/api/" + name)) {
 					iterator.remove();
 					try {
-						StaticValue.space().removeMapping(name) ;
+						StaticValue.space().removeMapping(path.substring(5)) ;
 					} catch (Exception e) {
 						e.printStackTrace();
 						log.error("remove path err path is :"+name,e);

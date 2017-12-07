@@ -27,6 +27,13 @@ public class SiteSetup implements Setup {
 
 	@Override
 	public void destroy(NutConfig nc) {
+		try {
+			StaticValue.space().release();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		;
+		ZKServer.stopServer();
 		H2Server.stopServer();
 		WebSocketServer.stopServer();
 	}
@@ -36,8 +43,9 @@ public class SiteSetup implements Setup {
 
 		LOG.info("init begin ! ");
 		// 设置ioc
-
 		StaticValue.setSystemIoc(nc.getIoc());
+
+		checkServer() ;
 
 		H2Server.startServer(nc);
 
@@ -132,6 +140,19 @@ public class SiteSetup implements Setup {
 
 		LOG.info("start all ok , goodluck YouYou");
 
+	}
+
+	/**
+	 * 检查机器是否可以运行
+	 */
+	private void checkServer() {
+		if(!StaticValue.IS_LOCAL){
+			if("127.0.0.1".equals(StaticValue.getHost())
+					|| "localhost".equals(StaticValue.getHost())){
+				LOG.error("cluster model must set host by LAN IP or domain");
+				System.exit(-1);
+			}
+		}
 	}
 
 }
