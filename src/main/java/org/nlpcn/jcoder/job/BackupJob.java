@@ -7,8 +7,8 @@ import java.util.OptionalLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.nlpcn.commons.lang.util.IOUtil;
-import org.nlpcn.commons.lang.util.ObjConver;
+import com.alibaba.fastjson.util.TypeUtils;
+import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.service.BackupService;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -59,7 +59,7 @@ public class BackupJob implements Runnable {
 					continue;
 				}
 
-				OptionalLong max = list.stream().mapToLong(s -> ObjConver.getLong(s.replace(".tasks.bak", ""))).max();
+				OptionalLong max = list.stream().mapToLong(s -> TypeUtils.castToLong(s.replace(".tasks.bak", ""))).max();
 				
 				String content = IOUtil.getContent(new File(backupPath, max.getAsLong() + ".tasks.bak"), "utf-8");
 

@@ -16,7 +16,7 @@ import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 import javax.tools.ToolProvider;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.service.TaskService;

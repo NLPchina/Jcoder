@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 
-import org.nlpcn.commons.lang.util.IOUtil;
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.controller.ConsoleAction;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.slf4j.Logger;

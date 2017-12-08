@@ -16,8 +16,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.nlpcn.commons.lang.util.StringUtil;
-import org.nlpcn.commons.lang.util.tuples.KeyValue;
+import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.run.annotation.Single;

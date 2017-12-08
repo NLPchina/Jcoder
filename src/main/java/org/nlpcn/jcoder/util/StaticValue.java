@@ -1,10 +1,10 @@
 package org.nlpcn.jcoder.util;
 
 import java.io.File;
+import java.security.NoSuchAlgorithmException;
 import java.util.ResourceBundle;
 
-import org.nlpcn.commons.lang.util.MD5;
-import org.nlpcn.commons.lang.util.ObjConver;
+import com.alibaba.fastjson.util.TypeUtils;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
@@ -25,8 +25,8 @@ public class StaticValue {
 
 	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 	private static final String HOST = getValueOrCreate("host", "*");
-	public static final int PORT = ObjConver.getIntValue(getValueOrCreate("port", "8080"));
-	public static final int RPCPORT = ObjConver.getIntValue(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
+	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
+	public static final int RPCPORT = TypeUtils.castToInt(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
 	//default token
 	public static final String TOKEN = getValueOrCreate("token", null);
 	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
@@ -220,8 +220,8 @@ public class StaticValue {
 	 * @param password
 	 * @return
 	 */
-	public static String passwordEncoding(String password) {
-		return MD5.code(MD5.code(password + "jcoder"));
+	public static String passwordEncoding(String password) throws NoSuchAlgorithmException {
+		return MD5Util.md5(MD5Util.md5(password + "jcoder"));
 	}
 
 	/**

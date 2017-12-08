@@ -13,14 +13,10 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-import org.nlpcn.commons.lang.util.IOUtil;
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.MD5Util;
@@ -28,6 +24,7 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
 import org.nutz.ioc.loader.json.JsonLoader;
+import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +105,31 @@ public class JarService {
 
 	public static void flushIOC() {
 		LOG.info("to flush ioc");
-		Ioc ioc = new NutIoc(new JsonLoader(StaticValue.HOME + "/resource/ioc.js"));
+
+        JsonLoader loader = new JsonLoader(StaticValue.HOME + "/resource/ioc.js");
+        Ioc ioc = new NutIoc(loader);
+
+        // 实例化lazy为false的bean
+        loader.getMap().entrySet().stream()
+                .filter(entry -> entry.getValue().containsKey("type") && Objects.equals(false, entry.getValue().get("lazy")))
+                .forEach(entry -> {
+                    // 移除自定义配置项lazy
+                    entry.getValue().remove("lazy");
+
+                    LOG.info("to init bean[{}{}]", entry.getKey(), entry.getValue());
+
+                    //
+                    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+                    Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
+                    try {
+                        ioc.get(Lang.loadClass(entry.getValue().get("type").toString()), entry.getKey());
+                    } catch (ClassNotFoundException e) {
+                        throw Lang.wrapThrow(e);
+                    } finally {
+                        Thread.currentThread().setContextClassLoader(contextClassLoader);
+                    }
+                });
+
 		if(StaticValue.getUserIoc()!=null){
 			StaticValue.getUserIoc().depose();	
 		}

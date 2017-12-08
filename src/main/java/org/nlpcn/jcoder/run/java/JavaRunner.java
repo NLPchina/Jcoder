@@ -7,8 +7,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map.Entry;
 
-import org.nlpcn.commons.lang.util.MapCount;
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.MapCount;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;

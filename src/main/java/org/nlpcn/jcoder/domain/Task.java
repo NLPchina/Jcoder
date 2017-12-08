@@ -2,7 +2,7 @@ package org.nlpcn.jcoder.domain;
 
 import java.util.Date;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.util.SharedSpace;
 import org.nutz.dao.entity.annotation.Column;

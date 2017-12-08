@@ -1,6 +1,8 @@
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.*;
@@ -77,6 +79,14 @@ public class Bootstrap {
 		System.setProperty("java.awt.headless", "true"); // support kaptcha
 
 		Server server = new Server(port);
+
+		/*Server server = new Server();
+		SslContextFactory sslContextFactory = new SslContextFactory();
+		sslContextFactory.setKeyStorePath("C:\\Users\\infcn\\Desktop\\keystore\\jcoder.keystore");
+		sslContextFactory.setKeyStorePassword("JCODER@123");
+		ServerConnector sslConnector = new ServerConnector(server, sslContextFactory);
+		sslConnector.setPort(port);
+		server.addConnector(sslConnector);*/
 
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
 

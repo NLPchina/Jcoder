@@ -2,7 +2,7 @@ package org.nlpcn.jcoder.filter;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.server.rpc.RpcFilter;
 import org.nlpcn.jcoder.server.rpc.Rpcs;

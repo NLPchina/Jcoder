@@ -1,6 +1,16 @@
 package org.nlpcn.jcoder.filter;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import java.io.IOException;
+
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;

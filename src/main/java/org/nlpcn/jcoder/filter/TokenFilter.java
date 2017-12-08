@@ -3,7 +3,7 @@ package org.nlpcn.jcoder.filter;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
-import org.nlpcn.commons.lang.util.StringUtil;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.server.rpc.RpcFilter;
