@@ -5,9 +5,9 @@ import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
-import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.LocalSharedSpaceService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -33,7 +33,6 @@ public class SiteSetup implements Setup {
 			e.printStackTrace();
 		}
 		;
-		ZKServer.stopServer();
 		H2Server.stopServer();
 		WebSocketServer.stopServer();
 	}
@@ -45,16 +44,9 @@ public class SiteSetup implements Setup {
 		// 设置ioc
 		StaticValue.setSystemIoc(nc.getIoc());
 
-		checkServer() ;
+		checkServer();
 
 		H2Server.startServer(nc);
-
-		//如果单机模式启动zk服务
-		if(StaticValue.IS_LOCAL) {
-			LOG.info("to start zookeeper server!");
-			new ZKServer().start();
-
-		}
 
 		// set version
 		nc.getServletContext().setAttribute("VERSION", StaticValue.VERSION);
@@ -62,6 +54,30 @@ public class SiteSetup implements Setup {
 		// 初始化Jar环境
 		LOG.info("begin Jar init!");
 		JarService.init();
+
+
+		/**
+		 * 初始化集群记录
+		 */
+		if (StaticValue.IS_LOCAL) {
+			LOG.info("stared server by local model");
+			StaticValue.setMaster(true);
+			try {
+				StaticValue.setSharedSpace(new LocalSharedSpaceService().init());
+			} catch (Exception e) {
+				LOG.error("zookper err ",e);
+				System.exit(-1);
+			}
+		} else {
+			LOG.info("stared server by cluster model");
+			try {
+				StaticValue.setSharedSpace(new SharedSpaceService().init());
+			} catch (Exception e) {
+				LOG.error("zookper err ",e);
+				System.exit(-1);
+			}
+			StaticValue.setMaster(false);
+		}
 
 		try {
 			LOG.info("begin init all task by db !");
@@ -71,14 +87,6 @@ public class SiteSetup implements Setup {
 			e.printStackTrace();
 			LOG.error("init all task err ", e);
 			System.exit(-1);
-		}
-
-		if (StaticValue.IS_LOCAL) {
-			LOG.info("stared server by local model");
-			StaticValue.setMaster(true);
-		} else {
-			LOG.info("stared server by cluster model");
-			StaticValue.setMaster(false);
 		}
 
 		try {
@@ -146,9 +154,9 @@ public class SiteSetup implements Setup {
 	 * 检查机器是否可以运行
 	 */
 	private void checkServer() {
-		if(!StaticValue.IS_LOCAL){
-			if("127.0.0.1".equals(StaticValue.getHost())
-					|| "localhost".equals(StaticValue.getHost())){
+		if (!StaticValue.IS_LOCAL) {
+			if ("127.0.0.1".equals(StaticValue.getHost())
+					|| "localhost".equals(StaticValue.getHost())) {
 				LOG.error("cluster model must set host by LAN IP or domain");
 				System.exit(-1);
 			}

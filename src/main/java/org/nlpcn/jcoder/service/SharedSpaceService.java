@@ -10,18 +10,15 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
-import org.nutz.ioc.loader.annotation.IocBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Ansj on 05/12/2017.
  */
-@IocBean(create = "init")
 public class SharedSpaceService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
@@ -391,7 +388,7 @@ public class SharedSpaceService {
 	}
 
 
-	public void init() throws Exception {
+	public SharedSpaceService init() throws Exception {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
 		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
@@ -426,6 +423,7 @@ public class SharedSpaceService {
 			}
 		});
 		nodeCache.start();
+		return this ;
 	}
 
 	/**
