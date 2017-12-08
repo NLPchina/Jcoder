@@ -25,10 +25,7 @@ import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.TestingFilter;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
@@ -225,32 +222,11 @@ public class TaskService {
 
 		List<Task> search = this.basicDao.search(Task.class, "id");
 
-		// 取得目前正在运行的task
-		List<TaskInfo> list = ThreadManager.getAllThread();
-
-		HashSet<String> taskSet = new HashSet<>();
-
-		list.forEach(ti -> taskSet.add(ti.getTaskName()));
-
-		ThreadManager.stopScheduler();
-
-		ThreadManager.startScheduler();
-
 		for (Task task : search) {
 			try {
 				TASK_MAP_CACHE.put(task.getId(), task);
 				TASK_MAP_CACHE.put(task.getName(), task);
 				StaticValue.MAPPING.remove(task.getName());//删掉urlmapping重新加载
-				if (task.getStatus() == 0) {
-				} else if (task.getType() == 2) {
-					// 如果只是运行一次的计划任务。并且这个任务还在活动中。那么这个任务将不再发布
-					if ((StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr().toLowerCase())) && taskSet.contains(task.getName())) {
-						LOG.warn(task.getName() + " in runing in! so not to publish it!");
-						continue;
-					}
-					ThreadManager.add(task);
-				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 				LOG.error(e.getMessage(), e);

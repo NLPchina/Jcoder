@@ -47,16 +47,21 @@ public class JcoderFilter extends NutFilter {
 		String path = request.getServletPath();
 
 
-		/**
-		 * 先走代理服务
-		 */
-		if (StaticValue.getSystemIoc().get(ProxyService.class,"proxyService").service(request, response ,"http://www.sina.com")) {
-			response.getOutputStream().flush();
-			response.getOutputStream().close();
-			return;
-		}
-
 		if (path.startsWith("/api/")) {
+			/**
+			 * 先走代理服务
+			 */
+			String proxyUrl = null;
+			if (!StaticValue.IS_LOCAL
+					&& request.getHeader(ProxyService.PROXY_HEADER) == null) {
+				proxyUrl = StaticValue.space().host(request.getHeader("jcoder_group"), path);
+				if (proxyUrl != null) {
+					StaticValue.getSystemIoc().get(ProxyService.class, "proxyService").service(request, response, proxyUrl);
+					response.getOutputStream().flush();
+					response.getOutputStream().close();
+					return;
+				}
+			}
 			_doFilter(chain, request, response);
 		} else {
 			if (StringUtil.isBlank("host") || "*".equals(host) || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {

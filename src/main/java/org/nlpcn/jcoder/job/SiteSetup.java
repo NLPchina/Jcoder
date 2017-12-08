@@ -1,24 +1,25 @@
 package org.nlpcn.jcoder.job;
 
-import java.util.Arrays;
-
-import javax.servlet.ServletException;
-import javax.websocket.server.ServerEndpoint;
-
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
+import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.nutz.ioc.IocException;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.websocket.server.ServerEndpoint;
+import java.util.Arrays;
 
 public class SiteSetup implements Setup {
 
@@ -26,6 +27,13 @@ public class SiteSetup implements Setup {
 
 	@Override
 	public void destroy(NutConfig nc) {
+		try {
+			StaticValue.space().release();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		;
+		ZKServer.stopServer();
 		H2Server.stopServer();
 		WebSocketServer.stopServer();
 	}
@@ -35,10 +43,18 @@ public class SiteSetup implements Setup {
 
 		LOG.info("init begin ! ");
 		// 设置ioc
-
 		StaticValue.setSystemIoc(nc.getIoc());
 
+		checkServer() ;
+
 		H2Server.startServer(nc);
+
+		//如果单机模式启动zk服务
+		if(StaticValue.IS_LOCAL) {
+			LOG.info("to start zookeeper server!");
+			new ZKServer().start();
+
+		}
 
 		// set version
 		nc.getServletContext().setAttribute("VERSION", StaticValue.VERSION);
@@ -53,25 +69,41 @@ public class SiteSetup implements Setup {
 			LOG.info("begin init all task ok !");
 		} catch (IocException | TaskException e) {
 			e.printStackTrace();
-			LOG.error("init all task err ",e);
+			LOG.error("init all task err ", e);
 			System.exit(-1);
+		}
+
+		if (StaticValue.IS_LOCAL) {
+			LOG.info("stared server by local model");
+			StaticValue.setMaster(true);
+		} else {
+			LOG.info("stared server by cluster model");
+			StaticValue.setMaster(false);
 		}
 
 		try {
 			Thread.sleep(1000L);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		}
+
+		// task 选举master
+		if (!StaticValue.isMaster()) {
+			try {
+				new MasterJob();
+				LOG.info("to instance masterjob ok!");
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+
 
 		// task 其他定时任务的运行状况
 		new Thread(new CheckTaskJob()).start();
-
 		LOG.info("begin run task quene!");
-		// 运行队列
-		new Thread(new RunTaskJob()).start();
 
-		LOG.info("begin print console job!");
 		// 运行日志打印到websocket任务
 		new Thread(new PrintConsoleJob()).start();
 
@@ -88,25 +120,39 @@ public class SiteSetup implements Setup {
 		} catch (Exception e) {
 			LOG.error("rpc server stop fail ", e);
 		}
-		
-		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext() ;
-		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler() ;
+
+		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
+		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
 
 		final ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
-		Arrays.stream(nc.getIoc().getNames()).forEach(name ->{
-			Object object = nc.getIoc().get(Object.class, name) ;
-			if(object.getClass().getAnnotation(ServerEndpoint.class)!=null){
+		Arrays.stream(nc.getIoc().getNames()).forEach(name -> {
+			Object object = nc.getIoc().get(Object.class, name);
+			if (object.getClass().getAnnotation(ServerEndpoint.class) != null) {
 				try {
 					configureContext.addEndpoint(object.getClass());
-					LOG.info("add "+object.getClass()+" in websocket container");
+					LOG.info("add " + object.getClass() + " in websocket container");
 				} catch (Exception e) {
-					LOG.error("add "+object.getClass()+" in websocket container fail!!",e);
+					LOG.error("add " + object.getClass() + " in websocket container fail!!", e);
 				}
 			}
 		});
 
-		LOG.info("start all ok , goodluck");
 
+		LOG.info("start all ok , goodluck YouYou");
+
+	}
+
+	/**
+	 * 检查机器是否可以运行
+	 */
+	private void checkServer() {
+		if(!StaticValue.IS_LOCAL){
+			if("127.0.0.1".equals(StaticValue.getHost())
+					|| "localhost".equals(StaticValue.getHost())){
+				LOG.error("cluster model must set host by LAN IP or domain");
+				System.exit(-1);
+			}
+		}
 	}
 
 }

@@ -1,30 +1,23 @@
 package org.nlpcn.jcoder.controller;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
-import javax.servlet.http.HttpSession;
-
-import org.nlpcn.jcoder.util.StringUtil;
+import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.SharedSpace;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Fail;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSONObject;
+import javax.servlet.http.HttpSession;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @IocBean
 @Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))

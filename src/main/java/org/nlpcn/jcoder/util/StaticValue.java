@@ -6,6 +6,7 @@ import java.util.ResourceBundle;
 
 import com.alibaba.fastjson.util.TypeUtils;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
+import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.IocException;
@@ -23,6 +24,8 @@ public class StaticValue {
 	public static final String PREFIX = "jcoder_";
 	public static final String SELF_HOST = "127.0.0.1";
 
+	public static final String ZK_ROOT = "/jcoder";
+
 	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 	private static final String HOST = getValueOrCreate("host", "*");
 	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
@@ -36,7 +39,19 @@ public class StaticValue {
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
 	public static final String VERSION = getResource("version");
 
+	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 2));
+
+	//集群方式还是单机方式启动
+	public static final boolean IS_LOCAL = ZK.equals("127.0.0.1:" + (PORT + 2));
+
+	//是否是以SSL方式启动
+	public static final boolean IS_SSL = false;
+
 	public static final File UPLOAD_DIR = new File(getValueOrCreate("upload", new File(HOME_FILE, "upload").getAbsolutePath()));
+
+
+	private static boolean master = false;
+	private static SharedSpaceService sharedSpace;
 
 	static {
 		LOG.info("env in system.propertie: jcoder_home : " + HOME_FILE.getAbsolutePath());
@@ -48,6 +63,7 @@ public class StaticValue {
 		LOG.info("env in system.propertie: jcoder_lib : " + LIB_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_plugins : " + PLUGIN_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_upload : " + UPLOAD_DIR.getAbsolutePath());
+		LOG.info("env in system.propertie: zookeeper : " + ZK);
 	}
 
 	private static Ioc systemIoc;
@@ -75,8 +91,8 @@ public class StaticValue {
 
 	/**
 	 * 失败消息
-	 * 
-	 * @param message
+	 *
+	 * @param e
 	 * @return
 	 */
 	public static String errMessage(Exception e) {
@@ -101,7 +117,7 @@ public class StaticValue {
 
 	/**
 	 * 失败消息
-	 * 
+	 *
 	 * @param message
 	 * @return
 	 */
@@ -113,7 +129,7 @@ public class StaticValue {
 
 	/**
 	 * 失败消息
-	 * 
+	 *
 	 * @param message
 	 * @return
 	 */
@@ -129,7 +145,7 @@ public class StaticValue {
 
 	/**
 	 * 成功消息
-	 * 
+	 *
 	 * @param message
 	 * @return
 	 */
@@ -139,7 +155,7 @@ public class StaticValue {
 
 	/**
 	 * 成功消息
-	 * 
+	 *
 	 * @param message
 	 * @return
 	 */
@@ -174,7 +190,7 @@ public class StaticValue {
 
 	/**
 	 * 從ｉｏｃ容器中獲取ｂｅａｎ
-	 * 
+	 *
 	 * @param name
 	 * @return
 	 */
@@ -201,7 +217,7 @@ public class StaticValue {
 
 	/**
 	 * 从配置文件查找
-	 * 
+	 *
 	 * @param key
 	 * @return
 	 */
@@ -216,7 +232,7 @@ public class StaticValue {
 
 	/**
 	 * md5 code
-	 * 
+	 *
 	 * @param password
 	 * @return
 	 */
@@ -226,7 +242,7 @@ public class StaticValue {
 
 	/**
 	 * 获取用户ip
-	 * 
+	 *
 	 * @param request
 	 * @return
 	 */
@@ -251,7 +267,7 @@ public class StaticValue {
 
 	/**
 	 * 获得host如果host为* 则返回127.0.0.1
-	 * 
+	 *
 	 * @return
 	 */
 	public static String getHost() {
@@ -263,10 +279,43 @@ public class StaticValue {
 
 	/**
 	 * 获得用户配置的host
-	 * 
+	 *
 	 * @return
 	 */
 	public static String getConfigHost() {
 		return HOST;
+	}
+
+	public static void setMaster(boolean flag) {
+		master = flag;
+	}
+
+	public static boolean isMaster() {
+		return master;
+	}
+
+	public static void setSharedSpace(SharedSpaceService sharedSpace) {
+		StaticValue.sharedSpace = sharedSpace;
+	}
+
+	/**
+	 * 获得以zookeeper为内存的存储空间
+	 * @return
+	 */
+	public static SharedSpaceService space(){
+		if(sharedSpace==null){
+			sharedSpace = StaticValue.getSystemIoc().get(SharedSpaceService.class,"sharedSpaceService") ;
+		}
+		return sharedSpace;
+
+	}
+
+
+	/**
+	 * 获得主机和ip名称 case 127.0.0.1:9095
+	 * @return
+	 */
+	public static String getHostPort() {
+		return getHost()+":"+PORT ;
 	}
 }

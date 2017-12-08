@@ -1,8 +1,8 @@
 package org.nlpcn.jcoder.util.dao;
 
-import org.apache.zookeeper.*;
-
-import java.io.IOException;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.RetryNTimes;
 
 /**
  * 单薄的zk客户端
@@ -10,21 +10,22 @@ import java.io.IOException;
  */
 public class ZookeeperDao {
 
-	private ZooKeeper zk = null;
+	private CuratorFramework client = null;
 
-	public ZookeeperDao(ZooKeeper zk){
-		this.zk = zk ;
+	public ZookeeperDao(String connStr) {
+		client = CuratorFrameworkFactory.newClient(
+				connStr,
+				new RetryNTimes(10, 2000)
+		);
+		client.start();
 	}
 
-	public ZookeeperDao(String connStr, Watcher watcher) throws IOException {
-		zk = new ZooKeeper(connStr, 10000, watcher);
-	}
 
 	public void close() throws InterruptedException {
-		zk.close();
+		client.close();
 	}
 
-	public ZooKeeper getZk(){
-		return zk ;
+	public CuratorFramework getZk() {
+		return client;
 	}
 }

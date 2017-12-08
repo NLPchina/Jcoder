@@ -4,10 +4,11 @@ import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Table("user")
-public class User {
+public class User implements Serializable {
 
 	@Id
 	private Long id;
