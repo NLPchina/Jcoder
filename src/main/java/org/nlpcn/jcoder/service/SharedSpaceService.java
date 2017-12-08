@@ -89,7 +89,7 @@ public class SharedSpaceService {
 			type = 2;
 		}
 		job.put("type", type);
-		zkDao.getZk().setData().forPath(TASK_PATH + "/" + id, job.getBytes("utf-8"));
+		zkDao.getZk().setData().forPath( MESSAGE_PATH+ "/" + id, job.getBytes("utf-8"));
 	}
 
 

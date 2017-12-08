@@ -159,8 +159,8 @@ public class Bootstrap {
 	 * @return
 	 */
 	private static int findPort(int port) throws UnknownHostException {
-		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1) || isPortUsing("127.0.0.1", port + 2)) {
-			port = port + 3;
+		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1)) {
+			port = port + 2;
 		}
 		return port;
 	}

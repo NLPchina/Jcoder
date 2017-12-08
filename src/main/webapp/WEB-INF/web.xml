@@ -10,7 +10,6 @@
 			<param-name>modules</param-name>
 			<param-value>org.nlpcn.jcoder.App</param-value>
 		</init-param>
-		<async-supported>true</async-supported>
 	</filter>
 
 	<filter-mapping>
