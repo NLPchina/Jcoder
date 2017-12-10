@@ -14,7 +14,9 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
+import com.google.common.cache.*;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
@@ -34,29 +36,78 @@ public class JarService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
 
-	public static final String JAR_PATH = StaticValue.HOME + "/lib";
+	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
+			.removalListener(new RemovalListener<String, JarService>() {
+				@Override
+				public void onRemoval(RemovalNotification<String, JarService> notification) {
+					notification.getValue().getIoc().depose();
+					try {
+						notification.getValue().engine.getClassLoader().close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}).build(new CacheLoader<String, JarService>() {
+				@Override
+				public JarService load(String key) throws Exception {
+					return new JarService(key);
+				}
+			});
 
-	public static final String POM = JAR_PATH + "/pom.xml";
+	public static JarService getOrCreate(String groupName) {
+		try {
+			return CACHE.get(groupName);
+		} catch (ExecutionException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
-	private static final String CONFIG_PATH = JAR_PATH + "/config.properties";
+	public static void remove(String groupName) {
+		CACHE.invalidate(groupName);
+	}
+
 
 	private static final String MAVEN_PATH = "maven";
+	private static final String MD5 = "md5";
 
-	private static final String MD5 = "MD5";
+	private String groupName;
 
-	private static JSONObject config = readConfig();
+	private String jarPath = null;
 
-	public static final Set<String> LIB_PATHS = new HashSet<>();
+	private String pomPath = null;
+
+	private String iocPath = null;
+
+	private String configPath = null;
+
+	private JSONObject config = readConfig();
+
+	public Set<String> libPaths = new HashSet<>();
+
+	private DynamicEngine engine;
+
+	private Ioc ioc;
+
+	private JarService(String groupName) {
+		this.groupName = groupName;
+		jarPath = StaticValue.HOME + "/" + groupName + "/lib";
+		pomPath = jarPath + "/" + groupName + "/pom.xml";
+		configPath = jarPath + "/" + groupName + "/config.properties";
+		iocPath = StaticValue.HOME + "/" + groupName + "/resource/ioc.js";
+		engine = new DynamicEngine(groupName);
+		init();
+	}
 
 	/**
 	 * 环境加载中
 	 */
-	public static void init() {
+	public void init() {
 		config = readConfig();
 
 		// 加载mavenpath
 		if (StringUtil.isBlank(config.getString(MAVEN_PATH))) {
-			setMavenPath(getMavenPath());
+			config.put(MAVEN_PATH, getMavenPath());
 		}
 
 		// 如果发生改变则刷新一次
@@ -75,17 +126,17 @@ public class JarService {
 	/**
 	 * 统计并加载jar包
 	 */
-	public static void flushClassLoader() {
+	private void flushClassLoader() {
 		LOG.info("to flush classloader");
 		URL[] urls = null;
 		try {
 			List<File> findJars = findJars();
 			urls = new URL[findJars.size()];
-			LIB_PATHS.clear();
+			libPaths.clear();
 			for (int i = 0; i < findJars.size(); i++) {
 				urls[i] = findJars.get(i).toURI().toURL();
 				LOG.info("find JAR " + findJars.get(i));
-				LIB_PATHS.add(findJars.get(i).getAbsolutePath());
+				libPaths.add(findJars.get(i).getAbsolutePath());
 			}
 		} catch (IOException e1) {
 			e1.printStackTrace();
@@ -94,54 +145,49 @@ public class JarService {
 		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader().getParent()); //不在和系统的classload共享jar包，用来解决jar冲突
 
 		try {
-			DynamicEngine.flush(classLoader);
+			engine.flush(classLoader);
 			flushIOC();
 		} catch (TaskException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
-	
 
-	public static void flushIOC() {
+
+	private synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 
-        JsonLoader loader = new JsonLoader(StaticValue.HOME + "/resource/ioc.js");
-        Ioc ioc = new NutIoc(loader);
+		JsonLoader loader = new JsonLoader(iocPath);
+		ioc = new NutIoc(loader);
 
-        // 实例化lazy为false的bean
-        loader.getMap().entrySet().stream()
-                .filter(entry -> entry.getValue().containsKey("type") && Objects.equals(false, entry.getValue().get("lazy")))
-                .forEach(entry -> {
-                    // 移除自定义配置项lazy
-                    entry.getValue().remove("lazy");
+		// 实例化lazy为false的bean
+		loader.getMap().entrySet().stream()
+				.filter(entry -> entry.getValue().containsKey("type") && Objects.equals(false, entry.getValue().get("lazy")))
+				.forEach(entry -> {
+					// 移除自定义配置项lazy
+					entry.getValue().remove("lazy");
 
-                    LOG.info("to init bean[{}{}]", entry.getKey(), entry.getValue());
+					LOG.info("to init bean[{}{}]", entry.getKey(), entry.getValue());
 
-                    //
-                    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-                    Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
-                    try {
-                        ioc.get(Lang.loadClass(entry.getValue().get("type").toString()), entry.getKey());
-                    } catch (ClassNotFoundException e) {
-                        throw Lang.wrapThrow(e);
-                    } finally {
-                        Thread.currentThread().setContextClassLoader(contextClassLoader);
-                    }
-                });
+					//
+					ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+					Thread.currentThread().setContextClassLoader(engine.getClassLoader());
+					try {
+						ioc.get(Lang.loadClass(entry.getValue().get("type").toString()), entry.getKey());
+					} catch (ClassNotFoundException e) {
+						throw Lang.wrapThrow(e);
+					} finally {
+						Thread.currentThread().setContextClassLoader(contextClassLoader);
+					}
+				});
 
-		if(StaticValue.getUserIoc()!=null){
-			StaticValue.getUserIoc().depose();	
-		}
-		StaticValue.setUserIoc(ioc);		
 	}
 
 	/**
 	 * 得到maven路径
-	 * 
+	 *
 	 * @return
 	 */
-	public static String getMavenPath() {
+	public String getMavenPath() {
 		String mavenPath = null;
 
 		if (config != null) {
@@ -169,18 +215,18 @@ public class JarService {
 
 	/**
 	 * 版本写入
-	 * 
+	 *
 	 * @return
 	 * @throws NoSuchAlgorithmException
 	 */
-	public static JSONObject writeVersion() {
+	public JSONObject writeVersion() {
 
 		JSONObject job = new JSONObject();
 
 		job.put(MAVEN_PATH, getMavenPath());
 		job.put(MD5, readMd5());
 
-		IOUtil.Writer(CONFIG_PATH, IOUtil.UTF8, job.toJSONString());
+		IOUtil.Writer(configPath, IOUtil.UTF8, job.toJSONString());
 
 		config = job;
 
@@ -189,12 +235,12 @@ public class JarService {
 
 	/**
 	 * 读取pom文件的md5
-	 * 
+	 *
 	 * @return
 	 * @throws NoSuchAlgorithmException
 	 */
-	private static String readMd5() {
-		File pom = new File(POM);
+	private String readMd5() {
+		File pom = new File(pomPath);
 		if (pom.exists()) {
 			try {
 				return MD5Util.md5(getMavenPath() + IOUtil.getContent(pom, IOUtil.UTF8));
@@ -207,22 +253,22 @@ public class JarService {
 
 	/**
 	 * 检查maven的配置文件是否发生改变
-	 * 
+	 *
 	 * @return
 	 * @throws NoSuchAlgorithmException
 	 */
-	public static boolean check() {
-		return String.valueOf(config.get("MD5")).equals(readMd5());
+	public boolean check() {
+		return String.valueOf(config.get(MD5)).equals(readMd5());
 	}
 
 	/**
 	 * 读取配置文件
-	 * 
+	 *
 	 * @return
 	 */
-	private static JSONObject readConfig() {
-		if (new File(CONFIG_PATH).exists()) {
-			return JSONObject.parseObject(IOUtil.getContent(CONFIG_PATH, IOUtil.UTF8));
+	private JSONObject readConfig() {
+		if (new File(configPath).exists()) {
+			return JSONObject.parseObject(IOUtil.getContent(configPath, IOUtil.UTF8));
 		} else {
 			return new JSONObject();
 		}
@@ -230,11 +276,11 @@ public class JarService {
 
 	/**
 	 * copyjar包到当前目录中
-	 * 
+	 *
 	 * @return
 	 * @throws IOException
 	 */
-	public static String copy() throws IOException {
+	public String copy() throws IOException {
 		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
 			return execute("cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies");
 		} else {
@@ -244,11 +290,11 @@ public class JarService {
 
 	/**
 	 * 删除jiar包
-	 * 
+	 *
 	 * @return
 	 * @throws IOException
 	 */
-	public static String clean() throws IOException {
+	public String clean() throws IOException {
 		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
 			return execute("cmd", "/c", getMavenPath(), "clean");
 		} else {
@@ -258,16 +304,16 @@ public class JarService {
 
 	/**
 	 * 刷新jar包
-	 * 
+	 *
 	 * @return
 	 * @throws IOException
 	 */
-	public synchronized static void flushMaven() throws IOException {
+	public synchronized void flushMaven() throws IOException {
 		clean();
 		copy();
 	}
 
-	private static String execute(String... args) throws IOException {
+	private String execute(String... args) throws IOException {
 
 		LOG.info("exec : " + Arrays.toString(args));
 
@@ -275,7 +321,7 @@ public class JarService {
 
 		try {
 			ProcessBuilder pb = new ProcessBuilder(args);
-			pb.directory(new File(JAR_PATH));
+			pb.directory(new File(jarPath));
 
 			pb.redirectErrorStream(true);
 
@@ -304,14 +350,14 @@ public class JarService {
 
 	/**
 	 * 查找所有的jar
-	 * 
+	 *
 	 * @return
 	 * @throws IOException
 	 */
-	public static List<File> findJars() throws IOException {
+	public List<File> findJars() throws IOException {
 		List<File> findAllJar = new ArrayList<>();
 
-		Files.walkFileTree(new File(JAR_PATH).toPath(), new SimpleFileVisitor<Path>() {
+		Files.walkFileTree(new File(jarPath).toPath(), new SimpleFileVisitor<Path>() {
 
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -326,7 +372,7 @@ public class JarService {
 		return findAllJar;
 	}
 
-	private static String getPathByVar(String var) {
+	private String getPathByVar(String var) {
 		String home = System.getProperty(var);
 
 		if (StringUtil.isBlank(home)) {
@@ -337,23 +383,25 @@ public class JarService {
 
 	/**
 	 * 保存pom文件
-	 * 
+	 *
 	 * @param code
 	 * @return
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public static String savePom(String code) throws IOException, NoSuchAlgorithmException {
-		IOUtil.Writer(JarService.POM, IOUtil.UTF8, code);
+	public String savePom(String mavenPath, String code) throws IOException, NoSuchAlgorithmException {
+
+		config.put(MAVEN_PATH, mavenPath);
+
+		IOUtil.Writer(pomPath, IOUtil.UTF8, code);
 
 		String message = "保存完毕，文件没有做任何更改！";
 
 		if (!check()) {
-			synchronized (DynamicEngine.getInstance()) {
-				DynamicEngine.close();
+			synchronized (this) {
 				flushMaven();
 				writeVersion();
-				flushClassLoader();
+				CACHE.invalidate(groupName);
 			}
 			message = "保存并更新jar包成功!";
 		}
@@ -361,50 +409,39 @@ public class JarService {
 		return message;
 	}
 
-	/**
-	 * 设置maven路径
-	 * 
-	 * @param mavenPath
-	 */
-	public static void setMavenPath(String mavenPath) {
-		config.put(MAVEN_PATH, mavenPath);
-	}
 
 	/**
 	 * 得到启动时候加载的路径
-	 * 
+	 *
 	 * @return
 	 */
-	public static HashSet<String> getLibPathSet() {
-		return new HashSet<>(LIB_PATHS);
+	public HashSet<String> getLibPathSet() {
+		return new HashSet<>(libPaths);
 	}
 
 	/**
 	 * 删除一个jar包.只能删除非maven得jar包
-	 * 
+	 *
 	 * @param file
 	 * @return
 	 */
-	public static boolean removeJar(File file) {
-		if (file.getParentFile().getAbsolutePath().equals(new File(JAR_PATH).getAbsolutePath()) && file.getPath().toLowerCase().endsWith(".jar")) {
+	public boolean removeJar(File file) {
+		if (file.getParentFile().getAbsolutePath().equals(new File(jarPath).getAbsolutePath()) && file.getPath().toLowerCase().endsWith(".jar")) {
 			try {
-				synchronized (DynamicEngine.getInstance()) {
-					DynamicEngine.close();
+				synchronized (this) {
 					for (int i = 0; i < 10 && file.exists(); i++) {
 						LOG.info(i + " to delete file: " + file.getAbsolutePath());
 						file.delete();
 						Thread.sleep(300L);
 					}
-					flushClassLoader();
+					CACHE.invalidate(groupName);
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			return true;
 		} else {
-			LOG.info(file.getAbsolutePath()+" is not manager by file JAR_PATH is :"+JAR_PATH);
+			LOG.info(file.getAbsolutePath() + " is not manager by file JAR_PATH is :" + jarPath);
 			return false;
 		}
 
@@ -412,11 +449,11 @@ public class JarService {
 
 	/**
 	 * 获得系统中的jar.就是WEB-INF/lib下面的.对于eclipse中.取得SystemLoad
-	 * 
+	 *
 	 * @return
 	 * @throws URISyntaxException
 	 */
-	public static List<File> findSystemJars() throws URISyntaxException {
+	public List<File> findSystemJars() throws URISyntaxException {
 
 		URLClassLoader classLoader = ((URLClassLoader) Thread.currentThread().getContextClassLoader());
 
@@ -437,4 +474,23 @@ public class JarService {
 	}
 
 
+	public Ioc getIoc() {
+		return ioc;
+	}
+
+	public DynamicEngine getEngine() {
+		return engine;
+	}
+
+	public String getIocPath() {
+		return iocPath;
+	}
+
+	public String getPomPath() {
+		return pomPath;
+	}
+
+	public String getJarPath() {
+		return jarPath;
+	}
 }

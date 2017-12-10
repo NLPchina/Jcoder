@@ -3,8 +3,12 @@ package org.nlpcn.jcoder.service;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.util.MD5Util;
+import org.nlpcn.jcoder.util.StaticValue;
 
+import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -66,6 +70,30 @@ public class LocalSharedSpaceService extends SharedSpaceService {
 	public String host(String groupName, String className, String mehtodName) {
 		throw new RuntimeException("not need this method in local model") ;
 	}
+
+
+	/**
+	 * 增加一个task到集群中，如果冲突返回false
+	 *
+	 * @param task
+	 * @return 是否冲突
+	 */
+	@Override
+	public void addTask(Task task) throws Exception {
+	}
+
+	/**
+	 * 增加一个task到集群中，如果冲突返回false
+	 *
+	 * @param groupName
+	 * @Param file
+	 *
+	 * @return 是否冲突
+	 */
+	@Override
+	public void addFile(String groupName, File file) throws Exception {
+	}
+
 
 	@Override
 	public SharedSpaceService init() throws Exception {

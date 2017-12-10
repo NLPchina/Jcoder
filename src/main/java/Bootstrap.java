@@ -18,8 +18,8 @@ public class Bootstrap {
 	private static final String PREFIX = "jcoder_";
 
 	public static void main(String[] args) throws Exception {
-		if(args==null){
-			args = new String[0] ;
+		if (args == null) {
+			args = new String[0];
 		}
 
 		for (String arg : args) {
@@ -49,8 +49,6 @@ public class Bootstrap {
 						putEnv(PREFIX + "log", dim[1]);
 					} else if (dim[0].equals("--maven")) {
 						putEnv(PREFIX + "maven", dim[1]);
-					} else if (dim[0].equals("--upload")) {
-						putEnv(PREFIX + "upload", dim[1]);
 					} else if (dim[0].equals("--ssl")) {
 						putEnv(PREFIX + "ssl", dim[1]);
 					} else if (dim[0].equals("--token")) {
@@ -84,15 +82,24 @@ public class Bootstrap {
 
 		System.setProperty("java.awt.headless", "true"); // support kaptcha
 
-		Server server = new Server(port);
 
-		/*Server server = new Server();
-		SslContextFactory sslContextFactory = new SslContextFactory();
-		sslContextFactory.setKeyStorePath("C:\\Users\\infcn\\Desktop\\keystore\\jcoder.keystore");
-		sslContextFactory.setKeyStorePassword("JCODER@123");
-		ServerConnector sslConnector = new ServerConnector(server, sslContextFactory);
-		sslConnector.setPort(port);
-		server.addConnector(sslConnector);*/
+		String ssl = getEnv(PREFIX + "ssl");
+
+		Server server = null;
+
+		if (ssl != null && ssl.trim().length() > 0) {
+			String[] split = ssl.trim().split("\\|");
+			server = new Server();
+			SslContextFactory sslContextFactory = new SslContextFactory();
+			sslContextFactory.setKeyStorePath(split[0]);
+			sslContextFactory.setKeyStorePassword(split[1]);
+			ServerConnector sslConnector = new ServerConnector(server, sslContextFactory);
+			sslConnector.setPort(port);
+			server.addConnector(sslConnector);
+		} else {
+			new Server(port);
+		}
+
 
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
 
@@ -247,21 +254,6 @@ public class Bootstrap {
 	}
 
 	private static void makeFiles(File JcoderHome, String logPath) throws FileNotFoundException, IOException {
-		File libDir = new File(JcoderHome, "lib"); // create jar dir
-		if (!libDir.exists()) {
-			libDir.mkdirs();
-			wirteFile(new File(libDir, "pom.xml").getAbsolutePath(), "utf-8",
-					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>0.1</version>\n"
-							+ "	\n" + "	<dependencies>\n" + "	</dependencies>\n" + "\n" + "	<build>\n" + "		<sourceDirectory>src/main/java</sourceDirectory>\n"
-							+ "		<testSourceDirectory>src/test/java</testSourceDirectory>\n" + "		\n" + "		<plugins>\n" + "			<plugin>\n"
-							+ "				<artifactId>maven-compiler-plugin</artifactId>\n" + "				<version>3.3</version>\n" + "				<configuration>\n"
-							+ "					<source>1.8</source>\n" + "					<target>1.8</target>\n" + "					<encoding>UTF-8</encoding>\n"
-							+ "					<compilerArguments>\n" + "						<extdirs>lib</extdirs>\n" + "					</compilerArguments>\n"
-							+ "				</configuration>\n" + "			</plugin>\n" + "		</plugins>\n" + "	</build>\n" + "</project>\n" + "");
-		}
-
 		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
 		if (!tmpDir.exists()) {
 			tmpDir.mkdirs();
@@ -272,30 +264,12 @@ public class Bootstrap {
 			pluginDir.mkdirs();
 		}
 
-		File resourceDir = new File(JcoderHome, "resource"); // create resource dir
-		if (!resourceDir.exists()) {
-			resourceDir.mkdirs();
+		File groupDir = new File(JcoderHome, "group"); // create web dir
+		if (!groupDir.exists()) {
+			groupDir.mkdirs();
 		}
 
-		String uploadPath = System.getProperty(PREFIX + "upload"); //create upload file
-
-		if (uploadPath == null) {
-			uploadPath = new File(JcoderHome, "upload").getAbsolutePath();
-			putEnv(PREFIX + "upload", uploadPath);
-		}
-
-		File upload = new File(uploadPath);
-
-		if (!upload.exists()) {
-			upload.mkdirs();
-		}
-
-		File iocFile = new File(JcoderHome, "/resource/ioc.js"); // create ioc file
-		if (!iocFile.exists()) {
-			wirteFile(iocFile.getAbsolutePath(), "utf-8", "var ioc = {\n\n};");
-		}
-
-		createLog4j2Config(new File(resourceDir, "log4j2.xml"), logPath);
+		createLog4j2Config(new File(JcoderHome, "log4j2.xml"), logPath);
 	}
 
 	/**

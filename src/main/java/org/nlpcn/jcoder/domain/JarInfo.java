@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.domain;
 import java.io.File;
 
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.util.StaticValue;
 
 public class JarInfo extends FileInfo {
 
@@ -21,7 +22,7 @@ public class JarInfo extends FileInfo {
 		this.status = status;
 	}
 
-	public boolean getIsMavenJar() {
-		return this.getFile().getParentFile().equals(new File(JarService.JAR_PATH + "/target/dependency/"));
+	public boolean getIsMavenJar(String groupName) {
+		return this.getFile().getParentFile().equals(new File(StaticValue.HOME + "/" + groupName + "/lib/target/dependency/"));
 	}
 }

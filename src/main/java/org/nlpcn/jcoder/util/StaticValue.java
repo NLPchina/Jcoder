@@ -6,6 +6,7 @@ import java.util.ResourceBundle;
 
 import com.alibaba.fastjson.util.TypeUtils;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
@@ -36,6 +37,7 @@ public class StaticValue {
 	public static final File HOME_FILE = new File(HOME);
 	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
 	public static final File LIB_FILE = new File(HOME_FILE, "lib");
+	public static final File GROUP_FILE = new File(HOME_FILE, "group");
 	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
 	public static final String VERSION = getResource("version");
 
@@ -45,9 +47,7 @@ public class StaticValue {
 	public static final boolean IS_LOCAL = ZK.equals("127.0.0.1:" + (PORT + 2));
 
 	//是否是以SSL方式启动
-	public static final boolean IS_SSL = false;
-
-	public static final File UPLOAD_DIR = new File(getValueOrCreate("upload", new File(HOME_FILE, "upload").getAbsolutePath()));
+	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
 
 
 	private static boolean master = false;
@@ -62,13 +62,12 @@ public class StaticValue {
 		LOG.info("env in system.propertie: jcoder_resource : " + RESOURCE_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_lib : " + LIB_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_plugins : " + PLUGIN_FILE.getAbsolutePath());
-		LOG.info("env in system.propertie: jcoder_upload : " + UPLOAD_DIR.getAbsolutePath());
+		LOG.info("env in system.propertie: jcoder_plugins : " + GROUP_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: zookeeper : " + ZK);
+		LOG.info("env in system.propertie: ssl : " + getValueOrCreate("ssl", null));
 	}
 
 	private static Ioc systemIoc;
-
-	private static Ioc userIoc;
 
 	public static BasicDao systemDao; // 系统DAO
 
@@ -172,15 +171,6 @@ public class StaticValue {
 		return job;
 	}
 
-	public static Ioc getUserIoc() {
-		return userIoc;
-	}
-
-	// default ioc is userIoc
-	public static Ioc getIoc() {
-		return getUserIoc();
-	}
-
 	public static Ioc getSystemIoc() {
 		if (systemIoc == null) {
 			systemIoc = Mvcs.getIoc();
@@ -194,10 +184,10 @@ public class StaticValue {
 	 * @param name
 	 * @return
 	 */
-	public static <T> T getBean(Class<T> t, String name) {
+	public static <T> T getBean(String groupName, Class<T> t, String name) {
 		T object = null;
 		try {
-			object = getUserIoc().get(t, name);
+			object = JarService.getOrCreate(groupName).getIoc().get(t, name);
 		} catch (IocException e) {
 			LOG.error(e.getMessage());
 		}
@@ -211,9 +201,6 @@ public class StaticValue {
 		StaticValue.systemIoc = ioc;
 	}
 
-	public static void setUserIoc(Ioc ioc) {
-		StaticValue.userIoc = ioc;
-	}
 
 	/**
 	 * 从配置文件查找
@@ -300,11 +287,12 @@ public class StaticValue {
 
 	/**
 	 * 获得以zookeeper为内存的存储空间
+	 *
 	 * @return
 	 */
-	public static SharedSpaceService space(){
-		if(sharedSpace==null){
-			sharedSpace = StaticValue.getSystemIoc().get(SharedSpaceService.class,"sharedSpaceService") ;
+	public static SharedSpaceService space() {
+		if (sharedSpace == null) {
+			sharedSpace = StaticValue.getSystemIoc().get(SharedSpaceService.class, "sharedSpaceService");
 		}
 		return sharedSpace;
 
@@ -313,9 +301,10 @@ public class StaticValue {
 
 	/**
 	 * 获得主机和ip名称 case 127.0.0.1:9095
+	 *
 	 * @return
 	 */
 	public static String getHostPort() {
-		return getHost()+":"+PORT ;
+		return getHost() + ":" + PORT;
 	}
 }

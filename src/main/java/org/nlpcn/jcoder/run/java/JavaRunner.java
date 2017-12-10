@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map.Entry;
 
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.util.MapCount;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.CodeInfo;
@@ -59,7 +60,7 @@ public class JavaRunner {
 
 					String code = task.getCode();
 
-					DynamicEngine de = DynamicEngine.getInstance();
+					DynamicEngine de = JarService.getOrCreate(task.getGroupName()).getEngine();
 
 					String pack = JavaSourceUtil.findPackage(code);
 
@@ -71,7 +72,7 @@ public class JavaRunner {
 						throw new CodeException("not find className");
 					}
 
-					codeInfo.setClassLoader(de.getParentClassLoader());
+					codeInfo.setClassLoader(de.getClassLoader());
 
 					Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
 
@@ -145,13 +146,13 @@ public class JavaRunner {
 			return this;
 		}
 
-		if (codeInfo.getJavaObject() != null && !codeInfo.iocChanged()) {
+		if (codeInfo.getJavaObject() != null && !codeInfo.iocChanged(task.getGroupName())) {
 			this.objInstance = codeInfo.getJavaObject();
 			return this;
 		}
 
 		synchronized (codeInfo) {
-			if (codeInfo.getJavaObject() == null || codeInfo.iocChanged()) {
+			if (codeInfo.getJavaObject() == null || codeInfo.iocChanged(task.getGroupName())) {
 				_instance();
 			} else {
 				this.objInstance = codeInfo.getJavaObject();
@@ -167,7 +168,7 @@ public class JavaRunner {
 
 			objInstance = codeInfo.getClassz().newInstance();
 
-			Ioc ioc = StaticValue.getUserIoc();
+			Ioc ioc = JarService.getOrCreate(task.getGroupName()).getIoc();
 
 			codeInfo.setioc(ioc);
 
@@ -251,7 +252,7 @@ public class JavaRunner {
 	public boolean check() throws CodeException, IOException {
 		String code = task.getCode();
 
-		DynamicEngine de = DynamicEngine.getInstance();
+		DynamicEngine de = JarService.getOrCreate(task.getGroupName()).getEngine();
 
 		String pack = JavaSourceUtil.findPackage(code);
 

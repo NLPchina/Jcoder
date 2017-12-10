@@ -27,9 +27,6 @@ public class TaskHistory {
 	@Column
 	private String code;
 
-	@Column("code_type")
-	private String codeType;
-
 	@Column("group_id")
 	private Long groupId;
 
@@ -95,14 +92,6 @@ public class TaskHistory {
 		this.code = code;
 	}
 
-	public String getCodeType() {
-		return codeType;
-	}
-
-	public void setCodeType(String codeType) {
-		this.codeType = codeType;
-	}
-
 	public Long getGroupId() {
 		return groupId;
 	}
@@ -166,7 +155,6 @@ public class TaskHistory {
 	public TaskHistory(Task t) {
 		this.taskId = t.getId();
 		this.code = t.getCode();
-		this.codeType = t.getCodeType();
 		this.createTime = t.getCreateTime();
 		this.createUser = t.getCreateUser();
 		this.description = t.getDescription();

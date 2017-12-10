@@ -3,6 +3,8 @@ package org.nlpcn.jcoder.scheduler;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +21,7 @@ public class TaskJob extends Thread {
 	/**
 	 * 运行一个任务
 	 * 
-	 * @param code
+	 * @param name
 	 */
 	public TaskJob(String name, Task task) {
 		super(name);
@@ -35,7 +37,7 @@ public class TaskJob extends Thread {
 		over = false;
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
+			Thread.currentThread().setContextClassLoader(JarService.getOrCreate(task.getGroupName()).getEngine().getClassLoader());
 			new JavaRunner(task).compile().instance().execute() ;
 		} catch (Exception e) {
 			e.printStackTrace();

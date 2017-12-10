@@ -66,11 +66,13 @@ public class JarAction {
 
 	@At("/jar/list")
 	@Ok("jsp:/jar_list.jsp")
-	public Object list() throws IOException, URISyntaxException {
+	public Object list(@Param("group_name") String groupName) throws IOException, URISyntaxException {
 
-		List<File> findAllJar = JarService.findJars();
+		JarService jarService = JarService.getOrCreate(groupName) ;
 
-		Set<String> libPathSet = JarService.getLibPathSet();
+		List<File> findAllJar = jarService.findJars();
+
+		Set<String> libPathSet = jarService.getLibPathSet();
 
 		HashMap<String, TreeSet<JarInfo>> result = new HashMap<>();
 
@@ -88,7 +90,7 @@ public class JarAction {
 			} else {
 				tempJarInfo = new JarInfo(f, 1);
 			}
-			if (tempJarInfo.getIsMavenJar()) {
+			if (tempJarInfo.getIsMavenJar(groupName)) {
 				tempSet = result.get("Maven");
 			} else {
 				tempSet = result.get("File");
@@ -106,7 +108,7 @@ public class JarAction {
 
 			tempJarInfo = new JarInfo(new File(path), 2);
 
-			if (tempJarInfo.getIsMavenJar()) {
+			if (tempJarInfo.getIsMavenJar(groupName)) {
 				tempSet = result.get("Maven");
 			} else {
 				tempSet = result.get("File");
@@ -276,26 +278,28 @@ public class JarAction {
 
 	@At("/jar/maven")
 	@Ok("jsp:/maven.jsp")
-	public Object show() {
+	public Object show(@Param("group_name") String groupName) {
+		JarService jarService = JarService.getOrCreate(groupName) ;
+
 		JSONObject job = new JSONObject();
-		job.put("content", IOUtil.getContent(new File(JarService.POM), IOUtil.UTF8));
-		job.put("mavenPath", JarService.getMavenPath());
+		job.put("content", IOUtil.getContent(new File(jarService.getPomPath()), IOUtil.UTF8));
+		job.put("mavenPath", jarService.getMavenPath());
 		return StaticValue.makeReuslt(true, job);
 
 	}
 
 	@At("/maven/save")
 	@Ok("json")
-	public JsonResult save(@Param("mavenPath") String mavenPath, @Param("content") String content) throws IOException, NoSuchAlgorithmException {
-		JarService.setMavenPath(mavenPath);
-		String savePom = JarService.savePom(content);
+	public JsonResult save(@Param("group_name") String groupName ,@Param("maven_path") String mavenPath, @Param("content") String content) throws IOException, NoSuchAlgorithmException {
+		JarService jarService = JarService.getOrCreate(groupName) ;
+		String savePom = jarService.savePom(mavenPath,content);
 		return StaticValue.okMessageJson(savePom.replace("\n", "</br>"));
 	}
 
 	@At("/jar/upload")
 	@Ok("raw")
 	@AdaptBy(type = UploadAdaptor.class)
-	public String uploadJar(@Param("file") TempFile[] file) throws IOException {
+	public String uploadJar(@Param("group_name") String groupName,@Param("file") TempFile[] file) throws IOException {
 
 		int fileNum = (int) Stream.of(file).filter(f -> f.getSubmittedFileName().toLowerCase().endsWith(".jar")).count();
 
@@ -303,15 +307,15 @@ public class JarAction {
 			LOG.warn(" not find any jar file!");
 		}
 
-		synchronized (DynamicEngine.getInstance()) {
+		JarService jarService = JarService.getOrCreate(groupName) ;
 
-			DynamicEngine.close();
+		synchronized (jarService) {
 
 			for (TempFile tempFile : file) {
 				String fileName = tempFile.getSubmittedFileName();
 				if (fileName.toLowerCase().endsWith(".jar")) {
 					try {
-						File to = new File(StaticValue.HOME + "/lib/" + tempFile.getSubmittedFileName());
+						File to = new File(jarService.getJarPath()+"/" + tempFile.getSubmittedFileName());
 						tempFile.write(to.getAbsolutePath());
 						LOG.info("write file to " + to.getAbsolutePath());
 						fileNum++;
@@ -323,7 +327,7 @@ public class JarAction {
 				}
 			}
 
-			JarService.flushClassLoader();
+			JarService.remove(groupName);
 			return StaticValue.okMessage("upload " + fileNum + " file ok!");
 		}
 	}

@@ -123,7 +123,6 @@ public class ApiAction {
 
 			Task task = new Task();
 			task.setCode(code);
-			task.setCodeType(codeType);
 			task.setType(2);
 
 			taskName = task.getName() + "@" + "0@" + Mvcs.getReq().getRemoteAddr();

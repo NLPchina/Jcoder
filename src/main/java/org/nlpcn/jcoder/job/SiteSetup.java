@@ -51,11 +51,6 @@ public class SiteSetup implements Setup {
 		// set version
 		nc.getServletContext().setAttribute("VERSION", StaticValue.VERSION);
 
-		// 初始化Jar环境
-		LOG.info("begin Jar init!");
-		JarService.init();
-
-
 		/**
 		 * 初始化集群记录
 		 */
