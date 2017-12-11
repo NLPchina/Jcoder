@@ -97,7 +97,7 @@ public class Bootstrap {
 			sslConnector.setPort(port);
 			server.addConnector(sslConnector);
 		} else {
-			new Server(port);
+			server = new Server(port);
 		}
 
 
@@ -112,7 +112,7 @@ public class Bootstrap {
 		makeFiles(jcoderHome, logPath);
 
 		context.setTempDirectory(new File(jcoderHome, "tmp"));
-		context.setContextPath("/");
+		context.setContextPath("/admin");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
 		context.setServerClasses(new String[]{"org.objectweb.asm.", // hide asm used by jetty
@@ -139,7 +139,7 @@ public class Bootstrap {
 
 		WebAppContext web = new WebAppContext(); // add a web site in jcoder
 
-		web.setContextPath("/web/");
+		web.setContextPath("/");
 
 		web.setWar(new File(jcoderHome, "web").getAbsolutePath());
 
