@@ -117,7 +117,7 @@ public class JarAction {
 			tempSet.add(tempJarInfo);
 		});
 
-		List<File> findSystemJars = JarService.findSystemJars();
+		List<File> findSystemJars = jarService.findSystemJars();
 
 		TreeSet<JarInfo> treeSet = new TreeSet<>();
 
@@ -138,12 +138,14 @@ public class JarAction {
 	 */
 	@At("/down/sdk")
 	@Ok("raw")
-	public void downDevSDK(HttpServletResponse response, @Param("resource") boolean resource) throws URISyntaxException, IOException {
+	public void downDevSDK(@Param("group_name") String groupName ,HttpServletResponse response, @Param("resource") boolean resource) throws URISyntaxException, IOException {
 
 		List<File> jars = new ArrayList<>();
 
-		jars.addAll(JarService.findSystemJars());
-		jars.addAll(JarService.findJars());
+		JarService jarService = JarService.getOrCreate(groupName) ;
+
+		jars.addAll(jarService.findSystemJars());
+		jars.addAll(jarService.findJars());
 
 		Collection<Task> taskList = StaticValue.systemDao.search(Task.class, Cnd.where("status", "=", 1));
 
@@ -268,8 +270,8 @@ public class JarAction {
 
 	@At("/jar/remove")
 	@Ok("redirect:/jar/list")
-	public Object remove(@Param("path") String path) throws IOException {
-		if (JarService.removeJar(new File(path))) {
+	public Object remove(@Param("group_name") String groupName,@Param("path") String path) throws IOException {
+		if (JarService.getOrCreate(groupName).removeJar(new File(path))) {
 			return StaticValue.okMessage("delete jar:" + path);
 		} else {
 			return StaticValue.errMessage("delete jar fail :" + path + " may be it is not a jar or it a maven jar");

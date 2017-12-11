@@ -493,4 +493,11 @@ public class JarService {
 	public String getJarPath() {
 		return jarPath;
 	}
+
+	/**
+	 * 释放和关闭当前jarservice。在操作。ioc和jar 之后。都需要调用此方式使之生效
+	 */
+	public void release() {
+		CACHE.invalidate(groupName);
+	}
 }

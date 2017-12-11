@@ -34,7 +34,7 @@ public class IocAction {
 		try {
 			JarService jarService = JarService.getOrCreate(groupName) ;
 			IOUtil.Writer(jarService.getIocPath(), IOUtil.UTF8, code);
-			jarService.flushIOC();
+			jarService.release();
 			return StaticValue.okMessageJson("保存并加载成功！");
 		} catch (Exception e) {
 			e.printStackTrace();
