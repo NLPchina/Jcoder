@@ -112,7 +112,7 @@ public class Bootstrap {
 		makeFiles(jcoderHome, logPath);
 
 		context.setTempDirectory(new File(jcoderHome, "tmp"));
-		context.setContextPath("/admin");
+		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
 		context.setServerClasses(new String[]{"org.objectweb.asm.", // hide asm used by jetty
@@ -139,7 +139,7 @@ public class Bootstrap {
 
 		WebAppContext web = new WebAppContext(); // add a web site in jcoder
 
-		web.setContextPath("/");
+		web.setContextPath("/web");
 
 		web.setWar(new File(jcoderHome, "web").getAbsolutePath());
 
@@ -149,9 +149,9 @@ public class Bootstrap {
 			web.setInitParameter("org.eclipse.jetty.servlet.Default.useFileMappedBuffer", "false");
 		}
 
-		list.addHandler(context);
-
 		list.addHandler(web);
+
+		list.addHandler(context);
 
 		server.setHandler(list);
 
