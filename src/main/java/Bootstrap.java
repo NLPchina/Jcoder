@@ -149,9 +149,9 @@ public class Bootstrap {
 			web.setInitParameter("org.eclipse.jetty.servlet.Default.useFileMappedBuffer", "false");
 		}
 
-		list.addHandler(web);
-
 		list.addHandler(context);
+
+		list.addHandler(web);
 
 		server.setHandler(list);
 

@@ -84,8 +84,6 @@ public class SharedSpaceService {
 
 	private TreeCache tokenCache;
 
-	private PathChildrenCache taskCache;
-
 	//缓存在线主机 key:127.0.0.1:2181 value:https？http_weight(int)
 	private TreeCache hostCache;
 
@@ -281,7 +279,7 @@ public class SharedSpaceService {
 	 *
 	 * @param path
 	 */
-	public InterProcessMutex lock(String path) {
+	private InterProcessMutex lock(String path) {
 		return new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
 	}
 
@@ -533,7 +531,6 @@ public class SharedSpaceService {
 		relaseMapping(StaticValue.getHostPort());
 		zkDao.getZk().delete().forPath(HOST_PATH + StaticValue.getHostPort());
 
-		taskCache.close();
 		mappingCache.close();
 		tokenCache.close();
 		hostCache.close();
