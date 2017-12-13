@@ -11,6 +11,7 @@ import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+@Ok("json")
 public class GroupAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupAction.class);
@@ -110,23 +112,18 @@ public class GroupAction {
 
 
 
-	@At("/group/add")
-	@Ok("redirect:/group/list")
-	@Fail("jsp:/fail.jsp")
-	public void addG(@Param("..") Group group) throws Exception {
+	@At("/admin/group/add")
+	public Restful addG(@Param("..") Group group) throws Exception {
 		if (groupNameDiff(group.getName())) {
 			groupService.save(group) ;
-			List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
-			groups.add(group);
-			Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);
 		}
+		return Restful.OK.msg("添加成功！");
 	}
 
-	@At("/group/del")
-	@Ok("redirect:/group/list")
-	public void delG(@Param("..") Group group) {
+	@At("/admin/group/del")
+	public Restful delG(@Param("..") Group group) {
 		groupService.delete(group);
-		List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
+		/*List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
 		Iterator<Group> it = groups.iterator();
 		while (it.hasNext()) {
 			Group g = it.next();
@@ -134,20 +131,19 @@ public class GroupAction {
 				it.remove();
 			}
 		}
-		Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);
-
+		Mvcs.getHttpSession().setAttribute("GROUP_LIST", groups);*/
+		return Restful.OK.msg("删除成功！");
 	}
 
-	@At("/group/modify")
-	@Ok("redirect:/group/list")
-	@Fail("jsp:/fail.jsp")
-	public void modifyG(@Param("..") Group group) throws Exception {
+	@At("/admin/group/modify")
+	public Restful modifyG(@Param("..") Group group) throws Exception {
 		if (group == null) {
-			return;
+			return Restful.ERR.msg("修改失败！");
 		}
 		boolean flag = basicDao.update(group);
 		if (flag) {
 			LOG.info("modify group:" + group.toString());
 		}
+		return Restful.OK.msg("修改成功！");
 	}
 }

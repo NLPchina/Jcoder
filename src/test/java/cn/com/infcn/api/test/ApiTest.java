@@ -1,10 +1,14 @@
 package cn.com.infcn.api.test;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.dao.Chain;
 
 /**
  * 测试文档搜索
@@ -23,12 +27,14 @@ public class ApiTest {
 	 * @throws Exception
 	 */
 	@DefaultExecute
-	public Object test(int i, String content) throws Exception {
-		Map<String,Object> hm = new HashMap<>() ;
-		hm.put("name", "ansj") ;
-		hm.put("age", i) ;
-		hm.put("sex", content) ;
-		return TaskService.executeTask("TaskDemo", "execute", hm);
+	public Object test() throws Exception {
+		User user = new User() ;
+		user.setMail("aaa@aa.com");
+		user.setCreateTime(new Date());
+		user.setName("aaaa");
+		user.setType(0);
+		StaticValue.systemDao.save(user);
+		return null;
 	}
 
 }

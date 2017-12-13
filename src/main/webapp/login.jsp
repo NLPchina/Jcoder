@@ -118,7 +118,7 @@
 		
 		function login() {
 			var uName = $("#name").val();
-			var dataUrl = "/login";
+			var dataUrl = "/admin/login";
 			$.ajax({
 				'url' : dataUrl,
 				'dataType' : 'json',

@@ -34,6 +34,8 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.alibaba.fastjson.JSONObject;
+
 @IocBean
 @Filters(@By(type = IpErrorCountFilter.class, args = { "20" }))
 public class LoginAction {
@@ -42,21 +44,18 @@ public class LoginAction {
 
 	public BasicDao basicDao = StaticValue.systemDao;
 
-	@At("/login")
-	public void login(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password,
-			@Param("verification_code") String verificationCode) throws Throwable {
-		
-		String sessionCode = (String) req.getSession().getAttribute(com.google.code.kaptcha.Constants.KAPTCHA_SESSION_KEY);
-
-		if (StringUtil.isBlank(sessionCode) || !sessionCode.equalsIgnoreCase(verificationCode)) {
-			new JsonView().render(req, resp,
-					Restful.instance(false, "Login fail please validate verification code err times:" + IpErrorCountFilter.err(), null, ApiException.NotFound));
-		}
-
+	@At("/admin/login")
+	@Ok("json")
+	public Restful login(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws Throwable {
+		JSONObject restful = new JSONObject();
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);
 
 		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
+			restful.put("user", name);
+			restful.put("userId", user.getId());
+			restful.put("userType", user.getType());
+			
 			HttpSession session = Mvcs.getHttpSession();
 			session.setAttribute("user", name);
 			session.setAttribute("userId", user.getId());
@@ -71,20 +70,24 @@ public class LoginAction {
 					authMap.put(ids[i], userGroupList.get(i).getAuth());
 				}
 				List<Group> GroupList = basicDao.search(Group.class, Cnd.where("id", "in", ids));
-
+				
+				restful.put("AUTH_MAP", authMap);
+				restful.put("GROUP_LIST", GroupList);
+				
 				session.setAttribute("AUTH_MAP", authMap);
 				session.setAttribute("GROUP_LIST", GroupList);
 			} else {
 				List<Group> groups = basicDao.search(Group.class, co);
+				restful.put("GROUP_LIST", groups);
 				session.setAttribute("GROUP_LIST", groups);
 			}
 			LOG.info("user " + name + "login ok");
 
-			new JsonView().render(req, resp, Restful.OK);
+			return Restful.OK.obj(restful) ;
 		} else {
 			int err = IpErrorCountFilter.err();
 			LOG.info("user " + name + "login err ,times : " + err);
-			new JsonView().render(req, resp, Restful.instance(false, "login fail please validate your name or password times : " + err, null, ApiException.NotFound));
+			return Restful.ERR ;
 		}
 	}
 	
@@ -140,8 +143,8 @@ public class LoginAction {
 		}
 	}
 
-	@At("/loginOut")
-	@Ok("redirect:/login.jsp")
+	@At("/admin/loginOut")
+	@Ok("redirect:/admin/login.html")
 	public void loginOut() {
 		HttpSession session = Mvcs.getHttpSession();
 		session.removeAttribute("user");

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+	<properties>
+		<property name="LOG_PATH">log/jcoder.log</property>
+	</properties>
+	<Appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n" />
+		</Console>
+
+		<RollingRandomAccessFile name="File" fileName="${LOG_PATH}"
+			filePattern="${LOG_PATH}-%d{yyyyMMdd}">
+			<PatternLayout pattern="%m%n" />
+			<Policies>
+				<TimeBasedTriggeringPolicy interval="1"
+					modulate="true" />
+			</Policies>
+		</RollingRandomAccessFile>
+
+	</Appenders>
+
+
+	<Loggers>
+		<Root level="info">
+			<AppenderRef ref="Console" />
+			<AppenderRef ref="File" />
+		</Root>
+	</Loggers>
+</Configuration>

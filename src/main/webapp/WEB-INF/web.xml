@@ -10,6 +10,10 @@
 			<param-name>modules</param-name>
 			<param-value>org.nlpcn.jcoder.App</param-value>
 		</init-param>
+		<init-param>
+            <param-name>ignore</param-name>
+            <param-value>^(.+[.])(jsp|png|gif|jpg|js|css|jspx|jpeg|swf|ico|map|html)$</param-value>
+        </init-param>
 		<async-supported>true</async-supported>
 	</filter>
 
