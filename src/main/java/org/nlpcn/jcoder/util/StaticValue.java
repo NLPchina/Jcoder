@@ -291,11 +291,7 @@ public class StaticValue {
 	 * @return
 	 */
 	public static SharedSpaceService space() {
-		if (sharedSpace == null) {
-			sharedSpace = StaticValue.getSystemIoc().get(SharedSpaceService.class, "sharedSpaceService");
-		}
 		return sharedSpace;
-
 	}
 
 

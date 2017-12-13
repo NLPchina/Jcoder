@@ -33,8 +33,8 @@ public class TaskInfo {
 		this.name = name;
 		this.taskName = task.getName() ;
 		this.description = task.getDescription();
-		this.success = task.getSuccess();
-		this.error = task.getError();
+		this.success = task.success();
+		this.error = task.error();
 		this.groupId = task.getGroupId();
 		this.status = task.getStatus();
 		this.runStatus = task.getRunStatus();

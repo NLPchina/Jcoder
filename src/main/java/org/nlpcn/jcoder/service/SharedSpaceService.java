@@ -242,13 +242,7 @@ public class SharedSpaceService {
 	 */
 	public void addTask(Task task) throws Exception {
 		// /jcoder/task/group/className.task
-		JSONObject job = (JSONObject) JSONObject.toJSON(task);
-
-		zkDao.getZk().create().creatingParentContainersIfNeeded()
-				.forPath(
-						GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName(),
-						job.getBytes("utf-8")
-				);
+		setData2ZK(GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName(), JSONObject.toJSONBytes(task));
 	}
 
 	/**
@@ -263,22 +257,23 @@ public class SharedSpaceService {
 		if (file.isDirectory()) {
 			md5ByFile = "";
 		} else {
-			MD5Util.getMd5ByFile(file);
+			md5ByFile = MD5Util.getMd5ByFile(file);
 		}
 
 		File root = new File(StaticValue.GROUP_FILE, groupName);
 
 		StringBuilder sb = new StringBuilder();
-		do {
+
+		while (!(file.equals(root))) {
+			System.out.println(file.getAbsoluteFile());
 			sb.insert(0, file.getName());
 			sb.insert(0, "/");
-		} while (!(file.getParentFile().equals(root)));
+			file = file.getParentFile();
+		}
+		;
+		sb.insert(0, "/" + groupName + "/file");
 
-		zkDao.getZk().create().creatingParentContainersIfNeeded()
-				.forPath(
-						GROUP_PATH + sb.toString(),
-						md5ByFile.getBytes("utf-8")
-				);
+		setData2ZK(GROUP_PATH + sb.toString(), md5ByFile.getBytes("utf-8"));
 	}
 
 	/**
@@ -361,14 +356,14 @@ public class SharedSpaceService {
 				continue;
 			}
 
-			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(),HostInfo.class) ;
+			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(), HostInfo.class);
 			Integer weight = hostInfo.getWeight();
 			if (weight <= 0) {
 				LOG.info(HOST_PATH + "/" + hostPort + " weight less than zero , so skip");
 				continue;
 			}
 			sum += weight;
-			hosts.add(KeyValue.with((hostInfo.isSsl()?"https://":"http://")+ hostPort, weight));
+			hosts.add(KeyValue.with((hostInfo.isSsl() ? "https://" : "http://") + hostPort, weight));
 		}
 
 
@@ -400,6 +395,9 @@ public class SharedSpaceService {
 	 * @throws Exception
 	 */
 	private void setData2ZK(String path, byte[] data) throws Exception {
+
+		LOG.info("add data to: {}, data len: {} ", path, data.length);
+
 		boolean flag = true;
 		if (zkDao.getZk().checkExists().forPath(path) == null) {
 			try {
@@ -414,6 +412,18 @@ public class SharedSpaceService {
 			zkDao.getZk().setData().forPath(path, data);
 		}
 	}
+
+	private byte[] getData2ZK(String path) throws Exception {
+		LOG.info("get data to: from data ", path);
+		byte[] bytes = null;
+		try {
+			bytes = zkDao.getZk().getData().forPath(path);
+		} catch (KeeperException.NoNodeException e) {
+		}
+
+		return bytes;
+	}
+
 
 	/**
 	 * 将数据写入到zk中
@@ -462,22 +472,22 @@ public class SharedSpaceService {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
 		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
-			zkDao.getZk().createContainers(HOST_PATH);
+			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 		}
 
 		List<Different> differents = joinCluster();
 
 		//将本机注册到集群
 
-		HostInfo hostInfo = new HostInfo() ;
+		HostInfo hostInfo = new HostInfo();
 
 		hostInfo.setHost(StaticValue.getHost());
 		hostInfo.setPort(StaticValue.PORT);
 		hostInfo.setSsl(StaticValue.IS_SSL);
-		hostInfo.setWeight(differents.size()>0?0:100);
-		hostInfo.setCurrent(differents.size()==0);
+		hostInfo.setWeight(differents.size() > 0 ? 0 : 100);
+		hostInfo.setCurrent(differents.size() == 0);
 
-		setData2ZKByEphemeral(HOST_PATH + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
+		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -511,12 +521,13 @@ public class SharedSpaceService {
 	 */
 	public void release() throws Exception {
 		//将本机权重设置为0
-		try{
+		try {
 			ChildData currentData = hostCache.getCurrentData(HOST_PATH + StaticValue.getHostPort());
 			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(), HostInfo.class);
-			hostInfo.setWeight(0); ;
-			setData2ZKByEphemeral(HOST_PATH+ StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
-		}catch (Exception e){
+			hostInfo.setWeight(0);
+			;
+			setData2ZKByEphemeral(HOST_PATH + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		relaseMapping(StaticValue.getHostPort());
@@ -550,9 +561,9 @@ public class SharedSpaceService {
 			return Collections.emptyList(); //一个空的主机无害
 		}
 
-		List<Different> allDiff = new ArrayList<>() ;
+		List<Different> allDiff = new ArrayList<>();
 
-		tasks.stream().collect(Collectors.groupingBy(t -> t.getName())).forEach((groupName, list) -> {
+		tasks.stream().collect(Collectors.groupingBy(t -> t.getGroupName())).forEach((groupName, list) -> {
 			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
 			try {
 				//判断group是否存在。如果不存在。则进行安全添加
@@ -582,8 +593,9 @@ public class SharedSpaceService {
 
 	/**
 	 * 查询本地group和集群currentGroup差异
+	 *
 	 * @param groupName 组名称
-	 * @param list 组内的所有任务
+	 * @param list      组内的所有任务
 	 * @return
 	 * @throws IOException
 	 */
@@ -607,10 +619,10 @@ public class SharedSpaceService {
 			// 在访问子目录前触发该方法
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				if(!dir.toFile().isHidden()) {
+				if (!dir.toFile().isHidden()) {
 					Different different = diffFile(groupName, dir.toFile());
-					if(different!=null){
-						diffs.add(different) ;
+					if (different != null) {
+						diffs.add(different);
 					}
 				}
 				return FileVisitResult.CONTINUE;
@@ -618,10 +630,10 @@ public class SharedSpaceService {
 
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				if(!file.toFile().isHidden()) {
+				if (!file.toFile().isHidden()) {
 					Different different = diffFile(groupName, file.toFile());
-					if(different!=null){
-						diffs.add(different) ;
+					if (different != null) {
+						diffs.add(different);
 					}
 				}
 				return FileVisitResult.CONTINUE;
@@ -639,20 +651,24 @@ public class SharedSpaceService {
 				File root = new File(StaticValue.GROUP_FILE, groupName);
 
 				StringBuilder sb = new StringBuilder();
-				do {
+				while (!(file.equals(root))) {
 					sb.insert(0, file.getName());
 					sb.insert(0, "/");
-				} while (!(file.getParentFile().equals(root)));
+					file = file.getParentFile();
+				}
+				;
 
-				Different different = new Different() ;
+				sb.insert(0, "/" + groupName + "/file");
+
+				Different different = new Different();
 				different.setGroupName(groupName);
 				different.setPath(sb.toString());
 				different.setType(1);
 
 				try {
-					byte[] bytes = zkDao.getZk().getData().forPath(GROUP_PATH + sb.toString());
+					byte[] bytes = getData2ZK(GROUP_PATH + sb.toString());
 
-					if(!md5ByFile.equals(new String(bytes))){
+					if (!md5ByFile.equals(new String(bytes))) {
 						different.addMessage("文件内容不一致");
 					}
 
@@ -661,16 +677,15 @@ public class SharedSpaceService {
 				}
 
 
-
-				if(different.getMessage()==null){
-					return null ;
-				}else{
-					return different ;
+				if (different.getMessage() == null) {
+					return null;
+				} else {
+					return different;
 				}
 			}
 		});
 
-		return diffs ;
+		return diffs;
 
 	}
 
@@ -681,17 +696,15 @@ public class SharedSpaceService {
 	 */
 	private void diffTask(Task task, Different different) {
 		try {
-			byte[] bytes = zkDao.getZk().getData()
-					.forPath(
-							GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName()
-					);
+
+			byte[] bytes = getData2ZK(GROUP_PATH + GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName());
 
 			if (bytes == null) {
-				different.addMessage("集群中不存在此文件");
+				different.addMessage("集群中不存在此Task");
 				return;
 			}
 
-			Task cluster = JSONObject.parseObject(bytes, Task.class) ;
+			Task cluster = JSONObject.parseObject(bytes, Task.class);
 
 			if (!Objects.equals(task.getCode(), cluster.getCode())) {
 				different.addMessage("代码不一致");
@@ -738,8 +751,12 @@ public class SharedSpaceService {
 			// 在访问子目录前触发该方法
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				File file = dir.toFile();
+				if (!file.canRead() || file.isHidden()) {
+					return FileVisitResult.CONTINUE;
+				}
 				try {
-					addFile(groupName, dir.toFile());
+					addFile(groupName, file);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -747,9 +764,13 @@ public class SharedSpaceService {
 			}
 
 			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+				File file = path.toFile();
+				if (!file.canRead() || file.isHidden()) {
+					return FileVisitResult.CONTINUE;
+				}
 				try {
-					addFile(groupName, file.toFile());
+					addFile(groupName, file);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -757,4 +778,5 @@ public class SharedSpaceService {
 			}
 		});
 	}
+
 }

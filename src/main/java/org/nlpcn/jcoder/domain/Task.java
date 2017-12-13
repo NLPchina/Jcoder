@@ -163,12 +163,12 @@ public class Task {
 	}
 
 
-	public long getSuccess() {
+	public long success() {
 		return StaticValue.space().getSuccess(this.getId());
 	}
 
 	
-	public long getError() {
+	public long error() {
 		return StaticValue.space().getError(this.getId());
 	}
 
