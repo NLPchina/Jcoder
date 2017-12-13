@@ -3,7 +3,6 @@ package org.nlpcn.jcoder.job;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
-import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 

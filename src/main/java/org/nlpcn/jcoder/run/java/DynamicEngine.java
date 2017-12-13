@@ -31,10 +31,10 @@ public class DynamicEngine {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DynamicEngine.class);
 
-	private static DynamicEngine ourInstance;
+	private String groupName ;
 
-	public static DynamicEngine getInstance() {
-		return ourInstance;
+	public DynamicEngine(String groupName){
+		this.groupName = groupName ;
 	}
 
 	/**
@@ -42,25 +42,23 @@ public class DynamicEngine {
 	 * 
 	 * @throws TaskException
 	 */
-	public static void flush(URLClassLoader classLoader) throws TaskException {
-		ourInstance = new DynamicEngine(classLoader);
+	public void flush(URLClassLoader classLoader) throws TaskException {
 		// if class load change , to flush all task
 		synchronized (StaticValue.MAPPING) {
-			StaticValue.getSystemIoc().get(TaskService.class, "taskService").initTaskFromDB();
+			TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class, "taskService");
+
+			taskService.initTaskFromDB();
 		}
 
 	}
 
-	public static void close() throws IOException {
-		ourInstance.parentClassLoader.close();
-	}
 
-	private URLClassLoader parentClassLoader;
+	private URLClassLoader classLoader;
 
 	private String classpath;
 
 	private DynamicEngine(URLClassLoader classLoader) {
-		this.parentClassLoader = classLoader;
+		this.classLoader = classLoader;
 		this.buildClassPath();
 	}
 
@@ -68,7 +66,7 @@ public class DynamicEngine {
 		this.classpath = null;
 		Set<String> classPathSet = new HashSet<>();
 
-		for (URL url : this.parentClassLoader.getURLs()) {
+		for (URL url : this.classLoader.getURLs()) {
 			try {
 				String p = new File(url.toURI()).getAbsolutePath();
 				classPathSet.add(p);
@@ -110,7 +108,7 @@ public class DynamicEngine {
 		boolean success = task.call();
 		if (success) {
 			JavaClassObject jco = fileManager.getMainJavaClassObject();
-			DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.parentClassLoader);
+			DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.classLoader);
 			try {
 				List<JavaClassObject> innerClassJcos = fileManager.getInnerClassJavaClassObject();
 				if (innerClassJcos != null && innerClassJcos.size() > 0) {
@@ -167,7 +165,7 @@ public class DynamicEngine {
 		boolean success = task.call();
 		if (success) {
 			JavaClassObject jco = fileManager.getMainJavaClassObject();
-			DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.parentClassLoader);
+			DynamicClassLoader dynamicClassLoader = new DynamicClassLoader(this.classLoader);
 			try {
 				List<JavaClassObject> innerClassJcos = fileManager.getInnerClassJavaClassObject();
 				if (innerClassJcos != null && innerClassJcos.size() > 0) {
@@ -234,8 +232,8 @@ public class DynamicEngine {
 		return this.javaCodeToClass(className, content);
 	}
 
-	public URLClassLoader getParentClassLoader() {
-		return parentClassLoader;
+	public URLClassLoader getClassLoader() {
+		return classLoader;
 	}
 
 

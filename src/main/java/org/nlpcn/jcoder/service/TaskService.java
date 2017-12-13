@@ -1,12 +1,10 @@
 package org.nlpcn.jcoder.service;
 
-import com.google.common.collect.Lists;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,14 +12,11 @@ import java.util.concurrent.ExecutionException;
 
 import javax.servlet.http.HttpSession;
 
+import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.filter.TestingFilter;
 import org.nlpcn.jcoder.util.MapCount;
 import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskHistory;
-import org.nlpcn.jcoder.domain.TaskInfo;
-import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
@@ -36,12 +31,7 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpSession;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 @IocBean
 public class TaskService {
@@ -130,14 +120,14 @@ public class TaskService {
 	 */
 	public void flush(Long id) throws Exception {
 
-		Task oldTask = TASK_MAP_CACHE.get(id) ;
+		Task oldTask = TASK_MAP_CACHE.get(id);
 
 		// 查找处新的task
 		Task newTask = this.basicDao.find(id, Task.class);
 
 		Task temp = new Task();
 		temp.setId(0L);
-		temp.setName("") ;
+		temp.setName("");
 
 		if (oldTask == null) {
 			oldTask = temp;
@@ -166,8 +156,6 @@ public class TaskService {
 			throw new Exception("task is name null or empty!");
 		} else if (StringUtil.isBlank(task.getDescription())) {
 			throw new Exception("task is description null or empty!");
-		} else if (StringUtil.isBlank(task.getCodeType())) {
-			throw new Exception("task is codeType null or empty!");
 		} else if (StringUtil.isBlank(task.getCode())) {
 			throw new Exception("task is code null or empty!");
 		} else if (TASK_MAP_CACHE.contains(task.getName())) {
@@ -214,15 +202,50 @@ public class TaskService {
 	}
 
 	/**
+	 * 找到task根据groupName
+	 *
+	 * @param groupName
+	 * @return
+	 */
+	public LinkedHashSet<Task> findTaskByGroupNameCache(String groupName) {
+		Collection<Task> values = TASK_MAP_CACHE.values();
+
+		LinkedHashSet<Task> result = new LinkedHashSet<>();
+		for (Task task : values) {
+			if (groupName.equals(task.getGroupName())) {
+				result.add(task);
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * 从数据库中init所有的task
 	 *
 	 * @throws TaskException
 	 */
 	public void initTaskFromDB() throws TaskException {
-
 		List<Task> search = this.basicDao.search(Task.class, "id");
+		flushTaskMappingAndCache(search);
+	}
 
-		for (Task task : search) {
+	/**
+	 * 从数据库中init所有的task
+	 *
+	 * @throws TaskException
+	 */
+	public void initTaskFromDB(Cnd where) throws TaskException {
+		List<Task> search = this.basicDao.search(Task.class, where);
+		flushTaskMappingAndCache(search);
+	}
+
+	/**
+	 * 刷新传入的tasks mapping and cache
+	 *
+	 * @param tasks
+	 */
+	private void flushTaskMappingAndCache(List<Task> tasks) {
+		for (Task task : tasks) {
 			try {
 				TASK_MAP_CACHE.put(task.getId(), task);
 				TASK_MAP_CACHE.put(task.getName(), task);
@@ -269,7 +292,7 @@ public class TaskService {
 			return values;
 		}
 
-		LinkedHashSet<Task> result = new LinkedHashSet<>() ;
+		LinkedHashSet<Task> result = new LinkedHashSet<>();
 		for (Task task : values) {
 			if (type.equals(task.getType())) {
 				result.add(task);

@@ -2,26 +2,31 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.recipes.cache.*;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.StringUtil;
-import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
-import org.nutz.ioc.loader.annotation.IocBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.UnsupportedEncodingException;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * Created by Ansj on 05/12/2017.
  */
-@IocBean(create = "init")
 public class SharedSpaceService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
@@ -36,12 +41,6 @@ public class SharedSpaceService {
 	public static final String MESSAGE_PATH = StaticValue.ZK_ROOT + "/message";
 
 	/**
-	 * 任务路径
-	 */
-	public static final String TASK_PATH = StaticValue.ZK_ROOT + "/task";
-
-
-	/**
 	 * Token
 	 */
 	public static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
@@ -50,6 +49,19 @@ public class SharedSpaceService {
 	 * Host
 	 */
 	public static final String HOST_PATH = StaticValue.ZK_ROOT + "/host";
+
+	/**
+	 * group /jcoder/task/group/className.task
+	 * |-resource (filePath,md5)
+	 * |-lib libMap(libName,md5)
+	 */
+	public static final String GROUP_PATH = StaticValue.ZK_ROOT + "/group";
+
+
+	/**
+	 * group /jcoder/lock
+	 */
+	public static final String LOCK_PATH = StaticValue.ZK_ROOT + "/lock";
 
 	/**
 	 * 记录task执行成功失败的计数器
@@ -72,6 +84,8 @@ public class SharedSpaceService {
 
 	private TreeCache tokenCache;
 
+	private PathChildrenCache taskCache;
+
 	//缓存在线主机 key:127.0.0.1:2181 value:https？http_weight(int)
 	private TreeCache hostCache;
 
@@ -92,7 +106,7 @@ public class SharedSpaceService {
 			type = 2;
 		}
 		job.put("type", type);
-		zkDao.getZk().setData().forPath(TASK_PATH + "/" + id, job.getBytes("utf-8"));
+		zkDao.getZk().setData().forPath(MESSAGE_PATH + "/" + id, job.getBytes("utf-8"));
 	}
 
 
@@ -222,6 +236,56 @@ public class SharedSpaceService {
 	}
 
 	/**
+	 * 增加一个task到集群中，
+	 *
+	 * @param task
+	 */
+	public void addTask(Task task) throws Exception {
+		// /jcoder/task/group/className.task
+		setData2ZK(GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName(), JSONObject.toJSONBytes(task));
+	}
+
+	/**
+	 * 增加一个task到集群中，如果冲突返回false
+	 *
+	 * @param groupName
+	 * @return 是否冲突
+	 * @Param file
+	 */
+	public void addFile(String groupName, File file) throws Exception {
+		String md5ByFile = null;
+		if (file.isDirectory()) {
+			md5ByFile = "";
+		} else {
+			md5ByFile = MD5Util.getMd5ByFile(file);
+		}
+
+		File root = new File(StaticValue.GROUP_FILE, groupName);
+
+		StringBuilder sb = new StringBuilder();
+
+		while (!(file.equals(root))) {
+			System.out.println(file.getAbsoluteFile());
+			sb.insert(0, file.getName());
+			sb.insert(0, "/");
+			file = file.getParentFile();
+		}
+		;
+		sb.insert(0, "/" + groupName + "/file");
+
+		setData2ZK(GROUP_PATH + sb.toString(), md5ByFile.getBytes("utf-8"));
+	}
+
+	/**
+	 * lock a path in /zookper/locak[/path]
+	 *
+	 * @param path
+	 */
+	public InterProcessMutex lock(String path) {
+		return new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+	}
+
+	/**
 	 * 传入路径，在路径中寻找合适运行此方法的主机
 	 *
 	 * @param groupName
@@ -292,16 +356,14 @@ public class SharedSpaceService {
 				continue;
 			}
 
-			String str = new String(currentData.getData());
-			String[] split = str.split("_");
-			String head = split[0];
-			Integer weight = Integer.parseInt(split[1]);
+			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(), HostInfo.class);
+			Integer weight = hostInfo.getWeight();
 			if (weight <= 0) {
 				LOG.info(HOST_PATH + "/" + hostPort + " weight less than zero , so skip");
 				continue;
 			}
 			sum += weight;
-			hosts.add(KeyValue.with(head + "://" + hostPort, weight));
+			hosts.add(KeyValue.with((hostInfo.isSsl() ? "https://" : "http://") + hostPort, weight));
 		}
 
 
@@ -333,6 +395,9 @@ public class SharedSpaceService {
 	 * @throws Exception
 	 */
 	private void setData2ZK(String path, byte[] data) throws Exception {
+
+		LOG.info("add data to: {}, data len: {} ", path, data.length);
+
 		boolean flag = true;
 		if (zkDao.getZk().checkExists().forPath(path) == null) {
 			try {
@@ -347,6 +412,18 @@ public class SharedSpaceService {
 			zkDao.getZk().setData().forPath(path, data);
 		}
 	}
+
+	private byte[] getData2ZK(String path) throws Exception {
+		LOG.info("get data to: from data ", path);
+		byte[] bytes = null;
+		try {
+			bytes = zkDao.getZk().getData().forPath(path);
+		} catch (KeeperException.NoNodeException e) {
+		}
+
+		return bytes;
+	}
+
 
 	/**
 	 * 将数据写入到zk中
@@ -391,16 +468,26 @@ public class SharedSpaceService {
 	}
 
 
-	public void init() throws Exception {
+	public SharedSpaceService init() throws Exception {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
 		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
-			zkDao.getZk().createContainers(HOST_PATH);
+			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 		}
 
+		List<Different> differents = joinCluster();
+
 		//将本机注册到集群
-		String info = (StaticValue.IS_SSL ? "https" : "http") + "_" + 100;
-		setData2ZKByEphemeral(HOST_PATH+StaticValue.getHostPort(), info.getBytes("utf-8"));
+
+		HostInfo hostInfo = new HostInfo();
+
+		hostInfo.setHost(StaticValue.getHost());
+		hostInfo.setPort(StaticValue.PORT);
+		hostInfo.setSsl(StaticValue.IS_SSL);
+		hostInfo.setWeight(differents.size() > 0 ? 0 : 100);
+		hostInfo.setCurrent(differents.size() == 0);
+
+		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -426,6 +513,7 @@ public class SharedSpaceService {
 			}
 		});
 		nodeCache.start();
+		return this;
 	}
 
 	/**
@@ -433,11 +521,19 @@ public class SharedSpaceService {
 	 */
 	public void release() throws Exception {
 		//将本机权重设置为0
-		String info = (StaticValue.IS_SSL ? "https" : "http") + "_" + 0;
-		setData2ZKByEphemeral(HOST_PATH, info.getBytes("utf-8"));
+		try {
+			ChildData currentData = hostCache.getCurrentData(HOST_PATH + StaticValue.getHostPort());
+			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(), HostInfo.class);
+			hostInfo.setWeight(0);
+			;
+			setData2ZKByEphemeral(HOST_PATH + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 		relaseMapping(StaticValue.getHostPort());
-		zkDao.getZk().delete().forPath(HOST_PATH+StaticValue.getHostPort()) ;
+		zkDao.getZk().delete().forPath(HOST_PATH + StaticValue.getHostPort());
 
+		taskCache.close();
 		mappingCache.close();
 		tokenCache.close();
 		hostCache.close();
@@ -446,9 +542,241 @@ public class SharedSpaceService {
 
 	/**
 	 * 释放删除本机的mpping信息
+	 *
 	 * @param hostPort
 	 */
-	private void relaseMapping(String hostPort){
+	private void relaseMapping(String hostPort) {
 		Map<String, ChildData> currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH);
+		//TODO:
 	}
+
+
+	/**
+	 * 加入集群,如果发生不同则记录到different中
+	 */
+	private List<Different> joinCluster() {
+
+		List<Task> tasks = StaticValue.systemDao.search(Task.class, "id");
+		if (tasks.size() == 0) {
+			return Collections.emptyList(); //一个空的主机无害
+		}
+
+		List<Different> allDiff = new ArrayList<>();
+
+		tasks.stream().collect(Collectors.groupingBy(t -> t.getGroupName())).forEach((groupName, list) -> {
+			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
+			try {
+				//判断group是否存在。如果不存在。则进行安全添加
+				if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
+					lock.acquire();
+					addGroup2Cluster(groupName, list);
+				} else {
+					allDiff.addAll(diffGroup(groupName, list));
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				if (lock != null && lock.isAcquiredInThisProcess()) {
+					try {
+						lock.release(); //释放锁
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+		});
+
+		return allDiff;
+	}
+
+	/**
+	 * 查询本地group和集群currentGroup差异
+	 *
+	 * @param groupName 组名称
+	 * @param list      组内的所有任务
+	 * @return
+	 * @throws IOException
+	 */
+	private List<Different> diffGroup(String groupName, List<Task> list) throws IOException {
+		final List<Different> diffs = new ArrayList<>();
+		for (Task task : list) {
+			Different different = new Different();
+			different.setPath(task.getName());
+			different.setGroupName(groupName);
+			different.setType(0);
+			diffTask(task, different);
+			if (different.getMessage() != null) {
+				diffs.add(different);
+			}
+		}
+
+		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
+
+		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+
+			// 在访问子目录前触发该方法
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				if (!dir.toFile().isHidden()) {
+					Different different = diffFile(groupName, dir.toFile());
+					if (different != null) {
+						diffs.add(different);
+					}
+				}
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				if (!file.toFile().isHidden()) {
+					Different different = diffFile(groupName, file.toFile());
+					if (different != null) {
+						diffs.add(different);
+					}
+				}
+				return FileVisitResult.CONTINUE;
+			}
+
+			private Different diffFile(String groupName, File file) {
+
+				String md5ByFile = null;
+				if (file.isDirectory()) {
+					md5ByFile = "";
+				} else {
+					MD5Util.getMd5ByFile(file);
+				}
+
+				File root = new File(StaticValue.GROUP_FILE, groupName);
+
+				StringBuilder sb = new StringBuilder();
+				while (!(file.equals(root))) {
+					sb.insert(0, file.getName());
+					sb.insert(0, "/");
+					file = file.getParentFile();
+				}
+				;
+
+				sb.insert(0, "/" + groupName + "/file");
+
+				Different different = new Different();
+				different.setGroupName(groupName);
+				different.setPath(sb.toString());
+				different.setType(1);
+
+				try {
+					byte[] bytes = getData2ZK(GROUP_PATH + sb.toString());
+
+					if (!md5ByFile.equals(new String(bytes))) {
+						different.addMessage("文件内容不一致");
+					}
+
+				} catch (Exception e) {
+					different.addMessage("文件在集群中不存在");
+				}
+
+
+				if (different.getMessage() == null) {
+					return null;
+				} else {
+					return different;
+				}
+			}
+		});
+
+		return diffs;
+
+	}
+
+	/**
+	 * 比较两个task是否一致
+	 *
+	 * @param task
+	 */
+	private void diffTask(Task task, Different different) {
+		try {
+
+			byte[] bytes = getData2ZK(GROUP_PATH + GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName());
+
+			if (bytes == null) {
+				different.addMessage("集群中不存在此Task");
+				return;
+			}
+
+			Task cluster = JSONObject.parseObject(bytes, Task.class);
+
+			if (!Objects.equals(task.getCode(), cluster.getCode())) {
+				different.addMessage("代码不一致");
+			}
+			if (!Objects.equals(task.getStatus(), cluster.getStatus())) {
+				different.addMessage("状态不一致");
+			}
+			if (!Objects.equals(task.getType(), cluster.getType())) {
+				different.addMessage("类型不一致");
+			}
+			if (task.getType() == 2 && !Objects.equals(task.getScheduleStr(), cluster.getScheduleStr())) {
+				different.addMessage("定时计划不一致");
+			}
+			if (Objects.equals(task.getDescription(), cluster.getDescription())) {
+				different.addMessage("简介不一致");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			different.addMessage(e.getMessage());
+		}
+
+	}
+
+	/**
+	 * 如果这个group在集群中没有则，添加到集群
+	 *
+	 * @param groupName
+	 * @param list
+	 * @throws IOException
+	 */
+	private void addGroup2Cluster(String groupName, List<Task> list) throws IOException {
+		list.stream().forEach(t -> {
+			try {
+				addTask(t);
+			} catch (Exception e) {
+				e.printStackTrace(); //这个异常很麻烦
+				LOG.error("add task to cluster err ：" + t.getGroupName() + "/" + t.getName(), e);
+			}
+		});
+
+		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
+		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+
+			// 在访问子目录前触发该方法
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				File file = dir.toFile();
+				if (!file.canRead() || file.isHidden()) {
+					return FileVisitResult.CONTINUE;
+				}
+				try {
+					addFile(groupName, file);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+				File file = path.toFile();
+				if (!file.canRead() || file.isHidden()) {
+					return FileVisitResult.CONTINUE;
+				}
+				try {
+					addFile(groupName, file);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				return FileVisitResult.CONTINUE;
+			}
+		});
+	}
+
 }

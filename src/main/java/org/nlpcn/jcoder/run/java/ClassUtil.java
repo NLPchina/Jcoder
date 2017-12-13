@@ -46,11 +46,11 @@ public class ClassUtil {
 
 	/**
 	 * 从包package中获取所有的Class
-	 * 
-	 * @param pack
+	 *
+	 * @param packageName
 	 * @return
 	 */
-	public static Map<String, byte[]> getClasses(String packageName) {
+	public static Map<String, byte[]> getClasses(String packageName , ClassLoader classLoader) {
 
 		// 第一个class类的集合
 		Map<String, byte[]> classes = new HashMap<>();
@@ -62,12 +62,10 @@ public class ClassUtil {
 		// 定义一个枚举的集合 并进行循环来处理这个目录下的things
 		Enumeration<URL> dirs;
 
-		ClassLoader loader = DynamicEngine.getInstance().getParentClassLoader();
-
 		if (packageName.endsWith(".class")) { //如果只查询一个文件
 
 			String[] split = packageName.split("\\.");
-			
+
 			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < split.length - 2; i++) {
 				sb.append(split[i]);
@@ -76,10 +74,10 @@ public class ClassUtil {
 
 			sb.append(split[split.length - 2]);
 			sb.append(".class");
-			
+
 			String resourcePath = sb.toString() ;
-			
-			InputStream resourceAsStream = loader.getResourceAsStream(resourcePath);
+
+			InputStream resourceAsStream = classLoader.getResourceAsStream(resourcePath);
 			byte[] input2Bytes;
 			try {
 				input2Bytes = JcoderIOUtil.input2Bytes(resourceAsStream);
@@ -92,7 +90,7 @@ public class ClassUtil {
 		}
 
 		try {
-			dirs = loader.getResources(packageDirName);
+			dirs = classLoader.getResources(packageDirName);
 			// 循环迭代下去
 			while (dirs.hasMoreElements()) {
 				// 获取下一个元素

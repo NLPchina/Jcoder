@@ -1,4 +1,4 @@
-package org.nlpcn.jcoder.util;
+package org.nlpcn.jcoder.filter;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -23,6 +23,11 @@ import org.nlpcn.jcoder.run.annotation.Single;
 import org.nlpcn.jcoder.run.mvc.processor.ApiAdaptorProcessor;
 import org.nlpcn.jcoder.run.mvc.processor.ApiCrossOriginProcessor;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
+import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.SharedSpaceService;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
 import org.nutz.mvc.ActionContext;
@@ -39,7 +44,10 @@ public class TestingFilter extends NutFilter {
 
 	public static Map<String, KeyValue<Method, Object>> methods = new HashMap<>();
 
-	public static void init(String... packages) throws IOException {
+	public static Ioc ioc = null ;
+
+	public static void init(Ioc ioc ,String... packages) throws IOException {
+		TestingFilter.ioc = ioc ;
 		Map<String, KeyValue<Method, Object>> tempMethods = new HashMap<>();
 		for (String pk : packages) {
 			List<Class<?>> list = Scans.me().scanPackage(pk);
@@ -84,7 +92,7 @@ public class TestingFilter extends NutFilter {
 		HttpServletRequest request = (HttpServletRequest) req;
 		HttpServletResponse response = (HttpServletResponse) resp;
 
-		Mvcs.setIoc(StaticValue.getUserIoc()); // reset ioc
+		Mvcs.setIoc(ioc); // reset ioc
 
 		Mvcs.setServletContext(sc);
 
@@ -135,7 +143,7 @@ public class TestingFilter extends NutFilter {
 						mirror.setValue(ac.getModule(), field, LoggerFactory.getLogger(ac.getModule().getClass()));
 					} else {
 						mirror.setValue(ac.getModule(), field,
-								StaticValue.getUserIoc().get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
+								ioc.get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
 					}
 					field.setAccessible(false);
 				}
@@ -155,7 +163,7 @@ public class TestingFilter extends NutFilter {
 			Mvcs.set(null, null, null);
 			Mvcs.ctx().removeReqCtx();
 			Mvcs.setServletContext(null);
-			if (request.getSession(false) != null && request.getSession(false).getAttribute("user") == null) { //if session is empty 
+			if (request.getSession(false) != null && request.getSession(false).getAttribute("user") == null) { //if session is empty
 				request.getSession().invalidate();
 			}
 		}

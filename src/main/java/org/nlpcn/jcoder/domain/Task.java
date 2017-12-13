@@ -28,9 +28,6 @@ public class Task {
 	@Column
 	private String code;
 
-	@Column("code_type")
-	private String codeType;
-
 	@Column("group_id")
 	private Long groupId;
 
@@ -117,14 +114,6 @@ public class Task {
 		this.status = status;
 	}
 
-	public String getCodeType() {
-		return StringUtil.isBlank(codeType) ? "java" : codeType;
-	}
-
-	public void setCodeType(String codeType) {
-		this.codeType = StringUtil.isBlank(codeType) ? "java" : codeType;
-	}
-
 	public Long getGroupId() {
 		return groupId;
 	}
@@ -174,12 +163,12 @@ public class Task {
 	}
 
 
-	public long getSuccess() {
+	public long success() {
 		return StaticValue.space().getSuccess(this.getId());
 	}
 
 	
-	public long getError() {
+	public long error() {
 		return StaticValue.space().getError(this.getId());
 	}
 

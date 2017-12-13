@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.nlpcn.jcoder.run.CodeRuntimeException;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.slf4j.Logger;
@@ -38,12 +39,12 @@ public class CodeInfo {
 
 	private boolean single = true;
 
-	public boolean iocChanged() {
-		return this.ioc != StaticValue.getUserIoc();
+	public boolean iocChanged(String groupName) {
+		return this.ioc != JarService.getOrCreate(groupName).getIoc();
 	}
 
-	public boolean classLoaderChanged() {
-		return this.classLoader != DynamicEngine.getInstance().getParentClassLoader();
+	public boolean classLoaderChanged(String groupName) {
+		return this.classLoader != JarService.getOrCreate(groupName).getEngine().getClassLoader();
 	}
 
 	public void setioc(Ioc ioc) {

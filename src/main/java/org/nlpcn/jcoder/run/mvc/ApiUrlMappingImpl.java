@@ -266,8 +266,15 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				str = String.format("%-30s : %-10s", Lang.simpleMetodDesc(method), method.getReturnType().getSimpleName());
 			else
 				throw Lang.impossible();
-			log.debugf("%s >> %s | @Ok(%-5s) @Fail(%-5s) | by %d Filters | (I:%s/O:%s)", Strings.alignLeft(sb, 30, ' '), str, ai.getOkView(), ai.getFailView(),
-					(null == ai.getFilterInfos() ? 0 : ai.getFilterInfos().length), ai.getInputEncoding(), ai.getOutputEncoding());
+			log.debugf("%s >> %50s | @Ok(%-5s) @Fail(%-5s) | by %d Filters | (I:%s/O:%s)",
+					Strings.alignLeft(sb, 30, ' '),
+					str,
+					ai.getOkView(),
+					ai.getFailView(),
+					(null == ai.getFilterInfos() ? 0
+							: ai.getFilterInfos().length),
+					ai.getInputEncoding(),
+					ai.getOutputEncoding());
 		}
 	}
 }

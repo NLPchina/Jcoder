@@ -10,6 +10,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
@@ -62,7 +65,9 @@ public class JcoderFilter extends NutFilter {
 					return;
 				}
 			}
-			_doFilter(chain, request, response);
+			Task task = TaskService.findTaskByCache(path.split("/")[2]);
+			//TODO：validate task
+			_doFilter(task, chain, request, response);
 		} else {
 			if (StringUtil.isBlank("host") || "*".equals(host) || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
@@ -89,13 +94,16 @@ public class JcoderFilter extends NutFilter {
 		}
 	}
 
-	private void _doFilter(final FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-		Mvcs.setIoc(StaticValue.getUserIoc()); // reset ioc
+	private void _doFilter(Task task, final FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+
+		JarService jarService = JarService.getOrCreate(task.getGroupName());
+
+		Mvcs.setIoc(jarService.getIoc()); // reset ioc
 
 		Mvcs.setServletContext(sc);
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(DynamicEngine.getInstance().getParentClassLoader());
+			Thread.currentThread().setContextClassLoader(jarService.getEngine().getClassLoader());
 			Mvcs.set(this.selfName, request, response);
 
 			if (!apiHandler.handle(request, response)) {

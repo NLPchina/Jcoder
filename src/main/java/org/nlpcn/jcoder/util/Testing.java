@@ -21,6 +21,7 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.nlpcn.jcoder.domain.KeyValue;
+import org.nlpcn.jcoder.filter.TestingFilter;
 import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nutz.http.Http;
@@ -57,7 +58,6 @@ public class Testing {
 		Ioc ioc = new NutIoc(new JsonLoader(iocPath));
 
 		StaticValue.setSystemIoc(ioc);
-		StaticValue.setUserIoc(ioc);
 
 		relation(ioc, relation);
 
@@ -217,9 +217,8 @@ public class Testing {
 
 		Ioc ioc = new NutIoc(new JsonLoader(iocPath));
 		StaticValue.setSystemIoc(ioc);
-		StaticValue.setUserIoc(ioc);
 
-		TestingFilter.init(packages);
+		TestingFilter.init(ioc,packages);
 
 		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.addFilter(TestingFilter.class, "/api/*", EnumSet.of(DispatcherType.REQUEST));

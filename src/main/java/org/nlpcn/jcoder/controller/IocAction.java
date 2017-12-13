@@ -18,21 +18,23 @@ import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+@Filters(@By(type = AuthoritiesManager.class, args = {"userType", "1", "/login.jsp"}))
 public class IocAction {
 
 	@At("/ioc")
 	@Ok("jsp:/ioc.jsp")
-	public String show() {
-		return IOUtil.getContent(new File(StaticValue.HOME + "/resource/ioc.js"), IOUtil.UTF8);
+	public String show(@Param("groupName") String groupName) {
+		JarService jarService = JarService.getOrCreate(groupName) ;
+		return IOUtil.getContent(new File(jarService.getIocPath()), IOUtil.UTF8);
 	}
 
 	@At("/ioc/save")
 	@Ok("json")
-	public JsonResult save(@Param("code") String code) {
+	public JsonResult save(@Param("groupName") String groupName, @Param("code") String code) {
 		try {
-			IOUtil.Writer(StaticValue.HOME + "/resource/ioc.js", IOUtil.UTF8, code);
-			JarService.flushIOC();
+			JarService jarService = JarService.getOrCreate(groupName) ;
+			IOUtil.Writer(jarService.getIocPath(), IOUtil.UTF8, code);
+			jarService.release();
 			return StaticValue.okMessageJson("保存并加载成功！");
 		} catch (Exception e) {
 			e.printStackTrace();
