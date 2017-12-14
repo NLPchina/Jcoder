@@ -65,12 +65,6 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				map.put(path, invoker);
 				// 记录一下方法与 url 的映射
 				config.getAtMap().addMethod(path, ai.getMethod());
-				try {
-					StaticValue.space().addMapping(path.substring(5)) ;
-				} catch (Exception e) {
-					e.printStackTrace();
-					log.error("add mapping err path is :"+path,e);
-				}
 			}
 
 			// 将动作链，根据特殊的 HTTP 方法，保存到调用者内部
@@ -123,6 +117,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 	/**
 	 * 获得一个ApiActionInvoker如果不存在则创建一个
+	 *
 	 * @param config
 	 * @param path
 	 * @return
@@ -163,7 +158,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 			ApiActionChainMaker aacm = null;
 
 			if (config != null) {
-				aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[] {});
+				aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[]{});
 			} else {
 				aacm = new ApiActionChainMaker();
 			}
@@ -179,9 +174,9 @@ public class ApiUrlMappingImpl implements UrlMapping {
 				info.setModuleType(module);
 
 				if (dm == method) {
-					info.setPaths(new String[] { "/api/" + task.getName() + "/" + method.getName(), "/api" + "/" + task.getName() });
+					info.setPaths(new String[]{"/api/" + task.getName() + "/" + method.getName(), "/api" + "/" + task.getName()});
 				} else {
-					info.setPaths(new String[] { "/api/" + task.getName() + "/" + method.getName() });
+					info.setPaths(new String[]{"/api/" + task.getName() + "/" + method.getName()});
 				}
 
 				this.add(aacm, info, config);
@@ -194,19 +189,14 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	/**
 	 * 从映射表中删除一个api
 	 */
-	public void remove(String name) {
+	public void remove(String className) {
 		Iterator<Entry<String, ApiActionInvoker>> iterator = map.entrySet().iterator();
 		String path;
+		Task task = TaskService.findTaskByCache(className) ;
 		synchronized (map) {
 			while (iterator.hasNext()) {
-				if ((path = iterator.next().getKey()).startsWith("/api/" + name + "/") || path.equals("/api/" + name)) {
+				if ((path = iterator.next().getKey()).startsWith("/api/" + task.getName() + "/") || path.equals("/api/" + task.getName())) {
 					iterator.remove();
-					try {
-						StaticValue.space().removeMapping(path.substring(5)) ;
-					} catch (Exception e) {
-						e.printStackTrace();
-						log.error("remove path err path is :"+name,e);
-					}
 					log.info("remove api " + path);
 				}
 			}
@@ -215,6 +205,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 
 	/**
 	 * 通过一个地址获取ActionInvoker
+	 *
 	 * @param className
 	 * @param methodName
 	 * @return

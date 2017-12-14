@@ -10,6 +10,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
@@ -82,7 +83,7 @@ public class SharedSpaceService {
 	/**
 	 * 监听路由缓存
 	 *
-	 * @Example /jcoder/mapping/className/methodName/hostPort,groupName
+	 * @Example /jcoder/mapping/[groupName]/[className]/[methodName]/[hostPort]
 	 */
 	private TreeCache mappingCache;
 
@@ -217,24 +218,32 @@ public class SharedSpaceService {
 
 	/**
 	 * 删除一个地址映射
-	 *
-	 * @param path
 	 */
-	public void removeMapping(String path) throws Exception {
-		zkDao.getZk().delete().forPath(makeMappingPath(path));
+	public void removeMapping(String groupName, String className, String methodName, String hostPort) {
+		try {
+			if (StringUtil.isBlank(methodName)) {
+				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + hostPort);
+			} else {
+				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			LOG.error("remove err {}/{}/{}/{} message: {}", hostPort, groupName, className, methodName, e.getMessage());
+		}
+
 	}
 
 	/**
 	 * 增加一个mapping到
-	 *
-	 * @param path
 	 */
-	public void addMapping(String path) throws Exception {
-		String className = path.split("/")[0];
-		Task task = TaskService.findTaskByCache(className);
-		byte[] data = task.getGroupName().getBytes("utf-8");
-		path = makeMappingPath(path);
-		setData2ZK(path, data);
+	public void addMapping(String groupName, String className, String methodName) {
+		String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + StaticValue.getHostPort();
+		try {
+			setData2ZKByEphemeral(path, new byte[0]);
+		} catch (Exception e) {
+			LOG.error("Add mapping " + path + " ok ", e);
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -343,9 +352,9 @@ public class SharedSpaceService {
 	public String host(String groupName, String className, String mehtodName) {
 		Map<String, ChildData> currentChildren = null;
 		if (StringUtil.isBlank(mehtodName)) {
-			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + className);
+			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className);
 		} else {
-			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + className + "/" + mehtodName);
+			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className + "/" + mehtodName);
 		}
 
 		if (currentChildren == null || currentChildren.size() == 0) {
@@ -356,19 +365,6 @@ public class SharedSpaceService {
 
 		int sum = 0;
 		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
-			try {
-				String gName = new String(entry.getValue().getData(), "utf-8");
-				if(StringUtil.isBlank(groupName)){
-					groupName = gName ;
-				}
-				if (!groupName.equals(gName)) {
-					continue;
-				}
-			} catch (Exception e) {
-				LOG.error("get route err by " + entry.getKey(), e);
-				e.printStackTrace();
-				continue;
-			}
 
 			String hostPort = entry.getKey();
 
@@ -473,23 +469,6 @@ public class SharedSpaceService {
 		}
 	}
 
-	/**
-	 * 构建路径到zk的路径
-	 *
-	 * @param path
-	 * @return
-	 */
-	private String makeMappingPath(String path) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(MAPPING_PATH);
-		sb.append("/");
-		sb.append(path);
-		sb.append("/");
-		sb.append(StaticValue.getHostPort());
-
-		return sb.toString();
-	}
-
 
 	public SharedSpaceService init() throws Exception {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
@@ -501,18 +480,7 @@ public class SharedSpaceService {
 		Map<String, List<Different>> diffMaps = joinCluster();
 
 		diffMaps.entrySet().forEach((e) -> { //注册到集群
-			HostGroup hostGroup = new HostGroup();
 
-			hostGroup.setSsl(StaticValue.IS_SSL);
-			hostGroup.setCurrent(e.getValue().size() == 0);
-			hostGroup.setWeight(e.getValue().size() > 0 ? 0 : 100);
-
-			try {
-				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + e.getKey(), JSONObject.toJSONBytes(hostGroup));
-			} catch (Exception e1) {
-				e1.printStackTrace();
-				LOG.error("add host group info err !!!!!", e);
-			}
 
 		});
 
@@ -567,24 +535,56 @@ public class SharedSpaceService {
 		Collections.shuffle(groups); //因为要锁组，重新排序下防止顺序锁
 
 		for (Group group : groups) {
+
+			List<Different> diffs = new ArrayList<>();
+
 			String groupName = group.getName();
 			List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
 
+			//增加或查找不同
 			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
 			try {
 				lock.acquire();
 				//判断group是否存在。如果不存在。则进行安全添加
 				if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
 					addGroup2Cluster(groupName, tasks);
-					result.put(groupName, Collections.emptyList());
+					diffs = Collections.emptyList();
 				} else {
-					result.put(groupName, diffGroup(groupName, tasks));
+					diffs = diffGroup(groupName, tasks);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
 				unLockAndDelete(GROUP_PATH + "/" + groupName, lock);
 			}
+
+
+			/**
+			 * 根据解决构建信息
+			 */
+			HostGroup hostGroup = new HostGroup();
+			hostGroup.setSsl(StaticValue.IS_SSL);
+			hostGroup.setCurrent(diffs.size() == 0);
+			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+			try {
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				LOG.error("add host group info err !!!!!", e1);
+			}
+
+			tasks.forEach(task -> {
+				new JavaRunner(task).compile();
+
+				Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+
+				executeMethods.forEach(e -> {
+					addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+				});
+
+			});
+
+			result.put(groupName, diffs);
 
 		}
 
