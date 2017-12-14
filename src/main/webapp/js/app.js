@@ -38,7 +38,6 @@ var vmApp = new Vue({
                 type: 'post',
                 url: '/admin/main/left',
                 success: function (result) {
-                    console.log(result.obj);
                     $this.menus = result.obj;
                     Vue.nextTick(function(){
                     	vmApp.init();
@@ -58,52 +57,15 @@ var vmApp = new Vue({
                 e.preventDefault();
                 window.location.hash = $(this).attr('href');
             });
-
-            // fire links with targets on different window
-            /*$('#nav a[target="_blank"]').click(function (e) {
-                e.preventDefault();
-                window.open($(this).attr('href'));
-            });
-            {
-        	"name": "接口任务",
-        	"submenus": [{
-        		"name": "按钮",
-        		"url": "thread_list.html"
-        	}]
-        }, {
-        	"name": "系统管理",
-        	"submenus": [{
-        		"name": "用户管理",
-        		"url": "userManager.html"
-        	}, {
-        		"name": "Group Manager",
-        		"url": "groupManager.html"
-        	}]
-        }
-            *
-            */
-
-            // all links with hash tags are ignored
-            /*$('#nav a[href="#"]').click(function (e) {
-                e.preventDefault();
-                if ($(this).parents('.menu-min').length == 0) {
-                    $(this).parent().find('.submenu').slideToggle();
-                }
-            });*/
         },
         checkURL: function () {
         	var $this = this;
-        	debugger;
-            //get the url by removing the hash
             var url = location.hash.replace(/^#/, '');
 
             param = {};
 
-            // Do this if url exists (for page refresh, etc...)
             if (url) {
             	url = 'modules/' + url.replace(/^\//, '');
-                
-                // console.log(url);
 
                 var urls = url.split('?');
 
@@ -112,26 +74,17 @@ var vmApp = new Vue({
                         .map(function (value) {
                             return value.split('=');
                         }).object().value();
-                    // console.log(param);
                 }
 
                 var href = '/' + urls[0] ;
-                // console.log(href);
-
-                // remove all active class
+                
                 $('#nav li.active').removeClass("active");
                 $('#nav li.open').removeClass("open");
 
-                // match the url and add the active class
                 $('#nav li:has(a[href="#' + href + '"])').addClass("active")
                     .parents('li').addClass("active").addClass("open")
                     .siblings().find('.submenu').slideUp('fast');
 
-
-                /*if(vmApp.module && vmApp.module instanceof Vue)
-                    vmApp.module.$destroy();*/
-
-                // parse url to jquery
                 Tools.loadURL(urls[0], $('#content'), function () {
                 	$this.drawBreadCrumb();
                 }, function () {
@@ -139,7 +92,6 @@ var vmApp = new Vue({
                 });
 
             } else {
-                //update hash
                 window.location.hash = $('#nav > li:first-child > a[href!="#"]').attr('href');
             }
         },
@@ -171,3 +123,35 @@ var vmApp = new Vue({
         },
     }
 });
+
+var Jcoder = {
+    ajax: function (url,method, ajaxParams,callback) {
+    	return new Promise(function (resolve, reject) {
+    		$.ajax({
+    			type: method,
+    			url: url,
+    			data: ajaxParams,
+    			cache: false,
+    			dataType: 'json',
+    			success: function (data, textStatus, jqXHR) {
+    				if (data.success == false && data.message.indexOf('重新登录') > -1) {
+    					if (window.location.hash) {
+    						JqdeBox.alert(data.message, function () {
+    							window.location = './login.html';
+    						});
+    					} else {
+    						window.location = './login.html';
+    					}
+    					return;
+    				}
+    				if (callback) callback();
+    				resolve(data);
+    			},
+    			error: function (XMLHttpRequest, textStatus, errorThrown) {
+    				reject(XMLHttpRequest);
+    			}
+    		});
+    	})
+    }
+}
+

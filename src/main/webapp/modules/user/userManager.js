@@ -9,33 +9,29 @@ var userManager = new Vue({
   methods:{
 	  userList:function(){
 		  var $this = this;
-		  $.ajax({
-			  'url' : '/admin/user/list',
-			  'dataType' : 'json',
-			  'type' : 'POST',
-			  'success' : function(data) {
-				if(data.ok){
-					$this.users = data.obj.users;
-					return false;
-				}else{
-					
-				}
+		  Jcoder.ajax('/admin/user/list', 'post',null,null).then(function (data) {
+              JqdeBox.unloading();
+              if(data.ok){
+				$this.users = data.obj.users;
+				return false;
 			  }
-	      });
+          });
 	  },
 	  add:function(userInfo){
 		  var $this = this;
 		  var vUrl = '/admin/user/add';
 		  $this.item = {};
 		  var vT = '添加用户';
+		  var msg = '添加成功！';
 		  if(userInfo != undefined){
 			  vT = '编辑用户';
 			  $this.item = userInfo;
 			  vUrl = '/admin/user/modify';
+			  msg = '修改成功！';
 		  }
 		  JqdeBox.dialog({
               title: vT,
-              url: '/userAddOrEdit.html',
+              url: 'modules/user/userAddOrEdit.html',
               init: function () {
             	  userAddOrEdit.item = userInfo;
             	  if(userAddOrEdit.item == undefined)userAddOrEdit.item = {};
@@ -47,40 +43,29 @@ var userManager = new Vue({
               confirm: function () { 
             	  userAddOrEdit.item.type = $("#userType").val();
             	  var param = userAddOrEdit.item;
-            	  $.ajax({
-    	  			  'url' : vUrl,
-    	  			  'dataType' : 'json',
-    	  			  'type' : 'POST',
-    	  			  'data':param,
-    	  			  'success' : function(data) {
-    	  				if(data.ok){
-    	  					$this.userList();
-    	  					JqdeBox.message(true, '添加成功！');
-    	  				}else{
-    	  					JqdeBox.message(false, data.message);
-    	  				}
-    	  			  }
-    	  	      });
+            	  Jcoder.ajax(vUrl, 'post',param,null).then(function (data) {
+                      JqdeBox.unloading();
+                      if(data.ok){
+  	  					$this.userList();
+  	  					JqdeBox.message(true, msg);
+  	  				  }else{
+  	  					JqdeBox.message(false, data.message);
+  	  				  }
+                  });
               }
           });
 	  },
 	  del:function(item){
 		  var $this = this;
-		  $.ajax({
-			  'url' : '/admin/user/del',
-			  'dataType' : 'json',
-			  'type' : 'POST',
-			  'data':item,
-			  'success' : function(data) {
-				if(data.ok){
-					$this.userList();
-					message('success',data.message);
-				}else{
-					message('false',data.message);
-  					return false;
-				}
+		  Jcoder.ajax('/admin/user/del', 'post',item,null).then(function (data) {
+              JqdeBox.unloading();
+              if(data.ok){
+				$this.userList();
+				JqdeBox.message(true, '删除成功！');
+			  }else{
+				JqdeBox.message(false, data.message);
 			  }
-	      });
+          });
 	  }
   }
 });
