@@ -74,8 +74,8 @@ public class MainAction {
 
 		if(isAdmin){
 			submenus = new JSONArray() ;
-			submenus.add(ImmutableMap.of("name","用户管理","url","/admin/user")) ;
-			submenus.add(ImmutableMap.of("name","Group管理","url","/admin/group")) ;
+			submenus.add(ImmutableMap.of("name","用户管理","url","userManager.html")) ;
+			submenus.add(ImmutableMap.of("name","Group管理","url","groupManager.html")) ;
 			result.add(ImmutableMap.of("name","系统管理","submenus",submenus)) ;
 		}
 
