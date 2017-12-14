@@ -1,22 +1,8 @@
 package org.nlpcn.jcoder.service;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-
-import javax.servlet.http.HttpSession;
-
+import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.filter.TestingFilter;
-import org.nlpcn.jcoder.util.MapCount;
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
@@ -31,7 +17,12 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpSession;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 @IocBean
 public class TaskService {
@@ -224,18 +215,9 @@ public class TaskService {
 	 *
 	 * @throws TaskException
 	 */
-	public void initTaskFromDB() throws TaskException {
-		List<Task> search = this.basicDao.search(Task.class, "id");
-		flushTaskMappingAndCache(search);
-	}
-
-	/**
-	 * 从数据库中init所有的task
-	 *
-	 * @throws TaskException
-	 */
-	public void initTaskFromDB(Cnd where) throws TaskException {
-		List<Task> search = this.basicDao.search(Task.class, where);
+	public void initTaskFromDB(String groupName) throws TaskException {
+		Group group = this.basicDao.findByCondition(Group.class, Cnd.where("name", "=", groupName));
+		List<Task> search = this.basicDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
 		flushTaskMappingAndCache(search);
 	}
 

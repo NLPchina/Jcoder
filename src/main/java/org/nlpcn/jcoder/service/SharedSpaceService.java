@@ -226,6 +226,7 @@ public class SharedSpaceService {
 			} else {
 				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort);
 			}
+			LOG.error("remove mapping {}/{}/{}/{} ok", hostPort, groupName, className, methodName);
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error("remove err {}/{}/{}/{} message: {}", hostPort, groupName, className, methodName, e.getMessage());
@@ -238,10 +239,12 @@ public class SharedSpaceService {
 	 */
 	public void addMapping(String groupName, String className, String methodName) {
 		String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + StaticValue.getHostPort();
+
 		try {
 			setData2ZKByEphemeral(path, new byte[0]);
+			LOG.info("add mapping: {} ok", path);
 		} catch (Exception e) {
-			LOG.error("Add mapping " + path + " ok ", e);
+			LOG.error("Add mapping " + path + " err", e);
 			e.printStackTrace();
 		}
 	}
@@ -293,7 +296,8 @@ public class SharedSpaceService {
 	 * @param path
 	 */
 	private InterProcessMutex lock(String path) {
-		return new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+		return lock;
 	}
 
 	/**
@@ -308,11 +312,6 @@ public class SharedSpaceService {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		}
-		try {
-			zkDao.getZk().delete().forPath(path);
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 	}
 
@@ -433,7 +432,7 @@ public class SharedSpaceService {
 	}
 
 	private byte[] getData2ZK(String path) throws Exception {
-		LOG.info("get data to: from data ", path);
+		LOG.info("get data from: {} ", path);
 		byte[] bytes = null;
 		try {
 			bytes = zkDao.getZk().getData().forPath(path);
@@ -574,14 +573,19 @@ public class SharedSpaceService {
 			}
 
 			tasks.forEach(task -> {
-				new JavaRunner(task).compile();
+				try {
+					new JavaRunner(task).compile();
 
-				Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
 
-				executeMethods.forEach(e -> {
-					addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-				});
+					executeMethods.forEach(e -> {
+						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+					});
 
+				} catch (Exception e) {
+					//TODO: e.printStackTrace();
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
+				}
 			});
 
 			result.put(groupName, diffs);
