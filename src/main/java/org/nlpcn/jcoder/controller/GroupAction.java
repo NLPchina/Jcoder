@@ -1,10 +1,5 @@
 package org.nlpcn.jcoder.controller;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.UserGroup;
@@ -18,18 +13,16 @@ import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Fail;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
+import java.util.List;
+
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
+@At("/admin/group")
 @Ok("json")
 public class GroupAction {
 
@@ -38,10 +31,15 @@ public class GroupAction {
 	@Inject
 	private GroupService groupService ;
 
-	public BasicDao basicDao = StaticValue.systemDao;
+    private BasicDao basicDao = StaticValue.systemDao;
 
 	@Inject
 	private TaskService taskService;
+
+    @At
+    public Restful list() throws Exception {
+        return Restful.instance(StaticValue.space().getAllGroups());
+    }
 
 	@At("/auth/delUserGroup")
 	@Ok("raw")
@@ -110,9 +108,7 @@ public class GroupAction {
 		return count == 0;
 	}
 
-
-
-	@At("/admin/group/add")
+	@At("/add")
 	public Restful addG(@Param("..") Group group) throws Exception {
 		if (groupNameDiff(group.getName())) {
 			groupService.save(group) ;
@@ -120,7 +116,7 @@ public class GroupAction {
 		return Restful.OK.msg("添加成功！");
 	}
 
-	@At("/admin/group/del")
+	@At("/del")
 	public Restful delG(@Param("..") Group group) {
 		groupService.delete(group);
 		/*List<Group> groups = (List<Group>) Mvcs.getHttpSession().getAttribute("GROUP_LIST");
@@ -135,7 +131,7 @@ public class GroupAction {
 		return Restful.OK.msg("删除成功！");
 	}
 
-	@At("/admin/group/modify")
+	@At("/modify")
 	public Restful modifyG(@Param("..") Group group) throws Exception {
 		if (group == null) {
 			return Restful.ERR.msg("修改失败！");
