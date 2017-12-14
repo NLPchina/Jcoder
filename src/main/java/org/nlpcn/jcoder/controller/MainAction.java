@@ -50,7 +50,7 @@ public class MainAction {
 		//task 管理
 		JSONArray submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","/task/list.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName,"url","task/list.html?name="+groupName)) ;
 		}
 		result.add(ImmutableMap.of("name","Task管理","submenus",submenus)) ;
 
@@ -58,7 +58,7 @@ public class MainAction {
 		//jar 管理
 		submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","/jar/list.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName,"url","jar/list.html?name="+groupName)) ;
 		}
 		result.add(ImmutableMap.of("name","Jar管理","submenus",submenus)) ;
 
@@ -66,7 +66,7 @@ public class MainAction {
 		//Resource管理
 		submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","/resource/list.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName,"url","resource/list.html?name="+groupName)) ;
 		}
 		result.add(ImmutableMap.of("name","Resource管理","submenus",submenus)) ;
 
@@ -74,8 +74,8 @@ public class MainAction {
 
 		if(isAdmin){
 			submenus = new JSONArray() ;
-			submenus.add(ImmutableMap.of("name","用户管理","url","/user/list.html")) ;
-			submenus.add(ImmutableMap.of("name","Group管理","url","/group/list.html")) ;
+			submenus.add(ImmutableMap.of("name","用户管理","url","user/list.html")) ;
+			submenus.add(ImmutableMap.of("name","Group管理","url","group/list.html")) ;
 			result.add(ImmutableMap.of("name","系统管理","submenus",submenus)) ;
 		}
 
