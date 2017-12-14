@@ -51,23 +51,7 @@ public class JcoderFilter extends NutFilter {
 
 
 		if (path.startsWith("/api/")) {
-			/**
-			 * 先走代理服务
-			 */
-			String proxyUrl = null;
-			if (!StaticValue.IS_LOCAL
-					&& request.getHeader(ProxyService.PROXY_HEADER) == null) {
-				proxyUrl = StaticValue.space().host(request.getHeader("jcoder_group"), path);
-				if (proxyUrl != null) {
-					StaticValue.getSystemIoc().get(ProxyService.class, "proxyService").service(request, response, proxyUrl);
-					response.getOutputStream().flush();
-					response.getOutputStream().close();
-					return;
-				}
-			}
-			Task task = TaskService.findTaskByCache(path.split("/")[2]);
-			//TODO：validate task
-			_doFilter(task, chain, request, response);
+			_doFilter(chain, request, response);
 		} else {
 			if (StringUtil.isBlank("host") || "*".equals(host) || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
@@ -94,18 +78,11 @@ public class JcoderFilter extends NutFilter {
 		}
 	}
 
-	private void _doFilter(Task task, final FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-
-		JarService jarService = JarService.getOrCreate(task.getGroupName());
-
-		Mvcs.setIoc(jarService.getIoc()); // reset ioc
-
+	private void _doFilter(final FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		Mvcs.setServletContext(sc);
 		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(jarService.getEngine().getClassLoader());
 			Mvcs.set(this.selfName, request, response);
-
 			if (!apiHandler.handle(request, response)) {
 				try {
 					new JsonView().render(request, response, Restful.instance(false, "api not found ! may be it not actived!", null, ApiException.NotFound));
