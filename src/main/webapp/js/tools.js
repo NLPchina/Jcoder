@@ -139,6 +139,14 @@ var Tools = {
             },
             async: false
         });
+    },
+
+    parseQuery: function (url) {
+        var urls = url.split('?');
+        return urls.length > 1 ? _.chain(urls[1].split('&')).map(function (value) {
+            var arr = value.split('=');
+            return [decodeURIComponent(arr[0]), decodeURIComponent(arr[1])];
+        }).object().value() : {};
     }
 };
 

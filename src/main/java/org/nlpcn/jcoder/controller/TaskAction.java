@@ -18,9 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpSession;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.*;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -47,7 +45,7 @@ public class TaskAction {
                 .getTasksByGroupName(groupName)
                 .stream()
                 .filter(t -> taskType == -1 || t.getType() == taskType)
-                .map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime().getTime(), "update_time", t.getUpdateTime().getTime()))
+                .map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
                 .toArray();
         return Restful.instance(tasks);
     }
