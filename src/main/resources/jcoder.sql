@@ -11,12 +11,6 @@ CREATE TABLE `groups` (
   UNIQUE KEY `groups_name_UNIQUE` (`name`)
 );
 
--- ----------------------------
---  Records of `groups`
--- ----------------------------
-BEGIN;
-INSERT INTO `groups` VALUES (1, 'Default', 'Default Group', now());
-COMMIT;
 
 -- ----------------------------
 --  Table structure for `task`
@@ -28,7 +22,6 @@ CREATE TABLE `task` (
   `description` varchar(255) DEFAULT NULL,
   `schedule_str` varchar(255) DEFAULT NULL,
   `code` longtext NOT NULL,
-  `code_type` varchar(255) DEFAULT NULL,
   `group_id` int(11) NOT NULL,
   `create_time` datetime DEFAULT NULL,
   `update_time` datetime DEFAULT NULL,
@@ -53,7 +46,6 @@ CREATE TABLE `task_history` (
   `description` varchar(255) DEFAULT NULL,
   `schedule_str` varchar(255) DEFAULT NULL,
   `code` longtext NOT NULL,
-  `code_type` varchar(255) DEFAULT NULL,
   `group_id` int(11) NOT NULL,
   `create_time` datetime DEFAULT NULL,
   `update_time` datetime DEFAULT NULL,
@@ -85,17 +77,5 @@ CREATE TABLE `user` (
 BEGIN;
 INSERT INTO `user` VALUES ('1', 'admin', 'd70900a860013845b32be1d0fbc89d58', '1', 'yourmail', now());
 COMMIT;
-
--- ----------------------------
---  Table structure for `user_group`
--- ----------------------------
-DROP TABLE IF EXISTS `user_group`;
-CREATE TABLE `user_group` (
-  `id` int(11) auto_increment PRIMARY KEY,
-  `user_id` int(11) NOT NULL,
-  `group_id` int(11) NOT NULL,
-  `auth` int(11) NOT NULL,
-  `create_time` datetime DEFAULT NULL
-) ;
 
 
