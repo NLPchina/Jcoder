@@ -45,8 +45,23 @@ var vmApp = new Vue({
             $this.checkURL();
         });
         $this.init();
+        $this.initMenus();
     },
     methods: {
+    	initMenus:function(){
+    		var $this = this;
+			$.ajax({
+                type: 'post',
+                url: '/admin/main/left',
+                success: function (result) {
+                    console.log(result.obj);
+                    $this.menus = result.obj;
+                },
+                error: function (error) {
+                    JqdeBox.message(false, error);
+                }
+            });
+    	},
     	init: function () {
             if ($('#nav').length) {
                 this.checkURL();
