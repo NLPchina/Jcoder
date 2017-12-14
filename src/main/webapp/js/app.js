@@ -6,22 +6,7 @@ var vmApp = new Vue({
         userType:'',
 	  	AUTH_MAP:null,
 	  	GROUP_LIST:null,
-        menus: [{
-        	"name": "接口任务",
-        	"submenus": [{
-        		"name": "按钮",
-        		"url": "thread_list.html"
-        	}]
-        }, {
-        	"name": "系统管理",
-        	"submenus": [{
-        		"name": "用户管理",
-        		"url": "userManager.html"
-        	}, {
-        		"name": "Group Manager",
-        		"url": "groupManager.html"
-        	}]
-        }],
+        menus: [],
         iconCls: ['fa fa-cogs', 'fa fa-users', 'glyphicon glyphicon-align-justify', 'fa fa-book', 'glyphicon glyphicon-th-large', 'fa fa-desktop', 'fa fa-gift', 'glyphicon glyphicon-book', 'fa fa-bar-chart-o', 'fa fa-gavel','fa-picture-o', 'fa-tag', 'fa-folder', 'fa-list'],
         modulePath: '',
         item: {},
@@ -76,7 +61,25 @@ var vmApp = new Vue({
             /*$('#nav a[target="_blank"]').click(function (e) {
                 e.preventDefault();
                 window.open($(this).attr('href'));
-            });*/
+            });
+            {
+        	"name": "接口任务",
+        	"submenus": [{
+        		"name": "按钮",
+        		"url": "thread_list.html"
+        	}]
+        }, {
+        	"name": "系统管理",
+        	"submenus": [{
+        		"name": "用户管理",
+        		"url": "userManager.html"
+        	}, {
+        		"name": "Group Manager",
+        		"url": "groupManager.html"
+        	}]
+        }
+            *
+            */
 
             // all links with hash tags are ignored
             /*$('#nav a[href="#"]').click(function (e) {
