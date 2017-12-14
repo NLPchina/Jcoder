@@ -1,0 +1,68 @@
+<div id="userAddOrEdit" class="tabbable">
+	<ul class="nav nav-tabs" id="myTab">
+        <li class="active">
+            <a data-toggle="tab" href="#home">
+                <i class="green ace-icon fa fa-pencil-square-o bigger-120"></i>
+                基本信息
+            </a>
+        </li>
+    </ul>
+	<div class="tab-content" style="height:350px;">
+        <div id="home" class="tab-pane fade in active">
+            <div class="row">
+                <div class="col-xs-12">
+                    <!-- PAGE CONTENT BEGINS -->
+                    <form class="form-horizontal" id="validation-form" role="form">
+                        <div class="form-group" id="userId" style="margin-top:10px;" v-show="item.id">
+						    <label class="col-sm-2 control-label no-padding-left">No</label>
+						    <div class="clearfix">
+						    	<input type="text" id="no" placeholder="no" class="col-xs-8" v-model="item.id" :disabled="item.id"/>
+						    </div>
+						</div>
+                        <div class="form-group" style="margin-top:10px;">
+						    <label class="col-sm-2 control-label no-padding-left">姓名</label>
+						    <div class="clearfix ">
+						      <input type="text" name="name" placeholder="请输入用户姓名"  class="col-xs-8" v-model="item.name">
+						    </div>
+						</div>
+						<div class="form-group" style="margin-top:10px;">
+						    <label class="col-sm-2 control-label no-padding-left">密码</label>
+						    <div class="clearfix">
+						      <input type="password" name="password" placeholder="请输入用户密码" class="col-xs-8" v-model="item.password">
+						    </div>
+						</div>
+						<div class="form-group" style="margin-top:10px;">
+						    <label class="col-sm-2 control-label no-padding-left">Email</label>
+						    <div class="clearfix">
+						      <input type="text" name="Email" lay-verify="email" placeholder="请输入用户邮箱" class="col-xs-8" v-model="item.mail">
+						    </div>
+						</div>
+						<div class="form-group">
+						    <label class="col-sm-2 control-label no-padding-left">级别</label>
+						    <div class="clearfix">
+						      <select name="type" id="userType" class="col-xs-8">
+						        <option value="0">Member</option>
+						        <option value="1">Admin</option>
+						      </select>
+						    </div>
+						</div>
+                    </form>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div>
+    </div>
+</div>
+<script type="text/javascript" >
+var userAddOrEdit = new Vue({
+  el: '#userAddOrEdit',
+  data: {
+    item:{}
+  },
+  mounted:function(){
+	  
+  },
+  methods:{
+	
+  }
+});
+</script>

@@ -1,0 +1,53 @@
+<div id="groupAddOrEdit" class="tabbable">
+	<ul class="nav nav-tabs" id="myTab">
+        <li class="active">
+            <a data-toggle="tab" href="#home">
+                <i class="green ace-icon fa fa-pencil-square-o bigger-120"></i>
+                基本信息
+            </a>
+        </li>
+    </ul>
+	<div class="tab-content" style="height:350px;">
+        <div id="home" class="tab-pane fade in active">
+            <div class="row">
+                <div class="col-xs-12">
+                    <!-- PAGE CONTENT BEGINS -->
+                    <form class="form-horizontal" id="validation-form" role="form">
+                        <div class="form-group" id="userId" style="margin-top:10px;" v-show="item.id">
+						    <label class="col-sm-3 control-label no-padding-left">GroupNo</label>
+						    <div class="clearfix">
+						    	<input type="text" id="no" placeholder="no" class="col-xs-8" v-model="item.id" :disabled="item.id"/>
+						    </div>
+						</div>
+                        <div class="form-group" style="margin-top:10px;">
+						    <label class="col-sm-3 control-label no-padding-left">GroupName</label>
+						    <div class="clearfix ">
+						      <input type="text" name="name" placeholder="请输入GroupName"  class="col-xs-8" v-model="item.name">
+						    </div>
+						</div>
+						<div class="form-group" style="margin-top:10px;">
+						    <label class="col-sm-3 control-label no-padding-left">Description</label>
+						    <div class="clearfix">
+						      <textarea placeholder="请输入Description" class="col-xs-8" v-model="item.description"></textarea>
+						    </div>
+						</div>
+                    </form>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div>
+    </div>
+</div>
+<script type="text/javascript" >
+var groupAddOrEdit = new Vue({
+  el: '#groupAddOrEdit',
+  data: {
+    item:{}
+  },
+  mounted:function(){
+	  
+  },
+  methods:{
+	
+  }
+});
+</script>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+		<title>登录</title>
+		<link rel="stylesheet" href="css/layui.css" media="all" />
+		<link rel="stylesheet" href="css/login.css" />
+		<link rel="stylesheet" href="assets/font-awesome/4.5.0/css/font-awesome.min.css" />
+	</head>
+	<body>
+		<canvas id="c" style="position:absolute;z-index:-1;top:0;"></canvas>	
+			<div class="beg-login-box" >
+				<header>
+					<h1>Jcoder Admin</h1>
+				</header>
+				<div class="beg-login-main">
+					<form class="layui-form" method="post">
+						<div class="layui-form-item">
+							<label class="beg-login-icon">
+							<i class="ace-icon fa fa-user"></i>
+						</label>
+							<input id="userName" type="text" name="name" lay-verify="userName" autocomplete="off" placeholder="这里输入登录名" class="layui-input">
+						</div>
+						<div class="layui-form-item">
+							<label class="beg-login-icon">
+							<i class="ace-icon fa fa-lock"></i>
+						</label>
+							<input id="password" type="password" name="password" lay-verify="password" autocomplete="off" placeholder="这里输入密码" class="layui-input">
+						</div>
+						<div class="layui-form-item">
+							<div class="beg-pull-left beg-login-remember">
+								<label>记住帐号？</label>
+								<input id="is_opensection" class="ace ace-switch ace-switch-6" v-model="is_opensection" type="checkbox" />
+	                            <span class="lbl"></span>
+							</div>
+							<div class="beg-pull-right">
+								<button class="layui-btn layui-btn-primary" id="sub">
+								<i class="ace-icon fa fa-key"></i> 登录
+							</button>
+							</div>
+							<div class="beg-clear">
+								<div id="message" style="color:red;"></div>
+							</div>
+						</div>
+					</form>
+				</div>
+			</div>
+	</body>
+	<script src="assets/js/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript" src="js/login.js"></script>
+</html>
