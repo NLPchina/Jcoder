@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 @IocBean
-@Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))
+@Filters(@By(type = CheckSession.class, args = { "user", "/login.html" }))
 public class TaskAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);

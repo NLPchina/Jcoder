@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSONObject;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
 @Ok("json")
 public class UserAction {
 

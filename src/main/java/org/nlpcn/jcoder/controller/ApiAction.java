@@ -110,7 +110,7 @@ public class ApiAction {
 	 */
 	@At("/run_api")
 	@Ok("raw")
-	@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+	@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
 	public Object runApi(@Param("json") String jsonTask) {
 
 		String taskName = null;
@@ -156,7 +156,7 @@ public class ApiAction {
 	 */
 	@At("/stop_api")
 	@Ok("raw")
-	@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+	@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
 	public Object stopApi(@Param("json") String jsonTask) {
 
 		String taskName = null;

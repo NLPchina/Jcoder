@@ -38,6 +38,7 @@ import com.alibaba.fastjson.JSONObject;
 
 @IocBean
 @Filters(@By(type = IpErrorCountFilter.class, args = { "20" }))
+@Ok("json")
 public class LoginAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LoginAction.class);
@@ -45,7 +46,6 @@ public class LoginAction {
 	public BasicDao basicDao = StaticValue.systemDao;
 
 	@At("/admin/login")
-	@Ok("json")
 	public Restful login(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws Throwable {
 		JSONObject restful = new JSONObject();
 		Condition con = Cnd.where("name", "=", name);
@@ -144,7 +144,7 @@ public class LoginAction {
 	}
 
 	@At("/admin/loginOut")
-	@Ok("redirect:/admin/login.html")
+	@Ok("redirect:/login.html")
 	public void loginOut() {
 		HttpSession session = Mvcs.getHttpSession();
 		session.removeAttribute("user");

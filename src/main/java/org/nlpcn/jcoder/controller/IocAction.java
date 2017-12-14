@@ -18,7 +18,7 @@ import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = {"userType", "1", "/login.jsp"}))
+@Filters(@By(type = AuthoritiesManager.class, args = {"userType", "1", "/login.html"}))
 public class IocAction {
 
 	@At("/ioc")

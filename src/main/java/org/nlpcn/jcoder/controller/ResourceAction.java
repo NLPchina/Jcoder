@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
 public class ResourceAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ResourceAction.class) ;

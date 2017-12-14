@@ -31,7 +31,7 @@ public class ThreadAction {
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
-	@Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))
+	@Filters(@By(type = CheckSession.class, args = { "user", "/login.html" }))
 	@At("/thread/list/")
 	@Ok("jsp:/thread_list.jsp")
 	public JSONObject list() throws TaskException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, SchedulerException {
@@ -68,7 +68,7 @@ public class ThreadAction {
 		return json;
 	}
 
-	@Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))
+	@Filters(@By(type = CheckSession.class, args = { "user", "/login.html" }))
 	@At("/thread/stop/task/?")
 	@Ok("redirect:/thread/list/")
 	public void stopTask(String name) throws Exception {
@@ -94,7 +94,7 @@ public class ThreadAction {
 	 * @param name
 	 * @throws Exception
 	 */
-	@Filters(@By(type = CheckSession.class, args = { "user", "/login.jsp" }))
+	@Filters(@By(type = CheckSession.class, args = { "user", "/login.html" }))
 	@At("/thread/stop/?")
 	@Ok("redirect:/thread/list/")
 	public void stop(String key) throws Exception {

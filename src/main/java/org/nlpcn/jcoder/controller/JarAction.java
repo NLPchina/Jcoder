@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSONObject;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.jsp" }))
+@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
 public class JarAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarAction.class) ;
