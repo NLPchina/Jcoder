@@ -31,13 +31,18 @@ var vmApp = new Vue({
     },
     mounted: function () {
     	var $this = this;
-    	this.userName = localStorage.getItem("userName");   
+    	this.userName = localStorage.getItem("userName");
+    	if(this.userName == null || this.userName == undefined){
+    		JqdeBox.alert("请重新登录！",function(){
+    			window.location = window.location.protocol+"//"+window.location.host;
+    		});
+    	}
     	this.userId = localStorage.getItem("userId");
     	this.userType = localStorage.getItem("userType"); 
     	this.AUTH_MAP = localStorage.getItem("AUTH_MAP"); 
     	this.GROUP_LIST = localStorage.getItem("GROUP_LIST");
     	$(window).on('hashchange', function () {
-            vmApp.checkURL();
+            $this.checkURL();
         });
         $this.init();
     },
@@ -88,7 +93,7 @@ var vmApp = new Vue({
                     // console.log(param);
                 }
 
-                var href = '/' + urls[0].split('/')[1] ;
+                var href = '/' + urls[0] ;
                 // console.log(href);
 
                 // remove all active class
@@ -101,8 +106,8 @@ var vmApp = new Vue({
                     .siblings().find('.submenu').slideUp('fast');
 
 
-                if(vmApp.module && vmApp.module instanceof Vue)
-                    vmApp.module.$destroy();
+                /*if(vmApp.module && vmApp.module instanceof Vue)
+                    vmApp.module.$destroy();*/
 
                 // parse url to jquery
                 Tools.loadURL(urls[0], $('#content'), function () {
@@ -133,7 +138,6 @@ var vmApp = new Vue({
                         type: 'post',
                         url: '/admin/loginOut',
                         success: function (result) {
-                        	
                             location = 'login.html';
                         },
                         error: function (error) {
