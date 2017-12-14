@@ -29,7 +29,6 @@ var vmApp = new Vue({
     	$(window).on('hashchange', function () {
             $this.checkURL();
         });
-        $this.init();
         $this.initMenus();
     },
     methods: {
@@ -41,6 +40,9 @@ var vmApp = new Vue({
                 success: function (result) {
                     console.log(result.obj);
                     $this.menus = result.obj;
+                    Vue.nextTick(function(){
+                    	vmApp.init();
+                    });
                 },
                 error: function (error) {
                     JqdeBox.message(false, error);
@@ -90,6 +92,7 @@ var vmApp = new Vue({
             });*/
         },
         checkURL: function () {
+        	var $this = this;
         	debugger;
             //get the url by removing the hash
             var url = location.hash.replace(/^#/, '');
@@ -98,7 +101,8 @@ var vmApp = new Vue({
 
             // Do this if url exists (for page refresh, etc...)
             if (url) {
-                url = url.replace(/^\//, '');
+            	url = 'modules/' + url.replace(/^\//, '');
+                
                 // console.log(url);
 
                 var urls = url.split('?');
@@ -129,9 +133,9 @@ var vmApp = new Vue({
 
                 // parse url to jquery
                 Tools.loadURL(urls[0], $('#content'), function () {
-                    vmApp.drawBreadCrumb();
+                	$this.drawBreadCrumb();
                 }, function () {
-                    vmApp.drawBreadCrumb();
+                	$this.drawBreadCrumb();
                 });
 
             } else {
