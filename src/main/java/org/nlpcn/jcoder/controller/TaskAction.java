@@ -1,10 +1,12 @@
 package org.nlpcn.jcoder.controller;
 
-
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -15,18 +17,39 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpSession;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @IocBean
 @Filters(@By(type = CheckSession.class, args = { "user", "/login.html" }))
+@At("/admin/task")
+@Ok("json")
 public class TaskAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
 
 	@Inject
 	private TaskService taskService;
+
+    /**
+     * 获得task列表
+     *
+     * @param groupName 组名
+     * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
+     * @return
+     * @throws Exception
+     */
+    @At
+    public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
+        Object[] tasks = StaticValue.space()
+                .getTasksByGroupName(groupName)
+                .stream()
+                .filter(t -> taskType == -1 || t.getType() == taskType)
+                .map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime().getTime(), "update_time", t.getUpdateTime().getTime()))
+                .toArray();
+        return Restful.instance(tasks);
+    }
 
 	@At("/task/save/?")
 	@Ok("raw")
@@ -146,34 +169,6 @@ public class TaskAction {
 		}
 
 		throw new RuntimeException("auth error !");
-	}
-
-	/**
-	 * 获得task列表
-	 * 
-	 * @param groupId
-	 * @param taskType 0、垃圾；1、独立；2、计划；3、调度
-	 */
-	@At("/task/type/?")
-	@Ok("raw")
-	public Object taskTypeList(Long groupId, @Param("taskType") Integer taskType) {
-
-		authValidateView(groupId);
-
-		List<Task> tasksList = taskService.tasksList(groupId); // 从数据库中查出，不污染内存中的task
-		if (tasksList == null || taskType == null) {
-			return null;
-		}
-		List<Task> tasks = new ArrayList<Task>();
-		for (Task task : tasksList) {
-			if (taskType != task.getType()) {
-				continue;
-			}
-			tasks.add(task);
-		}
-		JSONObject json = new JSONObject();
-		json.put("tasks", tasks);
-		return json;
 	}
 
 }

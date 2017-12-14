@@ -189,6 +189,30 @@ public class SharedSpaceService {
 		return token;
 	}
 
+    /**
+     * 获取所有的分组
+     */
+    public List<String> getAllGroups() throws Exception {
+        return zkDao.getZk().getChildren().forPath(GROUP_PATH);
+    }
+
+    /**
+     * 根据分组名称获取所有Task
+     *
+     * @param groupName 组名
+     * @return
+     * @throws Exception
+     */
+    public List<Task> getTasksByGroupName(String groupName) throws Exception {
+        String path = GROUP_PATH + "/" + groupName;
+        List<String> taskNames = zkDao.getZk().getChildren().forPath(path);
+        List<Task> tasks = new ArrayList<>(taskNames.size());
+        for (String name : taskNames) {
+            tasks.add(JSONObject.parseObject(zkDao.getZk().getData().forPath(path + "/" + name), Task.class));
+        }
+        return tasks;
+    }
+
 	/**
 	 * 注册一个token,token必须是刻一用路径描述的
 	 *

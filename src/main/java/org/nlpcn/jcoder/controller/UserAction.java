@@ -1,12 +1,6 @@
 package org.nlpcn.jcoder.controller;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
+import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.domain.UserGroup;
@@ -17,17 +11,12 @@ import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Fail;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSONObject;
+import java.util.Date;
+import java.util.List;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
@@ -53,36 +42,6 @@ public class UserAction {
 		
 		return Restful.instance().obj(result) ;
 		
-	}
-
-	@At("/admin/group/list")
-	public Restful groupList() {
-		Condition con = null;
-		List<Group> groups = basicDao.search(Group.class, con);
-		// 查找group下所有用户
-
-		for (Group group : groups) {
-			List<UserGroup> userGroupList = basicDao.search(UserGroup.class, Cnd.where("groupId", "=", group.getId()));
-
-			List<Map<String, Object>> users = new ArrayList<>();
-			for (UserGroup userGroup : userGroupList) {
-				Map<String, Object> userInfo = new HashMap<>();
-				User user = basicDao.find(userGroup.getUserId(), User.class);
-				if (user == null) {
-					continue;
-				}
-				userInfo.put("id", user.getId());
-				userInfo.put("createTime", userGroup.getCreateTime());
-				userInfo.put("auth", userGroup.getAuth());
-				userInfo.put("name", user.getName());
-				users.add(userInfo);
-			}
-
-			group.setUsers(users);
-		}
-		JSONObject result = new JSONObject() ;
-		result.put("groups", groups);
-		return Restful.instance().obj(result) ;
 	}
 
 	@At("/user/nameDiff")

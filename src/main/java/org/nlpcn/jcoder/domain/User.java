@@ -20,7 +20,7 @@ public class User implements Serializable {
 	private String password;
 
 	@Column("type")
-	private int type; // 用户类型 1超级用户、2组长、3组员
+	private int type; // 用户类型 0游客 1管理员
 
 	@Column
 	private String mail; // 用户邮箱
