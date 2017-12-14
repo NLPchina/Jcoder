@@ -1,23 +1,19 @@
 package org.nlpcn.jcoder.scheduler;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ThreadManager {
 
@@ -27,7 +23,7 @@ public class ThreadManager {
 
 	/**
 	 * 增加一个task 只有master可以添加任务
-	 * 
+	 *
 	 * @param task
 	 * @throws SchedulerException
 	 * @throws TaskException
@@ -35,10 +31,10 @@ public class ThreadManager {
 	public synchronized static boolean add(String groupTaskName, String scheduleStr) throws TaskException, SchedulerException {
 		boolean flag;
 		try {
-			flag = QuartzSchedulerManager.addJob(groupTaskName,scheduleStr);
+			flag = QuartzSchedulerManager.addJob(groupTaskName, scheduleStr);
 		} catch (SchedulerException e) {
 			flag = false;
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 			throw new TaskException(e.getMessage());
 		}
 		return flag;
@@ -46,7 +42,7 @@ public class ThreadManager {
 
 	/**
 	 * 运行一个task
-	 * 
+	 *
 	 * @param task
 	 * @throws TaskException
 	 */
@@ -67,7 +63,7 @@ public class ThreadManager {
 
 	/**
 	 * 运行一个taskJob
-	 * 
+	 *
 	 * @param task
 	 * @throws TaskException
 	 */
@@ -77,7 +73,7 @@ public class ThreadManager {
 
 	/**
 	 * 停止一个task
-	 * 
+	 *
 	 * @param task
 	 * @throws TaskException
 	 */
@@ -87,7 +83,7 @@ public class ThreadManager {
 			try {
 				TaskRunManager.stopAll(taskName);
 			} catch (Exception e) {
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
@@ -98,14 +94,14 @@ public class ThreadManager {
 			QuartzSchedulerManager.stopTaskJob(taskName);
 
 		} catch (Exception e) {
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 			throw new TaskException(e.getMessage());
 		}
 	}
 
 	/**
 	 * 刷新task 相当于从定时任务中移除，并且重新插入,非线程安全.如果调用记得在外层锁定对象
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	public static void flush(Task oldTask, Task newTask) throws Exception {
@@ -120,6 +116,28 @@ public class ThreadManager {
 				stopActionAndRemove(oldTask.getName());
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
+
+
+			new JavaRunner(oldTask).compile();
+			new JavaRunner(newTask).compile();
+
+			StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
+
+			oldTask.codeInfo().getExecuteMethods().forEach(m -> {
+				StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
+			});
+
+
+
+			/**
+			 * 注册api到共享空间
+			 */
+			StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
+			newTask.codeInfo().getExecuteMethods().forEach(m -> {
+				StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), m.getName());
+			});
+
+
 		}
 	}
 
@@ -130,7 +148,7 @@ public class ThreadManager {
 			try {
 				ActionRunManager.stopAll(taskName);
 			} catch (Exception e) {
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
@@ -138,7 +156,7 @@ public class ThreadManager {
 			ActionRunManager.stopAll(taskName);
 
 		} catch (Exception e) {
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 			throw new TaskException(e.getMessage());
 		}
 
@@ -146,7 +164,7 @@ public class ThreadManager {
 
 	/**
 	 * 判断一个定时任务是否存在
-	 * 
+	 *
 	 * @param taskName
 	 * @return
 	 * @throws SchedulerException
@@ -163,7 +181,7 @@ public class ThreadManager {
 
 	/**
 	 * 取得所有的在运行状态的线程
-	 * 
+	 *
 	 * @throws SchedulerException
 	 */
 	public static List<TaskInfo> getAllThread() throws TaskException {
@@ -187,7 +205,7 @@ public class ThreadManager {
 
 	/**
 	 * 获得所有的调度任务
-	 * 
+	 *
 	 * @return
 	 * @throws SchedulerException
 	 */
@@ -216,7 +234,7 @@ public class ThreadManager {
 				taskInfo = new TaskInfo(key, task, DateUtils.getDate(split[3], "yyyyMMddHHmmss").getTime());
 			} catch (Exception e) {
 				taskInfo = new TaskInfo();
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 			}
 			taskInfo.setName(key);
 			actions.add(taskInfo);
@@ -232,7 +250,7 @@ public class ThreadManager {
 			QuartzSchedulerManager.stopScheduler();
 		} catch (SchedulerException e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		}
 	}
 
@@ -244,13 +262,13 @@ public class ThreadManager {
 			QuartzSchedulerManager.startScheduler();
 		} catch (SchedulerException e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		}
 	}
 
 	/**
 	 * 增加taskaction到运行队列中
-	 * 
+	 *
 	 * @param key
 	 * @param thread
 	 */
@@ -260,7 +278,7 @@ public class ThreadManager {
 
 	/**
 	 * 强行停止一个 thread
-	 * 
+	 *
 	 * @param key
 	 * @param taskName
 	 * @return
@@ -292,7 +310,7 @@ public class ThreadManager {
 
 	/**
 	 * 判断一个任务是否存在
-	 * 
+	 *
 	 * @param taskName
 	 * @return
 	 * @throws SchedulerException

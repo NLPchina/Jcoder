@@ -1,5 +1,22 @@
 package org.nlpcn.jcoder.service;
 
+import com.alibaba.fastjson.JSONObject;
+import com.google.common.cache.*;
+import org.nlpcn.jcoder.run.java.DynamicEngine;
+import org.nlpcn.jcoder.scheduler.TaskException;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.MD5Util;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nutz.ioc.Ioc;
+import org.nutz.ioc.IocLoader;
+import org.nutz.ioc.impl.NutIoc;
+import org.nutz.ioc.loader.json.JsonLoader;
+import org.nutz.ioc.loader.map.MapLoader;
+import org.nutz.lang.Lang;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -15,22 +32,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-
-import com.google.common.cache.*;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.run.java.DynamicEngine;
-import org.nlpcn.jcoder.scheduler.TaskException;
-import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.ioc.Ioc;
-import org.nutz.ioc.impl.NutIoc;
-import org.nutz.ioc.loader.json.JsonLoader;
-import org.nutz.lang.Lang;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.alibaba.fastjson.JSONObject;
 
 public class JarService {
 
@@ -57,7 +58,7 @@ public class JarService {
 	public static JarService getOrCreate(String groupName) {
 		try {
 			return CACHE.get(groupName);
-		} catch (ExecutionException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -81,7 +82,7 @@ public class JarService {
 
 	private String configPath = null;
 
-	private JSONObject config = readConfig();
+	private JSONObject config = null;
 
 	public Set<String> libPaths = new HashSet<>();
 
@@ -148,6 +149,7 @@ public class JarService {
 			engine.flush(classLoader);
 			flushIOC();
 		} catch (TaskException e) {
+			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
 	}
@@ -156,8 +158,16 @@ public class JarService {
 	private synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 
-		JsonLoader loader = new JsonLoader(iocPath);
+		JsonLoader loader = null;
+
+		if (!new File(iocPath).exists()) {
+			LOG.warn("iocPath: {} not exists so create an empty ioc!!!!!!!");
+			loader = new JsonLoader() ;
+		} else {
+			loader = new JsonLoader(iocPath);
+		}
 		ioc = new NutIoc(loader);
+
 
 		// 实例化lazy为false的bean
 		loader.getMap().entrySet().stream()
@@ -356,6 +366,10 @@ public class JarService {
 	 */
 	public List<File> findJars() throws IOException {
 		List<File> findAllJar = new ArrayList<>();
+
+		if (!new File(jarPath).exists()) {
+			return findAllJar;
+		}
 
 		Files.walkFileTree(new File(jarPath).toPath(), new SimpleFileVisitor<Path>() {
 

@@ -52,12 +52,12 @@ public class LocalSharedSpaceService extends SharedSpaceService {
 	}
 
 	@Override
-	public void removeMapping(String path) throws Exception {
+	public void removeMapping(String groupName, String className, String methodName, String hostPort) {
 
 	}
 
 	@Override
-	public void addMapping(String path) throws Exception {
+	public void addMapping(String groupName, String className, String methodName) {
 
 	}
 

@@ -75,16 +75,6 @@ public class SiteSetup implements Setup {
 		}
 
 		try {
-			LOG.info("begin init all task by db !");
-			nc.getIoc().get(TaskService.class, "taskService").initTaskFromDB();
-			LOG.info("begin init all task ok !");
-		} catch (IocException | TaskException e) {
-			e.printStackTrace();
-			LOG.error("init all task err ", e);
-			System.exit(-1);
-		}
-
-		try {
 			Thread.sleep(1000L);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
@@ -109,9 +99,6 @@ public class SiteSetup implements Setup {
 
 		// 运行日志打印到websocket任务
 		new Thread(new PrintConsoleJob()).start();
-
-		//定时备份代码
-		new Thread(new BackupJob()).start();
 
 		// 启动rpc服务,默认是当前端口+1 ;
 		LOG.info("begin start rpc server! on port " + StaticValue.RPCPORT);

@@ -46,8 +46,7 @@ public class DynamicEngine {
 		// if class load change , to flush all task
 		synchronized (StaticValue.MAPPING) {
 			TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class, "taskService");
-
-			taskService.initTaskFromDB();
+			taskService.initTaskFromDB(groupName);
 		}
 
 	}

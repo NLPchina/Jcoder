@@ -1,15 +1,20 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-import org.apache.curator.framework.recipes.cache.*;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
+import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +27,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
  * Created by Ansj on 05/12/2017.
@@ -47,8 +51,9 @@ public class SharedSpaceService {
 
 	/**
 	 * Host
+	 * /jcoder/host_group/[ipPort_groupName],[hostGroupInfo]
 	 */
-	public static final String HOST_PATH = StaticValue.ZK_ROOT + "/host";
+	public static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
 
 	/**
 	 * group /jcoder/task/group/className.task
@@ -78,7 +83,7 @@ public class SharedSpaceService {
 	/**
 	 * 监听路由缓存
 	 *
-	 * @Example /jcoder/mapping/className/methodName/hostPort,groupName
+	 * @Example /jcoder/mapping/[groupName]/[className]/[methodName]/[hostPort]
 	 */
 	private TreeCache mappingCache;
 
@@ -213,24 +218,35 @@ public class SharedSpaceService {
 
 	/**
 	 * 删除一个地址映射
-	 *
-	 * @param path
 	 */
-	public void removeMapping(String path) throws Exception {
-		zkDao.getZk().delete().forPath(makeMappingPath(path));
+	public void removeMapping(String groupName, String className, String methodName, String hostPort) {
+		try {
+			if (StringUtil.isBlank(methodName)) {
+				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + hostPort);
+			} else {
+				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort);
+			}
+			LOG.error("remove mapping {}/{}/{}/{} ok", hostPort, groupName, className, methodName);
+		} catch (Exception e) {
+			e.printStackTrace();
+			LOG.error("remove err {}/{}/{}/{} message: {}", hostPort, groupName, className, methodName, e.getMessage());
+		}
+
 	}
 
 	/**
 	 * 增加一个mapping到
-	 *
-	 * @param path
 	 */
-	public void addMapping(String path) throws Exception {
-		String className = path.split("/")[0];
-		Task task = TaskService.findTaskByCache(className);
-		byte[] data = task.getGroupName().getBytes();
-		path = makeMappingPath(path);
-		setData2ZK(path, data);
+	public void addMapping(String groupName, String className, String methodName) {
+		String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + StaticValue.getHostPort();
+
+		try {
+			setData2ZKByEphemeral(path, new byte[0]);
+			LOG.info("add mapping: {} ok", path);
+		} catch (Exception e) {
+			LOG.error("Add mapping " + path + " err", e);
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -280,7 +296,23 @@ public class SharedSpaceService {
 	 * @param path
 	 */
 	private InterProcessMutex lock(String path) {
-		return new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+		return lock;
+	}
+
+	/**
+	 * 解锁一个目录并尝试删除
+	 *
+	 * @param lock
+	 */
+	private void unLockAndDelete(String path, InterProcessMutex lock) {
+		if (lock != null && lock.isAcquiredInThisProcess()) {
+			try {
+				lock.release(); //释放锁
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
@@ -319,9 +351,9 @@ public class SharedSpaceService {
 	public String host(String groupName, String className, String mehtodName) {
 		Map<String, ChildData> currentChildren = null;
 		if (StringUtil.isBlank(mehtodName)) {
-			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + className);
+			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className);
 		} else {
-			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + className + "/" + mehtodName);
+			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className + "/" + mehtodName);
 		}
 
 		if (currentChildren == null || currentChildren.size() == 0) {
@@ -332,36 +364,24 @@ public class SharedSpaceService {
 
 		int sum = 0;
 		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
-			try {
-				if (StringUtil.isNotBlank(groupName)) {
-					String gName = new String(entry.getValue().getData(), "utf-8");
-					if (!groupName.equals(gName)) {
-						continue;
-					}
-				}
-			} catch (Exception e) {
-				LOG.error("get route err by " + entry.getKey(), e);
-				e.printStackTrace();
-				continue;
-			}
 
 			String hostPort = entry.getKey();
 
-			ChildData currentData = hostCache.getCurrentData(HOST_PATH + "/" + hostPort);
+			ChildData currentData = hostCache.getCurrentData(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName);
 
 			if (currentData == null) {
-				LOG.warn(HOST_PATH + "/" + hostPort + " got null , so skip");
+				LOG.warn(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " got null , so skip");
 				continue;
 			}
 
-			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(), HostInfo.class);
-			Integer weight = hostInfo.getWeight();
+			HostGroup hostGroup = JSONObject.parseObject(currentData.getData(), HostGroup.class);
+			Integer weight = hostGroup.getWeight();
 			if (weight <= 0) {
-				LOG.info(HOST_PATH + "/" + hostPort + " weight less than zero , so skip");
+				LOG.info(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " weight less than zero , so skip");
 				continue;
 			}
 			sum += weight;
-			hosts.add(KeyValue.with((hostInfo.isSsl() ? "https://" : "http://") + hostPort, weight));
+			hosts.add(KeyValue.with((hostGroup.isSsl() ? "https://" : "http://") + hostPort, weight));
 		}
 
 
@@ -412,7 +432,7 @@ public class SharedSpaceService {
 	}
 
 	private byte[] getData2ZK(String path) throws Exception {
-		LOG.info("get data to: from data ", path);
+		LOG.info("get data from: {} ", path);
 		byte[] bytes = null;
 		try {
 			bytes = zkDao.getZk().getData().forPath(path);
@@ -448,44 +468,21 @@ public class SharedSpaceService {
 		}
 	}
 
-	/**
-	 * 构建路径到zk的路径
-	 *
-	 * @param path
-	 * @return
-	 */
-	private String makeMappingPath(String path) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(MAPPING_PATH);
-		sb.append("/");
-		sb.append(path);
-		sb.append("/");
-		sb.append(StaticValue.getHostPort());
-
-		return sb.toString();
-	}
-
 
 	public SharedSpaceService init() throws Exception {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
-		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
-			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
+		if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
+			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH);
 		}
 
-		List<Different> differents = joinCluster();
+		Map<String, List<Different>> diffMaps = joinCluster();
 
-		//将本机注册到集群
+		diffMaps.entrySet().forEach((e) -> { //注册到集群
 
-		HostInfo hostInfo = new HostInfo();
 
-		hostInfo.setHost(StaticValue.getHost());
-		hostInfo.setPort(StaticValue.PORT);
-		hostInfo.setSsl(StaticValue.IS_SSL);
-		hostInfo.setWeight(differents.size() > 0 ? 0 : 100);
-		hostInfo.setCurrent(differents.size() == 0);
+		});
 
-		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -498,7 +495,7 @@ public class SharedSpaceService {
 		/**
 		 * 缓存主机
 		 */
-		hostCache = new TreeCache(zkDao.getZk(), HOST_PATH).start();
+		hostCache = new TreeCache(zkDao.getZk(), HOST_GROUP_PATH).start();
 
 
 		//监听task运行
@@ -518,74 +515,84 @@ public class SharedSpaceService {
 	 * 主机关闭的时候调用,平时不调用
 	 */
 	public void release() throws Exception {
-		//将本机权重设置为0
-		try {
-			ChildData currentData = hostCache.getCurrentData(HOST_PATH + StaticValue.getHostPort());
-			HostInfo hostInfo = JSONObject.parseObject(currentData.getData(), HostInfo.class);
-			hostInfo.setWeight(0);
-			;
-			setData2ZKByEphemeral(HOST_PATH + StaticValue.getHostPort(), JSONObject.toJSONBytes(hostInfo));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		relaseMapping(StaticValue.getHostPort());
-		zkDao.getZk().delete().forPath(HOST_PATH + StaticValue.getHostPort());
-
+		//TODO :relaseMapping(StaticValue.getHostPort());
 		mappingCache.close();
 		tokenCache.close();
 		hostCache.close();
 		zkDao.close();
 	}
 
-	/**
-	 * 释放删除本机的mpping信息
-	 *
-	 * @param hostPort
-	 */
-	private void relaseMapping(String hostPort) {
-		Map<String, ChildData> currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH);
-		//TODO:
-	}
-
 
 	/**
 	 * 加入集群,如果发生不同则记录到different中
 	 */
-	private List<Different> joinCluster() {
+	private Map<String, List<Different>> joinCluster() {
 
-		List<Task> tasks = StaticValue.systemDao.search(Task.class, "id");
-		if (tasks.size() == 0) {
-			return Collections.emptyList(); //一个空的主机无害
-		}
+		Map<String, List<Different>> result = new HashMap<>();
 
-		List<Different> allDiff = new ArrayList<>();
+		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
+		Collections.shuffle(groups); //因为要锁组，重新排序下防止顺序锁
 
-		tasks.stream().collect(Collectors.groupingBy(t -> t.getGroupName())).forEach((groupName, list) -> {
+		for (Group group : groups) {
+
+			List<Different> diffs = new ArrayList<>();
+
+			String groupName = group.getName();
+			List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
+
+			//增加或查找不同
 			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
 			try {
+				lock.acquire();
 				//判断group是否存在。如果不存在。则进行安全添加
 				if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
-					lock.acquire();
-					addGroup2Cluster(groupName, list);
+					addGroup2Cluster(groupName, tasks);
+					diffs = Collections.emptyList();
 				} else {
-					allDiff.addAll(diffGroup(groupName, list));
+					diffs = diffGroup(groupName, tasks);
 				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
-				if (lock != null && lock.isAcquiredInThisProcess()) {
-					try {
-						lock.release(); //释放锁
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
+				unLockAndDelete(GROUP_PATH + "/" + groupName, lock);
 			}
 
-		});
 
-		return allDiff;
+			/**
+			 * 根据解决构建信息
+			 */
+			HostGroup hostGroup = new HostGroup();
+			hostGroup.setSsl(StaticValue.IS_SSL);
+			hostGroup.setCurrent(diffs.size() == 0);
+			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+			try {
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				LOG.error("add host group info err !!!!!", e1);
+			}
+
+			tasks.forEach(task -> {
+				try {
+					new JavaRunner(task).compile();
+
+					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+
+					executeMethods.forEach(e -> {
+						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+					});
+
+				} catch (Exception e) {
+					//TODO: e.printStackTrace();
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
+				}
+			});
+
+			result.put(groupName, diffs);
+
+		}
+
+		return result;
 	}
 
 	/**
