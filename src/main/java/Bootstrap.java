@@ -124,7 +124,7 @@ public class Bootstrap {
 		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(7200);
 		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName("JCODER" + port);
 
-		context.setWelcomeFiles(new String[]{"login.html"});
+		context.setWelcomeFiles(new String[]{"index.html"});
 
 		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());
 

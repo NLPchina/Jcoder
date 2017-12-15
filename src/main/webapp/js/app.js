@@ -19,7 +19,7 @@ var vmApp = new Vue({
     	this.userName = localStorage.getItem("userName");
     	if(this.userName == null || this.userName == undefined){
     		JqdeBox.alert("请重新登录！",function(){
-    			window.location = window.location.protocol+"//"+window.location.host;
+    			window.location = 'login.html';
     		});
     	}
     	this.userId = localStorage.getItem("userId");
@@ -59,6 +59,8 @@ var vmApp = new Vue({
             });
         },
         checkURL: function () {
+        	debugger;
+        	
         	var $this = this;
             var url = location.hash.replace(/^#/, '');
 
@@ -81,7 +83,7 @@ var vmApp = new Vue({
                 $('#nav li.active').removeClass("active");
                 $('#nav li.open').removeClass("open");
 
-                $('#nav li:has(a[href="#' + href + '"])').addClass("active")
+                $('#nav li:has(a[href="#' + href.replace('/modules','') + '"])').addClass("active")
                     .parents('li').addClass("active").addClass("open")
                     .siblings().find('.submenu').slideUp('fast');
 
