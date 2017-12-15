@@ -46,7 +46,7 @@ $(function(){
 					localStorage.setItem("userType",data.obj.userType);
 					localStorage.setItem("AUTH_MAP",data.obj.AUTH_MAP);
 					localStorage.setItem("GROUP_LIST",data.obj.GROUP_LIST);
-					location.href = '/index.html';
+					location.href = '/.';
 				}else{
 					$('#message').addClass("alert alert-danger");
 					$('#message').text(data.message) ;
