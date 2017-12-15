@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
+import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -22,7 +23,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @IocBean
-@Filters(@By(type = CheckSession.class, args = { "user", "/login.html" }))
+@Filters(@By(type = AuthoritiesManager.class))
 @At("/admin/task")
 @Ok("json")
 public class TaskAction {

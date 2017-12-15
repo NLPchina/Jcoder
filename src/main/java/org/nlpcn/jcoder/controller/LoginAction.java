@@ -57,31 +57,13 @@ public class LoginAction {
 			restful.put("userType", user.getType());
 			
 			HttpSession session = Mvcs.getHttpSession();
-			session.setAttribute("user", name);
-			session.setAttribute("userId", user.getId());
-			session.setAttribute("userType", user.getType());
-			Condition co = null;
-			if (user.getType() != 1) {
-				List<UserGroup> userGroupList = basicDao.search(UserGroup.class, Cnd.where("userId", "=", user.getId()));
-				Long[] ids = new Long[userGroupList.size()];
-				Map<Long, Integer> authMap = new HashMap<>();
-				for (int i = 0; i < ids.length; i++) {
-					ids[i] = userGroupList.get(i).getGroupId();
-					authMap.put(ids[i], userGroupList.get(i).getAuth());
-				}
-				List<Group> GroupList = basicDao.search(Group.class, Cnd.where("id", "in", ids));
-				
-				restful.put("AUTH_MAP", authMap);
-				restful.put("GROUP_LIST", GroupList);
-				
-				session.setAttribute("AUTH_MAP", authMap);
-				session.setAttribute("GROUP_LIST", GroupList);
-			} else {
-				List<Group> groups = basicDao.search(Group.class, co);
-				restful.put("GROUP_LIST", groups);
-				session.setAttribute("GROUP_LIST", groups);
-			}
+			session.setAttribute("user", user);
+
 			LOG.info("user " + name + "login ok");
+
+			if(!StaticValue.IS_LOCAL) { //集群模式相互访问使用token
+				session.setAttribute("userToken", TokenService.regToken(user));
+			}
 
 			return Restful.OK.obj(restful) ;
 		} else {
@@ -148,9 +130,14 @@ public class LoginAction {
 	public void loginOut() {
 		HttpSession session = Mvcs.getHttpSession();
 		session.removeAttribute("user");
-		session.removeAttribute("authority");
-		session.removeAttribute("uGroups");
+		session.removeAttribute("userId");
 		session.removeAttribute("userType");
+		try {
+			StaticValue.space().removeToken(String.valueOf(session.getAttribute("userToken"))) ;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		session.removeAttribute("userToken");
 	}
 
 }

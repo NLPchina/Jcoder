@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.List;
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
+@Filters(@By(type = AuthoritiesManager.class))
 @Ok("json")
 public class UserAction {
 

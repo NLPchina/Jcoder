@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
@@ -38,7 +39,7 @@ public class SharedSpaceService {
 	/**
 	 * 路由表
 	 */
-	private static final String MAPPING_PATH = StaticValue.ZK_ROOT + "/mapping";
+	public static final String MAPPING_PATH = StaticValue.ZK_ROOT + "/mapping";
 
 	/**
 	 * 广播体操
@@ -190,51 +191,8 @@ public class SharedSpaceService {
 		return token;
 	}
 
-	/**
-	 * 获取所有的分组
-	 */
-	public List<String> getAllGroups() throws Exception {
-		return zkDao.getZk().getChildren().forPath(GROUP_PATH);
-	}
-
-	/**
-	 * 获取所有的分组
-	 */
-	public List<Group> getAllGroupList() throws Exception {
-
-		List<Group> result = new ArrayList<>() ;
-
-		getAllGroups().forEach(gName -> {
-			Group group = new Group();
-			group.setName(gName);
-			try {
-				List<String> children = zkDao.getZk().getChildren().forPath(GROUP_PATH + "/" + gName);
-				group.setTaskNum(children.size() - 1);
-
-				Set<String> set = new HashSet<>() ;
-				walkAllDataNode(set,GROUP_PATH + "/" + gName + "/file") ;
-				group.setFileNum(set.size());
-
-				set = new HashSet<>() ;
-				walkAllDataNode(set,MAPPING_PATH+"/"+gName) ;
-
-				Set<String> hosts = new HashSet<>() ;
-				for (String p : set) {
-					String[] split = p.split("/");
-					hosts.add(split[split.length-1]) ;
-				}
-				group.setHosts(hosts.toArray(new String[hosts.size()]));
-
-				result.add(group) ;
-
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
 
 
-		return result;
-	}
 
 	/**
 	 * 递归查询所有子文件
@@ -243,7 +201,7 @@ public class SharedSpaceService {
 	 * @return
 	 * @throws Exception
 	 */
-	private void walkAllDataNode(Set<String> set, String path) throws Exception {
+	public void walkAllDataNode(Set<String> set, String path) throws Exception {
 		try {
 			List<String> children = zkDao.getZk().getChildren().forPath(path);
 
@@ -562,6 +520,11 @@ public class SharedSpaceService {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH);
 		}
 
+
+		if (zkDao.getZk().checkExists().forPath(GROUP_PATH) == null) {
+			zkDao.getZk().create().creatingParentsIfNeeded().forPath(GROUP_PATH);
+		}
+
 		Map<String, List<Different>> diffMaps = joinCluster();
 
 
@@ -864,4 +827,7 @@ public class SharedSpaceService {
 		});
 	}
 
+	public CuratorFramework getZk() {
+		return zkDao.getZk();
+	}
 }

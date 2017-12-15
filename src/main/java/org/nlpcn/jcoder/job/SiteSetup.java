@@ -1,25 +1,13 @@
 package org.nlpcn.jcoder.job;
 
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.jsr356.server.ServerContainer;
-import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
-import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
-import org.nlpcn.jcoder.service.JarService;
-import org.nlpcn.jcoder.service.LocalSharedSpaceService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
-import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.dao.ZookeeperDao;
-import org.nutz.ioc.IocException;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.websocket.server.ServerEndpoint;
-import java.util.Arrays;
 
 public class SiteSetup implements Setup {
 
@@ -57,21 +45,15 @@ public class SiteSetup implements Setup {
 		if (StaticValue.IS_LOCAL) {
 			LOG.info("stared server by local model");
 			StaticValue.setMaster(true);
-			try {
-				StaticValue.setSharedSpace(new LocalSharedSpaceService().init());
-			} catch (Exception e) {
-				LOG.error("zookper err ",e);
-				System.exit(-1);
-			}
 		} else {
 			LOG.info("stared server by cluster model");
+			StaticValue.setMaster(false);
 			try {
 				StaticValue.setSharedSpace(new SharedSpaceService().init());
 			} catch (Exception e) {
 				LOG.error("zookper err ",e);
 				System.exit(-1);
 			}
-			StaticValue.setMaster(false);
 		}
 
 		try {
@@ -111,21 +93,21 @@ public class SiteSetup implements Setup {
 			LOG.error("rpc server stop fail ", e);
 		}
 
-		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
-		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
-
-		final ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
-		Arrays.stream(nc.getIoc().getNames()).forEach(name -> {
-			Object object = nc.getIoc().get(Object.class, name);
-			if (object.getClass().getAnnotation(ServerEndpoint.class) != null) {
-				try {
-					configureContext.addEndpoint(object.getClass());
-					LOG.info("add " + object.getClass() + " in websocket container");
-				} catch (Exception e) {
-					LOG.error("add " + object.getClass() + " in websocket container fail!!", e);
-				}
-			}
-		});
+//		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
+//		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
+//
+//		final ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
+//		Arrays.stream(nc.getIoc().getNames()).forEach(name -> {
+//			Object object = nc.getIoc().get(Object.class, name);
+//			if (object.getClass().getAnnotation(ServerEndpoint.class) != null) {
+//				try {
+//					configureContext.addEndpoint(object.getClass());
+//					LOG.info("add " + object.getClass() + " in websocket container");
+//				} catch (Exception e) {
+//					LOG.error("add " + object.getClass() + " in websocket container fail!!", e);
+//				}
+//			}
+//		});
 
 
 		LOG.info("start all ok , goodluck YouYou");

@@ -11,6 +11,7 @@ import org.nutz.mvc.ActionChain;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.Processor;
+import org.nutz.mvc.impl.NutActionChain;
 
 public class JcoderActionChain implements ActionChain {
 

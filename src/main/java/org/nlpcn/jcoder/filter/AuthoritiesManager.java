@@ -11,13 +11,11 @@ import javax.servlet.http.HttpSession;
 public class AuthoritiesManager implements ActionFilter {
 
 	private String name;
-	private String value;
 	private String path;
 
-	public AuthoritiesManager(String name, String value, String path) {
-		this.name = name;
-		this.path = path;
-		this.value = value;
+	public AuthoritiesManager() {
+		this.name = "user";
+		this.path = "/login.html" ;
 	}
 
 	@Override
@@ -30,14 +28,8 @@ public class AuthoritiesManager implements ActionFilter {
 
 		@SuppressWarnings("all")
 		Object obj = session.getAttribute(name);
-		if (value != null) {
-			if (!value.equals(String.valueOf(obj))) {
-				return new ServerRedirectView(path);
-			}
-		} else {
-			if (obj != null) {
-				return new ServerRedirectView(path);
-			}
+		if (obj == null) {
+			return new ServerRedirectView(path);
 		}
 
 		return null;

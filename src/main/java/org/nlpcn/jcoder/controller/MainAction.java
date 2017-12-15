@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.filter.IpErrorCountFilter;
 import org.nlpcn.jcoder.service.TaskService;
@@ -28,7 +29,7 @@ import java.util.List;
  */
 
 @IocBean
-@Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
+@Filters(@By(type = AuthoritiesManager.class))
 @Ok("json")
 public class MainAction {
 
@@ -42,8 +43,9 @@ public class MainAction {
 
 		JSONArray result = new JSONArray() ;
 
-		boolean isAdmin = (Integer) Mvcs.getHttpSession().getAttribute("userType") == 1 ;
+		User user = (User) Mvcs.getHttpSession().getAttribute("user");
 
+		boolean isAdmin = user.getType()  == 1 ;
 
 		List<String> allGroups = StaticValue.space().getAllGroups();
 
