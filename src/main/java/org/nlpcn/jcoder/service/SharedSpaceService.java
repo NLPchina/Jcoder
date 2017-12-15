@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -189,29 +190,90 @@ public class SharedSpaceService {
 		return token;
 	}
 
-    /**
-     * 获取所有的分组
-     */
-    public List<String> getAllGroups() throws Exception {
-        return zkDao.getZk().getChildren().forPath(GROUP_PATH);
-    }
+	/**
+	 * 获取所有的分组
+	 */
+	public List<String> getAllGroups() throws Exception {
+		return zkDao.getZk().getChildren().forPath(GROUP_PATH);
+	}
 
-    /**
-     * 根据分组名称获取所有Task
-     *
-     * @param groupName 组名
-     * @return
-     * @throws Exception
-     */
-    public List<Task> getTasksByGroupName(String groupName) throws Exception {
-        String path = GROUP_PATH + "/" + groupName;
-        List<String> taskNames = zkDao.getZk().getChildren().forPath(path);
-        List<Task> tasks = new ArrayList<>(taskNames.size());
-        for (String name : taskNames) {
-            tasks.add(JSONObject.parseObject(zkDao.getZk().getData().forPath(path + "/" + name), Task.class));
-        }
-        return tasks;
-    }
+	/**
+	 * 获取所有的分组
+	 */
+	public List<Group> getAllGroupList() throws Exception {
+
+		List<Group> result = new ArrayList<>() ;
+
+		getAllGroups().forEach(gName -> {
+			Group group = new Group();
+			group.setName(gName);
+			try {
+				List<String> children = zkDao.getZk().getChildren().forPath(GROUP_PATH + "/" + gName);
+				group.setTaskNum(children.size() - 1);
+
+				Set<String> set = new HashSet<>() ;
+				walkAllDataNode(set,GROUP_PATH + "/" + gName + "/file") ;
+				group.setFileNum(set.size());
+
+				set = new HashSet<>() ;
+				walkAllDataNode(set,MAPPING_PATH+"/"+gName) ;
+
+				Set<String> hosts = new HashSet<>() ;
+				for (String p : set) {
+					String[] split = p.split("/");
+					hosts.add(split[split.length-1]) ;
+				}
+				group.setHosts(hosts.toArray(new String[hosts.size()]));
+
+				result.add(group) ;
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+
+
+		return result;
+	}
+
+	/**
+	 * 递归查询所有子文件
+	 * @param set
+	 * @param path
+	 * @return
+	 * @throws Exception
+	 */
+	private void walkAllDataNode(Set<String> set, String path) throws Exception {
+		try {
+			List<String> children = zkDao.getZk().getChildren().forPath(path);
+
+			if (children == null || children.size() == 0) {
+				set.add(path);
+			}
+			for (String child : children) {
+				walkAllDataNode(set, path + "/" + child) ;
+			}
+		} catch (Exception e) {
+			LOG.error("walk file err: "+path);
+		}
+	}
+
+	/**
+	 * 根据分组名称获取所有Task
+	 *
+	 * @param groupName 组名
+	 * @return
+	 * @throws Exception
+	 */
+	public List<Task> getTasksByGroupName(String groupName) throws Exception {
+		String path = GROUP_PATH + "/" + groupName;
+		List<String> taskNames = zkDao.getZk().getChildren().forPath(path);
+		List<Task> tasks = new ArrayList<>(taskNames.size());
+		for (String name : taskNames) {
+			tasks.add(JSONObject.parseObject(zkDao.getZk().getData().forPath(path + "/" + name), Task.class));
+		}
+		return tasks;
+	}
 
 	/**
 	 * 注册一个token,token必须是刻一用路径描述的
@@ -502,11 +564,6 @@ public class SharedSpaceService {
 
 		Map<String, List<Different>> diffMaps = joinCluster();
 
-		diffMaps.entrySet().forEach((e) -> { //注册到集群
-
-
-		});
-
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -550,7 +607,7 @@ public class SharedSpaceService {
 	/**
 	 * 加入集群,如果发生不同则记录到different中
 	 */
-	private Map<String, List<Different>> joinCluster() {
+	public Map<String, List<Different>> joinCluster() {
 
 		Map<String, List<Different>> result = new HashMap<>();
 

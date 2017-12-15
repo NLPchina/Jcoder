@@ -23,6 +23,13 @@ public class Group {
     @Column("create_time")
     private Date createTime;
 
+    private int fileNum ;
+
+    private int taskNum ;
+
+    private int jarNum ;
+
+    private String[] hosts ;
 
     private List<Map<String,Object>> users;
 
@@ -58,7 +65,29 @@ public class Group {
         this.createTime = createTime;
     }
 
+    public int getTaskNum() {
+        return taskNum;
+    }
 
+    public void setTaskNum(int taskNum) {
+        this.taskNum = taskNum;
+    }
+
+    public int getJarNum() {
+        return jarNum;
+    }
+
+    public void setJarNum(int jarNum) {
+        this.jarNum = jarNum;
+    }
+
+    public String[] getHosts() {
+        return hosts;
+    }
+
+    public void setHosts(String[] hosts) {
+        this.hosts = hosts;
+    }
 
     public List<Map<String, Object>> getUsers() {
 		return users;
@@ -68,7 +97,16 @@ public class Group {
 		this.users = users;
 	}
 
-	@Override
+    public int getFileNum() {
+        return fileNum;
+    }
+
+    public void setFileNum(int fileNum) {
+        this.fileNum = fileNum;
+    }
+
+
+    @Override
     public String toString() {
 	return "Group [id=" + id + ", name=" + name + ", description="
 		+ description + ", createTime=" + createTime + "]";

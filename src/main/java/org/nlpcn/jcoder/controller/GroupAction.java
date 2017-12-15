@@ -5,20 +5,25 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
+import org.nutz.http.Http;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class, args = { "userType", "1", "/login.html" }))
@@ -38,7 +43,7 @@ public class GroupAction {
 
     @At
     public Restful list() throws Exception {
-        return Restful.instance(StaticValue.space().getAllGroups());
+        return Restful.instance(StaticValue.space().getAllGroupList());
     }
 
 	@At("/auth/delUserGroup")
@@ -109,10 +114,37 @@ public class GroupAction {
 	}
 
 	@At("/add")
-	public Restful addG(@Param("..") Group group) throws Exception {
-		if (groupNameDiff(group.getName())) {
-			groupService.save(group) ;
+	public Restful addGroup(@Param("host_ports") Set<String> hostPorts , @Param("..") Group group ,@Param("first") boolean first) throws Exception {
+
+		
+
+		if(hostPorts.contains(StaticValue.getHostPort())){
+			File file = new File(StaticValue.GROUP_FILE, group.getName());
+			file.mkdirs() ;
+			File ioc = new File(StaticValue.GROUP_FILE, group.getName()+"/resoureces");
+			ioc.mkdir()  ;
+			File lib = new File(StaticValue.GROUP_FILE, group.getName()+"/lib");
+			lib.mkdir();
+
+			IOUtil.Writer(new File(ioc,"ioc.js").getAbsolutePath(),"utf-8","var ioc = {\n\t\n};");
+
+			IOUtil.Writer(new File(lib, "pom.xml").getAbsolutePath(), "utf-8",
+					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>0.1</version>\n"
+							+ "	\n" + "	<dependencies>\n" + "	</dependencies>\n" + "\n" + "	<build>\n" + "		<sourceDirectory>src/main/java</sourceDirectory>\n"
+							+ "		<testSourceDirectory>src/test/java</testSourceDirectory>\n" + "		\n" + "		<plugins>\n" + "			<plugin>\n"
+							+ "				<artifactId>maven-compiler-plugin</artifactId>\n" + "				<version>3.3</version>\n" + "				<configuration>\n"
+							+ "					<source>1.8</source>\n" + "					<target>1.8</target>\n" + "					<encoding>UTF-8</encoding>\n"
+							+ "					<compilerArguments>\n" + "						<extdirs>lib</extdirs>\n" + "					</compilerArguments>\n"
+							+ "				</configuration>\n" + "			</plugin>\n" + "		</plugins>\n" + "	</build>\n" + "</project>\n" + "");
+
+
+			basicDao.save(group) ;
+
+			StaticValue.space().joinCluster() ;
 		}
+
 		return Restful.OK.msg("添加成功！");
 	}
 
