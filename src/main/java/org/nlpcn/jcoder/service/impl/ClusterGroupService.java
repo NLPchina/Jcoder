@@ -39,12 +39,14 @@ public class ClusterGroupService implements GroupService {
 				group.setFileNum(set.size());
 
 				set = new HashSet<>() ;
-				sharedSpaceService.walkAllDataNode(set,MAPPING_PATH+"/"+gName) ;
+
+				List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
 
 				Set<String> hosts = new HashSet<>() ;
-				for (String p : set) {
-					String[] split = p.split("/");
-					hosts.add(split[split.length-1]) ;
+				for (String p : hostGroupPath) {
+					String[] split = p.split("_");
+					if(gName.equals(split[1]))
+					hosts.add(split[0]) ;
 				}
 				group.setHosts(hosts.toArray(new String[hosts.size()]));
 

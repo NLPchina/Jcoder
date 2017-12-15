@@ -27,6 +27,7 @@ import java.util.Set;
 @Filters(@By(type = AuthoritiesManager.class))
 @At("/admin/group")
 @Ok("json")
+@Fail("http:500")
 public class GroupAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupAction.class);
@@ -52,7 +53,6 @@ public class GroupAction {
 
 
 	@At
-	@Fail("{'ok':false}")
 	public Restful diff(@Param("name") String name) {
 		Condition con = Cnd.where("name", "=", name);
 		int count = basicDao.searchCount(Group.class, con);

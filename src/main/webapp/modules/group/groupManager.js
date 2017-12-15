@@ -14,11 +14,7 @@ var groupManager = new Vue({
               JqdeBox.unloading();
               if(data.ok){
             	  $this.groups = data.obj;
-<<<<<<< HEAD
 					return false;
-=======
-				  return false;
->>>>>>> 72912373ed990c0f482c155907d0108d45528e9e
 			  }
           });
 	  },

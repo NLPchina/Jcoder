@@ -53,7 +53,7 @@ public class JcoderFilter extends NutFilter {
 		if (path.startsWith("/api/")) {
 			_doFilter(chain, request, response);
 		} else {
-			if (StringUtil.isBlank("host") || "*".equals(host) || StaticValue.SELF_HOST.equals(host) ||host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
+			if (StringUtil.isBlank(host) || "*".equals(host) || StaticValue.SELF_HOST.equals(request.getServerName()) ||host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
 			} else {
 				_doAuthoErr(request, response);

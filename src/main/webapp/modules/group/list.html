@@ -37,7 +37,9 @@
 							<td  class="center">{{group.taskNum}}</td>
 							<td  class="center">{{group.jarNum}}</td>
 							<td  class="center">{{group.fileNum}}</td>
-							<td  class="center">{{group.hosts}}</td>
+							<td  class="center">
+								<span class="label label-info label-white middle" v-for="host in group.hosts">{{host}}</span>
+							</td>
 							<td  class="center">
 								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
 		                            <div class="editbutton" style="display:inline;">

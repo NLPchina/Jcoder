@@ -27,4 +27,9 @@ public class LocalGroupSerivce implements GroupService{
 	public void delete(Group group) {
 
 	}
+
+	@Override
+	public List<String> getAllGroupNames() throws Exception {
+		return null;
+	}
 }

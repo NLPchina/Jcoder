@@ -8,16 +8,14 @@ import com.google.common.collect.Multimaps;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.filter.IpErrorCountFilter;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +29,16 @@ import java.util.List;
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
 @Ok("json")
+@Fail("http:500")
 public class MainAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
 
 	@Inject
 	private TaskService taskService;
+
+	@Inject
+	private GroupService groupService;
 
 	@At("/admin/main/left")
 	public Restful left() throws Exception {
@@ -47,7 +49,7 @@ public class MainAction {
 
 		boolean isAdmin = user.getType()  == 1 ;
 
-		List<String> allGroups = StaticValue.space().getAllGroups();
+		List<String> allGroups = groupService.getAllGroupNames();
 
 		//task 管理
 		JSONArray submenus = new JSONArray() ;
