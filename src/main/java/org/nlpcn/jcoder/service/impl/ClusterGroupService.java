@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.*;
 
@@ -66,6 +67,12 @@ public class ClusterGroupService implements GroupService {
 	 */
 	public List<String> getAllGroupNames() throws Exception {
 		return sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH);
+	}
+
+	@Override
+	public List<String> getAllHosts() throws Exception {
+		List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
+		return hostGroupPath.stream().map(s -> s.split("_")[0]).collect(Collectors.toList()) ;
 	}
 
 	@Override

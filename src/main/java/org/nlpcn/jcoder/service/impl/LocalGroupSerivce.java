@@ -32,4 +32,9 @@ public class LocalGroupSerivce implements GroupService{
 	public List<String> getAllGroupNames() throws Exception {
 		return null;
 	}
+
+	@Override
+	public List<String> getAllHosts() {
+		return null;
+	}
 }

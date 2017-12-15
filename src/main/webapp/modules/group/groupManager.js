@@ -2,10 +2,13 @@ var groupManager = new Vue({
   el: '#groupManager',
   data: {
     groups: [],
+    hosts: [],
     item:{}
   },
   mounted:function(){
 	  this.groupList();
+	  this.hostList();
+
   },
   methods:{
 	  groupList:function(){
@@ -18,6 +21,16 @@ var groupManager = new Vue({
 			  }
           });
 	  },
+		hostList:function(){
+			  var $this = this;
+			  Jcoder.ajax('/admin/group/hostList', 'post',null,null).then(function (data) {
+					JqdeBox.unloading();
+					if(data.ok){
+					  $this.hosts = data.obj;
+						return false;
+				  }
+				});
+		},
 	  add:function(groupInfo){
 		  var $this = this;
 		  var vUrl = '/admin/group/add';

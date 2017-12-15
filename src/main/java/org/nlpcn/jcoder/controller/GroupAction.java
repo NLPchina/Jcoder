@@ -47,6 +47,11 @@ public class GroupAction {
 	}
 
 	@At
+	public Restful hostList() throws Exception {
+		return Restful.instance(groupService.getAllHosts());
+	}
+
+	@At
 	public Restful delete(@Param("name") String name) throws Exception {
 		return null;
 	}
