@@ -151,7 +151,7 @@ var Jcoder = {
     				reject(XMLHttpRequest);
     			}
     		});
-    	})
+    	});
     }
 }
 

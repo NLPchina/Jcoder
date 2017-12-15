@@ -13,8 +13,8 @@ var groupManager = new Vue({
 		  Jcoder.ajax('/admin/group/list', 'post',null,null).then(function (data) {
               JqdeBox.unloading();
               if(data.ok){
-            	  $this.groups = data.obj.groups;
-					return false;
+            	  $this.groups = data.obj;
+				  return false;
 			  }
           });
 	  },
