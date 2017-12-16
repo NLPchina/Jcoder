@@ -27,27 +27,22 @@ import java.util.zip.ZipOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.nlpcn.jcoder.util.IOUtil;
+import com.alibaba.fastjson.JSONArray;
+import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.domain.JarInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
-import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.JsonResult;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.Cnd;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.AdaptBy;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
 import org.slf4j.Logger;
@@ -334,4 +329,70 @@ public class JarAction {
 		}
 	}
 
+	/**
+	 *
+	 * Created by Ansj on 14/12/2017.
+	 */
+
+	@IocBean
+	@Filters(@By(type = AuthoritiesManager.class))
+	@Ok("json")
+	@Fail("http:500")
+	public static class MainAction {
+
+		private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
+
+		@Inject
+		private TaskService taskService;
+
+		@Inject
+		private GroupService groupService;
+
+		@At("/admin/main/left")
+		public Restful left() throws Exception {
+
+			JSONArray result = new JSONArray() ;
+
+			User user = (User) Mvcs.getHttpSession().getAttribute("user");
+
+			boolean isAdmin = user.getType()  == 1 ;
+
+			List<String> allGroups = groupService.getAllGroupNames();
+
+			//task 管理
+			JSONArray submenus = new JSONArray() ;
+			for (String groupName : allGroups) {
+				submenus.add(ImmutableMap.of("name",groupName,"url","task/list.html?name="+groupName)) ;
+			}
+			result.add(ImmutableMap.of("name","Task管理","submenus",submenus)) ;
+
+
+			//jar 管理
+			submenus = new JSONArray() ;
+			for (String groupName : allGroups) {
+				submenus.add(ImmutableMap.of("name",groupName,"url","jar/list.html?name="+groupName)) ;
+			}
+			result.add(ImmutableMap.of("name","Jar管理","submenus",submenus)) ;
+
+
+			//Resource管理
+			submenus = new JSONArray() ;
+			for (String groupName : allGroups) {
+				submenus.add(ImmutableMap.of("name",groupName,"url","resource/list.html?name="+groupName)) ;
+			}
+			result.add(ImmutableMap.of("name","Resource管理","submenus",submenus)) ;
+
+
+
+			if(isAdmin){
+				submenus = new JSONArray() ;
+				submenus.add(ImmutableMap.of("name","用户管理","url","user/list.html")) ;
+				submenus.add(ImmutableMap.of("name","Group管理","url","group/list.html")) ;
+				result.add(ImmutableMap.of("name","系统管理","submenus",submenus)) ;
+			}
+
+			return Restful.instance().obj(result) ;
+
+		}
+	}
 }

@@ -54,6 +54,7 @@ public class SharedSpaceService {
 	/**
 	 * Host
 	 * /jcoder/host_group/[ipPort_groupName],[hostGroupInfo]
+	 * /jcoder/host_group/[ipPort]
 	 */
 	public static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
 
@@ -529,6 +530,7 @@ public class SharedSpaceService {
 		}
 
 
+
 		if (zkDao.getZk().checkExists().forPath(GROUP_PATH) == null) {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(GROUP_PATH);
 		}
@@ -582,8 +584,20 @@ public class SharedSpaceService {
 
 		Map<String, List<Different>> result = new HashMap<>();
 
+
+
 		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
 		Collections.shuffle(groups); //因为要锁组，重新排序下防止顺序锁
+
+		try {
+			if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH+"/"+StaticValue.getHostPort()) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH+"/"+StaticValue.getHostPort());
+			}
+		} catch (KeeperException.NodeExistsException e) {
+
+		} catch (Exception e){
+			e.printStackTrace();
+		}
 
 		for (Group group : groups) {
 
