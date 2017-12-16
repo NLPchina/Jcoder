@@ -71,10 +71,6 @@ public class GroupAction {
 	@At
 	public Restful add(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
-		Set<String> hostPortsArr = new HashSet<>();
-
-		Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-
 		if (!first) {
 			File file = new File(StaticValue.GROUP_FILE, name);
 			file.mkdirs();
@@ -103,6 +99,11 @@ public class GroupAction {
 
 			StaticValue.space().joinCluster();
 		} else {
+
+			Set<String> hostPortsArr = new HashSet<>();
+
+			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+
 			boolean check = proxyService.post(hostPortsArr, "/admin/group/diff", ImmutableMap.of("name", name, "first", false), 1000, (List<Response> list) -> {
 				boolean flag = true;
 				for (Response r : list) {

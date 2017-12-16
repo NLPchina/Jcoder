@@ -29,7 +29,6 @@ import java.util.List;
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
 @Ok("json")
-@Fail("http:500")
 public class MainAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
