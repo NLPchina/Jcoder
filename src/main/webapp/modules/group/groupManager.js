@@ -21,7 +21,6 @@ var groupManager = new Vue({
 		  var $this = this;
 		  var vUrl = '/admin/group/add';
 		  var vT = 'GroupAdd';
-		  var msg = '添加成功！';
 
 		  JqdeBox.dialog({
               title: vT,
@@ -33,7 +32,7 @@ var groupManager = new Vue({
                       JqdeBox.unloading();
                       if(data.ok){
                     	  $this.groupList();
-  	  					  JqdeBox.message(true, msg);
+  	  					  JqdeBox.message(true, data.message);
   	  				  }else{
   	  					JqdeBox.message(false, data.message);
   	  				  }

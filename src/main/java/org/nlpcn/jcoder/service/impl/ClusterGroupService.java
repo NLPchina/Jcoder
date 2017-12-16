@@ -15,18 +15,18 @@ import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.*;
 
-@IocBean(factory="org.nlpcn.jcoder.service.ServiceFactory#createGroupService")
+@IocBean(factory = "org.nlpcn.jcoder.service.ServiceFactory#createGroupService")
 public class ClusterGroupService implements GroupService {
 
 	private SharedSpaceService sharedSpaceService;
 
-	public ClusterGroupService(SharedSpaceService sharedSpaceService){
-		this.sharedSpaceService = sharedSpaceService ;
+	public ClusterGroupService(SharedSpaceService sharedSpaceService) {
+		this.sharedSpaceService = sharedSpaceService;
 	}
 
 	@Override
 	public List<Group> list() throws Exception {
-		List<Group> result = new ArrayList<>() ;
+		List<Group> result = new ArrayList<>();
 
 		getAllGroupNames().forEach(gName -> {
 			Group group = new Group();
@@ -35,23 +35,26 @@ public class ClusterGroupService implements GroupService {
 				List<String> children = sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH + "/" + gName);
 				group.setTaskNum(children.size() - 1);
 
-				Set<String> set = new HashSet<>() ;
-				sharedSpaceService.walkAllDataNode(set,GROUP_PATH + "/" + gName + "/file") ;
+				Set<String> set = new HashSet<>();
+				sharedSpaceService.walkAllDataNode(set, GROUP_PATH + "/" + gName + "/file");
 				group.setFileNum(set.size());
 
-				set = new HashSet<>() ;
+				set = new HashSet<>();
 
 				List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
 
-				Set<String> hosts = new HashSet<>() ;
+				Set<String> hosts = new HashSet<>();
 				for (String p : hostGroupPath) {
 					String[] split = p.split("_");
-					if(gName.equals(split[1]))
-					hosts.add(split[0]) ;
+					if (split.length == 1) {
+						continue;
+					}
+					if (gName.equals(split[1]))
+						hosts.add(split[0]);
 				}
 				group.setHosts(hosts.toArray(new String[hosts.size()]));
 
-				result.add(group) ;
+				result.add(group);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -72,7 +75,7 @@ public class ClusterGroupService implements GroupService {
 	@Override
 	public Set<String> getAllHosts() throws Exception {
 		List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
-		return hostGroupPath.stream().filter(s -> s.split("_").length==1).collect(Collectors.toSet()) ;
+		return hostGroupPath.stream().filter(s -> s.split("_").length == 1).collect(Collectors.toSet());
 	}
 
 	@Override

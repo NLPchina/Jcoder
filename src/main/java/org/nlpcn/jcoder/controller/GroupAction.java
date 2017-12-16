@@ -9,6 +9,7 @@ import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
@@ -20,10 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -63,9 +62,9 @@ public class GroupAction {
 		Condition con = Cnd.where("name", "=", name);
 		int count = basicDao.searchCount(Group.class, con);
 		if (count > 0) {
-			return Restful.ERR;
+			return Restful.instance().ok(false).msg("组" + name + "已存在");
 		}
-		return Restful.OK;
+		return Restful.instance().ok(true).msg("组" + name + "不存在");
 	}
 
 	@At
@@ -98,35 +97,26 @@ public class GroupAction {
 			basicDao.save(group);
 
 			StaticValue.space().joinCluster();
+
+			return Restful.OK.msg("添加成功");
 		} else {
 
 			Set<String> hostPortsArr = new HashSet<>();
 
 			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
 
-			boolean check = proxyService.post(hostPortsArr, "/admin/group/diff", ImmutableMap.of("name", name, "first", false), 1000, (List<Response> list) -> {
-				boolean flag = true;
-				for (Response r : list) {
-					flag = flag && JSONObject.parseObject(r.getContent()).getBoolean("ok");
-					if (!flag) {
-						return flag;
-					}
-				}
-				return flag;
-			});
+			String message = proxyService.post(hostPortsArr, "/admin/group/diff", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
 
-			if (!check) {
-				return Restful.instance().msg("添加失敗");
+			if (StringUtil.isNotBlank(message)) {
+				return Restful.instance().ok(false).code(500).msg(message);
 			}
 
+			message = proxyService.post(hostPortsArr, "/admin/group/add", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
 
-			List<Response> list = proxyService.post(hostPortsArr, "/admin/group/add", ImmutableMap.of("name", name, "first", false), 1000);
-
-
+			return Restful.instance().msg(message);
 		}
-
-		return Restful.OK.msg("添加成功！");
 	}
+
 
 	@At
 	public Restful delete(@Param("..") Group group) {

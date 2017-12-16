@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.nlpcn.jcoder.domain.User;
@@ -32,6 +33,32 @@ public class ProxyService {
 
 	protected static final Set<String> HOP_HEADERS = Sets.newHashSet("Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
 			"TE", "Trailers", "Transfer-Encoding", "Upgrade", "Content-Encoding");
+
+
+	/**
+	 * 合并所有的返回信息
+	 */
+	public static Function<Map<String, Response>, String> MERGE_MESSAGE_CALLBACK = (Map<String, Response> result) -> {
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, Response> entry : result.entrySet()) {
+			sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue().getContent()).getString("message") + " , ");
+		}
+		return sb.toString();
+	};
+
+	/**
+	 * 合并所有的okfalse的返回信息
+	 */
+	public static Function<Map<String, Response>, String> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, Response> result) -> {
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, Response> entry : result.entrySet()) {
+			boolean flag = JSONObject.parseObject(entry.getValue().getContent()).getBoolean("ok");
+			if (!flag) {
+				sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue().getContent()).getString("message") + ", ");
+			}
+		}
+		return sb.toString();
+	} ;
 
 	/**
 	 * 执行请求
@@ -165,12 +192,10 @@ public class ProxyService {
 	}
 
 
-	private ExecutorService threadPool = Executors.newFixedThreadPool(20);
-
 	/**
 	 * 同时提交到多个主机上
 	 *
-	 * @param urls
+	 * @param ipPorts
 	 * @param params
 	 * @param timeout
 	 * @param fun
@@ -178,22 +203,21 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public <T> T post(Set<String> urls, String path, Map<String, Object> params, int timeout, Function<List<Response>, T> fun) throws Exception {
-		List<Response> list = post(urls, path, params, timeout);
-		return fun.apply(list);
+	public <T> T post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Response>, T> fun) throws Exception {
+		Map<String, Response> result = post(ipPorts, path, params, timeout);
+		return fun.apply(result);
 	}
 
 	/**
 	 * 同时向多个主机提交
 	 *
-	 * @param urls
+	 * @param ipPorts
 	 * @param params
 	 * @param timeout
 	 * @return
 	 * @throws Exception
 	 */
-	public List<Response> post(Set<String> urls, String path, Map<String, Object> params, int timeout) throws Exception {
-		CompletionService<Response> cs = new ExecutorCompletionService<Response>(threadPool);
+	public Map<String, Response> post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
 		HttpSession session = Mvcs.getReq().getSession();
 		String token = (String) session.getAttribute("userToken");
@@ -205,18 +229,38 @@ public class ProxyService {
 			session.setAttribute("userToken", token);
 
 		}
-
 		final String fToken = token;
 
-		for (String url : urls) {
-			cs.submit(() -> Sender.create(Request.create("http://" + url + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of("authorization", fToken)))).setTimeout(timeout).setConnTimeout(timeout).send());
+		List<String> urlList = new ArrayList<>(ipPorts);
+
+		Map<String, Response> result = new LinkedHashMap<>();
+
+		ExecutorService threadPool = null;
+		try {
+			threadPool = Executors.newFixedThreadPool(urlList.size());
+
+			BlockingQueue<Future<Response>> queue = new LinkedBlockingQueue<Future<Response>>(urlList.size());
+
+			for (String ipPort : urlList) {
+				Future<Response> future = threadPool.submit(() -> {
+					LOG.info("post url : http://" + ipPort + path);
+					return Sender.create(Request.create("http://" + ipPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of("authorization", fToken)))).setTimeout(timeout).setConnTimeout(timeout).send();
+				});
+				queue.add(future);
+			}
+
+
+			for (int i = 0; i < urlList.size(); i++) {
+				result.put(urlList.get(i), queue.take().get());
+			}
+		} finally {
+			if (threadPool != null) {
+				threadPool.shutdown();
+			}
 		}
-		int size = urls.size();
-		List<Response> list = new ArrayList<>();
-		for (int i = 0; i < size; i++) {
-			list.add(cs.take().get());
-		}
-		return list;
+
+		return result;
+
 	}
 
 
