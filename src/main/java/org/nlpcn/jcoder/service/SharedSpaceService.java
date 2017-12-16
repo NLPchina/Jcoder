@@ -12,6 +12,7 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
@@ -19,7 +20,9 @@ import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -27,8 +30,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * Created by Ansj on 05/12/2017.
@@ -194,6 +197,7 @@ public class SharedSpaceService {
 
 	/**
 	 * 递归查询所有子文件
+	 *
 	 * @param set
 	 * @param path
 	 * @return
@@ -207,40 +211,33 @@ public class SharedSpaceService {
 				set.add(path);
 			}
 			for (String child : children) {
-				walkAllDataNode(set, path + "/" + child) ;
+				walkAllDataNode(set, path + "/" + child);
 			}
 		} catch (Exception e) {
-			LOG.error("walk file err: "+path);
+			LOG.error("walk file err: " + path);
 		}
 	}
 
-    /**
-     * 获取所有的分组
-     */
-    public List<String> getAllGroups() throws Exception {
-        return zkDao.getZk().getChildren().forPath(GROUP_PATH);
-    }
-
-    /**
-     * 根据分组名称获取所有Task
-     *
-     * @param groupName 组名
-     * @return
-     * @throws Exception
-     */
-    public List<Task> getTasksByGroupName(String groupName) throws Exception {
-        String path = GROUP_PATH + "/" + groupName;
-        List<String> taskNames = zkDao.getZk().getChildren().forPath(path);
-        List<Task> tasks = new ArrayList<>(taskNames.size());
+	/**
+	 * 根据分组名称获取所有Task
+	 *
+	 * @param groupName 组名
+	 * @return
+	 * @throws Exception
+	 */
+	public List<Task> getTasksByGroupName(String groupName) throws Exception {
+		String path = GROUP_PATH + "/" + groupName;
+		List<String> taskNames = zkDao.getZk().getChildren().forPath(path);
+		List<Task> tasks = new ArrayList<>(taskNames.size());
 		Task t;
-        for (String name : taskNames) {
+		for (String name : taskNames) {
 			t = JSONObject.parseObject(zkDao.getZk().getData().forPath(path + "/" + name), Task.class);
 			if (t != null) {
 				tasks.add(t);
 			}
-        }
-        return tasks;
-    }
+		}
+		return tasks;
+	}
 
 	/**
 	 * 注册一个token,token必须是刻一用路径描述的
@@ -310,37 +307,6 @@ public class SharedSpaceService {
 	public void addTask(Task task) throws Exception {
 		// /jcoder/task/group/className.task
 		setData2ZK(GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName(), JSONObject.toJSONBytes(task));
-	}
-
-	/**
-	 * 增加一个task到集群中，如果冲突返回false
-	 *
-	 * @param groupName
-	 * @return 是否冲突
-	 * @Param file
-	 */
-	public void addFile(String groupName, File file) throws Exception {
-		String md5ByFile = null;
-		if (file.isDirectory()) {
-			md5ByFile = "";
-		} else {
-			md5ByFile = MD5Util.getMd5ByFile(file);
-		}
-
-		File root = new File(StaticValue.GROUP_FILE, groupName);
-
-		StringBuilder sb = new StringBuilder();
-
-		while (!(file.equals(root))) {
-			System.out.println(file.getAbsoluteFile());
-			sb.insert(0, file.getName());
-			sb.insert(0, "/");
-			file = file.getParentFile();
-		}
-		;
-		sb.insert(0, "/" + groupName + "/file");
-
-		setData2ZK(GROUP_PATH + sb.toString(), md5ByFile.getBytes("utf-8"));
 	}
 
 	/**
@@ -530,7 +496,6 @@ public class SharedSpaceService {
 		}
 
 
-
 		if (zkDao.getZk().checkExists().forPath(GROUP_PATH) == null) {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(GROUP_PATH);
 		}
@@ -580,22 +545,20 @@ public class SharedSpaceService {
 	/**
 	 * 加入集群,如果发生不同则记录到different中
 	 */
-	public Map<String, List<Different>> joinCluster() {
+	public Map<String, List<Different>> joinCluster() throws IOException {
 
 		Map<String, List<Different>> result = new HashMap<>();
-
-
 
 		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
 		Collections.shuffle(groups); //因为要锁组，重新排序下防止顺序锁
 
 		try {
-			if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH+"/"+StaticValue.getHostPort()) == null) {
-				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH+"/"+StaticValue.getHostPort());
+			if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH + "/" + StaticValue.getHostPort()) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH + "/" + StaticValue.getHostPort());
 			}
 		} catch (KeeperException.NodeExistsException e) {
 
-		} catch (Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
@@ -606,16 +569,18 @@ public class SharedSpaceService {
 			String groupName = group.getName();
 			List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
 
+			List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
+
 			//增加或查找不同
 			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
 			try {
 				lock.acquire();
 				//判断group是否存在。如果不存在。则进行安全添加
 				if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
-					addGroup2Cluster(groupName, tasks);
+					addGroup2Cluster(groupName, tasks, fileInfos);
 					diffs = Collections.emptyList();
 				} else {
-					diffs = diffGroup(groupName, tasks);
+					diffs = diffGroup(groupName, tasks, fileInfos);
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -669,7 +634,8 @@ public class SharedSpaceService {
 	 * @return
 	 * @throws IOException
 	 */
-	private List<Different> diffGroup(String groupName, List<Task> list) throws IOException {
+	private List<Different> diffGroup(String groupName, List<Task> list, List<FileInfo> fileInfos) throws Exception {
+
 		final List<Different> diffs = new ArrayList<>();
 		for (Task task : list) {
 			Different different = new Different();
@@ -682,78 +648,55 @@ public class SharedSpaceService {
 			}
 		}
 
-		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
+		//先判断根结点
+		FileInfo root = JSONObject.parseObject(getData2ZK(GROUP_PATH + "/" + groupName + "/file"), FileInfo.class);
+		if (root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5())) {
+			LOG.info(groupName + " file md5 same so skip");
+			return diffs;
+		}
 
-		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+		LOG.info(groupName + " file changed find differents");
 
-			// 在访问子目录前触发该方法
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				if (!dir.toFile().isHidden()) {
-					Different different = diffFile(groupName, dir.toFile());
-					if (different != null) {
-						diffs.add(different);
-					}
+
+		Set<String> sets = new HashSet<>();
+		walkAllDataNode(sets, GROUP_PATH + "/" + groupName + "/file");
+
+
+		for (int i = 0; i < fileInfos.size() - 1; i++) {
+			FileInfo lInfo = fileInfos.get(i);
+			Different different = new Different();
+			different.setGroupName(groupName);
+			different.setPath(lInfo.getRelativePath());
+			different.setType(1);
+
+			if (!sets.contains(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath())) {
+				different.addMessage("文件在集群中不存在");
+			} else {
+				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
+				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
+				FileInfo cInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
+				if (!cInfo.equals(lInfo)) {
+					different.addMessage("文件内容不一致");
 				}
-				return FileVisitResult.CONTINUE;
+
 			}
-
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				if (!file.toFile().isHidden()) {
-					Different different = diffFile(groupName, file.toFile());
-					if (different != null) {
-						diffs.add(different);
-					}
-				}
-				return FileVisitResult.CONTINUE;
+			if (different.getMessage() != null) {
+				diffs.add(different);
 			}
+		}
 
-			private Different diffFile(String groupName, File file) {
+		for (String set : sets) {
+			Different different = new Different();
+			different.setGroupName(groupName);
+			different.setPath(set.replaceFirst(GROUP_PATH + "/" + groupName + "/file", ""));
+			different.setType(1);
+			different.addMessage("文件在本地不存在");
+			diffs.add(different);
+		}
 
-				String md5ByFile = null;
-				if (file.isDirectory()) {
-					md5ByFile = "";
-				} else {
-					MD5Util.getMd5ByFile(file);
-				}
-
-				File root = new File(StaticValue.GROUP_FILE, groupName);
-
-				StringBuilder sb = new StringBuilder();
-				while (!(file.equals(root))) {
-					sb.insert(0, file.getName());
-					sb.insert(0, "/");
-					file = file.getParentFile();
-				}
-				;
-
-				sb.insert(0, "/" + groupName + "/file");
-
-				Different different = new Different();
-				different.setGroupName(groupName);
-				different.setPath(sb.toString());
-				different.setType(1);
-
-				try {
-					byte[] bytes = getData2ZK(GROUP_PATH + sb.toString());
-
-					if (!md5ByFile.equals(new String(bytes))) {
-						different.addMessage("文件内容不一致");
-					}
-
-				} catch (Exception e) {
-					different.addMessage("文件在集群中不存在");
-				}
-
-
-				if (different.getMessage() == null) {
-					return null;
-				} else {
-					return different;
-				}
-			}
-		});
+		for (Different diff : diffs) {
+			LOG.info(diff.toString());
+		}
 
 		return diffs;
 
@@ -805,7 +748,8 @@ public class SharedSpaceService {
 	 * @param list
 	 * @throws IOException
 	 */
-	private void addGroup2Cluster(String groupName, List<Task> list) throws IOException {
+	private void addGroup2Cluster(String groupName, List<Task> list, List<FileInfo> fileInfos) throws IOException {
+
 		list.stream().forEach(t -> {
 			try {
 				addTask(t);
@@ -815,20 +759,36 @@ public class SharedSpaceService {
 			}
 		});
 
+		fileInfos.stream().forEach(fi -> {
+			try {
+				String relativePath = fi.getRelativePath();
+				if ("/".equals(relativePath)) {
+					setData2ZK(GROUP_PATH + "/" + groupName + "/file", JSONObject.toJSONBytes(fi));
+				} else {
+					setData2ZK(GROUP_PATH + "/" + groupName + "/file" + fi.getRelativePath(), JSONObject.toJSONBytes(fi));
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+
+
+	}
+
+
+	private List<FileInfo> listFileInfosByGroup(String groupName) throws IOException {
+
+		final List<FileInfo> result = new ArrayList<>();
 		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
 		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-
 			// 在访问子目录前触发该方法
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 				File file = dir.toFile();
-				if (!file.canRead() || file.isHidden()) {
-					return FileVisitResult.CONTINUE;
-				}
-				try {
-					addFile(groupName, file);
-				} catch (Exception e) {
-					e.printStackTrace();
+				if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+					LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+					return FileVisitResult.SKIP_SUBTREE;
 				}
 				return FileVisitResult.CONTINUE;
 			}
@@ -836,17 +796,57 @@ public class SharedSpaceService {
 			@Override
 			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
 				File file = path.toFile();
-				if (!file.canRead() || file.isHidden()) {
+				if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+					LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
 					return FileVisitResult.CONTINUE;
 				}
 				try {
-					addFile(groupName, file);
+					result.add(new FileInfo(file));
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 				return FileVisitResult.CONTINUE;
 			}
 		});
+
+
+		//先查缓存中是否存在用缓存做对比
+		String md5 = null;
+		List<Long> collect = result.stream().map(fi -> fi.lastModified().getTime()).sorted().collect(Collectors.toList());
+		String nowTimeMd5 = MD5Util.md5(collect.toString()); //当前文件的修改时间md5
+		File file = new File(StaticValue.GROUP_FILE, groupName + ".cache");
+		if (file.exists()) {
+			try (BufferedReader br = IOUtil.getReader(new FileInputStream(file), IOUtil.UTF8)) {
+				String temp = null;
+				while ((temp = br.readLine()) != null) {
+					String[] split = temp.split("\t");
+					if (split.length == 3 && groupName.equals(split[0])) {
+						String timeMd5 = split[1];
+						if (timeMd5.equals(nowTimeMd5)) {
+							md5 = split[2];
+						}
+					}
+				}
+
+			}
+		}
+
+		//本group本身的插入zk中用来比较md5加快对比
+		FileInfo root = new FileInfo(path.toFile());
+
+		if (StringUtil.isBlank(md5)) {
+			LOG.info("to computer md5 in gourp: " + groupName);
+			Set<String> ts = new TreeSet<>(result.stream().map(fi -> fi.getMd5()).collect(Collectors.toSet()));
+			md5 = MD5Util.md5(ts.toString());
+			root.setMd5(md5);
+			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, groupName + "\t" + nowTimeMd5 + "\t" + md5 + "\n");
+		} else {
+			LOG.info(groupName+" time md5 same so add it");
+			root.setMd5(md5);
+		}
+		result.add(root);
+
+		return result;
 	}
 
 	public CuratorFramework getZk() {

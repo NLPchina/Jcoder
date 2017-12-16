@@ -63,12 +63,12 @@ public class ResourceAction {
 		}
 
 		if (!file.getAbsolutePath().startsWith(RESOURCE_ROOT.getAbsolutePath())) {
-			result.add(new FileInfo(RESOURCE_ROOT, "DoNotPlayFire"));
+			result.add(new FileInfo(RESOURCE_ROOT));
 			return result;
 		}
 
 		if (!file.equals(RESOURCE_ROOT)) {
-			result.add(new FileInfo(file.getParentFile(), "../"));
+			result.add(new FileInfo(file.getParentFile()));
 		}
 
 		File[] files = file.listFiles();
