@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +29,6 @@ import java.util.Set;
 @Filters(@By(type = AuthoritiesManager.class))
 @At("/admin/group")
 @Ok("json")
-@Fail("http:500")
 public class GroupAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupAction.class);
@@ -61,34 +62,25 @@ public class GroupAction {
 	public Restful diff(@Param("name") String name) {
 		Condition con = Cnd.where("name", "=", name);
 		int count = basicDao.searchCount(Group.class, con);
+		if (count > 0) {
+			return Restful.ERR;
+		}
 		return Restful.OK;
 	}
 
 	@At
-	public Restful add(@Param("host_ports") Set<String> hostPorts, @Param("..") Group group, @Param("first") boolean first) throws Exception {
+	public Restful add(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
-		boolean check = proxyService.post(hostPorts, "/admin/group/diff", ImmutableMap.of("group", group, "first", false), 1000, (List<Response> list) -> {
-			boolean flag = true;
-			for (Response r : list) {
-				flag = flag && JSONObject.parseObject(r.getContent()).getBoolean("ok");
-				if (!flag) {
-					return flag;
-				}
-			}
-			return flag;
-		});
+		Set<String> hostPortsArr = new HashSet<>();
 
-		if(!check){
-			return Restful.instance().msg("添加失敗") ;
-		}
-
+		Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
 
 		if (!first) {
-			File file = new File(StaticValue.GROUP_FILE, group.getName());
+			File file = new File(StaticValue.GROUP_FILE, name);
 			file.mkdirs();
-			File ioc = new File(StaticValue.GROUP_FILE, group.getName() + "/resoureces");
+			File ioc = new File(StaticValue.GROUP_FILE, name + "/resoureces");
 			ioc.mkdir();
-			File lib = new File(StaticValue.GROUP_FILE, group.getName() + "/lib");
+			File lib = new File(StaticValue.GROUP_FILE, name + "/lib");
 			lib.mkdir();
 
 			IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", "var ioc = {\n\t\n};");
@@ -104,10 +96,32 @@ public class GroupAction {
 							+ "					<compilerArguments>\n" + "						<extdirs>lib</extdirs>\n" + "					</compilerArguments>\n"
 							+ "				</configuration>\n" + "			</plugin>\n" + "		</plugins>\n" + "	</build>\n" + "</project>\n" + "");
 
+			Group group = new Group();
+			group.setName(name);
 
 			basicDao.save(group);
 
 			StaticValue.space().joinCluster();
+		} else {
+			boolean check = proxyService.post(hostPortsArr, "/admin/group/diff", ImmutableMap.of("name", name, "first", false), 1000, (List<Response> list) -> {
+				boolean flag = true;
+				for (Response r : list) {
+					flag = flag && JSONObject.parseObject(r.getContent()).getBoolean("ok");
+					if (!flag) {
+						return flag;
+					}
+				}
+				return flag;
+			});
+
+			if (!check) {
+				return Restful.instance().msg("添加失敗");
+			}
+
+
+			List<Response> list = proxyService.post(hostPortsArr, "/admin/group/add", ImmutableMap.of("name", name, "first", false), 1000);
+
+
 		}
 
 		return Restful.OK.msg("添加成功！");

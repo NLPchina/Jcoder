@@ -1,5 +1,8 @@
 package org.nlpcn.jcoder.filter;
 
+import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionFilter;
 import org.nutz.mvc.Mvcs;
@@ -15,15 +18,25 @@ public class AuthoritiesManager implements ActionFilter {
 
 	public AuthoritiesManager() {
 		this.name = "user";
-		this.path = "/login.html" ;
+		this.path = "/login.html";
 	}
 
 	@Override
 	public View match(ActionContext actionContext) {
-		HttpSession session = Mvcs.getHttpSession(false);
+		HttpSession session = Mvcs.getHttpSession();
 
-		if (session == null) {
-			return new ServerRedirectView(path);
+		String tokenStr = actionContext.getRequest().getHeader("authorization");
+
+		if (StringUtil.isNotBlank(tokenStr)) {
+			try {
+				Token token = StaticValue.space().getToken(tokenStr);
+				if (token != null) {
+					actionContext.getRequest().getSession().setAttribute("user", token.getUser());
+					return null;
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		@SuppressWarnings("all")

@@ -70,9 +70,9 @@ public class ClusterGroupService implements GroupService {
 	}
 
 	@Override
-	public List<String> getAllHosts() throws Exception {
+	public Set<String> getAllHosts() throws Exception {
 		List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
-		return hostGroupPath.stream().map(s -> s.split("_")[0]).collect(Collectors.toList()) ;
+		return hostGroupPath.stream().map(s -> s.split("_")[0]).collect(Collectors.toSet()) ;
 	}
 
 	@Override

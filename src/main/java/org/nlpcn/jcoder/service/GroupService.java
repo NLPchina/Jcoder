@@ -24,6 +24,6 @@ public interface GroupService {
 	void save(Group group) ;
 	void delete(Group group) ;
 	public List<String> getAllGroupNames() throws Exception ;
-	public List<String> getAllHosts() throws Exception;
+	public Set<String> getAllHosts() throws Exception;
 
 }
