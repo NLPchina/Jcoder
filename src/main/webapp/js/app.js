@@ -15,7 +15,7 @@ var Jcoder = {
     			error: function (XMLHttpRequest, textStatus, errorThrown) {
     				if (errorThrown=="450") {
                         if (window.location.hash) {
-                            JqdeBox.alert(data.obj.message, function () {
+                            JqdeBox.alert(XMLHttpRequest.responseJSON.message, function () {
                                 window.location = './login.html';
                             });
                         } else {
