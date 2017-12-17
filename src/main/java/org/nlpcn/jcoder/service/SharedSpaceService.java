@@ -450,7 +450,7 @@ public class SharedSpaceService {
 		}
 	}
 
-	private byte[] getData2ZK(String path) throws Exception {
+	public byte[] getData2ZK(String path) throws Exception {
 		LOG.info("get data from: {} ", path);
 		byte[] bytes = null;
 		try {
@@ -833,6 +833,8 @@ public class SharedSpaceService {
 
 		//本group本身的插入zk中用来比较md5加快对比
 		FileInfo root = new FileInfo(path.toFile());
+
+		root.setLength(result.stream().mapToLong(f -> f.getLength()).sum());
 
 		if (StringUtil.isBlank(md5)) {
 			LOG.info("to computer md5 in gourp: " + groupName);

@@ -9,6 +9,7 @@ public class HostGroup implements Serializable{
 	private int weight ;
 	private boolean ssl ;
 	private boolean current ;
+	private String hostPort ;
 
 	public int getWeight() {
 		return weight;
@@ -32,5 +33,13 @@ public class HostGroup implements Serializable{
 
 	public void setCurrent(boolean current) {
 		this.current = current;
+	}
+
+	public String getHostPort() {
+		return hostPort;
+	}
+
+	public void setHostPort(String hostPort) {
+		this.hostPort = hostPort;
 	}
 }

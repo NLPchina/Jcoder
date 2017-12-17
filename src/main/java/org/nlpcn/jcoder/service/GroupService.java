@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -25,5 +26,6 @@ public interface GroupService {
 	void delete(Group group) ;
 	public List<String> getAllGroupNames() throws Exception ;
 	public Set<String> getAllHosts() throws Exception;
+	public List<HostGroup> getGroupHostList(String groupName) throws Exception ;
 
 }

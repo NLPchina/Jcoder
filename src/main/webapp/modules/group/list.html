@@ -25,7 +25,7 @@
 						<th class="center">组名称</th>
 						<th class="center">Task数</th>
 						<th class="center">文件数</th>
-						<th class="center">Jar数</th>
+						<th class="center">文件大小</th>
 						<th class="center">主机</th>
 						<th class="center">操作</th>
                     </tr>
@@ -35,19 +35,22 @@
 							<td  class="center">{{index+1}}</td>
 							<td  class="center">{{group.name}}</td>
 							<td  class="center">{{group.taskNum}}</td>
-							<td  class="center">{{group.jarNum}}</td>
 							<td  class="center">{{group.fileNum}}</td>
+							<td  class="center">{{group.fileLength/1000}}K</td>
 							<td  class="center">
-								<span class="label label-info label-white middle" v-for="host in group.hosts">{{host}}</span>
+								<span v-for="host in group.hosts">
+									<span v-show="host.current" class="label label-info label-white middle">{{host.hostPort}}</span>
+									<span v-show="!host.current" class="label label-danger label-white middle">{{host.hostPort}}</span>
+								</span>
 							</td>
 							<td  class="center">
 								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
 		                            <div class="editbutton" style="display:inline;">
-	                                    <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
-		                                    <i class="ace-icon fa fa-trash-o  bigger-130" @click="del(group);"></i>
+	                                    <a class="red" :href="'#/group/group_host_list.html?name='+group.name" style="margin-left:7px;" title="管理">
+		                                    <i class="ace-icon fa fa-cogs bigger-130"></i>
 		                                </a>
                                     </div>
-		                        </div> 
+		                        </div>
 							</td>
 						</tr>
                     </tbody>

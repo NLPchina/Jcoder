@@ -1,0 +1,94 @@
+<div id="groupHostList">
+    <div class="row">
+        <div class="col-xs-6">
+            <button class="btn btn-xs btn-info" @click="add()">
+                <i class="ace-icon glyphicon glyphicon-plus bigger-100"></i> 添加
+            </button>
+            <!--<button class="btn btn-xs btn-danger" @click="remove()" :disabled="ids.length==0">-->
+                <!--<i class="ace-icon glyphicon glyphicon-remove bigger-100"></i>删除-->
+            <!--</button>-->
+            <!--<button class="btn btn-xs btn-success" type="button" @click="emptyKeyword()">-->
+                <!--<i class="ace-icon glyphicon glyphicon-refresh bigger-100"></i>刷新-->
+            <!--</button>-->
+        </div>
+    </div>
+
+    <div class="space-4"></div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="table-responsive dataTables_wrapper">
+                <table id="dynamic-table" class="table table-striped table-bordered table-hover">
+                    <thead>
+                    <tr>
+						<th class="center">ID</th>
+						<th class="center">组名称</th>
+						<th class="center">主机名称</th>
+						<th class="center">SSL支持</th>
+						<th class="center">集群同步</th>
+						<th class="center col-xs-6">权重</th>
+						<th class="center">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody class="infor-tbody">
+                    	<tr v-for="(item, index) in items">
+							<td  class="center">{{index+1}}</td>
+							<td  class="center">{{groupName}}</td>
+							<td  class="center">{{item.hostPort}}</td>
+							<td  class="center">
+								<span v-show="item.ssl" class="label label-sm label-success">HTTPS</span>
+								<span v-show="!item.ssl" class="label label-sm label-success">HTTP</span>
+							</td>
+							<td  class="center">
+								<span v-show="item.current" class="label label-sm label-success">同步中</span>
+								<span v-show="!item.current" class="label label-sm label-danger">未同步</span>
+							</td>
+							<td  class="left">
+								<span class=" ui-slider-small ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all" style="width: 90%; float: left; margin: 15px;">
+                                    <div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-min" style="width: 42%;"></div>
+                                    <span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 42%;"></span>
+                                </span>
+
+							</td>
+							<td  class="center">
+								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+		                            <div class="editbutton" style="display:inline;">
+	                                    <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
+		                                    <i class="ace-icon fa fa-trash bigger-130"></i>
+		                                </a>
+                                    </div>
+		                        </div>
+							</td>
+						</tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" >
+var groupHostList = new Vue({
+  el: '#groupHostList',
+  data: {
+    items: [],
+    groupName: "",
+  },
+  mounted:function(){
+  	this.groupName = Tools.parseQuery(location.hash).name ;
+  	this.hostList() ;
+  },
+  methods:{
+	hostList:function(){
+		var $this = this;
+		Jcoder.ajax('/admin/group/groupHostList', 'post',{"name":$this.groupName},null).then(function (data) {
+			JqdeBox.unloading();
+			if(data.ok){
+			  $this.items = data.obj;
+			  return false ;
+		  }
+		});
+	}
+  }
+});
+</script>
