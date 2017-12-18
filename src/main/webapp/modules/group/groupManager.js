@@ -41,11 +41,6 @@ var groupManager = new Vue({
               }
           });
 	  },
-	  deleteByCluster: function(groupName){
-	  	JqdeBox.confirm("确定删除组："+groupName,function(aaa){
-	  	alert(aaa)
-	  		alert(groupName)
-	  	}) ;
-	  }
+
   }
 });

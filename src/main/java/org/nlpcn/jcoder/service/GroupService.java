@@ -8,7 +8,6 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.IocBean;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 
@@ -103,8 +102,8 @@ public class GroupService {
 		return sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH);
 	}
 
-	public Set<String> getAllHosts() throws Exception {
-		return sharedSpaceService.getHostGroupCache().keySet().stream().map(s -> s.split("_")[0]).collect(Collectors.toSet());
+	public List<String> getAllHosts() throws Exception {
+		return sharedSpaceService.getAllHosts();
 	}
 
 
