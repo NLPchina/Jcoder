@@ -1,7 +1,9 @@
 package org.nlpcn.jcoder.service;
 
+import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.*;
+
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -70,6 +72,7 @@ public class JarService {
 
 
 	private static final String MAVEN_PATH = "maven";
+	private static final String IOC_PATH = "ioc";
 	private static final String MD5 = "md5";
 
 	private String groupName;
@@ -154,7 +157,22 @@ public class JarService {
 		}
 	}
 
-
+	/**
+	 * 保存ioc文件
+	 *
+	 * @param code
+	 * @return
+	 * @throws IOException
+	 * @throws NoSuchAlgorithmException
+	 */
+	public void saveIoc(String groupName, String code) throws IOException, NoSuchAlgorithmException {
+		if(StringUtils.isEmpty(iocPath)){
+			new JarService(groupName);
+		}
+		IOUtil.Writer(iocPath, IOUtil.UTF8, code);
+		flushIOC();
+	}
+	
 	private synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 

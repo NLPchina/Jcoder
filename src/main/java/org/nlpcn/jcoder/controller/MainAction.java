@@ -73,6 +73,13 @@ public class MainAction {
 		}
 		result.add(ImmutableMap.of("name","Resource管理","submenus",submenus)) ;
 
+		
+		//IOC管理	
+		submenus = new JSONArray() ;
+		for (String groupName : allGroups) {
+			submenus.add(ImmutableMap.of("name",groupName,"url","ioc/index.html?name="+groupName)) ;
+		}
+		result.add(ImmutableMap.of("name","IOC管理","submenus",submenus)) ;
 
 
 		if(isAdmin){
