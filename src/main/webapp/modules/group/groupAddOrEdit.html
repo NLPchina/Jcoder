@@ -13,18 +13,11 @@
                 <div class="col-xs-12">
                     <!-- PAGE CONTENT BEGINS -->
                     <form class="form-horizontal" id="validation-form" role="form">
-                        <div class="form-group" id="userId" style="margin-top:10px;" v-show="item.id">
-						    <label class="col-sm-3 control-label no-padding-left">GroupNo</label>
-						    <div class="clearfix">
-						    	<input type="text" id="no" placeholder="no" class="col-xs-8" v-model="item.id" :disabled="item.id"/>
-						    </div>
-						</div>
 
-
-						<div class="form-group" id="hosts">
-							<label v-for="hostPort in hosts">
-								<input name="form-field-checkbox" type="checkbox" class="ace" value="{{hostPort}}">
-								<span class="lbl"> {{hostPort}}</span>
+						<div class="form-group" style="margin-top:10px;margin-left:10px;">
+							<label v-for="hostPort in hosts" >
+								<input name="form-field-checkbox" type="checkbox" class="ace" checked>
+								<span class="lbl">{{hostPort}}</span>&nbsp;&nbsp;&nbsp;
 							</label>
 						</div>
                         <div class="form-group" style="margin-top:10px;">
@@ -40,17 +33,39 @@
         </div>
     </div>
 </div>
+
 <script type="text/javascript" >
 var groupAddOrEdit = new Vue({
   el: '#groupAddOrEdit',
   data: {
-    item:{}
+    hosts: [],
+    item: {},
+    hostPorts:[]
+
   },
   mounted:function(){
-	  
+  	this.hostList() ;
   },
   methods:{
-	
+	hostList:function(){
+		var $this = this;
+		Jcoder.ajax('/admin/group/hostList', 'post',null,null).then(function (data) {
+			JqdeBox.unloading();
+			if(data.ok){
+			  $this.hosts = data.obj;
+				return false;
+		  }
+		});
+	},
+	hostArray: function () {
+		 var $this = this;
+		 var len = $(":checkbox").length ;
+		 for(var i =0 ;i<len ;i++){
+		 	if($(":checkbox")[i].checked==true){
+				$this.hostPorts.push($this.hosts[i]);
+		 	}
+		 }
+	 },
   }
 });
 </script>

@@ -12,11 +12,16 @@ import java.security.NoSuchAlgorithmException;
 public class MD5Util {
 	/**
 	 * 得到一个文件的md5
-	 * 
+	 *
 	 * @param file
 	 * @return
 	 */
 	public static String getMd5ByFile(File file) {
+
+		if (file.isDirectory()) {
+			return MD5Util.md5(file.getName());
+		}
+
 		String value = "ERROR";
 		FileInputStream in = null;
 		try {
@@ -39,12 +44,19 @@ public class MD5Util {
 		}
 		return value;
 	}
-	
-	
-	public static String md5(String content) throws NoSuchAlgorithmException{
-		MessageDigest md5 = MessageDigest.getInstance("MD5");
-		md5.update(content.getBytes());
-		BigInteger bi = new BigInteger(1, md5.digest());
-		return bi.toString(16);
+
+
+	public static String md5(String content) {
+		MessageDigest md5 = null;
+		try {
+			md5 = MessageDigest.getInstance("MD5");
+			md5.update(content.getBytes());
+			BigInteger bi = new BigInteger(1, md5.digest());
+			return bi.toString(16);
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+
+		return "ERROR";
 	}
 }

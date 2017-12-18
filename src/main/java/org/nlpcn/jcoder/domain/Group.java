@@ -27,9 +27,9 @@ public class Group {
 
     private int taskNum ;
 
-    private int jarNum ;
+    private long fileLength ;
 
-    private String[] hosts ;
+    private List<HostGroup> hosts ;
 
     private List<Map<String,Object>> users;
 
@@ -73,19 +73,19 @@ public class Group {
         this.taskNum = taskNum;
     }
 
-    public int getJarNum() {
-        return jarNum;
+    public long getFileLength() {
+        return fileLength;
     }
 
-    public void setJarNum(int jarNum) {
-        this.jarNum = jarNum;
+    public void setFileLength(long fileLength) {
+        this.fileLength = fileLength;
     }
 
-    public String[] getHosts() {
+    public List<HostGroup> getHosts() {
         return hosts;
     }
 
-    public void setHosts(String[] hosts) {
+    public void setHosts(List<HostGroup> hosts) {
         this.hosts = hosts;
     }
 

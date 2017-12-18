@@ -50,8 +50,7 @@ public class H2Server {
 			StaticValue.systemDao = basicDao;
 
 			LOG.info("database path is " + new File(h2db).getAbsolutePath());
-			//server = Server.createPgServer(new String[] { "-baseDir", h2db}).start();
-			server = Server.createWebServer(new String[] { "-baseDir", h2db}).start();
+			server = Server.createPgServer(new String[] { "-baseDir", h2db}).start();
 			if (!dbIsActive) {
 				LOG.warn("the database is not create , use db script to create it!");
 				String content = IOUtil.getContent(H2Server.class.getResourceAsStream("/jcoder.sql"), IOUtil.UTF8);

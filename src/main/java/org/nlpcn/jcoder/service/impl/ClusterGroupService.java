@@ -1,10 +1,11 @@
 package org.nlpcn.jcoder.service.impl;
 
-import org.apache.curator.framework.CuratorFramework;
+import com.alibaba.fastjson.JSONObject;
+import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
-import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.loader.annotation.IocBean;
 
 import java.util.ArrayList;
@@ -15,18 +16,18 @@ import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.*;
 
-@IocBean(factory="org.nlpcn.jcoder.service.ServiceFactory#createGroupService")
+@IocBean(factory = "org.nlpcn.jcoder.service.ServiceFactory#createGroupService")
 public class ClusterGroupService implements GroupService {
 
 	private SharedSpaceService sharedSpaceService;
 
-	public ClusterGroupService(SharedSpaceService sharedSpaceService){
-		this.sharedSpaceService = sharedSpaceService ;
+	public ClusterGroupService(SharedSpaceService sharedSpaceService) {
+		this.sharedSpaceService = sharedSpaceService;
 	}
 
 	@Override
 	public List<Group> list() throws Exception {
-		List<Group> result = new ArrayList<>() ;
+		List<Group> result = new ArrayList<>();
 
 		getAllGroupNames().forEach(gName -> {
 			Group group = new Group();
@@ -35,23 +36,31 @@ public class ClusterGroupService implements GroupService {
 				List<String> children = sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH + "/" + gName);
 				group.setTaskNum(children.size() - 1);
 
-				Set<String> set = new HashSet<>() ;
-				sharedSpaceService.walkAllDataNode(set,GROUP_PATH + "/" + gName + "/file") ;
-				group.setFileNum(set.size());
+				Set<String> set = new HashSet<>();
+				sharedSpaceService.walkAllDataNode(set, GROUP_PATH + "/" + gName + "/file");
+				group.setFileNum(set.size()-1);
 
-				set = new HashSet<>() ;
+				FileInfo root = JSONObject.parseObject(sharedSpaceService.getData2ZK(GROUP_PATH + "/" + gName + "/file"), FileInfo.class);
+
+				group.setFileLength(root.getLength());
 
 				List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
 
-				Set<String> hosts = new HashSet<>() ;
+				List<HostGroup> hosts = new ArrayList<>();
 				for (String p : hostGroupPath) {
 					String[] split = p.split("_");
-					if(gName.equals(split[1]))
-					hosts.add(split[0]) ;
-				}
-				group.setHosts(hosts.toArray(new String[hosts.size()]));
+					if (split.length == 1) {
+						continue;
+					}
+					if (gName.equals(split[1])){
+						HostGroup hg = JSONObject.parseObject(sharedSpaceService.getData2ZK(HOST_GROUP_PATH+"/"+p), HostGroup.class);
+						hg.setHostPort(split[0]);
+						hosts.add(hg);
+					}
 
-				result.add(group) ;
+				}
+				group.setHosts(hosts);
+				result.add(group);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -63,6 +72,31 @@ public class ClusterGroupService implements GroupService {
 	}
 
 	/**
+	 * 得到一个group下所有主机的信息
+	 * @param groupName
+	 * @throws Exception
+	 */
+	public List<HostGroup> getGroupHostList(String groupName) throws Exception {
+
+		List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
+
+		List<HostGroup> hosts = new ArrayList<>();
+		for (String p : hostGroupPath) {
+			String[] split = p.split("_");
+			if (split.length == 1) {
+				continue;
+			}
+			if (groupName.equals(split[1])){
+				HostGroup hg = JSONObject.parseObject(sharedSpaceService.getData2ZK(HOST_GROUP_PATH+"/"+p), HostGroup.class);
+				hg.setHostPort(split[0]);
+				hosts.add(hg);
+			}
+		}
+
+		return hosts ;
+	}
+
+	/**
 	 * 获取所有的分组
 	 */
 	public List<String> getAllGroupNames() throws Exception {
@@ -70,9 +104,9 @@ public class ClusterGroupService implements GroupService {
 	}
 
 	@Override
-	public List<String> getAllHosts() throws Exception {
+	public Set<String> getAllHosts() throws Exception {
 		List<String> hostGroupPath = sharedSpaceService.getZk().getChildren().forPath(HOST_GROUP_PATH);
-		return hostGroupPath.stream().map(s -> s.split("_")[0]).collect(Collectors.toList()) ;
+		return hostGroupPath.stream().filter(s -> s.split("_").length == 1).collect(Collectors.toSet());
 	}
 
 	@Override

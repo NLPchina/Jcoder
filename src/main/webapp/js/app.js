@@ -1,3 +1,36 @@
+
+var Jcoder = {
+    ajax: function (url,method, ajaxParams,callback) {
+    	return new Promise(function (resolve, reject) {
+    		$.ajax({
+    			type: method,
+    			url: url,
+    			data: ajaxParams,
+    			cache: false,
+    			dataType: 'json',
+    			success: function (data, textStatus, jqXHR) {
+    				if (callback) callback();
+    				resolve(data);
+    			},
+    			error: function (XMLHttpRequest, textStatus, errorThrown) {
+    				if (errorThrown=="450") {
+                        if (window.location.hash) {
+                            JqdeBox.alert(XMLHttpRequest.responseJSON.message, function () {
+                                window.location = './login.html';
+                            });
+                        } else {
+                            window.location = './login.html';
+                        }
+                        return;
+                    }else{
+                        reject(XMLHttpRequest);
+                    }
+    			}
+    		});
+    	});
+    }
+}
+
 var vmApp = new Vue({
     el: '#vmApp',
     data: {
@@ -34,18 +67,11 @@ var vmApp = new Vue({
     methods: {
     	initMenus:function(){
     		var $this = this;
-			$.ajax({
-                type: 'post',
-                url: '/admin/main/left',
-                success: function (result) {
-                    $this.menus = result.obj;
-                    Vue.nextTick(function(){
-                    	vmApp.init();
-                    });
-                },
-                error: function (error) {
-                    JqdeBox.message(false, error);
-                }
+            Jcoder.ajax('/admin/main/left', 'post',null,null).then(function (result) {
+                $this.menus = result.obj;
+                Vue.nextTick(function(){
+                    vmApp.init();
+                });
             });
     	},
     	init: function () {
@@ -126,34 +152,4 @@ var vmApp = new Vue({
     }
 });
 
-var Jcoder = {
-    ajax: function (url,method, ajaxParams,callback) {
-    	return new Promise(function (resolve, reject) {
-    		$.ajax({
-    			type: method,
-    			url: url,
-    			data: ajaxParams,
-    			cache: false,
-    			dataType: 'json',
-    			success: function (data, textStatus, jqXHR) {
-    				if (data.success == false && data.message.indexOf('重新登录') > -1) {
-    					if (window.location.hash) {
-    						JqdeBox.alert(data.message, function () {
-    							window.location = './login.html';
-    						});
-    					} else {
-    						window.location = './login.html';
-    					}
-    					return;
-    				}
-    				if (callback) callback();
-    				resolve(data);
-    			},
-    			error: function (XMLHttpRequest, textStatus, errorThrown) {
-    				reject(XMLHttpRequest);
-    			}
-    		});
-    	});
-    }
-}
 

@@ -23,6 +23,6 @@ public class JarInfo extends FileInfo {
 	}
 
 	public boolean getIsMavenJar(String groupName) {
-		return this.getFile().getParentFile().equals(new File(StaticValue.HOME + "/" + groupName + "/lib/target/dependency/"));
+		return this.file().getParentFile().equals(new File(StaticValue.HOME + "/" + groupName + "/lib/target/dependency/"));
 	}
 }

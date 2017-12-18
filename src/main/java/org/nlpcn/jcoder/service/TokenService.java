@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 public class TokenService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TokenService.class);
+	public static final String HEAD = "authorization";
 
 
 	public static Token getToken(String key) throws Exception {
@@ -48,6 +49,7 @@ public class TokenService {
 		Token token = new Token();
 		token.setToken(key);
 		token.setCreateTime(new Date());
+		token.setExpirationTime(new Date(System.currentTimeMillis() + 20 * 60000L));
 		token.setUser(user);
 		StaticValue.space().regToken(token);
 		return token.getToken();
