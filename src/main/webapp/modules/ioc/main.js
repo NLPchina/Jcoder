@@ -3,7 +3,8 @@ var iocManager = new Vue({
   data: {
     item:{},
     checkedHosts:[],
-    hosts:[]
+    hosts:[],
+    groupName:param.name
   },
   mounted:function(){
 	  var $this = this;
@@ -19,11 +20,13 @@ var iocManager = new Vue({
   methods:{
 	  hostList:function(){
 		  var $this = this;
-		  Jcoder.ajax('/admin/ioc/hostList', 'post',null,null).then(function (data) {
+		  Jcoder.ajax('/admin/ioc/hostList', 'post',{groupName:$this.groupName},null).then(function (data) {
 				JqdeBox.unloading();
 				if(data.ok){
 				  $this.hosts = data.obj;
-				  return false;
+				  JqdeBox.message(true, msg);
+			    }else{
+			    	JqdeBox.message(false, data.msg);
 			    }
 		  });
 	  },

@@ -85,8 +85,6 @@ var vmApp = new Vue({
             });
         },
         checkURL: function () {
-        	debugger;
-        	
         	var $this = this;
             var url = location.hash.replace(/^#/, '');
 

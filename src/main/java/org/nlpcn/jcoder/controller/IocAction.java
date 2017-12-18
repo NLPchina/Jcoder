@@ -54,4 +54,14 @@ public class IocAction {
 			return StaticValue.okMessageJson("保存失败！" + e.getMessage());
 		}
 	}
+	
+	@At
+	public Restful hostList(@Param("groupName") String groupName) {
+		try {
+			return Restful.OK.obj(iocService.getAllHosts(groupName));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.ERR.msg(e.getMessage());
+		}
+	}
 }
