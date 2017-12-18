@@ -42,18 +42,18 @@ public class IocAction {
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
-	/*@At
-	public JsonResult save(@Param("code") String code) {
+	@At
+	public JsonResult save(@Param("groupName") String groupName, @Param("code") String code) {
 		try {
 			JarService jarService = JarService.getOrCreate(groupName) ;
-			IOUtil.Writer(jarService.getIocPath(), IOUtil.UTF8, code);
+			jarService.saveIoc(groupName, code);
 			jarService.release();
 			return StaticValue.okMessageJson("保存并加载成功！");
 		} catch (Exception e) {
 			e.printStackTrace();
 			return StaticValue.okMessageJson("保存失败！" + e.getMessage());
 		}
-	}*/
+	}
 	
 	@At
 	public Restful hostList() throws Exception {

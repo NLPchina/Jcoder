@@ -76,7 +76,9 @@ public class MainAction {
 		
 		//IOC管理	
 		submenus = new JSONArray() ;
-		submenus.add(ImmutableMap.of("name","IOC管理","url","ioc/index.html")) ;
+		for (String groupName : allGroups) {
+			submenus.add(ImmutableMap.of("name",groupName,"url","ioc/index.html?name="+groupName)) ;
+		}
 		result.add(ImmutableMap.of("name","IOC管理","submenus",submenus)) ;
 
 
