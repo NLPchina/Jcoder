@@ -165,11 +165,8 @@ public class JarService {
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public void saveIoc(String groupName, String code) throws IOException, NoSuchAlgorithmException {
-		if(StringUtils.isEmpty(iocPath)){
-			new JarService(groupName);
-		}
-		IOUtil.Writer(iocPath, IOUtil.UTF8, code);
+	public void saveIoc(String iocJsPath, String code) throws IOException, NoSuchAlgorithmException {
+		IOUtil.Writer(iocJsPath, IOUtil.UTF8, code);
 		flushIOC();
 	}
 	
