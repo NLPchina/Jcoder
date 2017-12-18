@@ -46,9 +46,12 @@
 							<td  class="center">
 								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
 		                            <div class="editbutton" style="display:inline;">
-	                                    <a class="red" :href="'#/group/group_host_list.html?name='+group.name" style="margin-left:7px;" title="管理">
+	                                    <a v-show="group.hosts.length>0" class="red" :href="'#/group/group_host_list.html?name='+group.name" style="margin-left:7px;" title="管理">
 		                                    <i class="ace-icon fa fa-cogs bigger-130"></i>
 		                                </a>
+										<a v-show="group.hosts.length==0" class="red" @click="deleteByCluster(group.name)" style="margin-left:7px;" title="管理">
+											<i class="ace-icon fa fa-trash bigger-130"></i>
+										</a>
                                     </div>
 		                        </div>
 							</td>

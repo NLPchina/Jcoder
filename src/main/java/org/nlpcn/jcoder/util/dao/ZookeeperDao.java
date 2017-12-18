@@ -18,6 +18,7 @@ public class ZookeeperDao {
 				new RetryNTimes(10, 2000)
 		);
 		client.start();
+
 	}
 
 

@@ -72,9 +72,9 @@ public class ZKMap<V> {
 		try {
 			V v = get(key);
 			if (v != null) {
-				client.setData().forPath(path+"/" + key, JSONObject.toJSONBytes(value));
-			}else{
-				client.create().forPath(path+"/" + key, JSONObject.toJSONBytes(value));
+				client.setData().forPath(path + "/" + key, JSONObject.toJSONBytes(value));
+			} else {
+				client.create().forPath(path + "/" + key, JSONObject.toJSONBytes(value));
 			}
 
 		} catch (Exception e) {
@@ -88,7 +88,7 @@ public class ZKMap<V> {
 		V v = get(key);
 		if (v != null) {
 			try {
-				client.delete().forPath(path + "/"+ key);
+				client.delete().forPath(path + "/" + key);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -97,7 +97,7 @@ public class ZKMap<V> {
 	}
 
 	public void putAll(Map<String, ? extends V> m) {
-		for (Map.Entry<String,? extends V> entry : m.entrySet()) {
+		for (Map.Entry<String, ? extends V> entry : m.entrySet()) {
 			put(entry.getKey(), entry.getValue());
 		}
 
@@ -127,16 +127,7 @@ public class ZKMap<V> {
 	}
 
 	public Set<Map.Entry<String, V>> entrySet() {
-
-		Map<String, ChildData> currentChildren = treeCache.getCurrentChildren(path);
-
-		Map<String, V> result = new HashMap<>();
-
-		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
-			result.put(entry.getKey(), JSONObject.parseObject(entry.getValue().getData(), vClass));
-		}
-
-		return result.entrySet();
+		return toMap().entrySet();
 	}
 
 	public ZKMap<V> start() throws Exception {
@@ -146,5 +137,17 @@ public class ZKMap<V> {
 
 	public void close() {
 		treeCache.close();
+	}
+
+	public Map<String, V> toMap() {
+		Map<String, ChildData> currentChildren = treeCache.getCurrentChildren(path);
+
+		Map<String, V> result = new HashMap<>();
+
+		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
+			result.put(entry.getKey(), JSONObject.parseObject(entry.getValue().getData(), vClass));
+		}
+
+		return result;
 	}
 }

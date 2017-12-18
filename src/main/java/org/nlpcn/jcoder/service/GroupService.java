@@ -35,7 +35,7 @@ public class GroupService {
 
 				Set<String> set = new HashSet<>();
 				sharedSpaceService.walkAllDataNode(set, GROUP_PATH + "/" + gName + "/file");
-				group.setFileNum(set.size() - 1);
+				group.setFileNum(set.size());
 
 				FileInfo root = JSONObject.parseObject(sharedSpaceService.getData2ZK(GROUP_PATH + "/" + gName + "/file"), FileInfo.class);
 
@@ -65,6 +65,7 @@ public class GroupService {
 			}
 		});
 
+		result.sort(Comparator.comparingInt(g -> -g.getHosts().size()));
 
 		return result;
 	}
@@ -103,7 +104,7 @@ public class GroupService {
 	}
 
 	public Set<String> getAllHosts() throws Exception {
-		return sharedSpaceService.getHostGroupCache().keySet().stream().filter(s -> s.split("_").length == 1).collect(Collectors.toSet());
+		return sharedSpaceService.getHostGroupCache().keySet().stream().map(s -> s.split("_")[0]).collect(Collectors.toSet());
 	}
 
 

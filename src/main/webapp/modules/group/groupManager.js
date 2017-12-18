@@ -26,6 +26,7 @@ var groupManager = new Vue({
               title: vT,
               url: 'modules/group/groupAddOrEdit.html',
               confirm: function () {
+              	  JqdeBox.loading();
             	  var param = groupAddOrEdit.item;
             	  groupAddOrEdit.hostArray();
             	  Jcoder.ajax(vUrl, 'post',{"hostPorts":groupAddOrEdit.hostPorts.toString(),"name":groupAddOrEdit.item.name},null).then(function (data) {
@@ -39,6 +40,12 @@ var groupManager = new Vue({
                   });
               }
           });
+	  },
+	  deleteByCluster: function(groupName){
+	  	JqdeBox.confirm("确定删除组："+groupName,function(aaa){
+	  	alert(aaa)
+	  		alert(groupName)
+	  	}) ;
 	  }
   }
 });
