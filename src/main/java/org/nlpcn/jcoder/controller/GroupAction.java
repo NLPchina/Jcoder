@@ -3,15 +3,19 @@ package org.nlpcn.jcoder.controller;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
+import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Files;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @IocBean
@@ -34,6 +39,9 @@ public class GroupAction {
 
 	@Inject
 	private ProxyService proxyService;
+
+	@Inject
+	private TaskService taskService;
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
@@ -60,7 +68,7 @@ public class GroupAction {
 	}
 
 	@At
-	public Restful changeWeight(@Param("groupName") String groupName,@Param("hostPort")  String hostPort,@Param("weight") Integer weight) {
+	public Restful changeWeight(@Param("groupName") String groupName, @Param("hostPort") String hostPort, @Param("weight") Integer weight) {
 		if (weight == null) {
 			return Restful.instance().ok(false).msg("权重必须为正整数");
 		}
@@ -122,7 +130,7 @@ public class GroupAction {
 
 			StaticValue.space().joinCluster();
 
-			return Restful.OK.msg("添加成功");
+			return Restful.instance(true, "添加成功");
 		} else {
 
 			Set<String> hostPortsArr = new HashSet<>();
@@ -141,5 +149,64 @@ public class GroupAction {
 		}
 	}
 
+	/**
+	 * 从集群中彻底删除一个group 要求group name必须没有任何一个机器使用中
+	 *
+	 * @param name
+	 * @return
+	 */
+	@At
+	public Restful deleteByCluster(@Param("name") String name) {
+		try {
+			groupService.deleteByCluster(name);
+			return Restful.instance().ok(true).msg("删除 group: " + name + " 成功");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.instance().ok(false).msg("删除 group: " + name + " 失败");
+		}
+	}
+
+
+	/**
+	 * 删除group
+	 *
+	 * @param name
+	 * @return
+	 */
+	@At
+	public Restful delete(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
+
+		if (!first) {
+			Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
+			basicDao.delById(group.getId(), Group.class);
+
+			List<Task> tasks = taskService.tasksList(group.getId());
+
+			for (Task task : tasks) {
+				LOG.info("delete task " + task.getName());
+				taskService.delete(task);
+				taskService.delByDB(task);
+				basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+			}
+
+			boolean flag = Files.deleteDir(new File(StaticValue.GROUP_FILE, name));
+
+			if (flag) {
+				return Restful.instance(flag, "删除成功");
+			} else {
+				return Restful.instance(flag, "删除文件失败");
+			}
+		} else {
+
+			Set<String> hostPortsArr = new HashSet<>();
+
+			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+
+			String message = proxyService.post(hostPortsArr, "/admin/group/delete", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
+
+			return Restful.instance().msg(message);
+		}
+
+	}
 
 }

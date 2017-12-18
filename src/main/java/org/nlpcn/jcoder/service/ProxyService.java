@@ -5,10 +5,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.dao.Cnd;
-import org.nutz.dao.Condition;
-import org.nutz.http.*;
+import org.nutz.http.Header;
+import org.nutz.http.Request;
+import org.nutz.http.Response;
+import org.nutz.http.Sender;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
 import org.nutz.mvc.Mvcs;
@@ -38,10 +40,10 @@ public class ProxyService {
 	/**
 	 * 合并所有的返回信息
 	 */
-	public static Function<Map<String, Response>, String> MERGE_MESSAGE_CALLBACK = (Map<String, Response> result) -> {
+	public static Function<Map<String, String>, String> MERGE_MESSAGE_CALLBACK = (Map<String, String> result) -> {
 		StringBuilder sb = new StringBuilder();
-		for (Map.Entry<String, Response> entry : result.entrySet()) {
-			sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue().getContent()).getString("message") + " , ");
+		for (Map.Entry<String, String> entry : result.entrySet()) {
+			sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + " , ");
 		}
 		return sb.toString();
 	};
@@ -49,16 +51,16 @@ public class ProxyService {
 	/**
 	 * 合并所有的okfalse的返回信息
 	 */
-	public static Function<Map<String, Response>, String> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, Response> result) -> {
+	public static Function<Map<String, String>, String> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, String> result) -> {
 		StringBuilder sb = new StringBuilder();
-		for (Map.Entry<String, Response> entry : result.entrySet()) {
-			boolean flag = JSONObject.parseObject(entry.getValue().getContent()).getBoolean("ok");
+		for (Map.Entry<String, String> entry : result.entrySet()) {
+			boolean flag = JSONObject.parseObject(entry.getValue()).getBoolean("ok");
 			if (!flag) {
-				sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue().getContent()).getString("message") + ", ");
+				sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + ", ");
 			}
 		}
 		return sb.toString();
-	} ;
+	};
 
 	/**
 	 * 执行请求
@@ -135,7 +137,7 @@ public class ProxyService {
 	 * Encodes characters in the query or fragment part of the URI.
 	 * <p>
 	 * <p>Unfortunately, an incoming URI sometimes has characters disallowed by the spec.  HttpClient
-	 * insists that the outgoing proxied request has a valid URI because it uses Java's {@link URI}.
+	 * insists that the outgoing proxied request has a valid URI because it uses Java's {@link }.
 	 * To be more forgiving, we must escape the problematic characters.  See the URI class for the
 	 * spec.
 	 *
@@ -203,8 +205,8 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public <T> T post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Response>, T> fun) throws Exception {
-		Map<String, Response> result = post(ipPorts, path, params, timeout);
+	public <T> T post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, String>, T> fun) throws Exception {
+		Map<String, String> result = post(ipPorts, path, params, timeout);
 		return fun.apply(result);
 	}
 
@@ -217,7 +219,7 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, Response> post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+	public Map<String, String> post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
 		HttpSession session = Mvcs.getReq().getSession();
 		String token = (String) session.getAttribute("userToken");
@@ -233,18 +235,24 @@ public class ProxyService {
 
 		List<String> urlList = new ArrayList<>(ipPorts);
 
-		Map<String, Response> result = new LinkedHashMap<>();
+		Map<String, String> result = new LinkedHashMap<>();
 
 		ExecutorService threadPool = null;
 		try {
 			threadPool = Executors.newFixedThreadPool(urlList.size());
 
-			BlockingQueue<Future<Response>> queue = new LinkedBlockingQueue<Future<Response>>(urlList.size());
+			BlockingQueue<Future<String>> queue = new LinkedBlockingQueue<Future<String>>(urlList.size());
 
 			for (String ipPort : urlList) {
-				Future<Response> future = threadPool.submit(() -> {
+				Future<String> future = threadPool.submit(() -> {
 					LOG.info("post url : http://" + ipPort + path);
-					return Sender.create(Request.create("http://" + ipPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of("authorization", fToken)))).setTimeout(timeout).setConnTimeout(timeout).send();
+					String content = null;
+					try {
+						content = Sender.create(Request.create("http://" + ipPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of("authorization", fToken)))).setTimeout(timeout).setConnTimeout(timeout).send().getContent();
+					} catch (Exception e) {
+						content = JSONObject.toJSONString(Restful.instance(false, "请求异常：" + e.getMessage()));
+					}
+					return content;
 				});
 				queue.add(future);
 			}

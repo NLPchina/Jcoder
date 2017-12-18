@@ -312,10 +312,10 @@ public class SharedSpaceService {
 	/**
 	 * lock a path in /zookper/locak[/path]
 	 *
-	 * @param path
+	 * @param groupName
 	 */
-	private InterProcessMutex lock(String path) {
-		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+	public InterProcessMutex lockGroup(String groupName) {
+		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + "/" + groupName);
 		return lock;
 	}
 
@@ -324,7 +324,7 @@ public class SharedSpaceService {
 	 *
 	 * @param lock
 	 */
-	private void unLockAndDelete(String path, InterProcessMutex lock) {
+	public void unLockAndDelete(InterProcessMutex lock) {
 		if (lock != null && lock.isAcquiredInThisProcess()) {
 			try {
 				lock.release(); //释放锁
@@ -495,7 +495,8 @@ public class SharedSpaceService {
 		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener() {
 			@Override
 			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
-				System.out.println("recived ------------------" + event);
+				LOG.warn("==============received " + event);
+//				init();
 			}
 		});
 
@@ -581,7 +582,7 @@ public class SharedSpaceService {
 			List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
 
 			//增加或查找不同
-			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
+			InterProcessMutex lock = lockGroup(groupName);
 			try {
 				lock.acquire();
 				//判断group是否存在。如果不存在。则进行安全添加
@@ -594,7 +595,7 @@ public class SharedSpaceService {
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
-				unLockAndDelete(GROUP_PATH + "/" + groupName, lock);
+				unLockAndDelete(lock);
 			}
 
 
@@ -637,6 +638,7 @@ public class SharedSpaceService {
 
 	/**
 	 * 取得所有的在线主机
+	 *
 	 * @return
 	 * @throws Exception
 	 */

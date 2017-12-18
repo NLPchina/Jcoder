@@ -41,6 +41,22 @@ var groupManager = new Vue({
               }
           });
 	  },
-
+	  deleteByCluster: function(groupName){
+	  	var $this = this;
+	  	JqdeBox.confirm("确定删除组："+groupName,function(status){
+			if(status){
+				JqdeBox.loading();
+				Jcoder.ajax("/admin/group/deleteByCluster", 'post',{"name":groupName},null).then(function (data) {
+				  JqdeBox.unloading();
+				  if(data.ok){
+					  $this.groupList();
+					  JqdeBox.message(true, data.message);
+				  }else{
+					JqdeBox.message(false, data.message);
+				  }
+			  });
+			}
+	 	 }) ;
+	  }
   }
 });
