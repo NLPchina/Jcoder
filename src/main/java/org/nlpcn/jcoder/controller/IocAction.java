@@ -54,9 +54,4 @@ public class IocAction {
 			return StaticValue.okMessageJson("保存失败！" + e.getMessage());
 		}
 	}
-	
-	@At
-	public Restful hostList() throws Exception {
-		return Restful.OK.obj(iocService.getAllHosts());
-	}
 }
