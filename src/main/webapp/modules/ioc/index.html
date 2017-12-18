@@ -1,0 +1,67 @@
+<style>
+.CodeMirror {
+    border-radius: 3px;
+    overflow: hidden;
+    font-size: 14px;
+    height: 520px;
+    background-color: #000;
+    color: #2ec607;
+    line-height: 1;
+    border-top: 1px solid #eee;
+	border-bottom: 1px solid #eee;
+	font-size: 18px;
+	line-height:120% ; 
+}
+
+.CodeMirror-sizer{
+    margin-left: 29px !important;
+}
+</style>
+<div id="iocManager" class="page-content" style="overflow: hidden; height: 60%;">
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="alert alert-block alert-success">
+				<p>
+					<!-- <input name="form-field-checkbox" type="checkbox" class="ace"><span class="lbl"> choice 1</span>
+					<input name="form-field-checkbox" type="checkbox" class="ace"><span class="lbl"> choice 2</span> -->
+					<ul>
+						<li v-for="host in hosts" style="float:left;list-style:none;margin:3px;"> 
+							<input type="checkbox" :value="host" v-model="checkedHosts">
+							<label>{{host}}</label>
+						</li>
+					</ul>
+					<!-- 
+					
+					<input type="checkbox" id="john" value="John" v-model="checkedNames">
+					<label for="john">John</label>
+					<input type="checkbox" id="mike" value="Mike" v-model="checkedNames"> 
+					<label for="mike">Mike</label>
+					 -->
+					<span>Checked names: {{ checkedHosts | json }}</span>
+				</p>
+			</div>
+			<div class="widget-box">
+				<div class="widget-header">
+					<h4 class="widget-title lighter smaller">
+						<i class="ace-icon fa fa-pencil-square-o blue"></i>
+						Code Platform
+					</h4>
+				</div>
+
+				<div class="widget-body">
+					<div class="widget-main">
+						<textarea id="etlWorkerDlg-add-code" style="width: 100%;" ></textarea>
+					</div><!-- /.widget-main  padding: 1em;-->
+				</div><!-- /.widget-body -->
+		    </div>
+			<!-- <div class="widget-main widget-daima">
+            	<div class="row">
+            		<div class="col-sm-12">
+						
+					</div>
+            	</div>
+            </div> -->
+		</div>
+	</div>
+</div>
+<script src="modules/ioc/main.js"></script>
