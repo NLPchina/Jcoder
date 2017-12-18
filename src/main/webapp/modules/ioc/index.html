@@ -22,29 +22,20 @@
 		<div class="col-xs-12">
 			<div class="alert alert-block alert-success">
 				<p>
-					<!-- <input name="form-field-checkbox" type="checkbox" class="ace"><span class="lbl"> choice 1</span>
-					<input name="form-field-checkbox" type="checkbox" class="ace"><span class="lbl"> choice 2</span> -->
 					<ul>
 						<li v-for="host in hosts" style="float:left;list-style:none;margin:3px;"> 
-							<input type="checkbox" :value="host" v-model="checkedHosts">
+							<input type="checkbox" :value="host" v-model="checkedHosts" />
 							<label>{{host}}</label>
 						</li>
 					</ul>
-					<!-- 
-					
-					<input type="checkbox" id="john" value="John" v-model="checkedNames">
-					<label for="john">John</label>
-					<input type="checkbox" id="mike" value="Mike" v-model="checkedNames"> 
-					<label for="mike">Mike</label>
-					 -->
-					<span>Checked names: {{ checkedHosts | json }}</span>
 				</p>
+					<span>&nbsp;</span>
 			</div>
 			<div class="widget-box">
 				<div class="widget-header">
 					<h4 class="widget-title lighter smaller">
 						<i class="ace-icon fa fa-pencil-square-o blue"></i>
-						Code Platform
+						Ioc Code
 					</h4>
 				</div>
 
@@ -54,13 +45,11 @@
 					</div><!-- /.widget-main  padding: 1em;-->
 				</div><!-- /.widget-body -->
 		    </div>
-			<!-- <div class="widget-main widget-daima">
-            	<div class="row">
-            		<div class="col-sm-12">
-						
-					</div>
-            	</div>
-            </div> -->
+		    <div class="col-md-offset-11 col-md-12">
+				<button class="btn btn-info" type="button" @click="save()">
+					<i class="ace-icon fa fa-check bigger-110"></i> 保存
+				</button>
+			</div>
 		</div>
 	</div>
 </div>

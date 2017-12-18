@@ -4,12 +4,16 @@ import java.io.File;
 
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.service.IocService;
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.JsonResult;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.mvc.annotation.At;
@@ -18,6 +22,8 @@ import org.nutz.mvc.annotation.Fail;
 import org.nutz.mvc.annotation.Filters;
 import org.nutz.mvc.annotation.Ok;
 import org.nutz.mvc.annotation.Param;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -25,15 +31,19 @@ import org.nutz.mvc.annotation.Param;
 @Ok("json")
 @Fail("http:500")
 public class IocAction {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(GroupAction.class);
 
-	@At
-	public String show(@Param("groupName") String groupName) {
-		JarService jarService = JarService.getOrCreate(groupName) ;
-		return IOUtil.getContent(new File(jarService.getIocPath()), IOUtil.UTF8);
-	}
+	@Inject
+	private IocService iocService;
 
-	@At
-	public JsonResult save(@Param("groupName") String groupName, @Param("code") String code) {
+	@Inject
+	private ProxyService proxyService;
+
+	private BasicDao basicDao = StaticValue.systemDao;
+
+	/*@At
+	public JsonResult save(@Param("code") String code) {
 		try {
 			JarService jarService = JarService.getOrCreate(groupName) ;
 			IOUtil.Writer(jarService.getIocPath(), IOUtil.UTF8, code);
@@ -43,10 +53,10 @@ public class IocAction {
 			e.printStackTrace();
 			return StaticValue.okMessageJson("保存失败！" + e.getMessage());
 		}
-	}
+	}*/
 	
 	@At
 	public Restful hostList() throws Exception {
-		return Restful.instance();
+		return Restful.OK.obj(iocService.getAllHosts());
 	}
 }

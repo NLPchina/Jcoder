@@ -19,13 +19,16 @@ var iocManager = new Vue({
   methods:{
 	  hostList:function(){
 		  var $this = this;
-		  Jcoder.ajax('/admin/group/hostList', 'post',null,null).then(function (data) {
+		  Jcoder.ajax('/admin/ioc/hostList', 'post',null,null).then(function (data) {
 				JqdeBox.unloading();
 				if(data.ok){
 				  $this.hosts = data.obj;
 				  return false;
 			    }
 		  });
+	  },
+	  save:function(){
+		  
 	  }
   }
 });
