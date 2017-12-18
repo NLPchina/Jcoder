@@ -133,7 +133,7 @@ public class LoginAction {
 		session.removeAttribute("userId");
 		session.removeAttribute("userType");
 		try {
-			StaticValue.space().removeToken(String.valueOf(session.getAttribute("userToken"))) ;
+			TokenService.removeToken(String.valueOf(session.getAttribute("userToken"))) ;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -31,7 +31,7 @@ public class AuthoritiesManager implements ActionFilter {
 
 		if (StringUtil.isNotBlank(tokenStr)) {
 			try {
-				Token token = StaticValue.space().getToken(tokenStr);
+				Token token = TokenService.getToken(tokenStr);
 				if (token != null) {
 					actionContext.getRequest().getSession().setAttribute(name, token.getUser());
 					return null;

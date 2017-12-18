@@ -15,6 +15,7 @@ import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
@@ -47,19 +48,19 @@ public class SharedSpaceService {
 	/**
 	 * 广播体操
 	 */
-	public static final String MESSAGE_PATH = StaticValue.ZK_ROOT + "/message";
+	private static final String MESSAGE_PATH = StaticValue.ZK_ROOT + "/message";
 
 	/**
 	 * Token
 	 */
-	public static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
+	private static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
 
 	/**
 	 * Host
 	 * /jcoder/host_group/[ipPort_groupName],[hostGroupInfo]
 	 * /jcoder/host_group/[ipPort]
 	 */
-	public static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
+	private static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
 
 	/**
 	 * group /jcoder/task/group/className.task
@@ -72,7 +73,7 @@ public class SharedSpaceService {
 	/**
 	 * group /jcoder/lock
 	 */
-	public static final String LOCK_PATH = StaticValue.ZK_ROOT + "/lock";
+	private static final String LOCK_PATH = StaticValue.ZK_ROOT + "/lock";
 
 	/**
 	 * 记录task执行成功失败的计数器
@@ -84,7 +85,7 @@ public class SharedSpaceService {
 	 */
 	private static final Map<Long, AtomicLong> taskErr = new HashMap<>();
 
-	protected ZookeeperDao zkDao;
+	private ZookeeperDao zkDao;
 
 	/**
 	 * 监听路由缓存
@@ -93,10 +94,10 @@ public class SharedSpaceService {
 	 */
 	private TreeCache mappingCache;
 
-	private TreeCache tokenCache;
+	private ZKMap<Token> tokenCache;
 
-	//缓存在线主机 key:127.0.0.1:2181 value:https？http_weight(int)
-	private TreeCache hostCache;
+	//缓存在线主机 key:127.0.0.1:2181 HostGroup.java
+	private ZKMap<HostGroup> hostGroupCache;
 
 
 	/**
@@ -181,18 +182,8 @@ public class SharedSpaceService {
 	 * @param key
 	 * @return
 	 */
-	public Token getToken(String key) throws Exception {
-		ChildData currentData = tokenCache.getCurrentData(TOKEN_PATH + "/" + key);
-		if (currentData == null) {
-			return null;
-		}
-		Token token = JSONObject.parseObject(currentData.getData(), Token.class);
-		if ((token.getExpirationTime().getTime() - System.currentTimeMillis()) < 20 * 60000L) {
-			token.setExpirationTime(new Date(System.currentTimeMillis() + 20 * 60000L));
-			zkDao.getZk().setData().forPath(TOKEN_PATH + "/" + token.getToken(), JSONObject.toJSONBytes(token));
-		}
-
-		return token;
+	protected Token getToken(String key) throws Exception {
+		return tokenCache.get(key);
 	}
 
 	/**
@@ -244,11 +235,11 @@ public class SharedSpaceService {
 	 *
 	 * @param token
 	 */
-	public void regToken(Token token) throws Exception {
+	protected void regToken(Token token) throws Exception {
 		if (token.getToken().contains("/")) {
 			throw new RuntimeException("token can not has / in name ");
 		}
-		zkDao.getZk().create().creatingParentsIfNeeded().forPath(TOKEN_PATH + "/" + token.getToken(), JSONObject.toJSONBytes(token));
+		tokenCache.put(token.getToken(), token);
 	}
 
 	/**
@@ -257,12 +248,8 @@ public class SharedSpaceService {
 	 * @param key
 	 * @return
 	 */
-	public Token removeToken(String key) throws Exception {
-		Token token = getToken(key);
-		if (token != null) {
-			zkDao.getZk().delete().forPath(TOKEN_PATH + "/" + key);
-		}
-		return token;
+	protected Token removeToken(String key) throws Exception {
+		return tokenCache.remove(key);
 	}
 
 
@@ -368,6 +355,7 @@ public class SharedSpaceService {
 	 * @return
 	 */
 	public String host(String groupName, String className, String mehtodName) {
+
 		Map<String, ChildData> currentChildren = null;
 		if (StringUtil.isBlank(mehtodName)) {
 			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className);
@@ -386,14 +374,13 @@ public class SharedSpaceService {
 
 			String hostPort = entry.getKey();
 
-			ChildData currentData = hostCache.getCurrentData(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName);
+			HostGroup hostGroup = hostGroupCache.get(hostPort + "_" + groupName);
 
-			if (currentData == null) {
+			if (hostGroup == null) {
 				LOG.warn(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " got null , so skip");
 				continue;
 			}
 
-			HostGroup hostGroup = JSONObject.parseObject(currentData.getData(), HostGroup.class);
 			Integer weight = hostGroup.getWeight();
 			if (weight <= 0) {
 				LOG.info(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " weight less than zero , so skip");
@@ -500,6 +487,10 @@ public class SharedSpaceService {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(GROUP_PATH);
 		}
 
+		if (zkDao.getZk().checkExists().forPath(TOKEN_PATH) == null) {
+			zkDao.getZk().create().creatingParentsIfNeeded().forPath(TOKEN_PATH);
+		}
+
 		Map<String, List<Different>> diffMaps = joinCluster();
 
 
@@ -509,12 +500,12 @@ public class SharedSpaceService {
 		/**
 		 * 监控token
 		 */
-		tokenCache = new TreeCache(zkDao.getZk(), TOKEN_PATH).start();
+		tokenCache = new ZKMap(zkDao.getZk(), TOKEN_PATH, Token.class).start();
 
 		/**
 		 * 缓存主机
 		 */
-		hostCache = new TreeCache(zkDao.getZk(), HOST_GROUP_PATH).start();
+		hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
 
 
 		//监听task运行
@@ -537,7 +528,7 @@ public class SharedSpaceService {
 		//TODO :relaseMapping(StaticValue.getHostPort());
 		mappingCache.close();
 		tokenCache.close();
-		hostCache.close();
+		hostGroupCache.close();
 		zkDao.close();
 	}
 
@@ -552,15 +543,6 @@ public class SharedSpaceService {
 		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
 		Collections.shuffle(groups); //因为要锁组，重新排序下防止顺序锁
 
-		try {
-			if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH + "/" + StaticValue.getHostPort()) == null) {
-				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH + "/" + StaticValue.getHostPort());
-			}
-		} catch (KeeperException.NodeExistsException e) {
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 
 		for (Group group : groups) {
 
@@ -650,7 +632,7 @@ public class SharedSpaceService {
 
 		//先判断根结点
 		FileInfo root = JSONObject.parseObject(getData2ZK(GROUP_PATH + "/" + groupName + "/file"), FileInfo.class);
-		if (root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5())) {
+		if (root != null && root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5())) {
 			LOG.info(groupName + " file md5 same so skip");
 			return diffs;
 		}
@@ -843,7 +825,7 @@ public class SharedSpaceService {
 			root.setMd5(md5);
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, groupName + "\t" + nowTimeMd5 + "\t" + md5 + "\n");
 		} else {
-			LOG.info(groupName+" time md5 same so add it");
+			LOG.info(groupName + " time md5 same so add it");
 			root.setMd5(md5);
 		}
 		result.add(root);
@@ -853,5 +835,17 @@ public class SharedSpaceService {
 
 	public CuratorFramework getZk() {
 		return zkDao.getZk();
+	}
+
+	public TreeCache getMappingCache() {
+		return mappingCache;
+	}
+
+	public ZKMap<Token> getTokenCache() {
+		return tokenCache;
+	}
+
+	public ZKMap<HostGroup> getHostGroupCache() {
+		return hostGroupCache;
 	}
 }

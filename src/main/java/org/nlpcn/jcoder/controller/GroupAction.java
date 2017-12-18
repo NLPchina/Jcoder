@@ -124,11 +124,6 @@ public class GroupAction {
 	}
 
 
-	@At
-	public Restful delete(@Param("..") Group group) {
-		groupService.delete(group);
-		return Restful.OK.msg("删除成功！");
-	}
 
 
 }
