@@ -1,19 +1,15 @@
 package org.nlpcn.jcoder.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
-import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.annotation.*;
@@ -21,8 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.*;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -62,6 +59,27 @@ public class GroupAction {
 		return null;
 	}
 
+	@At
+	public Restful changeWeight(@Param("groupName") String groupName,@Param("hostPort")  String hostPort,@Param("weight") Integer weight) {
+		if (weight == null) {
+			return Restful.instance().ok(false).msg("权重必须为正整数");
+		}
+
+		ZKMap<HostGroup> hostGroupCache = StaticValue.space().getHostGroupCache();
+
+		HostGroup hostGroup = hostGroupCache.get(hostPort + "_" + groupName);
+
+		if (hostGroup == null) {
+			return Restful.instance().ok(false).msg("没有找到此对象");
+		}
+
+		hostGroup.setWeight(weight);
+
+		hostGroupCache.put(hostPort + "_" + groupName, hostGroup);
+
+		return Restful.instance().ok(true).msg(hostPort + " 更改权重为：" + weight);
+
+	}
 
 	@At
 	public Restful diff(@Param("name") String name) {
@@ -122,8 +140,6 @@ public class GroupAction {
 			return Restful.instance().msg(message);
 		}
 	}
-
-
 
 
 }

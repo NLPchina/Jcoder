@@ -23,7 +23,7 @@ var Jcoder = {
                         }
                         return;
                     }else{
-                        reject(XMLHttpRequest);
+                        rejeresolvect(XMLHttpRequest);
                     }
     			}
     		});

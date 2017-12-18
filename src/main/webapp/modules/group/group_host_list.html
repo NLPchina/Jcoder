@@ -26,7 +26,7 @@
 						<th class="center">主机名称</th>
 						<th class="center">SSL支持</th>
 						<th class="center">集群同步</th>
-						<th class="center col-xs-6">权重</th>
+						<th class="center">权重</th>
 						<th class="center">操作</th>
                     </tr>
                     </thead>
@@ -44,11 +44,7 @@
 								<span v-show="!item.current" class="label label-sm label-danger">未同步</span>
 							</td>
 							<td  class="left">
-								<span class=" ui-slider-small ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all" style="width: 90%; float: left; margin: 15px;">
-                                    <div class="ui-slider-range ui-widget-header ui-corner-all ui-slider-range-min" style="width: 42%;"></div>
-                                    <span class="ui-slider-handle ui-state-default ui-corner-all" tabindex="0" style="left: 42%;"></span>
-                                </span>
-
+								<input type="text" v-model="item.weight" class="col-sm-12" @change="changeWeight(item.hostPort,item.weight)">
 							</td>
 							<td  class="center">
 								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
@@ -66,6 +62,8 @@
         </div>
     </div>
 </div>
+
+
 
 <script type="text/javascript" >
 var groupHostList = new Vue({
@@ -87,6 +85,15 @@ var groupHostList = new Vue({
 			  $this.items = data.obj;
 			  return false ;
 		  }
+		});
+	},
+
+	changeWeight:function(hostPort,weight){
+		var $this = this;
+		JqdeBox.loading();
+		Jcoder.ajax('/admin/group/changeWeight', 'post',{"groupName":$this.groupName,"weight":weight,"hostPort":hostPort},null).then(function (data) {
+			JqdeBox.unloading();
+			JqdeBox.message(data.ok, data.message);
 		});
 	}
   }

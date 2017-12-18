@@ -2,6 +2,8 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
@@ -477,6 +479,15 @@ public class SharedSpaceService {
 
 	public SharedSpaceService init() throws Exception {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
+
+		//注册监听事件
+		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener(){
+			@Override
+			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+				System.out.println("recived ------------------"+event);
+			}
+		});
+
 
 		if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH);
