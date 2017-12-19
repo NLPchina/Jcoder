@@ -41,10 +41,9 @@ public class TaskAction {
      */
     @At
     public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
-        Object[] tasks = StaticValue.space()
-                .getTasksByGroupName(groupName)
+        Object[] tasks = taskService.getTasksByGroupName(groupName)
                 .stream()
-                .filter(t -> taskType == -1 || t.getType() == taskType)
+                .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
                 .map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
                 .toArray();
         return Restful.instance(tasks);

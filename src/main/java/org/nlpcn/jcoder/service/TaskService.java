@@ -1,5 +1,7 @@
 package org.nlpcn.jcoder.service;
 
+import com.alibaba.fastjson.JSONObject;
+import org.apache.curator.framework.CuratorFramework;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.filter.TestingFilter;
@@ -24,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
+import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
+
 @IocBean
 public class TaskService {
 
@@ -33,6 +37,28 @@ public class TaskService {
 	public static final String VERSION_SPLIT = "_";
 
 	private BasicDao basicDao = StaticValue.systemDao;
+
+	/**
+	 * 根据分组名称获取所有Task
+	 *
+	 * @param groupName 组名
+	 * @return
+	 * @throws Exception
+	 */
+    public List<Task> getTasksByGroupName(String groupName) throws Exception {
+        CuratorFramework zk = StaticValue.space().getZk();
+        String path = GROUP_PATH + "/" + groupName;
+        List<String> taskNames = zk.getChildren().forPath(path);
+        List<Task> tasks = new ArrayList<>(taskNames.size());
+        Task t;
+        for (String name : taskNames) {
+            t = JSONObject.parseObject(zk.getData().forPath(path + "/" + name), Task.class);
+			if (t != null) {
+				tasks.add(t);
+			}
+		}
+		return tasks;
+	}
 
 	/**
 	 * 保存或者更新一个任务
