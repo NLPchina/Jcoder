@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
@@ -107,4 +108,27 @@ public class GroupService {
 	}
 
 
+	/**
+	 * 从集群把一个组彻底删除掉
+	 *
+	 * @param groupName
+	 */
+	public void deleteByCluster(String groupName) throws Exception {
+
+		InterProcessMutex interProcessMutex = sharedSpaceService.lockGroup(groupName);
+
+		try {
+			interProcessMutex.acquire();
+			//判断当前是否有机器在使用此group
+			for (String k : sharedSpaceService.getHostGroupCache().keySet()) {
+				String gName = k.split("_")[1];
+				if (gName.equals(groupName)) {
+					throw new Exception("组: " + groupName + "存在主机持有。清删除后重试: " + k);
+				}
+			}
+			sharedSpaceService.getZk().delete().deletingChildrenIfNeeded().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName);
+		} finally {
+			sharedSpaceService.unLockAndDelete(interProcessMutex);
+		}
+	}
 }

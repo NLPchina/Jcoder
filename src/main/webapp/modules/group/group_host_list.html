@@ -49,7 +49,7 @@
 							<td  class="center">
 								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
 		                            <div class="editbutton" style="display:inline;">
-	                                    <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
+	                                    <a class="red" href="javascript:;" style="margin-left:7px;" title="删除" @click="del(item.hostPort,groupName)">
 		                                    <i class="ace-icon fa fa-trash bigger-130"></i>
 		                                </a>
                                     </div>
@@ -95,7 +95,25 @@ var groupHostList = new Vue({
 			JqdeBox.unloading();
 			JqdeBox.message(data.ok, data.message);
 		});
-	}
+	},
+
+	del: function(hostPort,groupName){
+		var $this = this;
+		JqdeBox.confirm("确定删除组："+groupName,function(status){
+			if(status){
+				JqdeBox.loading();
+				Jcoder.ajax("/admin/group/delete", 'post',{"hostPorts":hostPort,"name":groupName},null).then(function (data) {
+				  JqdeBox.unloading();
+				  if(data.ok){
+					  $this.hostList();
+					  JqdeBox.message(true, data.message);
+				  }else{
+					  JqdeBox.message(false, data.message);
+				  }
+			  });
+			}
+		 }) ;
+	  }
   }
 });
 </script>
