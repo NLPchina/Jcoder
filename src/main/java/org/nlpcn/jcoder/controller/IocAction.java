@@ -52,7 +52,7 @@ public class IocAction {
 		try {
 			if(!first){
 				JarService jarService = JarService.getOrCreate(groupName) ;
-				jarService.saveIoc(jarService.getIocPath(), code);
+				jarService.saveIoc(jarService.getIocPath(),groupName, code);
 				jarService.release();
 				return Restful.instance().msg("保存成功！");
 
@@ -61,7 +61,7 @@ public class IocAction {
 
 				Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
 
-				String message = proxyService.post(hostPortsArr, "/admin/ioc/save", ImmutableMap.of("name", groupName,"code", code,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
+				String message = proxyService.post(hostPortsArr, "/admin/ioc/save", ImmutableMap.of("groupName", groupName,"code", code,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
 
 				return Restful.instance().msg(message);
 			}
@@ -75,6 +75,16 @@ public class IocAction {
 	public Restful hostList(@Param("groupName") String groupName) {
 		try {
 			return Restful.OK.obj(iocService.getAllHosts(groupName));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.ERR.msg(e.getMessage());
+		}
+	}
+
+	@At
+	public Restful findIocInfoByGroupName(@Param("groupName") String groupName) {
+		try {
+			return Restful.OK.obj(iocService.getIocInfo(groupName));
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Restful.ERR.msg(e.getMessage());

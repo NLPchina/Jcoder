@@ -95,10 +95,10 @@ public class JarService {
 
 	private JarService(String groupName) {
 		this.groupName = groupName;
-		jarPath = StaticValue.HOME + "/" + groupName + "/lib";
-		pomPath = jarPath + "/" + groupName + "/pom.xml";
-		configPath = jarPath + "/" + groupName + "/config.properties";
-		iocPath = StaticValue.HOME + "/" + groupName + "/resource/ioc.js";
+		jarPath = StaticValue.HOME + "/group/" + groupName + "/lib";
+		pomPath = jarPath + "/group/" + groupName + "/pom.xml";
+		configPath = jarPath + "/group/" + groupName + "/config.properties";
+		iocPath = StaticValue.HOME + "/group/" + groupName + "/resource/ioc.js";
 		engine = new DynamicEngine(groupName);
 		init();
 	}
@@ -165,8 +165,9 @@ public class JarService {
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public void saveIoc(String iocJsPath, String code) throws IOException, NoSuchAlgorithmException {
-		IOUtil.Writer(iocJsPath, IOUtil.UTF8, code);
+	public void saveIoc(String iocJsPath,String groupName, String code) throws IOException, NoSuchAlgorithmException {
+		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resoureces");
+		IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", code);
 		flushIOC();
 	}
 	

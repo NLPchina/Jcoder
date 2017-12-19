@@ -1,11 +1,13 @@
 package org.nlpcn.jcoder.service;
 
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.domain.HostGroup;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -32,5 +34,10 @@ public class IocService {
 			}
 		}
 		return result;
+	}
+
+	public String getIocInfo(String groupName) throws Exception {
+		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resoureces");
+		return IOUtil.getContent(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8");
 	}
 }

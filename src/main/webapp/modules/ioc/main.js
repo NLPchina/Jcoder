@@ -5,18 +5,23 @@ var iocManager = new Vue({
     checkedHosts:[],
     hosts:[],
     groupName:param.name,
-    editor: ''
+    editor: '',
+    iocInfo:'',
   },
   mounted:function(){
 	  var $this = this;
 	  $this.editor = CodeMirror.fromTextArea(document.getElementById('etlWorkerDlg-add-code'), {
-      	lineNumbers : true,
-			mode : "python",
-			matchBrackets : true,
-			theme : "monokai",
-			showCursorWhenSelecting : true    			
+         lineNumbers : true,
+         mode : "javascript",
+         matchBrackets : true,
+         theme : "monokai",
+         showCursorWhenSelecting : true
       });
 	  $this.hostList();
+	  $this.findIocInfoByGroupName();
+      /*Vue.nextTick(function(){
+        $("#etlWorkerDlg-add-code").val($this.editor.getValue());
+      });*/
   },
   methods:{
 	  hostList:function(){
@@ -35,7 +40,6 @@ var iocManager = new Vue({
 		  });
 	  },
 	  save:function(){
-	      debugger;
 		  var $this = this;
           Jcoder.ajax('/admin/ioc/save', 'post',{hostPorts:$this.checkedHosts.toString(),
             groupName:$this.groupName,code:$this.editor.getValue(),first:true},null).then(function (data) {
@@ -46,6 +50,19 @@ var iocManager = new Vue({
                     JqdeBox.message(false, data.msg);
                 }
           });
-	  }
+	  },
+      findIocInfoByGroupName:function(){
+         var $this = this;
+         Jcoder.ajax('/admin/ioc/findIocInfoByGroupName', 'post',{groupName:$this.groupName},null).then(function (data) {
+           JqdeBox.unloading();
+           if(data.ok){
+              $this.iocInfo = data.obj;
+             //$("#etlWorkerDlg-add-code").val($this.editor.getValue());
+             $("#etlWorkerDlg-add-code").val($this.editor.getValue());
+           }else{
+               JqdeBox.message(false, data.msg);
+           }
+         });
+      }
   }
 });
