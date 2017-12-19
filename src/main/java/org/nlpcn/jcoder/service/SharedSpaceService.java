@@ -2,6 +2,8 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.CuratorEvent;
+import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
@@ -62,6 +64,12 @@ public class SharedSpaceService {
 	 */
 	private static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
 
+
+	/**
+	 * 在线主机
+	 */
+	private static final String HOST_PATH = StaticValue.ZK_ROOT + "/host";
+
 	/**
 	 * group /jcoder/task/group/className.task
 	 * |-resource (filePath,md5)
@@ -98,6 +106,11 @@ public class SharedSpaceService {
 
 	//缓存在线主机 key:127.0.0.1:2181 HostGroup.java
 	private ZKMap<HostGroup> hostGroupCache;
+
+	/**
+	 * 在线主机
+	 */
+	private NodeCache hostCache;
 
 
 	/**
@@ -299,10 +312,10 @@ public class SharedSpaceService {
 	/**
 	 * lock a path in /zookper/locak[/path]
 	 *
-	 * @param path
+	 * @param groupName
 	 */
-	private InterProcessMutex lock(String path) {
-		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + path);
+	public InterProcessMutex lockGroup(String groupName) {
+		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + "/" + groupName);
 		return lock;
 	}
 
@@ -311,7 +324,7 @@ public class SharedSpaceService {
 	 *
 	 * @param lock
 	 */
-	private void unLockAndDelete(String path, InterProcessMutex lock) {
+	public void unLockAndDelete(InterProcessMutex lock) {
 		if (lock != null && lock.isAcquiredInThisProcess()) {
 			try {
 				lock.release(); //释放锁
@@ -478,6 +491,16 @@ public class SharedSpaceService {
 	public SharedSpaceService init() throws Exception {
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
+		//注册监听事件
+		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener() {
+			@Override
+			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
+				LOG.warn("==============received " + event);
+//				init();
+			}
+		});
+
+
 		if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH);
 		}
@@ -491,8 +514,13 @@ public class SharedSpaceService {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(TOKEN_PATH);
 		}
 
+		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
+			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
+		}
+
 		Map<String, List<Different>> diffMaps = joinCluster();
 
+		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0]);
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -554,7 +582,7 @@ public class SharedSpaceService {
 			List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
 
 			//增加或查找不同
-			InterProcessMutex lock = lock(LOCK_PATH + "/" + groupName);
+			InterProcessMutex lock = lockGroup(groupName);
 			try {
 				lock.acquire();
 				//判断group是否存在。如果不存在。则进行安全添加
@@ -567,7 +595,7 @@ public class SharedSpaceService {
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
-				unLockAndDelete(GROUP_PATH + "/" + groupName, lock);
+				unLockAndDelete(lock);
 			}
 
 
@@ -606,6 +634,16 @@ public class SharedSpaceService {
 		}
 
 		return result;
+	}
+
+	/**
+	 * 取得所有的在线主机
+	 *
+	 * @return
+	 * @throws Exception
+	 */
+	public List<String> getAllHosts() throws Exception {
+		return getZk().getChildren().forPath(HOST_PATH);
 	}
 
 	/**

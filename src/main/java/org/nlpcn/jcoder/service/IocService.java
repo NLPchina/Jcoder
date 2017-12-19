@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.domain.HostGroup;
 import org.nutz.ioc.loader.annotation.IocBean;
 
@@ -13,10 +14,10 @@ import org.nutz.ioc.loader.annotation.IocBean;
 public class IocService {
 	private SharedSpaceService sharedSpaceService;
 
-	public IocService(SharedSpaceService sharedSpaceService) {
-		this.sharedSpaceService = sharedSpaceService;
+	public IocService() {
+		this.sharedSpaceService = StaticValue.space();
 	}
-	
+
 	public Map<String,HostGroup> getAllHosts(final String groupName) throws Exception {
 
 		Map<String,HostGroup> result = new HashMap<>() ;
@@ -30,6 +31,6 @@ public class IocService {
 				result.put(split[0],entry.getValue()) ;
 			}
 		}
-		return result ;
+		return result;
 	}
 }

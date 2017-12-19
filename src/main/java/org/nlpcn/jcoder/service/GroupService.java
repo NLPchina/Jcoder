@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
@@ -8,7 +9,6 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.IocBean;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 
@@ -35,7 +35,7 @@ public class GroupService {
 
 				Set<String> set = new HashSet<>();
 				sharedSpaceService.walkAllDataNode(set, GROUP_PATH + "/" + gName + "/file");
-				group.setFileNum(set.size() - 1);
+				group.setFileNum(set.size());
 
 				FileInfo root = JSONObject.parseObject(sharedSpaceService.getData2ZK(GROUP_PATH + "/" + gName + "/file"), FileInfo.class);
 
@@ -65,6 +65,7 @@ public class GroupService {
 			}
 		});
 
+		result.sort(Comparator.comparingInt(g -> -g.getHosts().size()));
 
 		return result;
 	}
@@ -102,9 +103,32 @@ public class GroupService {
 		return sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH);
 	}
 
-	public Set<String> getAllHosts() throws Exception {
-		return sharedSpaceService.getHostGroupCache().keySet().stream().filter(s -> s.split("_").length == 1).collect(Collectors.toSet());
+	public List<String> getAllHosts() throws Exception {
+		return sharedSpaceService.getAllHosts();
 	}
 
 
+	/**
+	 * 从集群把一个组彻底删除掉
+	 *
+	 * @param groupName
+	 */
+	public void deleteByCluster(String groupName) throws Exception {
+
+		InterProcessMutex interProcessMutex = sharedSpaceService.lockGroup(groupName);
+
+		try {
+			interProcessMutex.acquire();
+			//判断当前是否有机器在使用此group
+			for (String k : sharedSpaceService.getHostGroupCache().keySet()) {
+				String gName = k.split("_")[1];
+				if (gName.equals(groupName)) {
+					throw new Exception("组: " + groupName + "存在主机持有。清删除后重试: " + k);
+				}
+			}
+			sharedSpaceService.getZk().delete().deletingChildrenIfNeeded().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName);
+		} finally {
+			sharedSpaceService.unLockAndDelete(interProcessMutex);
+		}
+	}
 }

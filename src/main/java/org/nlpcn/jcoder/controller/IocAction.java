@@ -1,16 +1,20 @@
 package org.nlpcn.jcoder.controller;
 
 import java.io.File;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.nlpcn.jcoder.util.IOUtil;
+import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.IocService;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.util.JsonResult;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
+import org.nutz.dao.Cnd;
+import org.nutz.dao.Condition;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -43,15 +47,37 @@ public class IocAction {
 	private BasicDao basicDao = StaticValue.systemDao;
 
 	@At
-	public JsonResult save(@Param("groupName") String groupName, @Param("code") String code) {
+	public Restful save(@Param("hostPorts") String[] hostPorts,@Param("groupName") String groupName, @Param("code") String code,
+						@Param(value = "first", df = "true") boolean first) {
 		try {
-			JarService jarService = JarService.getOrCreate(groupName) ;
-			jarService.saveIoc(groupName, code);
-			jarService.release();
-			return StaticValue.okMessageJson("保存并加载成功！");
+			if(!first){
+				JarService jarService = JarService.getOrCreate(groupName) ;
+				jarService.saveIoc(jarService.getIocPath(), code);
+				jarService.release();
+				return Restful.instance().msg("保存成功！");
+
+			}else{
+				Set<String> hostPortsArr = new HashSet<>();
+
+				Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+
+				String message = proxyService.post(hostPortsArr, "/admin/ioc/save", ImmutableMap.of("name", groupName,"code", code,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
+
+				return Restful.instance().msg(message);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			return StaticValue.okMessageJson("保存失败！" + e.getMessage());
+			return Restful.instance().msg("保存失败！" + e.getMessage());
+		}
+	}
+
+	@At
+	public Restful hostList(@Param("groupName") String groupName) {
+		try {
+			return Restful.OK.obj(iocService.getAllHosts(groupName));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.ERR.msg(e.getMessage());
 		}
 	}
 }

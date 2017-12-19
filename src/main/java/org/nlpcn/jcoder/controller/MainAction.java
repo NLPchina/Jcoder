@@ -20,6 +20,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -36,8 +39,6 @@ public class MainAction {
 	@Inject
 	private TaskService taskService;
 
-	@Inject
-	private GroupService groupService;
 
 	@At("/admin/main/left")
 	public Restful left() throws Exception {
@@ -48,7 +49,12 @@ public class MainAction {
 
 		boolean isAdmin = user.getType()  == 1 ;
 
-		List<String> allGroups = groupService.getAllGroupNames();
+		StaticValue.space().getHostGroupCache().toMap() ;
+
+		Set<String> collect = StaticValue.space().getHostGroupCache().keySet().stream().map(s -> s.split("_")[1]).collect(Collectors.toSet());
+
+		Set<String> allGroups = new TreeSet<>(collect);
+
 
 		//task 管理
 		JSONArray submenus = new JSONArray() ;
