@@ -19,9 +19,6 @@ var iocManager = new Vue({
       });
 	  $this.hostList();
 	  $this.findIocInfoByGroupName();
-      /*Vue.nextTick(function(){
-        $("#etlWorkerDlg-add-code").val($this.editor.getValue());
-      });*/
   },
   methods:{
 	  hostList:function(){
@@ -56,9 +53,7 @@ var iocManager = new Vue({
          Jcoder.ajax('/admin/ioc/findIocInfoByGroupName', 'post',{groupName:$this.groupName},null).then(function (data) {
            JqdeBox.unloading();
            if(data.ok){
-              $this.iocInfo = data.obj;
-             //$("#etlWorkerDlg-add-code").val($this.editor.getValue());
-             $("#etlWorkerDlg-add-code").val($this.editor.getValue());
+             $this.editor.setValue(data.obj);
            }else{
                JqdeBox.message(false, data.msg);
            }
