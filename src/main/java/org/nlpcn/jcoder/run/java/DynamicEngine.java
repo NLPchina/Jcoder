@@ -236,4 +236,9 @@ public class DynamicEngine {
 	}
 
 
+	public void close() throws IOException {
+		if(this.classLoader!=null){
+			this.classLoader.close();
+		}
+	}
 }

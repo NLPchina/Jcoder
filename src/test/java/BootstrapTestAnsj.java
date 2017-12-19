@@ -3,6 +3,8 @@ public class BootstrapTestAnsj {
 		Bootstrap.main(new String[]{
 				"--zk=192.168.3.137:2181",
 				"--host=192.168.3.66",
+//				"--zk=192.168.31.227:2181",
+//				"--host=192.168.31.227",
 				"--home=jcoder_home",
 				"--port=9095"
 		});

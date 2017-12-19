@@ -2,12 +2,18 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.nlpcn.jcoder.domain.FileInfo;
-import org.nlpcn.jcoder.domain.Group;
-import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.controller.GroupAction;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.dao.BasicDao;
+import org.nutz.dao.Cnd;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Files;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.*;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
@@ -17,11 +23,15 @@ import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
  */
 @IocBean
 public class GroupService {
-	private SharedSpaceService sharedSpaceService;
 
-	public GroupService() {
-		this.sharedSpaceService = StaticValue.space();
-	}
+	private static final Logger LOG = LoggerFactory.getLogger(GroupService.class);
+
+	@Inject
+	private TaskService taskService ;
+
+	private BasicDao basicDao = StaticValue.systemDao;
+
+	private SharedSpaceService sharedSpaceService = StaticValue.space();
 
 	public List<Group> list() throws Exception {
 		List<Group> result = new ArrayList<>();
@@ -130,5 +140,37 @@ public class GroupService {
 		} finally {
 			sharedSpaceService.unLockAndDelete(interProcessMutex);
 		}
+	}
+
+	public boolean deleteGroup(String name) {
+
+		JarService.getOrCreate(name).release(); //释放环境变量
+
+		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
+
+		if(group!=null) {
+			basicDao.delById(group.getId(), Group.class);
+
+			List<Task> tasks = taskService.tasksList(group.getId());
+
+			for (Task task : tasks) {
+				try {
+					LOG.info("delete task " + task.getName());
+					taskService.delete(task);
+					taskService.delByDB(task);
+					basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		sharedSpaceService.getHostGroupCache().remove(StaticValue.getHostPort()+"_"+name) ;
+
+		Files.deleteFile(new File(StaticValue.GROUP_FILE, name+".cache")) ;
+
+		return Files.deleteDir(new File(StaticValue.GROUP_FILE, name));
+
+
 	}
 }

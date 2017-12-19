@@ -223,27 +223,6 @@ public class SharedSpaceService {
 	}
 
 	/**
-	 * 根据分组名称获取所有Task
-	 *
-	 * @param groupName 组名
-	 * @return
-	 * @throws Exception
-	 */
-	public List<Task> getTasksByGroupName(String groupName) throws Exception {
-		String path = GROUP_PATH + "/" + groupName;
-		List<String> taskNames = zkDao.getZk().getChildren().forPath(path);
-		List<Task> tasks = new ArrayList<>(taskNames.size());
-		Task t;
-		for (String name : taskNames) {
-			t = JSONObject.parseObject(zkDao.getZk().getData().forPath(path + "/" + name), Task.class);
-			if (t != null) {
-				tasks.add(t);
-			}
-		}
-		return tasks;
-	}
-
-	/**
 	 * 注册一个token,token必须是刻一用路径描述的
 	 *
 	 * @param token
@@ -800,6 +779,12 @@ public class SharedSpaceService {
 	private List<FileInfo> listFileInfosByGroup(String groupName) throws IOException {
 
 		final List<FileInfo> result = new ArrayList<>();
+
+		if (!new File(StaticValue.GROUP_FILE, groupName).exists()) {
+			LOG.warn(groupName + " not folder not exists so create it");
+			new File(StaticValue.GROUP_FILE, groupName).mkdirs();
+		}
+
 		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
 		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
 			// 在访问子目录前触发该方法
