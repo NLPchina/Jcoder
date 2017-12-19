@@ -4,12 +4,12 @@
             <button class="btn btn-xs btn-info" @click="add()">
                 <i class="ace-icon glyphicon glyphicon-plus bigger-100"></i> 添加
             </button>
-            <!--<button class="btn btn-xs btn-danger" @click="remove()" :disabled="ids.length==0">-->
-                <!--<i class="ace-icon glyphicon glyphicon-remove bigger-100"></i>删除-->
-            <!--</button>-->
-            <!--<button class="btn btn-xs btn-success" type="button" @click="emptyKeyword()">-->
-                <!--<i class="ace-icon glyphicon glyphicon-refresh bigger-100"></i>刷新-->
-            <!--</button>-->
+            <button class="btn btn-xs btn-danger" @click="remove()" :disabled="ids.length==0">
+                <i class="ace-icon glyphicon glyphicon-remove bigger-100"></i>删除
+            </button>
+            <button class="btn btn-xs btn-success" type="button" @click="emptyKeyword()">
+                <i class="ace-icon glyphicon glyphicon-refresh bigger-100"></i>刷新
+            </button>
         </div>
     </div>
 
@@ -54,6 +54,16 @@
 		                                </a>
                                     </div>
 		                        </div>
+
+								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+									<div class="editbutton" style="display:inline;">
+										<a class="red" href="javascript:;" style="margin-left:7px;" title="下载" @click="del(item.hostPort,groupName)">
+											<i class="ace-icon fa fa-cloud-download bigger-130"></i>
+										</a>
+									</div>
+								</div>
+
+
 							</td>
 						</tr>
                     </tbody>
@@ -103,17 +113,46 @@ var groupHostList = new Vue({
 			if(status){
 				JqdeBox.loading();
 				Jcoder.ajax("/admin/group/delete", 'post',{"hostPorts":hostPort,"name":groupName},null).then(function (data) {
-				  JqdeBox.unloading();
-				  if(data.ok){
-					  $this.hostList();
-					  JqdeBox.message(true, data.message);
-				  }else{
-					  JqdeBox.message(false, data.message);
-				  }
-			  });
+					JqdeBox.unloading();
+					if(data.ok){
+						$this.hostList();
+						JqdeBox.message(true, data.message);
+					}else{
+						JqdeBox.message(false, data.message);
+					}
+				});
 			}
-		 }) ;
-	  }
+		}) ;
+	},
+
+	delAll: function(hostPort,groupName){
+		var $this = this;
+		JqdeBox.confirm("确定删除组："+groupName,function(status){
+			if(status){
+				JqdeBox.loading();
+				Jcoder.ajax("/admin/group/delete", 'post',{"hostPorts":hostArray(),"name":groupName},null).then(function (data) {
+					JqdeBox.unloading();
+					if(data.ok){
+						$this.hostList();
+						JqdeBox.message(true, data.message);
+					}else{
+						JqdeBox.message(false, data.message);
+					}
+				});
+			}
+		}) ;
+	},
+
+	hostArray: function () {
+		var $this = this;
+		var len = $(":checkbox").length ;
+		for(var i =0 ;i<len ;i++){
+		 if($(":checkbox")[i].checked==true){
+			$this.hostPorts.push($this.hosts[i]);
+		 }
+		}
+	},
+
   }
 });
 </script>

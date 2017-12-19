@@ -44,6 +44,7 @@ public class ProxyService {
 		StringBuilder sb = new StringBuilder();
 		for (Map.Entry<String, String> entry : result.entrySet()) {
 			sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + " , ");
+
 		}
 		return sb.toString();
 	};
@@ -250,7 +251,8 @@ public class ProxyService {
 					try {
 						content = Sender.create(Request.create("http://" + ipPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of("authorization", fToken)))).setTimeout(timeout).setConnTimeout(timeout).send().getContent();
 					} catch (Exception e) {
-						content = JSONObject.toJSONString(Restful.instance(false, "请求异常：" + e.getMessage()));
+						LOG.error("post to url : http://" + ipPort + path+" error ",e);
+						content = "请求异常：" + e.getMessage();
 					}
 					return content;
 				});
