@@ -1,15 +1,14 @@
 package org.nlpcn.jcoder.domain;
 
+import com.google.common.base.Objects;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.MD5Util;
+import org.nlpcn.jcoder.util.StaticValue;
+
 import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Date;
-
-import com.google.common.base.Objects;
-import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
 
 /**
  * 文件信息的包装类
@@ -60,8 +59,12 @@ public class FileInfo implements Comparable<FileInfo> {
 	}
 
 	public synchronized String getMd5() {
-		if (StringUtil.isBlank(this.md5)) {
-			md5 = MD5Util.getMd5ByFile(file);
+		if (this.md5 == null) {
+			if ("resources/ioc.js".equals(this.relativePath) || "lib/pom.xml".equals(this.relativePath)) {
+				md5 = IOUtil.getContent(file, IOUtil.UTF8);
+			} else {
+				md5 = MD5Util.getMd5ByFile(file);
+			}
 		}
 		return md5;
 	}

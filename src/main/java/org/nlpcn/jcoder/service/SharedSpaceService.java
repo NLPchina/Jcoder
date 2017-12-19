@@ -779,6 +779,12 @@ public class SharedSpaceService {
 	private List<FileInfo> listFileInfosByGroup(String groupName) throws IOException {
 
 		final List<FileInfo> result = new ArrayList<>();
+
+		if (!new File(StaticValue.GROUP_FILE, groupName).exists()) {
+			LOG.warn(groupName + " not folder not exists so create it");
+			new File(StaticValue.GROUP_FILE, groupName).mkdirs();
+		}
+
 		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
 		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
 			// 在访问子目录前触发该方法

@@ -3,11 +3,8 @@ package org.nlpcn.jcoder.controller;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
-import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.*;
@@ -16,7 +13,6 @@ import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.lang.Files;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @IocBean
@@ -178,26 +173,7 @@ public class GroupAction {
 	public Restful delete(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
 		if (!first) {
-
-			JarService.getOrCreate(name).release(); //释放环境变量
-
-			Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
-
-			if(group==null) {
-				basicDao.delById(group.getId(), Group.class);
-
-				List<Task> tasks = taskService.tasksList(group.getId());
-
-				for (Task task : tasks) {
-					LOG.info("delete task " + task.getName());
-					taskService.delete(task);
-					taskService.delByDB(task);
-					basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
-				}
-			}
-
-			boolean flag = Files.deleteDir(new File(StaticValue.GROUP_FILE, name));
-
+			boolean flag = groupService.deleteGroup(name);
 			if (flag) {
 				return Restful.instance(flag, "删除成功");
 			} else {
@@ -210,6 +186,8 @@ public class GroupAction {
 			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
 
 			String message = proxyService.post(hostPortsArr, "/admin/group/delete", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
+
+
 
 			return Restful.instance().msg(message);
 		}

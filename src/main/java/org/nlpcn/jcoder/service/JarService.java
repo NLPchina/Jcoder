@@ -1,9 +1,7 @@
 package org.nlpcn.jcoder.service;
 
-import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.*;
-
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -11,10 +9,8 @@ import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.Ioc;
-import org.nutz.ioc.IocLoader;
 import org.nutz.ioc.impl.NutIoc;
 import org.nutz.ioc.loader.json.JsonLoader;
-import org.nutz.ioc.loader.map.MapLoader;
 import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +29,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 public class JarService {
 
@@ -43,13 +38,15 @@ public class JarService {
 			.removalListener(new RemovalListener<String, JarService>() {
 				@Override
 				public void onRemoval(RemovalNotification<String, JarService> notification) {
-					try{
+					try {
 						notification.getValue().getIoc().depose();
-					}catch (Exception e){
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 					try {
-						notification.getValue().engine.getClassLoader().close();
+						if (notification.getValue().engine != null) {
+							notification.getValue().engine.close();
+						}
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
@@ -173,7 +170,7 @@ public class JarService {
 		IOUtil.Writer(iocJsPath, IOUtil.UTF8, code);
 		flushIOC();
 	}
-	
+
 	private synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 
@@ -181,7 +178,7 @@ public class JarService {
 
 		if (!new File(iocPath).exists()) {
 			LOG.warn("iocPath: {} not exists so create an empty ioc!!!!!!!");
-			loader = new JsonLoader() ;
+			loader = new JsonLoader();
 		} else {
 			loader = new JsonLoader(iocPath);
 		}
