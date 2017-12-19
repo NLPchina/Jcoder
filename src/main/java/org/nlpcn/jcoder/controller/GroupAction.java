@@ -101,7 +101,7 @@ public class GroupAction {
 		if (!first) {
 			File file = new File(StaticValue.GROUP_FILE, name);
 			file.mkdirs();
-			File ioc = new File(StaticValue.GROUP_FILE, name + "/resoureces");
+			File ioc = new File(StaticValue.GROUP_FILE, name + "/resources");
 			ioc.mkdir();
 			File lib = new File(StaticValue.GROUP_FILE, name + "/lib");
 			lib.mkdir();
