@@ -35,8 +35,10 @@ var iocManager = new Vue({
 		  });
 	  },
 	  save:function(){
+	      debugger;
 		  var $this = this;
-          Jcoder.ajax('/admin/ioc/save', 'post',{hostPorts:$this.checkedHosts,groupName:$this.groupName,code:$this.editor.getValue()},null).then(function (data) {
+          Jcoder.ajax('/admin/ioc/save', 'post',{hostPorts:$this.checkedHosts.toString(),
+            groupName:$this.groupName,code:$this.editor.getValue(),first:true},null).then(function (data) {
                 JqdeBox.unloading();
                 if(data.ok){
                   JqdeBox.message(true, data.msg);

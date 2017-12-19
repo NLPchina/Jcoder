@@ -50,20 +50,21 @@ public class IocAction {
 	public Restful save(@Param("hostPorts") String[] hostPorts,@Param("groupName") String groupName, @Param("code") String code,
 						@Param(value = "first", df = "true") boolean first) {
 		try {
-			if(!false){
+			if(!first){
 				JarService jarService = JarService.getOrCreate(groupName) ;
 				jarService.saveIoc(jarService.getIocPath(), code);
 				jarService.release();
+				return Restful.instance().msg("保存成功！");
+
+			}else{
+				Set<String> hostPortsArr = new HashSet<>();
+
+				Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+
+				String message = proxyService.post(hostPortsArr, "/admin/ioc/save", ImmutableMap.of("name", groupName,"code", code,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
+
+				return Restful.instance().msg(message);
 			}
-
-			Set<String> hostPortsArr = new HashSet<>();
-
-			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-
-			String message = proxyService.post(hostPortsArr, "/admin/ioc/save", ImmutableMap.of("name", groupName,"code", code,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
-
-			return Restful.instance().msg(message);
-
 		} catch (Exception e) {
 			e.printStackTrace();
 			return Restful.instance().msg("保存失败！" + e.getMessage());
