@@ -94,3 +94,46 @@ dependencies {
 		options.encoding = "UTF-8"
 	}
 }
+
+// intellij configuration
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file("$buildDir/classes/main")
+        testOutputDir = file("$buildDir/classes/test")
+
+        iml {
+            // fix so that Gradle idea plugin properly generates support for resource folders
+            // see also https://issues.gradle.org/browse/GRADLE-2975
+            withXml {
+                it.asNode().component.content.sourceFolder.findAll {
+                    it.@url == 'file://$MODULE_DIR$/src/main/resources'
+                }.each {
+                    it.attributes().remove('isTestSource')
+                    it.attributes().put('type', 'java-resource')
+                }
+                it.asNode().component.content.sourceFolder.findAll {
+                    it.@url == 'file://$MODULE_DIR$/src/test/resources'
+                }.each {
+                    it.attributes().remove('isTestSource')
+                    it.attributes().put('type', 'java-test-resource')
+                }
+            }
+        }
+    }
+}
+
+// task for debug
+task debug(type: JavaExec) {
+    if (project.hasProperty('jvmArgs')) {
+        jvmArgs(project.jvmArgs.split('\\s+'))
+    }
+
+    classpath = sourceSets.main.runtimeClasspath
+    classpath += files('src/test/resources')
+
+    main = "Bootstrap"
+    if (project.hasProperty('appArgs')) {
+        args(project.appArgs.split('\\s+'))
+    }
+}
