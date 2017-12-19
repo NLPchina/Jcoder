@@ -43,10 +43,14 @@ public class JarService {
 			.removalListener(new RemovalListener<String, JarService>() {
 				@Override
 				public void onRemoval(RemovalNotification<String, JarService> notification) {
-					notification.getValue().getIoc().depose();
+					try{
+						notification.getValue().getIoc().depose();
+					}catch (Exception e){
+						e.printStackTrace();
+					}
 					try {
 						notification.getValue().engine.getClassLoader().close();
-					} catch (IOException e) {
+					} catch (Exception e) {
 						e.printStackTrace();
 					}
 				}

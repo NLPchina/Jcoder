@@ -7,6 +7,7 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.*;
@@ -177,16 +178,22 @@ public class GroupAction {
 	public Restful delete(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
 		if (!first) {
+
+			JarService.getOrCreate(name).release(); //释放环境变量
+
 			Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
-			basicDao.delById(group.getId(), Group.class);
 
-			List<Task> tasks = taskService.tasksList(group.getId());
+			if(group==null) {
+				basicDao.delById(group.getId(), Group.class);
 
-			for (Task task : tasks) {
-				LOG.info("delete task " + task.getName());
-				taskService.delete(task);
-				taskService.delByDB(task);
-				basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+				List<Task> tasks = taskService.tasksList(group.getId());
+
+				for (Task task : tasks) {
+					LOG.info("delete task " + task.getName());
+					taskService.delete(task);
+					taskService.delByDB(task);
+					basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+				}
 			}
 
 			boolean flag = Files.deleteDir(new File(StaticValue.GROUP_FILE, name));
