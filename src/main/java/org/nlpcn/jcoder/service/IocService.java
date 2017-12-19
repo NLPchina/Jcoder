@@ -37,7 +37,7 @@ public class IocService {
 	}
 
 	public String getIocInfo(String groupName) throws Exception {
-		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resoureces");
+		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resources");
 		return IOUtil.getContent(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8");
 	}
 }

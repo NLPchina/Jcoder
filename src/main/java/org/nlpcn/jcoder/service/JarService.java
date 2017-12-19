@@ -167,7 +167,7 @@ public class JarService {
 	 * @throws NoSuchAlgorithmException
 	 */
 	public void saveIoc(String iocJsPath,String groupName, String code) throws IOException, NoSuchAlgorithmException {
-		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resoureces");
+		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resources");
 		IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", code);
 		flushIOC();
 	}
