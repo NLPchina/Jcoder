@@ -138,13 +138,13 @@ public class ApiAction {
 			e.printStackTrace();
 			LOG.error(taskName + " " + ExceptionUtil.printStackTraceWithOutLine(e));
 
-			return StaticValue.errMessage(e.getMessage());
+			return Restful.instance().msg(e.getMessage());
 		} finally {
 			if (taskName != null)
 				ThreadManager.removeActionIfOver(taskName);
 		}
 
-		return StaticValue.okMessage("code run over!");
+		return Restful.instance().msg("code run over!");
 	}
 
 	/**
@@ -164,18 +164,17 @@ public class ApiAction {
 			LOG.info(taskName + " will be to stop ! ");
 			ThreadManager.stop(taskName);
 			LOG.info(taskName + " stoped ! ");
-			return StaticValue.OK;
+			return Restful.OK;
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(taskName + " err " + ExceptionUtil.printStackTraceWithOutLine(e));
-			return StaticValue.ERR;
+			return Restful.ERR;
 		}
 	}
 
 	/**
 	 * 查看api的不同
 	 * 
-	 * @param jsonTask
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
