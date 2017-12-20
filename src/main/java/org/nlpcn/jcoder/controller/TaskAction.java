@@ -49,10 +49,16 @@ public class TaskAction {
         return Restful.instance(tasks);
     }
 
-	@At("/task/save/?")
-	@Ok("raw")
-	public String save(Long groupId, @Param("::task") Task task) {
-		JSONObject job = new JSONObject();
+	@At
+	public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) {
+        // TODO:
+        System.out.println(Arrays.toString(hosts));
+        System.out.println(task);
+
+        return Restful.instance();
+
+
+		/*JSONObject job = new JSONObject();
 		try {
 			boolean save = taskService.saveOrUpdate(task, groupId);
 			job.put("ok", true);
@@ -66,7 +72,7 @@ public class TaskAction {
 			job.put("ok", false);
 			job.put("message", "save err!　message:" + e.getMessage());
 			return job.toJSONString();
-		}
+		}*/
 	}
 
 	@At("/task/editor/?/?")

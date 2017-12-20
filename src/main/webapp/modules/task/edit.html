@@ -1,0 +1,81 @@
+<style type="text/css">
+    .CodeMirror {
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+        overflow: no-display;
+        font-size: 18px;
+        height: 500px;
+    }
+</style>
+
+<div class="row" id="vmTaskEditModule">
+    <div>
+        <host-component :hosts.sync="hosts"/>
+    </div>
+
+    <form class="form-horizontal">
+        <div class="col-sm-12">
+            <div class="form-group col-sm-4">
+                <label class="col-sm-3 control-label no-padding-right">类型</label>
+                <div class="col-sm-9">
+                    <select class="col-sm-12" v-model="task.type">
+                        <option value="1">接口</option>
+                        <option value="2">例行性任务</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4">
+                <label class="col-sm-3 control-label no-padding-right">状态</label>
+                <div class="col-sm-9">
+                    <select class="col-sm-12" v-model="task.status">
+                        <option value="0">停用</option>
+                        <option value="1">激活</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4">
+                <label class="col-sm-3 control-label no-padding-right">所属组</label>
+                <div class="col-sm-9">
+                    <select class="col-sm-12" v-model="task.groupName">
+                        <option v-for="item in groups" :value="item">{{item}}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-sm-12">
+            <div class="form-group col-sm-4">
+                <label class="col-sm-3 control-label no-padding-right">描述</label>
+                <div class="col-sm-9">
+                    <input type="text" placeholder="任务描述" class="col-sm-12" v-model="task.description"/>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4">
+                <div v-show="task.type==2">
+                    <label class="col-sm-3 control-label no-padding-right">Cron表达式</label>
+                    <div class="col-sm-9">
+                        <input type="text" placeholder="cron表达式" class="col-sm-12" v-model="task.scheduleStr"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4" style="text-align:right;">
+                <div class="col-md-offset-3 col-md-9">
+                    <button class="btn btn-success" type="button" style="border:none;" @click="save()">
+                        <i class="ace-icon fa fa-check bigger-110"></i>
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group col-sm-12" style="padding: 1em;">
+            <textarea id="code" style="width:100%;"></textarea>
+        </div>
+    </form>
+</div>
+
+<script src="modules/task/edit.js"/>

@@ -34,6 +34,28 @@ Vue.filter('formatNumber', function (value, decimals) {
         _int.slice(i).replace(/(\d{3})(?=\d)/g, '$1,') + (decimals ? stringified.slice(-1 - decimals) : '');
 });
 
+/** HOST组件 */
+Vue.component('host-component', {
+    props: ['hosts'],
+    template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
+    '<span class="label label-xlg label-info label-white" style="margin:2px;text-align:left;" v-for="item in hosts">' +
+    '<label>' +
+    '    <input name="form-field-checkbox" class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
+    '    <span class="lbl" style="width:163px;"> {{item.host}}</span>' +
+    '</label>' +
+    '</span></div>',
+    mounted: function () {
+        var me = this;
+        Jcoder.ajax('/admin/common/host', 'GET', {}).then(function (data) {
+            _.each(data.obj, function (ele) {
+                me.hosts.push({host: ele, checked: true});
+            });
+        }).catch(function (req) {
+            JqdeBox.message(false, req.responseText);
+        });
+    }
+});
+
 function qdeloading(divid){
     var msg = '.';
     $('#'+divid).html('<font size="6" color="#438EB9" style="margin-left: 70px;">'+msg+'</font>');

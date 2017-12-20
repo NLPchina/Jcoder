@@ -84,6 +84,10 @@ vmApp.module = new Vue({
             }).catch(function (req) {
                 JqdeBox.message(false, req.responseText);
             });
+        },
+
+        add: function () {
+            location.hash = '/task/edit.html'
         }
     }
 });
