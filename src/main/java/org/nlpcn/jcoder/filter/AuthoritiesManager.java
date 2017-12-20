@@ -27,7 +27,7 @@ public class AuthoritiesManager implements ActionFilter {
 	public View match(ActionContext actionContext) {
 		HttpSession session = Mvcs.getHttpSession();
 
-		String tokenStr = actionContext.getRequest().getHeader(TokenService.HEAD);
+		String tokenStr = actionContext.getRequest().getHeader(TokenService.CLUSTER_HEAD);
 
 		if (StringUtil.isNotBlank(tokenStr)) {
 			try {

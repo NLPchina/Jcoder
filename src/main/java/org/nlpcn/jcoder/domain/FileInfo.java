@@ -1,19 +1,27 @@
 package org.nlpcn.jcoder.domain;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.json.Json;
 
+import javax.persistence.Transient;
 import java.io.File;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Date;
+import java.util.List;
 
 /**
  * 文件信息的包装类
  */
-public class FileInfo implements Comparable<FileInfo> {
+public class FileInfo implements Comparable<FileInfo>, Serializable {
 
 	private File file;
 
@@ -48,10 +56,6 @@ public class FileInfo implements Comparable<FileInfo> {
 
 	public void setFile(File file) {
 		this.file = file;
-	}
-
-	public String getEncodingPath() throws UnsupportedEncodingException {
-		return URLEncoder.encode(file.getAbsolutePath(), "utf-8");
 	}
 
 	public void setName(String name) {
@@ -119,4 +123,12 @@ public class FileInfo implements Comparable<FileInfo> {
 		return (this.file.getAbsolutePath().compareTo(ji.file.getAbsolutePath()));
 	}
 
+
+	public static void main(String[] args) {
+
+		List list = Lists.newArrayList(new FileInfo(new File("log"))) ;
+
+
+		System.out.println(Json.toJson(list));
+	}
 }

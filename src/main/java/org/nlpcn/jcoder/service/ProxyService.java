@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.nlpcn.jcoder.domain.User;
-import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.http.Header;
 import org.nutz.http.Request;
@@ -194,11 +193,10 @@ public class ProxyService {
 		asciiQueryChars.set((int) '%');//leave existing percent escapes in place
 	}
 
-
 	/**
 	 * 同时提交到多个主机上
 	 *
-	 * @param ipPorts
+	 * @param hostPorts
 	 * @param params
 	 * @param timeout
 	 * @param fun
@@ -206,35 +204,45 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public <T> T post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, String>, T> fun) throws Exception {
-		Map<String, String> result = post(ipPorts, path, params, timeout);
+	public <T> T post(String[] hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, String>, T> fun) throws Exception {
+		Set<String> hostPortsArr = new HashSet<>();
+		Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+		return post(hostPortsArr, path, params, timeout, fun);
+	}
+
+
+	/**
+	 * 同时提交到多个主机上
+	 *
+	 * @param hostPorts
+	 * @param params
+	 * @param timeout
+	 * @param fun
+	 * @param <T>
+	 * @return
+	 * @throws Exception
+	 */
+	public <T> T post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, String>, T> fun) throws Exception {
+		Map<String, String> result = post(hostPorts, path, params, timeout);
 		return fun.apply(result);
 	}
 
 	/**
 	 * 同时向多个主机提交
 	 *
-	 * @param ipPorts
+	 * @param hostPorts
 	 * @param params
 	 * @param timeout
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, String> post(Set<String> ipPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+	public Map<String, String> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
-		HttpSession session = Mvcs.getReq().getSession();
-		String token = (String) session.getAttribute("userToken");
+		String token = getOrCreateToken();
 
-		if (token == null || StaticValue.space().getToken(token) == null) {
-			LOG.info("token timeout so create it ");
-			User user = (User) session.getAttribute("user");
-			token = TokenService.regToken(user);
-			session.setAttribute("userToken", token);
-
-		}
 		final String fToken = token;
 
-		List<String> urlList = new ArrayList<>(ipPorts);
+		List<String> urlList = new ArrayList<>(hostPorts);
 
 		Map<String, String> result = new LinkedHashMap<>();
 
@@ -244,14 +252,14 @@ public class ProxyService {
 
 			BlockingQueue<Future<String>> queue = new LinkedBlockingQueue<Future<String>>(urlList.size());
 
-			for (String ipPort : urlList) {
+			for (String hostPort : urlList) {
 				Future<String> future = threadPool.submit(() -> {
-					LOG.info("post url : http://" + ipPort + path);
+					LOG.info("post url : http://" + hostPort + path);
 					String content = null;
 					try {
-						content = Sender.create(Request.create("http://" + ipPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of("authorization", fToken)))).setTimeout(timeout).setConnTimeout(timeout).send().getContent();
+						content = Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)))).setTimeout(timeout).setConnTimeout(timeout).send().getContent();
 					} catch (Exception e) {
-						LOG.error("post to url : http://" + ipPort + path+" error ",e);
+						LOG.error("post to url : http://" + hostPort + path + " error ", e);
 						content = "请求异常：" + e.getMessage();
 					}
 					return content;
@@ -271,6 +279,34 @@ public class ProxyService {
 
 		return result;
 
+	}
+
+	private String getOrCreateToken() throws Exception {
+		HttpSession session = Mvcs.getReq().getSession();
+		String token = (String) session.getAttribute("userToken");
+
+		if (token == null || StaticValue.space().getToken(token) == null) {
+			LOG.info("token timeout so create it ");
+			User user = (User) session.getAttribute("user");
+			token = TokenService.regToken(user);
+			session.setAttribute("userToken", token);
+
+		}
+		return token;
+	}
+
+
+	/**
+	 * 提交一个请求
+	 *
+	 * @param hostPort
+	 * @param path
+	 * @param params
+	 * @param timeout
+	 * @throws Exception
+	 */
+	public Response post(String hostPort, String path, Map<String, Object> params, int timeout) throws Exception {
+		return Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, getOrCreateToken())))).setTimeout(timeout).setConnTimeout(timeout).send();
 	}
 
 

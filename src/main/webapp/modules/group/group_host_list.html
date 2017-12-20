@@ -67,8 +67,16 @@
 
 								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
 									<div class="editbutton" style="display:inline;">
-										<a class="red" href="javascript:;" style="margin-left:7px;" title="下载" @downSdk="del(item.hostPort,groupName)">
+										<a class="red" href="javascript:;" style="margin-left:7px;" title="下载" @click="downSDK(item.hostPort,groupName)">
 											<i class="ace-icon fa fa-cloud-download bigger-130"></i>
+										</a>
+									</div>
+								</div>
+
+								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+									<div class="editbutton" style="display:inline;">
+										<a class="red" href="javascript:;" style="margin-left:7px;" title="克隆" @click="share(item.hostPort)">
+											<i class="ace-icon fa fa-share bigger-130"></i>
 										</a>
 									</div>
 								</div>
@@ -173,10 +181,32 @@ var groupHostList = new Vue({
 		}) ;
 	},
 
-	downSdk: function(hostPort,groupName){
+	downSDK: function(hostPort,groupName){
 		var $this = this;
-	}
+		location.href = "/admin/group/downSDK?groupName="+encodeURI(groupName)+"&hostPort="+encodeURI(hostPort) ;
+	},
 
+	share: function(hostPort){
+		var $this = this;
+		JqdeBox.dialog({
+              title: "克隆",
+              url: 'modules/group/groupShare.html',
+              confirm: function () {
+              	  JqdeBox.loading();
+            	  var param = groupShare.item;
+            	  groupShare.hostArray();
+            	  Jcoder.ajax("/admin/group/share", 'post',{"hostPorts":groupShare.toHosts.toString(),"groupName":$this.groupName,"formHostPort":hostPort},null).then(function (data) {
+                      JqdeBox.unloading();
+                      if(data.ok){
+                    	  $this.groupList();
+  	  					  JqdeBox.message(true, data.message);
+  	  				  }else{
+  	  					JqdeBox.message(false, data.message);
+  	  				  }
+                  });
+              }
+          });
+	}
 
   }
 });
