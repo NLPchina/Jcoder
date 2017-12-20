@@ -553,66 +553,83 @@ public class SharedSpaceService {
 
 		for (Group group : groups) {
 
-			List<Different> diffs = new ArrayList<>();
+			List<Different> diffs = joinCluster(group);
 
-			String groupName = group.getName();
-			List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
-
-			List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
-
-			//增加或查找不同
-			InterProcessMutex lock = lockGroup(groupName);
-			try {
-				lock.acquire();
-				//判断group是否存在。如果不存在。则进行安全添加
-				if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
-					addGroup2Cluster(groupName, tasks, fileInfos);
-					diffs = Collections.emptyList();
-				} else {
-					diffs = diffGroup(groupName, tasks, fileInfos);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				unLockAndDelete(lock);
-			}
-
-
-			/**
-			 * 根据解决构建信息
-			 */
-			HostGroup hostGroup = new HostGroup();
-			hostGroup.setSsl(StaticValue.IS_SSL);
-			hostGroup.setCurrent(diffs.size() == 0);
-			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
-			try {
-				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
-			} catch (Exception e1) {
-				e1.printStackTrace();
-				LOG.error("add host group info err !!!!!", e1);
-			}
-
-			tasks.forEach(task -> {
-				try {
-					new JavaRunner(task).compile();
-
-					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
-
-					executeMethods.forEach(e -> {
-						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-					});
-
-				} catch (Exception e) {
-					//TODO: e.printStackTrace();
-					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
-				}
-			});
-
-			result.put(groupName, diffs);
+			result.put(group.getName(), diffs);
 
 		}
 
 		return result;
+	}
+
+	/**
+	 * 加入刷新一个主机到集群中
+	 *
+	 * @param group
+	 * @return
+	 * @throws IOException
+	 */
+	public List<Different> joinCluster(Group group) throws IOException {
+		List<Different> diffs = new ArrayList<>();
+
+		String groupName = group.getName();
+
+		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
+
+		List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
+
+		//增加或查找不同
+		InterProcessMutex lock = lockGroup(groupName);
+		try {
+			lock.acquire();
+			JarService jarService = JarService.getOrCreate(groupName);
+			if (jarService != null) {
+				jarService.release();
+			}
+			//判断group是否存在。如果不存在。则进行安全添加
+			if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
+				addGroup2Cluster(groupName, tasks, fileInfos);
+				diffs = Collections.emptyList();
+			} else {
+				diffs = diffGroup(groupName, tasks, fileInfos);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			unLockAndDelete(lock);
+		}
+
+
+		/**
+		 * 根据解决构建信息
+		 */
+		HostGroup hostGroup = new HostGroup();
+		hostGroup.setSsl(StaticValue.IS_SSL);
+		hostGroup.setCurrent(diffs.size() == 0);
+		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+		try {
+			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
+		} catch (Exception e1) {
+			e1.printStackTrace();
+			LOG.error("add host group info err !!!!!", e1);
+		}
+
+		tasks.forEach(task -> {
+			try {
+				new JavaRunner(task).compile();
+
+				Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+
+				executeMethods.forEach(e -> {
+					addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+				});
+
+			} catch (Exception e) {
+				//TODO: e.printStackTrace();
+				LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
+			}
+		});
+		return diffs;
 	}
 
 	/**

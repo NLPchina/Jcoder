@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
@@ -26,6 +27,7 @@ import sun.net.util.URLUtil;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
@@ -243,28 +245,61 @@ public class GroupAction {
 	 * @return
 	 */
 	@At
-	public Restful installGroup(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
+	public synchronized Restful installGroup(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
 		//判断当前group是否存在
 		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", groupName));
 		if (group != null) {
 			return Restful.instance(false, groupName + " 已存在！");
 		}
-		//获取远程主机的所有tasks
 
 		//获取远程主机的所有files
 		Response response = proxyService.post(fromHostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 120000);
 
 		JSONArray jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
 
-		for (Object o : jarry) {
-			System.out.println(o);
-			FileInfo fileInfo = JSONObject.toJavaObject((JSON) o, FileInfo.class);
+		File groupFile = new File(StaticValue.GROUP_FILE, groupName);
 
-			System.out.println(fileInfo.getRelativePath());
+		for (Object o : jarry) {
+			FileInfo fileInfo = JSONObject.toJavaObject((JSON) o, FileInfo.class);
+			File file = new File(groupFile, fileInfo.getRelativePath());
+			if (!file.getParentFile().exists()) {
+				file.getParentFile().mkdirs();
+			}
+
+			long start = System.currentTimeMillis();
+			LOG.info("to down " + fileInfo.getRelativePath());
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 120000);
+			byte[] bytes = new byte[10240];
+			try (OutputStream os = new FileOutputStream(file); InputStream is = post.getStream()) {
+				while ((is.read(bytes)) != -1) {
+					os.write(bytes);
+				}
+			}
+			LOG.info("down ok : {} use time : {} ", fileInfo.getRelativePath(), System.currentTimeMillis() - start);
 		}
 
 
+		//获取远程主机的所有tasks,本地创建group
+		group = new Group();
+		group.setName(groupName);
+		group.setDescription("create at " + DateUtils.formatDate(new Date(), DateUtils.SDF_FORMAT) + " from " + fromHostPort);
+		group.setCreateTime(new Date());
+		basicDao.save(group);
+
+
+		//从远程主机获取所有的task
+		response = proxyService.post(fromHostPort, "/admin/task/taskGroupList", ImmutableMap.of("groupName", groupName), 120000);
+
+		jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
+		for (Object o : jarry) {
+			Task task = JSONObject.toJavaObject((JSON) o, Task.class);
+			task.setGroupId(group.getId());
+			basicDao.save(task);
+			LOG.info("install task ", task.getName());
+		}
+
 		//刷新本地group,加入到集群中
+		groupService.flush(group);
 
 		return Restful.instance().msg("克隆成功");
 	}

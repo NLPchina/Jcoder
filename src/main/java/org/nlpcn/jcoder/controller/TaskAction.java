@@ -7,13 +7,12 @@ import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,31 +30,34 @@ public class TaskAction {
 	@Inject
 	private TaskService taskService;
 
-    /**
-     * 获得task列表
-     *
-     * @param groupName 组名
-     * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
-     * @return
-     * @throws Exception
-     */
-    @At
-    public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
-        Object[] tasks = taskService.getTasksByGroupName(groupName)
-                .stream()
-                .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
-                .map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
-                .toArray();
-        return Restful.instance(tasks);
-    }
+	@Inject
+	private BasicDao basicDao;
+
+	/**
+	 * 获得task列表
+	 *
+	 * @param groupName 组名
+	 * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
+	 * @return
+	 * @throws Exception
+	 */
+	@At
+	public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
+		Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
+				.stream()
+				.filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
+				.map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
+				.toArray();
+		return Restful.instance(tasks);
+	}
 
 	@At
 	public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) {
-        // TODO:
-        System.out.println(Arrays.toString(hosts));
-        System.out.println(task);
+		// TODO:
+		System.out.println(Arrays.toString(hosts));
+		System.out.println(task);
 
-        return Restful.instance();
+		return Restful.instance();
 
 
 		/*JSONObject job = new JSONObject();
@@ -145,17 +147,20 @@ public class TaskAction {
 		return true;
 	}
 
-	@At("/task/group")
-	@Ok("jsp:/task/task_group_list.jsp")
-	@Fail("jsp:/fail.jsp")
-	public void taskGroupList(@Param("groupId") Long groupId) {
-		authValidateView(groupId);
-		Mvcs.getReq().setAttribute("groupId", groupId);
+	/**
+	 * 通过一个接口获取这个group下的所有task，包括未激活或者删除的task，镜像用
+	 *
+	 * @param groupName
+	 */
+	@At
+	public Restful taskGroupList(@Param("groupName") String groupName) {
+		return Restful.instance(taskService.getTasksByGroupName(groupName));
+
 	}
 
 	/**
 	 * 查看权限验证
-	 * 
+	 *
 	 * @param groupId
 	 */
 	private void authValidateView(Long groupId) {

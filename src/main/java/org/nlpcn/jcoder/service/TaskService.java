@@ -45,7 +45,7 @@ public class TaskService {
 	 * @return
 	 * @throws Exception
 	 */
-    public List<Task> getTasksByGroupName(String groupName) throws Exception {
+    public List<Task> getTasksByGroupNameFromCluster(String groupName) throws Exception {
         CuratorFramework zk = StaticValue.space().getZk();
         String path = GROUP_PATH + "/" + groupName;
         List<String> taskNames = zk.getChildren().forPath(path);
@@ -58,6 +58,11 @@ public class TaskService {
 			}
 		}
 		return tasks;
+	}
+
+	public List<Task> getTasksByGroupName(String groupName) {
+		Group group = basicDao.findByCondition(Group.class, Cnd.where("name","=",groupName)) ;
+		return basicDao.search(Task.class,Cnd.where("groupId","=",group.getId())) ;
 	}
 
 	/**

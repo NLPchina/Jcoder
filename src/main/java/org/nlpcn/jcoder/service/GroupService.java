@@ -2,7 +2,6 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.nlpcn.jcoder.controller.GroupAction;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -14,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
@@ -27,7 +27,7 @@ public class GroupService {
 	private static final Logger LOG = LoggerFactory.getLogger(GroupService.class);
 
 	@Inject
-	private TaskService taskService ;
+	private TaskService taskService;
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
@@ -148,7 +148,7 @@ public class GroupService {
 
 		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
 
-		if(group!=null) {
+		if (group != null) {
 			basicDao.delById(group.getId(), Group.class);
 
 			List<Task> tasks = taskService.tasksList(group.getId());
@@ -165,12 +165,23 @@ public class GroupService {
 			}
 		}
 
-		sharedSpaceService.getHostGroupCache().remove(StaticValue.getHostPort()+"_"+name) ;
+		sharedSpaceService.getHostGroupCache().remove(StaticValue.getHostPort() + "_" + name);
 
-		Files.deleteFile(new File(StaticValue.GROUP_FILE, name+".cache")) ;
+		Files.deleteFile(new File(StaticValue.GROUP_FILE, name + ".cache"));
 
 		return Files.deleteDir(new File(StaticValue.GROUP_FILE, name));
 
 
 	}
+
+
+	/**
+	 * 刷新一个group重新加载到集群中
+	 *
+	 * @param group
+	 */
+	public List<Different> flush(Group group) throws IOException {
+		return sharedSpaceService.joinCluster(group);
+	}
+
 }
