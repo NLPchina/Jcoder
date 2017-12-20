@@ -1,7 +1,7 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
-import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.Restful;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 import org.nutz.mvc.ActionContext;
@@ -41,7 +41,7 @@ public class ApiFailProcessor extends ViewProcessor {
 				message = "null is sex , sex is null";
 			}
 
-			view.render(ac.getRequest(), ac.getResponse(), StaticValue.errMessage(message));
+			view.render(ac.getRequest(), ac.getResponse(), Restful.instance(false, message).code(500));
 		}
 
 		doNext(ac);

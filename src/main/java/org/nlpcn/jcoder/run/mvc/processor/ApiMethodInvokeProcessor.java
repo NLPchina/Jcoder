@@ -44,7 +44,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		}
 
 		if (ac.getRequest().getParameter("_rpc_init") != null) {
-			ac.setMethodReturn(StaticValue.okMessage("rpc init ok"));
+			ac.setMethodReturn(Restful.instance().msg("rpc init ok"));
 			doNext(ac);
 			return;
 		}

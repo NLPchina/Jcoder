@@ -1,9 +1,7 @@
 package org.nlpcn.jcoder.util;
 
-import java.io.File;
-import java.security.NoSuchAlgorithmException;
-import java.util.ResourceBundle;
-
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.util.TypeUtils;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.service.JarService;
@@ -15,8 +13,9 @@ import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import java.io.File;
+import java.security.NoSuchAlgorithmException;
+import java.util.ResourceBundle;
 
 public class StaticValue {
 
@@ -35,10 +34,7 @@ public class StaticValue {
 	public static final String TOKEN = getValueOrCreate("token", null);
 	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
 	public static final File HOME_FILE = new File(HOME);
-	public static final File RESOURCE_FILE = new File(HOME_FILE, "resource");
-	public static final File LIB_FILE = new File(HOME_FILE, "lib");
 	public static final File GROUP_FILE = new File(HOME_FILE, "group");
-	public static final File PLUGIN_FILE = new File(HOME_FILE, "plugins");
 	public static final String VERSION = getResource("version");
 
 	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 2));
@@ -59,10 +55,7 @@ public class StaticValue {
 		LOG.info("env in system.propertie: jcoder_port : " + PORT);
 		LOG.info("env in system.propertie: jcoder_rpcport : " + RPCPORT);
 		LOG.info("env in system.propertie: jcoder_log : " + LOG_PATH);
-		LOG.info("env in system.propertie: jcoder_resource : " + RESOURCE_FILE.getAbsolutePath());
-		LOG.info("env in system.propertie: jcoder_lib : " + LIB_FILE.getAbsolutePath());
-		LOG.info("env in system.propertie: jcoder_plugins : " + PLUGIN_FILE.getAbsolutePath());
-		LOG.info("env in system.propertie: jcoder_plugins : " + GROUP_FILE.getAbsolutePath());
+		LOG.info("env in system.propertie: jcoder_group : " + GROUP_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: zookeeper : " + ZK);
 		LOG.info("env in system.propertie: ssl : " + getValueOrCreate("ssl", null));
 	}
@@ -71,33 +64,11 @@ public class StaticValue {
 
 	public static BasicDao systemDao; // 系统DAO
 
-	// 成功
-	public static final String OK = JSONObject.toJSONString(new JsonResult(true));
-
-	// 错误
-	public static final String ERR = JSONObject.toJSONString(new JsonResult(false));
-
-	// 成功
-	public static final JSONObject OK_J = (JSONObject) JSONObject.toJSON(new JsonResult(true));
-
-	// 错误
-	public static final JSONObject ERR_J = (JSONObject) JSONObject.toJSON(new JsonResult(false));
-
 	public static final String SYSTEM_SPLIT = "SYSTEM_SPLIT_ANSJ";
 
 	// api路径的映射
 	public static final ApiUrlMappingImpl MAPPING = new ApiUrlMappingImpl();
 
-	/**
-	 * 失败消息
-	 *
-	 * @param e
-	 * @return
-	 */
-	public static String errMessage(Exception e) {
-		String error = JSON.toJSONString(errMessageJson(e));
-		return error;
-	}
 
 	private static String getValueOrCreate(String key, String def) {
 		String value = System.getProperty(PREFIX + key);
@@ -112,63 +83,6 @@ public class StaticValue {
 		} else {
 			return value;
 		}
-	}
-
-	/**
-	 * 失败消息
-	 *
-	 * @param message
-	 * @return
-	 */
-	public static JsonResult errMessageJson(Exception e) {
-		JsonResult jsonResult = new JsonResult(false);
-		jsonResult.setException(e);
-		return jsonResult;
-	}
-
-	/**
-	 * 失败消息
-	 *
-	 * @param message
-	 * @return
-	 */
-	public static String errMessage(String message) {
-		return JSON.toJSONString(errMessageJson(message));
-	}
-
-	public static JsonResult errMessageJson(String message) {
-		JsonResult jsonResult = new JsonResult(false);
-		jsonResult.setMessage(message);
-		return jsonResult;
-	}
-
-	/**
-	 * 成功消息
-	 *
-	 * @param message
-	 * @return
-	 */
-	public static String okMessage(String message) {
-		return JSON.toJSONString(okMessageJson(message));
-	}
-
-	/**
-	 * 成功消息
-	 *
-	 * @param message
-	 * @return
-	 */
-	public static JsonResult okMessageJson(String message) {
-		JsonResult jsonResult = new JsonResult(true);
-		jsonResult.setMessage(message);
-		return jsonResult;
-	}
-
-	public static JSONObject makeReuslt(boolean ok, Object object) {
-		JSONObject job = new JSONObject();
-		job.put("result", object);
-		job.put("ok", ok);
-		return job;
 	}
 
 	public static Ioc getSystemIoc() {

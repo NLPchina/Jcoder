@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.util;
 
 import org.junit.Test;
-import org.nlpcn.jcoder.run.java.ApiTest;
 import org.nutz.mvc.Mvcs;
 
 public class TestingTest {
