@@ -2,6 +2,7 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.*;
+import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -10,6 +11,7 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
+import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.lang.Lang;
 import org.slf4j.Logger;
@@ -30,9 +32,16 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+@IocBean
 public class JarService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
+
+	/*private SharedSpaceService sharedSpaceService;
+
+	public JarService() {
+		this.sharedSpaceService = StaticValue.space();
+	}*/
 
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
 			.removalListener(new RemovalListener<String, JarService>() {
@@ -97,7 +106,7 @@ public class JarService {
 	private JarService(String groupName) {
 		this.groupName = groupName;
 		jarPath = StaticValue.HOME + "/group/" + groupName + "/lib";
-		pomPath = jarPath + "/group/" + groupName + "/pom.xml";
+		pomPath = jarPath + "/pom.xml";
 		configPath = jarPath + "/group/" + groupName + "/config.properties";
 		iocPath = StaticValue.HOME + "/group/" + groupName + "/resource/ioc.js";
 		engine = new DynamicEngine(groupName);
@@ -166,7 +175,7 @@ public class JarService {
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public void saveIoc(String iocJsPath,String groupName, String code) throws IOException, NoSuchAlgorithmException {
+	public void saveIoc(String groupName, String code) throws IOException, NoSuchAlgorithmException {
 		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resources");
 		IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", code);
 		flushIOC();
@@ -415,31 +424,31 @@ public class JarService {
 	/**
 	 * 保存pom文件
 	 *
-	 * @param code
+	 * @param content
 	 * @return
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public String savePom(String mavenPath, String code) throws IOException, NoSuchAlgorithmException {
-
-		config.put(MAVEN_PATH, mavenPath);
-
-		IOUtil.Writer(pomPath, IOUtil.UTF8, code);
-
-		String message = "保存完毕，文件没有做任何更改！";
-
-		if (!check()) {
-			synchronized (this) {
-				flushMaven();
-				writeVersion();
-				CACHE.invalidate(groupName);
-			}
-			message = "保存并更新jar包成功!";
-		}
-
-		return message;
+	public void savePomInfo(String groupName , String content) throws IOException, NoSuchAlgorithmException {
+		File pom = new File(StaticValue.GROUP_FILE, groupName + "/lib");
+		IOUtil.Writer(new File(pom, "pom.xml").getAbsolutePath(), "utf-8", content);
+		flushMaven();
 	}
 
+	/**
+	 * 获取pom文件内容
+	 *
+	 * @param groupName
+	 * @return
+	 * @throws Exception
+	 */
+	public String getPomInfo(String groupName) throws Exception {
+		SharedSpaceService space = StaticValue.space();
+		byte[] data2ZK = space.getData2ZK(space.GROUP_PATH +"/"+ groupName + "/file/lib/pom.xml");
+		if(data2ZK == null)return "";
+		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
+		return fileInfo.getMd5() ;
+	}
 
 	/**
 	 * 得到启动时候加载的路径

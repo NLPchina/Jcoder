@@ -1,10 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-aaaaaaaaa
-</body>
-</html>
+<div id="jarManager">
+    <div class="widget-box">
+        <div class="widget-header">
+            <h4 class="widget-title lighter smaller">
+                <i class="ace-icon fa fa-gears blue"></i>
+                Maven
+            </h4>
+            <div class="widget-toolbar">
+                <i class="ace-icon fa fa-pencil-square-o bigger-200" style="vertical-align:-4px;" @click="gotoMavenFileEdit()"></i>
+            </div>
+        </div>
+
+        <div class="widget-body">
+            <div class="widget-main">
+                <table id="dynamic-table" class="table table-striped table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th class="center">Status</th>
+                        <th class="center">Name</th>
+                        <th class="center">Size</th>
+                        <th class="center">Time</th>
+                        <th class="center">Path</th>
+                    </tr>
+                    </thead>
+                    <tbody class="infor-tbody">
+                    <tr v-for="(mavenJar, index) in mavenJars">
+                        <td  class="center">{{mavenJar.status}}</td>
+                        <td  class="center">{{mavenJar.file.name}}</td>
+                        <td  class="center">{{mavenJar.file.length()/1024}}k</td>
+                        <td  class="center">{{mavenJar.date}}</td>
+                        <td  class="center">{{mavenJar.encodingPath</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div><!-- /.widget-main  padding: 1em;-->
+        </div><!-- /.widget-body -->
+    </div>
+    <div class="widget-box" style="margin-top:20px;">
+        <div class="widget-header">
+            <h4 class="widget-title lighter smaller">
+                <i class="ace-icon fa fa-user blue"></i>
+                File
+            </h4>
+            <div class="widget-toolbar">
+                <i class="ace-icon fa fa-cloud-upload bigger-200" style="vertical-align:-4px;" @click="UploadJar()"></i>
+            </div>
+        </div>
+
+        <div class="widget-body">
+            <div class="widget-main">
+                <table id="userJar" class="table table-striped table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th class="center">Status</th>
+                        <th class="center">Name</th>
+                        <th class="center">Size</th>
+                        <th class="center">Time</th>
+                        <th class="center">Path</th>
+                    </tr>
+                    </thead>
+                    <tbody class="infor-tbody">
+                    <tr v-for="(userJar, index) in userJars">
+                        <td  class="center">{{userJar.status}}</td>
+                        <td  class="center">{{userJar.file.name}}</td>
+                        <td  class="center">{{userJar.file.length()/1024}}k</td>
+                        <td  class="center">{{userJar.date}}</td>
+                        <td  class="center">{{userJar.encodingPath</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div><!-- /.widget-main  padding: 1em;-->
+        </div><!-- /.widget-body -->
+    </div>
+    <div class="widget-box" style="margin-top:20px;">
+        <div class="widget-header">
+            <h4 class="widget-title lighter smaller">
+                <i class="ace-icon fa fa-cog blue"></i>
+                System
+            </h4>
+        </div>
+
+        <div class="widget-body">
+            <div class="widget-main">
+                <table id="sysJar" class="table table-striped table-bordered table-hover">
+                    <thead>
+                    <tr>
+                        <th class="center">Status</th>
+                        <th class="center">Name</th>
+                        <th class="center">Size</th>
+                        <th class="center">Time</th>
+                        <th class="center">Path</th>
+                    </tr>
+                    </thead>
+                    <tbody class="infor-tbody">
+                    <tr v-for="(sysJar, index) in sysJars">
+                        <td  class="center">{{sysJar.status}}</td>
+                        <td  class="center">{{sysJar.file.name}}</td>
+                        <td  class="center">{{sysJar.file.length()/1024}}k</td>
+                        <td  class="center">{{sysJar.date}}</td>
+                        <td  class="center">{{sysJar.encodingPath</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div><!-- /.widget-main  padding: 1em;-->
+        </div><!-- /.widget-body -->
+    </div>
+</div>
+<script type="text/javascript" src="modules/jar/main.js"></script>

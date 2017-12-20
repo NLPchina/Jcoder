@@ -52,7 +52,7 @@ public class IocAction {
 		try {
 			if(!first){
 				JarService jarService = JarService.getOrCreate(groupName) ;
-				jarService.saveIoc(jarService.getIocPath(),groupName, code);
+				jarService.saveIoc(groupName, code);
 				//jarService.release();
 				return Restful.instance().ok(true).msg("保存成功！");
 

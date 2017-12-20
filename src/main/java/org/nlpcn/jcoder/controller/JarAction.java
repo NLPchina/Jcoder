@@ -10,16 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -31,6 +22,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.domain.JarInfo;
 import org.nlpcn.jcoder.domain.Task;
@@ -52,6 +44,9 @@ import com.alibaba.fastjson.JSONObject;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
+@At("/admin/jar")
+@Ok("json")
+@Fail("http:500")
 public class JarAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarAction.class) ;
@@ -59,9 +54,10 @@ public class JarAction {
 	@Inject
 	private TaskService taskService;
 
-	@At("/jar/list")
-	@Ok("jsp:/jar_list.jsp")
-	public Object list(@Param("group_name") String groupName) throws IOException, URISyntaxException {
+	@Inject
+	private ProxyService proxyService;
+
+	public Restful list(@Param("group_name") String groupName) throws IOException, URISyntaxException {
 
 		JarService jarService = JarService.getOrCreate(groupName) ;
 
@@ -122,7 +118,7 @@ public class JarAction {
 
 		result.put("System", treeSet);
 
-		return result;
+		return Restful.instance().ok(true).obj(result);
 	}
 
 	/**
@@ -273,24 +269,40 @@ public class JarAction {
 		}
 	}
 
-	@At("/jar/maven")
-	@Ok("jsp:/maven.jsp")
-	public Object show(@Param("group_name") String groupName) {
-		JarService jarService = JarService.getOrCreate(groupName) ;
-
-		JSONObject job = new JSONObject();
-		job.put("content", IOUtil.getContent(new File(jarService.getPomPath()), IOUtil.UTF8));
-		job.put("mavenPath", jarService.getMavenPath());
-		return StaticValue.makeReuslt(true, job);
-
+	@At
+	public Restful findMavenInfoByGroupName(@Param("group_name") String groupName) {
+		try {
+			JarService jarService = JarService.getOrCreate(groupName) ;
+			return Restful.OK.obj(jarService.getPomInfo(groupName));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.ERR.msg(e.getMessage());
+		}
 	}
 
-	@At("/maven/save")
-	@Ok("json")
-	public JsonResult save(@Param("group_name") String groupName ,@Param("maven_path") String mavenPath, @Param("content") String content) throws IOException, NoSuchAlgorithmException {
+	@At
+	public Restful save(@Param("hostPorts") String[] hostPorts,@Param("groupName") String groupName, @Param("content") String content,
+						@Param(value = "first", df = "true") boolean first) throws IOException, NoSuchAlgorithmException {
 		JarService jarService = JarService.getOrCreate(groupName) ;
-		String savePom = jarService.savePom(mavenPath,content);
-		return StaticValue.okMessageJson(savePom.replace("\n", "</br>"));
+		try {
+			if(!first){
+				jarService.savePomInfo(groupName, content);
+				//jarService.release();
+				return Restful.instance().ok(true).msg("保存成功！");
+
+			}else{
+				Set<String> hostPortsArr = new HashSet<>();
+
+				Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+
+				String message = proxyService.post(hostPortsArr, "/admin/jar/save", ImmutableMap.of("groupName", groupName,"code", content,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
+				jarService.savePomInfo(groupName,content);
+				return Restful.instance().ok(true).msg(message);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+		}
 	}
 
 	@At("/jar/upload")

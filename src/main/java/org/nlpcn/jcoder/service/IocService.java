@@ -19,8 +19,6 @@ import org.nutz.ioc.loader.annotation.IocBean;
 public class IocService {
 	private SharedSpaceService sharedSpaceService;
 
-
-
 	public IocService() {
 		this.sharedSpaceService = StaticValue.space();
 	}
@@ -44,8 +42,8 @@ public class IocService {
 	public String getIocInfo(String groupName) throws Exception {
 		byte[] data2ZK = sharedSpaceService.getData2ZK(sharedSpaceService.GROUP_PATH +"/"+ groupName + "/file/resources/ioc.js");
 		if(data2ZK == null)return "";
-		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-		return fileInfo.getMd5() ;
+        FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
+        return fileInfo.getMd5() ;
 	}
 
 	public void saveIocInfo(String groupName,String code) throws Exception {
