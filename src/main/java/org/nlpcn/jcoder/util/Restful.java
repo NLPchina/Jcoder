@@ -95,15 +95,15 @@ public class Restful {
 		return new Restful(message, obj);
 	}
 
-	@Deprecated
-	public static Restful instance(String message) {
-		return new Restful(message);
-	}
-
 	public static Restful instance(boolean ok, String message) {
 		return new Restful(ok, message);
 	}
 
+	/**
+	 *
+	 * @param obj
+	 * @return ok true message null obj
+	 */
 	public static Restful instance(Object obj) {
 		return new Restful(obj);
 	}
