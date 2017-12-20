@@ -54,7 +54,7 @@ public class IocAction {
 				JarService jarService = JarService.getOrCreate(groupName) ;
 				jarService.saveIoc(jarService.getIocPath(),groupName, code);
 				//jarService.release();
-				return Restful.instance().msg("保存成功！");
+				return Restful.instance().ok(true).msg("保存成功！");
 
 			}else{
 				Set<String> hostPortsArr = new HashSet<>();
@@ -63,11 +63,11 @@ public class IocAction {
 
 				String message = proxyService.post(hostPortsArr, "/admin/ioc/save", ImmutableMap.of("groupName", groupName,"code", code,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
 				iocService.saveIocInfo(groupName,code);
-				return Restful.instance().msg(message);
+				return Restful.instance().ok(true).msg(message);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			return Restful.instance().msg("保存失败！" + e.getMessage());
+			return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
 		}
 	}
 

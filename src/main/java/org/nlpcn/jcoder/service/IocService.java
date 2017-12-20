@@ -42,7 +42,7 @@ public class IocService {
 	}
 
 	public String getIocInfo(String groupName) throws Exception {
-		byte[] data2ZK = sharedSpaceService.getData2ZK(sharedSpaceService.GROUP_PATH + "/file/" + groupName + "/resources/ioc.js");
+		byte[] data2ZK = sharedSpaceService.getData2ZK(sharedSpaceService.GROUP_PATH +"/"+ groupName + "/file/resources/ioc.js");
 		if(data2ZK == null)return "";
 		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
 		return fileInfo.getMd5() ;

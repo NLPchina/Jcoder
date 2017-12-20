@@ -60,7 +60,7 @@ public class FileInfo implements Comparable<FileInfo> {
 
 	public synchronized String getMd5() {
 		if (this.md5 == null) {
-			if ("resources/ioc.js".equals(this.relativePath) || "lib/pom.xml".equals(this.relativePath)) {
+			if ("/resources/ioc.js".equals(this.relativePath) || "/lib/pom.xml".equals(this.relativePath)) {
 				md5 = IOUtil.getContent(file, IOUtil.UTF8);
 			} else {
 				md5 = MD5Util.getMd5ByFile(file);

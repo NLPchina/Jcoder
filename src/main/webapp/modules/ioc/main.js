@@ -41,11 +41,7 @@ var iocManager = new Vue({
           Jcoder.ajax('/admin/ioc/save', 'post',{hostPorts:$this.checkedHosts.toString(),
             groupName:$this.groupName,code:$this.editor.getValue(),first:true},null).then(function (data) {
                 JqdeBox.unloading();
-                if(data.ok){
-                  JqdeBox.message(true, data.msg);
-                }else{
-                    JqdeBox.message(false, data.msg);
-                }
+                JqdeBox.message(data.ok, data.message);
           });
 	  },
       findIocInfoByGroupName:function(){
