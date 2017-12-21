@@ -91,9 +91,9 @@ public class JarService {
 
 	private JarService(String groupName) throws IOException {
 		this.groupName = groupName;
-		jarPath = new File(StaticValue.GROUP_FILE, "group/" + groupName + "/lib").getCanonicalPath();
-		pomPath = jarPath + "/pom.xml";
-		iocPath = new File(StaticValue.GROUP_FILE, "group/" + groupName + "/resource/ioc.js").getCanonicalPath();
+		jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib").getCanonicalPath();
+		pomPath = new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml").getCanonicalPath();
+		iocPath = new File(StaticValue.GROUP_FILE, groupName + "/resource/ioc.js").getCanonicalPath();
 		engine = new DynamicEngine(groupName);
 		init();
 	}

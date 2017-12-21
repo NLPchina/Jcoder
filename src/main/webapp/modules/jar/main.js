@@ -43,7 +43,7 @@ var jarManager = new Vue({
               confirm: function () {
               	JqdeBox.loading();
                 var formData = new FormData();
-                formData.append('file', $('#id-input-file-3').files[0]);
+                formData.append('file', $('#id-input-file-3').prop("files"));
               　$.ajax({
                   url:"/admin/jar/uploadJar?group_name="+$this.groupName,
                   type:"post",
@@ -52,6 +52,7 @@ var jarManager = new Vue({
                   contentType:false,
                   cache: false,
                   success:function(data){
+                     $this.groupList();
                      JqdeBox.message(data.ok, data.message);
                   }
                 });
