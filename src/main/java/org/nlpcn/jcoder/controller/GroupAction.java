@@ -1,8 +1,13 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
@@ -11,14 +16,21 @@ import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
+import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -57,11 +69,6 @@ public class GroupAction {
 		return Restful.instance(groupService.getGroupHostList(name));
 	}
 
-
-	@At
-	public Restful delete(@Param("name") String name) throws Exception {
-		return null;
-	}
 
 	@At
 	public Restful changeWeight(@Param("groupName") String groupName, @Param("hostPort") String hostPort, @Param("weight") Integer weight) {
@@ -180,18 +187,100 @@ public class GroupAction {
 				return Restful.instance(flag, "删除文件失败");
 			}
 		} else {
-
 			Set<String> hostPortsArr = new HashSet<>();
-
 			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-
 			String message = proxyService.post(hostPortsArr, "/admin/group/delete", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
-
-
-
 			return Restful.instance().msg(message);
 		}
-
 	}
 
+
+	/**
+	 * 删除group
+	 *
+	 * @param hostPort
+	 * @return
+	 */
+	@At
+	@Ok("void")
+	public void downSDK(@Param("hostPort") String hostPort, @Param("groupName") String groupName, HttpServletResponse response) throws Exception {
+		Response rep = proxyService.post(hostPort, "/admin/fileInfo/downSDK", ImmutableMap.of("groupName", groupName), 1000000);
+		if (rep.getStatus() != 200) {
+			throw new ApiException(rep.getStatus(), rep.getContent());
+		}
+
+		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName, "utf-8") + ".zip");
+		response.setContentType("application/octet-stream");
+
+		IOUtil.writeAndClose(rep.getStream(),response.getOutputStream());
+	}
+
+
+	@At
+	public Restful share(@Param("hostPorts") String[] hostPorts, @Param("formHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
+		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName), 120000, ProxyService.MERGE_MESSAGE_CALLBACK);
+		return Restful.instance().msg(msg);
+	}
+
+
+	/**
+	 * 克隆一个主机的group到当前主机上
+	 *
+	 * @param fromHostPort
+	 * @param groupName
+	 * @return
+	 */
+	@At
+	public synchronized Restful installGroup(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
+		//判断当前group是否存在
+		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", groupName));
+		if (group != null) {
+			return Restful.instance(false, groupName + " 已存在！");
+		}
+
+		//获取远程主机的所有files
+		Response response = proxyService.post(fromHostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 120000);
+
+		JSONArray jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
+
+		File groupFile = new File(StaticValue.GROUP_FILE, groupName);
+
+		for (Object o : jarry) {
+			FileInfo fileInfo = JSONObject.toJavaObject((JSON) o, FileInfo.class);
+			File file = new File(groupFile, fileInfo.getRelativePath());
+			if (!file.getParentFile().exists()) {
+				file.getParentFile().mkdirs();
+			}
+			long start = System.currentTimeMillis();
+			LOG.info("to down " + fileInfo.getRelativePath());
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 120000);
+			IOUtil.writeAndClose(post.getStream(),file);
+			LOG.info("down ok : {} use time : {} ", fileInfo.getRelativePath(), System.currentTimeMillis() - start);
+		}
+
+		//从远程主机获取所有的task
+		response = proxyService.post(fromHostPort, "/admin/task/taskGroupList", ImmutableMap.of("groupName", groupName), 120000);
+
+		System.out.println(response.getContent());
+
+		//获取远程主机的所有tasks,本地创建group
+		group = new Group();
+		group.setName(groupName);
+		group.setDescription("create at " + DateUtils.formatDate(new Date(), DateUtils.SDF_FORMAT) + " from " + fromHostPort);
+		group.setCreateTime(new Date());
+		basicDao.save(group);
+
+		jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
+		for (Object o : jarry) {
+			Task task = JSONObject.toJavaObject((JSON) o, Task.class);
+			task.setGroupId(group.getId());
+			basicDao.save(task);
+			LOG.info("install task ", task.getName());
+		}
+
+		//刷新本地group,加入到集群中
+		groupService.flush(group);
+
+		return Restful.instance().msg("克隆成功");
+	}
 }

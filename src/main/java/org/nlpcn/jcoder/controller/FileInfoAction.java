@@ -96,6 +96,7 @@ public class FileInfoAction {
 	 * @param relativePath 抽象路径
 	 */
 	@At
+	@Ok("void")
 	public void downFile(@Param("groupName") String groupName, @Param("relativePath") String relativePath, HttpServletResponse response) throws IOException {
 
 		if (relativePath.contains("..")) {
@@ -203,15 +204,15 @@ public class FileInfoAction {
 	 * @throws URISyntaxException
 	 * @throws IOException
 	 */
-	public void downDevSDK(@Param("group_name") String groupName, HttpServletResponse response) throws URISyntaxException, IOException {
+	@At
+	@Ok("void")
+	public void downSDK(@Param("groupName") String groupName, HttpServletResponse response) throws URISyntaxException, IOException {
 
 		List<File> jars = new ArrayList<>();
 
 		JarService jarService = JarService.getOrCreate(groupName);
 
 		jars.addAll(jarService.findSystemJars());
-
-		List<File> findAllJar = new ArrayList<>();
 
 		File jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib");
 
@@ -222,11 +223,10 @@ public class FileInfoAction {
 
 		int len = 0;
 
-		response.addHeader("Content-Disposition", "attachment;filename=jdcoder_sdk_" + DateUtils.formatDate(new Date(), DateUtils.SDF_TIMESTAP) + ".zip");
+		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName,"utf-8") + ".zip");
 		response.setContentType("application/octet-stream");
 
 		try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
-
 			Set<String> sets = new HashSet<>();
 			// 写jar包
 			if (jarPath.exists() && jarPath.isDirectory()) {

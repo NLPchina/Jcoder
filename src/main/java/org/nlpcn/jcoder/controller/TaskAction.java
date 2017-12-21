@@ -1,24 +1,35 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.constant.Api;
+import org.nlpcn.jcoder.constant.TaskStatus;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.run.CodeException;
+import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpSession;
-import java.util.*;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
+import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
+import static org.nlpcn.jcoder.util.ApiException.ServerException;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -31,28 +42,53 @@ public class TaskAction {
 	@Inject
 	private TaskService taskService;
 
-    /**
-     * 获得task列表
-     *
-     * @param groupName 组名
-     * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
-     * @return
-     * @throws Exception
-     */
-    @At
-    public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
-        Object[] tasks = taskService.getTasksByGroupName(groupName)
-                .stream()
-                .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
-                .map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
-                .toArray();
-        return Restful.instance(tasks);
-    }
+    @Inject
+    private ProxyService proxyService;
 
-	@At("/task/save/?")
-	@Ok("raw")
-	public String save(Long groupId, @Param("::task") Task task) {
-		JSONObject job = new JSONObject();
+	/**
+	 * 获得task列表
+	 *
+	 * @param groupName 组名
+	 * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
+	 * @return
+	 * @throws Exception
+	 */
+	@At
+	public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
+		Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
+				.stream()
+				.filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
+				.map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
+				.toArray();
+		return Restful.instance(tasks);
+	}
+
+	@At
+	public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) throws Exception {
+	    if(hosts == null){
+	        throw new IllegalArgumentException("empty hosts");
+        }
+
+        if (task == null) {
+            throw new IllegalArgumentException("task is null");
+        }
+
+        if (StringUtil.isBlank(task.getName()) || StringUtil.isBlank(task.getDescription()) || StringUtil.isBlank(task.getCode())) {
+            throw new IllegalArgumentException("task name, description or code is empty");
+        }
+
+        // 如果激活任务, 需要检查代码
+        if(task.getStatus() == TaskStatus.ACTIVE.getValue()){
+            String errorMessage = proxyService.post(hosts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.ERR.code(ServerException).msg(errorMessage);
+            }
+        }
+
+        // TODO: 保存
+        return Restful.OK;
+
+		/*JSONObject job = new JSONObject();
 		try {
 			boolean save = taskService.saveOrUpdate(task, groupId);
 			job.put("ok", true);
@@ -66,8 +102,22 @@ public class TaskAction {
 			job.put("ok", false);
 			job.put("message", "save err!　message:" + e.getMessage());
 			return job.toJSONString();
-		}
+		}*/
 	}
+
+    @At
+    public Restful __check__(@Param("::task") Task task) throws CodeException, IOException {
+        if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
+            new JavaRunner(task).check();
+        }
+        return Restful.OK;
+    }
+
+    @At
+    public Restful __save__(@Param("::task") Task task) throws CodeException, IOException {
+        // TODO:
+        return Restful.OK;
+    }
 
 	@At("/task/editor/?/?")
 	@Ok("jsp:/task/task_editor.jsp")
@@ -139,17 +189,20 @@ public class TaskAction {
 		return true;
 	}
 
-	@At("/task/group")
-	@Ok("jsp:/task/task_group_list.jsp")
-	@Fail("jsp:/fail.jsp")
-	public void taskGroupList(@Param("groupId") Long groupId) {
-		authValidateView(groupId);
-		Mvcs.getReq().setAttribute("groupId", groupId);
+	/**
+	 * 通过一个接口获取这个group下的所有task，包括未激活或者删除的task，镜像用
+	 *
+	 * @param groupName
+	 */
+	@At
+	public Restful taskGroupList(@Param("groupName") String groupName) {
+		return Restful.instance(taskService.getTasksByGroupName(groupName));
+
 	}
 
 	/**
 	 * 查看权限验证
-	 * 
+	 *
 	 * @param groupId
 	 */
 	private void authValidateView(Long groupId) {

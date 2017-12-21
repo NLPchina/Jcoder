@@ -77,7 +77,7 @@ public class Bootstrap {
 			port = findPort(port);
 			putEnv(PREFIX + "port", String.valueOf(port));
 		} else {
-			putEnv(PREFIX + "port", portStr);
+			port = Integer.parseInt(portStr) ;
 		}
 
 		System.setProperty("java.awt.headless", "true"); // support kaptcha

@@ -37,28 +37,19 @@ public class JarService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
 
-	/*private SharedSpaceService sharedSpaceService;
-
-	public JarService() {
-		this.sharedSpaceService = StaticValue.space();
-	}*/
-
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
-			.removalListener(new RemovalListener<String, JarService>() {
-				@Override
-				public void onRemoval(RemovalNotification<String, JarService> notification) {
-					try {
-						notification.getValue().getIoc().depose();
-					} catch (Exception e) {
-						e.printStackTrace();
+			.removalListener((RemovalListener<String, JarService>) notification -> {
+				try {
+					notification.getValue().getIoc().depose();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				try {
+					if (notification.getValue().engine != null) {
+						notification.getValue().engine.close();
 					}
-					try {
-						if (notification.getValue().engine != null) {
-							notification.getValue().engine.close();
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}).build(new CacheLoader<String, JarService>() {
 				@Override
@@ -82,7 +73,6 @@ public class JarService {
 
 
 	private static final String MAVEN_PATH = "maven";
-	private static final String IOC_PATH = "ioc";
 	private static final String MD5 = "md5";
 
 	private String groupName;
@@ -93,22 +83,17 @@ public class JarService {
 
 	private String iocPath = null;
 
-	private String configPath = null;
-
-	private JSONObject config = null;
-
 	public Set<String> libPaths = new HashSet<>();
 
 	private DynamicEngine engine;
 
 	private Ioc ioc;
 
-	private JarService(String groupName) {
+	private JarService(String groupName) throws IOException {
 		this.groupName = groupName;
-		jarPath = StaticValue.HOME + "/group/" + groupName + "/lib";
+		jarPath = new File(StaticValue.GROUP_FILE, "group/" + groupName + "/lib").getCanonicalPath();
 		pomPath = jarPath + "/pom.xml";
-		configPath = jarPath + "/group/" + groupName + "/config.properties";
-		iocPath = StaticValue.HOME + "/group/" + groupName + "/resource/ioc.js";
+		iocPath = new File(StaticValue.GROUP_FILE, "group/" + groupName + "/resource/ioc.js").getCanonicalPath();
 		engine = new DynamicEngine(groupName);
 		init();
 	}
@@ -117,24 +102,13 @@ public class JarService {
 	 * 环境加载中
 	 */
 	public void init() {
-		config = readConfig();
-
-		// 加载mavenpath
-		if (StringUtil.isBlank(config.getString(MAVEN_PATH))) {
-			config.put(MAVEN_PATH, getMavenPath());
-		}
-
 		// 如果发生改变则刷新一次
-		if (!check()) {
-			try {
-				flushMaven();
-				writeVersion();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		try {
+			flushMaven();
+			flushClassLoader();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-
-		flushClassLoader();
 	}
 
 	/**
@@ -226,10 +200,6 @@ public class JarService {
 	public String getMavenPath() {
 		String mavenPath = null;
 
-		if (config != null) {
-			mavenPath = config.getString(MAVEN_PATH);
-		}
-
 		if (StringUtil.isBlank(mavenPath)) {
 			mavenPath = System.getProperty(StaticValue.PREFIX + "maven");
 		}
@@ -247,67 +217,6 @@ public class JarService {
 		}
 
 		return mavenPath;
-	}
-
-	/**
-	 * 版本写入
-	 *
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 */
-	public JSONObject writeVersion() {
-
-		JSONObject job = new JSONObject();
-
-		job.put(MAVEN_PATH, getMavenPath());
-		job.put(MD5, readMd5());
-
-		IOUtil.Writer(configPath, IOUtil.UTF8, job.toJSONString());
-
-		config = job;
-
-		return config;
-	}
-
-	/**
-	 * 读取pom文件的md5
-	 *
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 */
-	private String readMd5() {
-		File pom = new File(pomPath);
-		if (pom.exists()) {
-			try {
-				return MD5Util.md5(getMavenPath() + IOUtil.getContent(pom, IOUtil.UTF8));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		return "null";
-	}
-
-	/**
-	 * 检查maven的配置文件是否发生改变
-	 *
-	 * @return
-	 * @throws NoSuchAlgorithmException
-	 */
-	public boolean check() {
-		return String.valueOf(config.get(MD5)).equals(readMd5());
-	}
-
-	/**
-	 * 读取配置文件
-	 *
-	 * @return
-	 */
-	private JSONObject readConfig() {
-		if (new File(configPath).exists()) {
-			return JSONObject.parseObject(IOUtil.getContent(configPath, IOUtil.UTF8));
-		} else {
-			return new JSONObject();
-		}
 	}
 
 	/**
@@ -429,7 +338,7 @@ public class JarService {
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public void savePomInfo(String groupName , String content) throws IOException, NoSuchAlgorithmException {
+	public void savePomInfo(String groupName, String content) throws IOException, NoSuchAlgorithmException {
 		File pom = new File(StaticValue.GROUP_FILE, groupName + "/lib");
 		IOUtil.Writer(new File(pom, "pom.xml").getAbsolutePath(), "utf-8", content);
 		flushMaven();
@@ -444,10 +353,10 @@ public class JarService {
 	 */
 	public String getPomInfo(String groupName) throws Exception {
 		SharedSpaceService space = StaticValue.space();
-		byte[] data2ZK = space.getData2ZK(space.GROUP_PATH +"/"+ groupName + "/file/lib/pom.xml");
-		if(data2ZK == null)return "";
+		byte[] data2ZK = space.getData2ZK(space.GROUP_PATH + "/" + groupName + "/file/lib/pom.xml");
+		if (data2ZK == null) return "";
 		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-		return fileInfo.getMd5() ;
+		return fileInfo.getMd5();
 	}
 
 	/**
@@ -507,7 +416,9 @@ public class JarService {
 		List<File> systemFiles = new ArrayList<>();
 
 		for (URL url : urls) {
-			systemFiles.add(new File(url.toURI()));
+			if (url.toString().toLowerCase().endsWith(".jar")) {
+				systemFiles.add(new File(url.toURI()));
+			}
 		}
 
 		return systemFiles;

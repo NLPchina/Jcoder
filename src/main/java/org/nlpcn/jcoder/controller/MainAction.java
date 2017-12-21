@@ -51,10 +51,9 @@ public class MainAction {
 
 		StaticValue.space().getHostGroupCache().toMap() ;
 
-		Set<String> collect = StaticValue.space().getHostGroupCache().keySet().stream().map(s -> s.split("_")[1]).collect(Collectors.toSet());
+		List<String> strings = StaticValue.space().getZk().getChildren().forPath("/jcoder/group");
 
-		Set<String> allGroups = new TreeSet<>(collect);
-
+		Set<String> allGroups = new TreeSet<>(strings);
 
 		//task 管理
 		JSONArray submenus = new JSONArray() ;

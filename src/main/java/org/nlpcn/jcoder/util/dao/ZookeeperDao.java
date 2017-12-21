@@ -4,11 +4,13 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
 
+import java.io.Closeable;
+
 /**
  * 单薄的zk客户端
  * Created by Ansj on 05/12/2017.
  */
-public class ZookeeperDao {
+public class ZookeeperDao implements Closeable {
 
 	private CuratorFramework client = null;
 
@@ -22,7 +24,8 @@ public class ZookeeperDao {
 	}
 
 
-	public void close() throws InterruptedException {
+	@Override
+	public void close() {
 		client.close();
 	}
 

@@ -8,7 +8,10 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.StringUtil;
@@ -23,10 +26,7 @@ import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,6 +56,12 @@ public class SharedSpaceService {
 	 * Token
 	 */
 	private static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
+
+
+	/**
+	 * Master
+	 */
+	private static final String MASTER_PATH = StaticValue.ZK_ROOT + "/master";
 
 	/**
 	 * Host
@@ -94,6 +100,11 @@ public class SharedSpaceService {
 	private static final Map<Long, AtomicLong> taskErr = new HashMap<>();
 
 	private ZookeeperDao zkDao;
+
+	/**
+	 * 选举
+	 */
+	private LeaderLatch leader;
 
 	/**
 	 * 监听路由缓存
@@ -468,16 +479,57 @@ public class SharedSpaceService {
 
 
 	public SharedSpaceService init() throws Exception {
+
+		long start = System.currentTimeMillis();
+		LOG.info("shared space init");
+
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
 		//注册监听事件
+		zkDao.getZk().getConnectionStateListenable().addListener((client, connectionState) -> {
+			LOG.info("=============================" + connectionState);
+			if (connectionState == ConnectionState.LOST) {
+				while (true) {
+					try {
+						StaticValue.space().release();
+						StaticValue.space().init();
+						break;
+					} catch (InterruptedException e) {
+						throw new RuntimeException(e);
+					} catch (Exception e) {
+						LOG.error("reconn zk server ", e);
+					}
+				}
+			}
+		});
+
 		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener() {
 			@Override
 			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
-				LOG.warn("==============received " + event);
-//				init();
+				LOG.info("+++++++++++++++++++++++++++++++++" + event);
 			}
 		});
+
+
+		/**
+		 * 选举leader
+		 */
+		leader = new LeaderLatch(zkDao.getZk(), MASTER_PATH, StaticValue.getHostPort());
+		leader.addListener(new LeaderLatchListener() {
+			@Override
+			public void isLeader() {
+				StaticValue.setMaster(true);
+				LOG.info("I am master my host is " + StaticValue.getHostPort());
+			}
+
+			@Override
+			public void notLeader() {
+				StaticValue.setMaster(false);
+				LOG.info("I am lost leader " + StaticValue.getHostPort());
+			}
+
+		});
+		leader.start();
 
 
 		if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
@@ -525,18 +577,36 @@ public class SharedSpaceService {
 			}
 		});
 		nodeCache.start();
+
+		LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
 		return this;
+
 	}
 
 	/**
 	 * 主机关闭的时候调用,平时不调用
 	 */
 	public void release() throws Exception {
-		//TODO :relaseMapping(StaticValue.getHostPort());
-		mappingCache.close();
-		tokenCache.close();
-		hostGroupCache.close();
-		zkDao.close();
+		LOG.info("release SharedSpace");
+		Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(mappingCache).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(tokenCache).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(hostGroupCache).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(zkDao).ifPresent((o) -> closeWithoutException(o));
+	}
+
+
+	/**
+	 * 关闭一个类且不抛出异常
+	 *
+	 * @param close
+	 */
+	private void closeWithoutException(Closeable close) {
+		try {
+			close.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 
@@ -553,66 +623,83 @@ public class SharedSpaceService {
 
 		for (Group group : groups) {
 
-			List<Different> diffs = new ArrayList<>();
+			List<Different> diffs = joinCluster(group);
 
-			String groupName = group.getName();
-			List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
-
-			List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
-
-			//增加或查找不同
-			InterProcessMutex lock = lockGroup(groupName);
-			try {
-				lock.acquire();
-				//判断group是否存在。如果不存在。则进行安全添加
-				if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
-					addGroup2Cluster(groupName, tasks, fileInfos);
-					diffs = Collections.emptyList();
-				} else {
-					diffs = diffGroup(groupName, tasks, fileInfos);
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				unLockAndDelete(lock);
-			}
-
-
-			/**
-			 * 根据解决构建信息
-			 */
-			HostGroup hostGroup = new HostGroup();
-			hostGroup.setSsl(StaticValue.IS_SSL);
-			hostGroup.setCurrent(diffs.size() == 0);
-			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
-			try {
-				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
-			} catch (Exception e1) {
-				e1.printStackTrace();
-				LOG.error("add host group info err !!!!!", e1);
-			}
-
-			tasks.forEach(task -> {
-				try {
-					new JavaRunner(task).compile();
-
-					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
-
-					executeMethods.forEach(e -> {
-						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-					});
-
-				} catch (Exception e) {
-					//TODO: e.printStackTrace();
-					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
-				}
-			});
-
-			result.put(groupName, diffs);
+			result.put(group.getName(), diffs);
 
 		}
 
 		return result;
+	}
+
+	/**
+	 * 加入刷新一个主机到集群中
+	 *
+	 * @param group
+	 * @return
+	 * @throws IOException
+	 */
+	public List<Different> joinCluster(Group group) throws IOException {
+		List<Different> diffs = new ArrayList<>();
+
+		String groupName = group.getName();
+
+		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
+
+		List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
+
+		//增加或查找不同
+		InterProcessMutex lock = lockGroup(groupName);
+		try {
+			lock.acquire();
+			JarService jarService = JarService.getOrCreate(groupName);
+			if (jarService != null) {
+				jarService.release();
+			}
+			//判断group是否存在。如果不存在。则进行安全添加
+			if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
+				addGroup2Cluster(groupName, tasks, fileInfos);
+				diffs = Collections.emptyList();
+			} else {
+				diffs = diffGroup(groupName, tasks, fileInfos);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			unLockAndDelete(lock);
+		}
+
+
+		/**
+		 * 根据解决构建信息
+		 */
+		HostGroup hostGroup = new HostGroup();
+		hostGroup.setSsl(StaticValue.IS_SSL);
+		hostGroup.setCurrent(diffs.size() == 0);
+		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+		try {
+			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
+		} catch (Exception e1) {
+			e1.printStackTrace();
+			LOG.error("add host group info err !!!!!", e1);
+		}
+
+		tasks.forEach(task -> {
+			try {
+				new JavaRunner(task).compile();
+
+				Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+
+				executeMethods.forEach(e -> {
+					addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+				});
+
+			} catch (Exception e) {
+				//TODO: e.printStackTrace();
+				LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
+			}
+		});
+		return diffs;
 	}
 
 	/**

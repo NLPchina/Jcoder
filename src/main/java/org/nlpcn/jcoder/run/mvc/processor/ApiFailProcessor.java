@@ -35,6 +35,8 @@ public class ApiFailProcessor extends ViewProcessor {
 				cause = temp;
 			}
 
+			cause.printStackTrace();
+
 			String message = cause.getMessage();
 
 			if (message == null) {

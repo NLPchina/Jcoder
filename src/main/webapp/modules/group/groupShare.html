@@ -1,0 +1,68 @@
+<div id="groupShare" class="tabbable">
+	<ul class="nav nav-tabs" id="myTab">
+        <li class="active">
+            <a data-toggle="tab" href="#home">
+                <i class="green ace-icon fa fa-pencil-square-o bigger-120"></i>
+                基本信息
+            </a>
+        </li>
+    </ul>
+	<div class="tab-content" style="height:350px;">
+        <div id="home" class="tab-pane fade in active">
+            <div class="row">
+                <div class="col-xs-12" id="share-div">
+                    <div class="form-group" style="margin-top:10px;margin-left:10px;">
+                        <label v-for="hostPort in hosts" >
+                            <input name="form-field-checkbox" type="checkbox" class="ace">
+                            <span class="lbl">{{hostPort}}</span>&nbsp;&nbsp;&nbsp;
+                        </label>
+                    </div>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" >
+var groupShare = new Vue({
+  el: '#groupShare',
+  data: {
+    hosts: [], //可以转发的主机
+    toHosts:[] //迁移到的主机
+
+  },
+  mounted:function(){
+  	this.hostList() ;
+  },
+  methods:{
+	hostList:function(){
+		var $this = this;
+		Jcoder.ajax('/admin/group/hostList', 'post',null,null).then(function (data) {
+			JqdeBox.unloading();
+			if(data.ok){
+			    for(var j=0; j<data.obj.length ; j++){
+			      var flag = true ;
+                  for(var i =0 ;i<groupHostList.items.length ;i++){
+                    flag = flag && groupHostList.items[i].hostPort!=data.obj[j];
+                  }
+                  if(flag){
+                    $this.hosts.push(data.obj[j]);
+                  }
+                }
+		    }
+		});
+	},
+	hostArray: function () {
+		 var $this = this;
+		 var boxs = $('#share-div').find('input[type=checkbox]') ;
+		 var len = boxs.length ;
+		 $this.toHosts = [];
+		 for(var i =0 ;i<len ;i++){
+		 	if(boxs[i].checked==true){
+				$this.toHosts.push($this.hosts[i]);
+		 	}
+		 }
+	 },
+  }
+});
+</script>
