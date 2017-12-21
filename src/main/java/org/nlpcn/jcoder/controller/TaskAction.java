@@ -1,10 +1,16 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.constant.Api;
+import org.nlpcn.jcoder.constant.TaskStatus;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.run.CodeException;
+import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -16,7 +22,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpSession;
-import java.util.*;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
+import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
+import static org.nlpcn.jcoder.util.ApiException.ServerException;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -28,6 +41,9 @@ public class TaskAction {
 
 	@Inject
 	private TaskService taskService;
+
+    @Inject
+    private ProxyService proxyService;
 
 	/**
 	 * 获得task列表
@@ -48,13 +64,29 @@ public class TaskAction {
 	}
 
 	@At
-	public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) {
-		// TODO:
-		System.out.println(Arrays.toString(hosts));
-		System.out.println(task);
+	public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) throws Exception {
+	    if(hosts == null){
+	        throw new IllegalArgumentException("empty hosts");
+        }
 
-		return Restful.instance();
+        if (task == null) {
+            throw new IllegalArgumentException("task is null");
+        }
 
+        if (StringUtil.isBlank(task.getName()) || StringUtil.isBlank(task.getDescription()) || StringUtil.isBlank(task.getCode())) {
+            throw new IllegalArgumentException("task name, description or code is empty");
+        }
+
+        // 如果激活任务, 需要检查代码
+        if(task.getStatus() == TaskStatus.ACTIVE.getValue()){
+            String errorMessage = proxyService.post(hosts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.ERR.code(ServerException).msg(errorMessage);
+            }
+        }
+
+        // TODO: 保存
+        return Restful.OK;
 
 		/*JSONObject job = new JSONObject();
 		try {
@@ -72,6 +104,20 @@ public class TaskAction {
 			return job.toJSONString();
 		}*/
 	}
+
+    @At
+    public Restful __check__(@Param("::task") Task task) throws CodeException, IOException {
+        if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
+            new JavaRunner(task).check();
+        }
+        return Restful.OK;
+    }
+
+    @At
+    public Restful __save__(@Param("::task") Task task) throws CodeException, IOException {
+        // TODO:
+        return Restful.OK;
+    }
 
 	@At("/task/editor/?/?")
 	@Ok("jsp:/task/task_editor.jsp")
