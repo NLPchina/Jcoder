@@ -2,13 +2,13 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.StringUtil;
@@ -468,14 +468,30 @@ public class SharedSpaceService {
 
 
 	public SharedSpaceService init() throws Exception {
+
+		long start = System.currentTimeMillis() ;
+		LOG.info("shared space init");
+
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
 
 		//注册监听事件
-		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener() {
+		zkDao.getZk().getConnectionStateListenable().addListener(new ConnectionStateListener() {
 			@Override
-			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
-				LOG.warn("==============received " + event);
-//				init();
+			public void stateChanged(CuratorFramework client, ConnectionState connectionState) {
+				LOG.info("=============================" + connectionState);
+				if (connectionState == ConnectionState.LOST) {
+					while (true) {
+						try {
+							StaticValue.space().release();
+							StaticValue.space().init();
+							break ;
+						} catch (InterruptedException e) {
+							throw new RuntimeException(e);
+						} catch (Exception e) {
+							LOG.error("reconn zk server ", e);
+						}
+					}
+				}
 			}
 		});
 
@@ -525,7 +541,10 @@ public class SharedSpaceService {
 			}
 		});
 		nodeCache.start();
+
+		LOG.info("shared space init ok use time {}",System.currentTimeMillis()-start);
 		return this;
+
 	}
 
 	/**
@@ -533,6 +552,7 @@ public class SharedSpaceService {
 	 */
 	public void release() throws Exception {
 		//TODO :relaseMapping(StaticValue.getHostPort());
+		LOG.info("release SharedSpace");
 		mappingCache.close();
 		tokenCache.close();
 		hostGroupCache.close();
