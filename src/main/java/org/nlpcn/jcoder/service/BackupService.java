@@ -29,7 +29,7 @@ public class BackupService {
 
 		groups.forEach(g -> {
 			JSONObject job = (JSONObject) JSONObject.toJSON(g);
-			List<Task> tasks = systemDao.search(Task.class, Cnd.where("groupId", "=", g.getId()));
+			List<Task> tasks = systemDao.search(Task.class, Cnd.where("groupName", "=", g.getName()));
 			job.put("tasks", tasks);
 			sb.append(job.toJSONString());
 			sb.append("\n");

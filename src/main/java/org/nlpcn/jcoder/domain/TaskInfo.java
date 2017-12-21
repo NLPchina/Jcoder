@@ -14,7 +14,7 @@ public class TaskInfo {
 
 	private long error;
 
-	private Long groupId;
+	private String groupName;
 
 	private long startTime;
 
@@ -35,7 +35,7 @@ public class TaskInfo {
 		this.description = task.getDescription();
 		this.success = task.success();
 		this.error = task.error();
-		this.groupId = task.getGroupId();
+		this.groupName = task.getGroupName();
 		this.status = task.getStatus();
 		this.runStatus = task.getRunStatus();
 		this.startTime = startTime;
@@ -89,12 +89,12 @@ public class TaskInfo {
 		this.error = error;
 	}
 
-	public Long getGroupId() {
-		return groupId;
+	public String getGroupName() {
+		return groupName;
 	}
 
-	public void setGroupId(Long groupId) {
-		this.groupId = groupId;
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 	public Integer getStatus() {

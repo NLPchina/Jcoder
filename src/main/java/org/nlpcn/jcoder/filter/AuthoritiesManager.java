@@ -5,22 +5,19 @@ import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.service.TokenService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionFilter;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.View;
-import org.nutz.mvc.view.ServerRedirectView;
 
 import javax.servlet.http.HttpSession;
 
+import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
+
 public class AuthoritiesManager implements ActionFilter {
 
-	private String name;
-
 	public AuthoritiesManager() {
-		this.name = "user";
 	}
 
 	@Override
@@ -33,7 +30,7 @@ public class AuthoritiesManager implements ActionFilter {
 			try {
 				Token token = TokenService.getToken(tokenStr);
 				if (token != null) {
-					actionContext.getRequest().getSession().setAttribute(name, token.getUser());
+					actionContext.getRequest().getSession().setAttribute(CURRENT_USER, token.getUser());
 					return null;
 				}
 			} catch (Exception e) {
@@ -42,7 +39,7 @@ public class AuthoritiesManager implements ActionFilter {
 		}
 
 		@SuppressWarnings("all")
-		Object obj = session.getAttribute(name);
+		Object obj = session.getAttribute(CURRENT_USER);
 		if (obj == null) {
 			return new JsonView(Restful.instance().code(ApiException.TokenAuthorNotFound).msg("未登录").ok(false));
 		}

@@ -644,7 +644,7 @@ public class SharedSpaceService {
 
 		String groupName = group.getName();
 
-		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
+		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupName", "=", group.getName()));
 
 		List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
 

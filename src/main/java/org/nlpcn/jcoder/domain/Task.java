@@ -28,8 +28,8 @@ public class Task {
 	@Column
 	private String code;
 
-	@Column("group_id")
-	private Long groupId;
+	@Column("group_name")
+	private String groupName;
 
 	@Column("create_user")
 	private String createUser;
@@ -45,8 +45,6 @@ public class Task {
 
 	@Column("version")
 	private String version;
-
-	private String groupName ;
 
 	private String runStatus;
 	
@@ -114,14 +112,6 @@ public class Task {
 		this.status = status;
 	}
 
-	public Long getGroupId() {
-		return groupId;
-	}
-
-	public void setGroupId(Long groupId) {
-		this.groupId = groupId;
-	}
-
 	public String getCreateUser() {
 		return createUser;
 	}
@@ -162,11 +152,9 @@ public class Task {
 		this.runStatus = runStatus;
 	}
 
-
 	public long success() {
 		return StaticValue.space().getSuccess(this.getId());
 	}
-
 	
 	public long error() {
 		return StaticValue.space().getError(this.getId());
@@ -196,11 +184,11 @@ public class Task {
 		this.name = name ;
 	}
 
-	public String getGroupName(){
-		if(groupName==null) {
-			Group group = StaticValue.systemDao.find(groupId, Group.class);
-			this.groupName = group.getName();
-		}
-		return groupName ;
+	public String getGroupName() {
+		return groupName;
+	}
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 }
