@@ -24,27 +24,37 @@ var jarManager = new Vue({
 	  gotoMavenFileEdit:function(){
 	    location.hash = 'jar/mavenFileEdit.html?name='+this.groupName;
 	  },
-	  add:function(){
+	  UploadJar:function(){
 		  var $this = this;
-		  var vUrl = '/admin/group/add';
-		  var vT = 'GroupAdd';
-
 		  JqdeBox.dialog({
-              title: vT,
-              url: 'modules/group/groupAddOrEdit.html',
+              title: 'UploadJar',
+              url: 'modules/jar/importJar.html',
+              init:function(){
+                /*$('#importDlg').form({
+                  url: "/admin/jar/uploadJar?group_name="+$this.groupName,
+                  onSubmit: function(){
+                      return true;
+                  },
+                  success:function(data){
+                      JqdeBox.message(data.ok, data.message);
+                  }
+                });*/
+              },
               confirm: function () {
-              	  JqdeBox.loading();
-            	  var param = groupAddOrEdit.item;
-            	  groupAddOrEdit.hostArray();
-            	  Jcoder.ajax(vUrl, 'post',{"hostPorts":groupAddOrEdit.hostPorts.toString(),"name":groupAddOrEdit.item.name},null).then(function (data) {
-                      JqdeBox.unloading();
-                      if(data.ok){
-                    	  $this.groupList();
-  	  					  JqdeBox.message(true, data.message);
-  	  				  }else{
-  	  					JqdeBox.message(false, data.message);
-  	  				  }
-                  });
+              	JqdeBox.loading();
+                var formData = new FormData();
+                formData.append('file', $('#id-input-file-3').files[0]);
+              　$.ajax({
+                  url:"/admin/jar/uploadJar?group_name="+$this.groupName,
+                  type:"post",
+                  data:formData,
+                  processData:false,
+                  contentType:false,
+                  cache: false,
+                  success:function(data){
+                     JqdeBox.message(data.ok, data.message);
+                  }
+                });
               }
           });
 	  },

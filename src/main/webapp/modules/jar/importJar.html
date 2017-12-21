@@ -1,0 +1,66 @@
+<div id="importJar" class="tabbable">
+    <div class="tab-content">
+        <div id="home" class="tab-pane fade in active">
+            <form class="form-horizontal" id="importDlg" action="" role="form" enctype="multipart/form-data" method="post" onsubmit="return false">
+                <div class="form-group">
+                    <div class="form-group">
+                        <div class="col-md-offset-1 col-xs-10">
+                            <input name="file" multiple="" type="file" id="id-input-file-3" />
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    var importJar = new Vue({
+        el: '#importJar',
+        data: {
+
+        },
+        mounted: function () { // 初始化执行
+            $('#id-input-file-3').ace_file_input({
+                style: 'well',
+                no_file:'没有选择文件',
+                btn_choose: '选择jar文件',
+                btn_change: null,
+                no_icon: 'ace-icon fa fa-cloud-upload',
+                droppable: true,
+                thumbnail: 'small',
+                allowExt:['jar']
+            }).on('file.error.ace', function(event, info) {
+                 JqdeBox.message(false,'请选择.jar格式的文件！');
+            });
+
+            $('#validation-form').validate({
+                errorElement: 'div',
+                errorClass: 'help-block',
+                focusInvalid: true,
+                ignore: "",
+                rules: {
+                    itemFile: {required: true}
+                },
+                messages: {
+                    itemFile: {required: "文件不能为空"}
+                },
+                highlight: function (e) {
+                    $(e).closest('.form-group').removeClass('has-info').addClass('has-error');
+                },
+                success: function (e) {
+                    $(e).closest('.form-group').removeClass('has-error');//.addClass('has-info');
+                    $(e).remove();
+                },
+                errorPlacement: function (error, element) {
+                    error.insertAfter(element);
+                }
+            });
+        },
+        methods: { // 方法
+            // 验证表单
+            valid: function () {
+                return $('#validation-form').valid();
+            }
+        }
+    });
+</script>

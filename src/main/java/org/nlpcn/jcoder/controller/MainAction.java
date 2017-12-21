@@ -69,6 +69,7 @@ public class MainAction {
 		for (String groupName : allGroups) {
 			submenus.add(ImmutableMap.of("name",groupName,"url","jar/list.html?name="+groupName)) ;
 		}
+		//submenus.add(ImmutableMap.of("name","上传","url","jar/importJar.html"));
 		result.add(ImmutableMap.of("name","Jar管理","submenus",submenus)) ;
 
 

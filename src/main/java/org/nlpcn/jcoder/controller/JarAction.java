@@ -179,10 +179,8 @@ public class JarAction {
 		}
 	}
 
-	@At("/jar/upload")
-	@Ok("raw")
-	@AdaptBy(type = UploadAdaptor.class)
-	public Restful uploadJar(@Param("group_name") String groupName, @Param("file") TempFile[] file) throws IOException {
+	@At
+	public Restful uploadJar(@Param("group_name") String groupName, @Param("file") TempFile file) throws IOException {
 
 		int fileNum = (int) Stream.of(file).filter(f -> f.getSubmittedFileName().toLowerCase().endsWith(".jar")).count();
 
@@ -193,8 +191,8 @@ public class JarAction {
 		JarService jarService = JarService.getOrCreate(groupName) ;
 
 		synchronized (jarService) {
-
-			for (TempFile tempFile : file) {
+			TempFile tempFile = file;
+			//for (TempFile tempFile : file) {
 				String fileName = tempFile.getSubmittedFileName();
 				if (fileName.toLowerCase().endsWith(".jar")) {
 					try {
@@ -208,7 +206,7 @@ public class JarAction {
 				} else {
 					LOG.warn(fileName + " not a jar ! so skip it!");
 				}
-			}
+			//}
 
 			JarService.remove(groupName);
 			return Restful.instance().msg("upload " + fileNum + " file ok!");
