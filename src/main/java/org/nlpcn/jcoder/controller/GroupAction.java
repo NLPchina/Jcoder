@@ -19,11 +19,9 @@ import org.nutz.dao.Condition;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.lang.Streams;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.net.util.URLUtil;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -35,7 +33,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
