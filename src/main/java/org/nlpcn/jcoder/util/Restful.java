@@ -1,5 +1,7 @@
 package org.nlpcn.jcoder.util;
 
+import com.alibaba.fastjson.JSON;
+
 public class Restful {
 
 	public static Restful OK = new Restful(true);
@@ -127,5 +129,8 @@ public class Restful {
 		this.ok = ok ;
 		return this ;
 	}
-	
+
+	public String toJsonString() {
+		return JSON.toJSONString(this) ;
+	}
 }

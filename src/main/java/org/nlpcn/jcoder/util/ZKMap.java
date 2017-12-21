@@ -5,6 +5,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 
+import java.io.Closeable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
  * <p>
  * Created by Ansj on 18/12/2017.
  */
-public class ZKMap<V> {
+public class ZKMap<V> implements Closeable{
 
 	private TreeCache treeCache;
 
@@ -135,6 +136,7 @@ public class ZKMap<V> {
 		return this;
 	}
 
+	@Override
 	public void close() {
 		treeCache.close();
 	}

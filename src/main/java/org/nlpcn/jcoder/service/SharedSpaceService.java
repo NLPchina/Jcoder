@@ -6,6 +6,8 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.NodeCache;
 import org.apache.curator.framework.recipes.cache.NodeCacheListener;
 import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.leader.LeaderLatch;
+import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -23,10 +25,7 @@ import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,6 +55,12 @@ public class SharedSpaceService {
 	 * Token
 	 */
 	private static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
+
+
+	/**
+	 * Master
+	 */
+	private static final String MASTER_PATH = StaticValue.ZK_ROOT + "/master";
 
 	/**
 	 * Host
@@ -94,6 +99,11 @@ public class SharedSpaceService {
 	private static final Map<Long, AtomicLong> taskErr = new HashMap<>();
 
 	private ZookeeperDao zkDao;
+
+	/**
+	 * 选举
+	 */
+	private LeaderLatch leader;
 
 	/**
 	 * 监听路由缓存
@@ -469,7 +479,7 @@ public class SharedSpaceService {
 
 	public SharedSpaceService init() throws Exception {
 
-		long start = System.currentTimeMillis() ;
+		long start = System.currentTimeMillis();
 		LOG.info("shared space init");
 
 		this.zkDao = new ZookeeperDao(StaticValue.ZK);
@@ -484,7 +494,7 @@ public class SharedSpaceService {
 						try {
 							StaticValue.space().release();
 							StaticValue.space().init();
-							break ;
+							break;
 						} catch (InterruptedException e) {
 							throw new RuntimeException(e);
 						} catch (Exception e) {
@@ -494,6 +504,27 @@ public class SharedSpaceService {
 				}
 			}
 		});
+
+
+		/**
+		 * 选举leader
+		 */
+		leader = new LeaderLatch(zkDao.getZk(), MASTER_PATH, StaticValue.getHostPort());
+		leader.addListener(new LeaderLatchListener() {
+			@Override
+			public void isLeader() {
+				StaticValue.setMaster(true);
+				LOG.info("I am master my host is " + StaticValue.getHostPort());
+			}
+
+			@Override
+			public void notLeader() {
+				StaticValue.setMaster(false);
+				LOG.info("I am lost leader " + StaticValue.getHostPort());
+			}
+
+		});
+		leader.start();
 
 
 		if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
@@ -542,7 +573,7 @@ public class SharedSpaceService {
 		});
 		nodeCache.start();
 
-		LOG.info("shared space init ok use time {}",System.currentTimeMillis()-start);
+		LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
 		return this;
 
 	}
@@ -551,12 +582,26 @@ public class SharedSpaceService {
 	 * 主机关闭的时候调用,平时不调用
 	 */
 	public void release() throws Exception {
-		//TODO :relaseMapping(StaticValue.getHostPort());
 		LOG.info("release SharedSpace");
-		mappingCache.close();
-		tokenCache.close();
-		hostGroupCache.close();
-		zkDao.close();
+		Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(mappingCache).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(tokenCache).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(hostGroupCache).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(zkDao).ifPresent((o) -> closeWithoutException(o));
+	}
+
+
+	/**
+	 * 关闭一个类且不抛出异常
+	 *
+	 * @param close
+	 */
+	private void closeWithoutException(Closeable close) {
+		try {
+			close.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 

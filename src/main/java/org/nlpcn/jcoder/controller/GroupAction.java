@@ -217,13 +217,7 @@ public class GroupAction {
 		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName, "utf-8") + ".zip");
 		response.setContentType("application/octet-stream");
 
-		byte[] bytes = new byte[10240];
-		OutputStream os = response.getOutputStream();
-		try (InputStream is = rep.getStream()) {
-			while ((is.read(bytes)) != -1) {
-				os.write(bytes);
-			}
-		}
+		IOUtil.writeAndClose(rep.getStream(),response.getOutputStream());
 	}
 
 
@@ -262,19 +256,17 @@ public class GroupAction {
 			if (!file.getParentFile().exists()) {
 				file.getParentFile().mkdirs();
 			}
-
 			long start = System.currentTimeMillis();
 			LOG.info("to down " + fileInfo.getRelativePath());
 			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 120000);
-			byte[] bytes = new byte[10240];
-			try (OutputStream os = new FileOutputStream(file); InputStream is = post.getStream()) {
-				while ((is.read(bytes)) != -1) {
-					os.write(bytes);
-				}
-			}
+			IOUtil.writeAndClose(post.getStream(),file);
 			LOG.info("down ok : {} use time : {} ", fileInfo.getRelativePath(), System.currentTimeMillis() - start);
 		}
 
+		//从远程主机获取所有的task
+		response = proxyService.post(fromHostPort, "/admin/task/taskGroupList", ImmutableMap.of("groupName", groupName), 120000);
+
+		System.out.println(response.getContent());
 
 		//获取远程主机的所有tasks,本地创建group
 		group = new Group();
@@ -282,10 +274,6 @@ public class GroupAction {
 		group.setDescription("create at " + DateUtils.formatDate(new Date(), DateUtils.SDF_FORMAT) + " from " + fromHostPort);
 		group.setCreateTime(new Date());
 		basicDao.save(group);
-
-
-		//从远程主机获取所有的task
-		response = proxyService.post(fromHostPort, "/admin/task/taskGroupList", ImmutableMap.of("groupName", groupName), 120000);
 
 		jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
 		for (Object o : jarry) {

@@ -63,18 +63,6 @@ public class SiteSetup implements Setup {
 			LOG.error(e.getMessage(), e);
 		}
 
-		// task 选举master
-		if (!StaticValue.isMaster()) {
-			try {
-				new MasterJob();
-				LOG.info("to instance masterjob ok!");
-			} catch (Exception e) {
-				e.printStackTrace();
-				return;
-			}
-		}
-
-
 		// task 其他定时任务的运行状况
 		new Thread(new CheckTaskJob()).start();
 		LOG.info("begin run task quene!");

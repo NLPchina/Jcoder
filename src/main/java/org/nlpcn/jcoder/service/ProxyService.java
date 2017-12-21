@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.http.Header;
 import org.nutz.http.Request;
@@ -257,10 +258,12 @@ public class ProxyService {
 					LOG.info("post url : http://" + hostPort + path);
 					String content = null;
 					try {
-						content = Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)))).setTimeout(timeout).setConnTimeout(timeout).send().getContent();
+						Response send = Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)))).setTimeout(timeout).setConnTimeout(timeout).send();
+						content = send.getContent();
 					} catch (Exception e) {
 						LOG.error("post to url : http://" + hostPort + path + " error ", e);
-						content = "请求异常：" + e.getMessage();
+
+						content = Restful.instance(false,"请求异常：" + e.getMessage()).toJsonString();
 					}
 					return content;
 				});
