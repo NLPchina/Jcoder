@@ -312,7 +312,7 @@ public class ProxyService {
 					LOG.info("post url : http://" + hostPort + path);
 					String content = null;
 					try {
-						Response send = Http.upload(path, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)), timeout);
+						Response send = Http.upload("http://" + hostPort + path, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)), timeout);
 						content = send.getContent();
 					} catch (Exception e) {
 						LOG.error("post to url : http://" + hostPort + path + " error ", e);

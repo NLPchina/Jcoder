@@ -1,5 +1,16 @@
 <div id="importJar" class="tabbable">
     <div class="tab-content">
+        <div class="alert alert-block alert-success">
+            <p>
+            <ul>
+                <li v-for="host in hosts" style="float:left;list-style:none;margin:3px;">
+                    <input type="checkbox" :value="host" v-model="checkedHosts" />
+                    <label>{{host}}</label>
+                </li>
+            </ul>
+            </p>
+            <span>&nbsp;</span>
+        </div>
         <div id="home" class="tab-pane fade in active">
             <form class="form-horizontal" id="importDlg" action="" role="form" enctype="multipart/form-data" method="post" onsubmit="return false">
                 <div class="form-group">
@@ -17,9 +28,12 @@
     var importJar = new Vue({
         el: '#importJar',
         data: {
-
+            checkedHosts:[],
+            hosts:[],
+            groupName:''
         },
         mounted: function () { // 初始化执行
+            var $this = this;
             $('#id-input-file-3').ace_file_input({
                 style: 'well',
                 no_file:'没有选择文件',
@@ -56,10 +70,29 @@
                 }
             });
         },
+        watch:{
+            'groupName':function(val){
+                this.hostList();
+            }
+        },
         methods: { // 方法
             // 验证表单
             valid: function () {
                 return $('#validation-form').valid();
+            },
+            hostList:function(){
+              var $this = this;
+              Jcoder.ajax('/admin/ioc/hostList', 'post',{groupName:$this.groupName},null).then(function (data) {
+                    JqdeBox.unloading();
+                    if(data.ok){
+                      for(var key in data.obj){
+                          $this.hosts.push(key);
+                          if(data.obj[key].current)$this.checkedHosts.push(key);
+                        }
+                    }else{
+                        JqdeBox.message(false, data.msg);
+                    }
+              });
             }
         }
     });

@@ -30,29 +30,31 @@ var jarManager = new Vue({
               title: 'UploadJar',
               url: 'modules/jar/importJar.html',
               init:function(){
-                /*$('#importDlg').form({
-                  url: "/admin/jar/uploadJar?group_name="+$this.groupName,
-                  onSubmit: function(){
-                      return true;
-                  },
-                  success:function(data){
-                      JqdeBox.message(data.ok, data.message);
-                  }
-                });*/
+                importJar.groupName = $this.groupName;
               },
               confirm: function () {
+                debugger;
               	JqdeBox.loading();
                 var formData = new FormData();
-                formData.append('file', $('#id-input-file-3').prop("files"));
+                var files = $('#id-input-file-3').prop("files");
+                /*var files = [];
+                */
+                /*for(var k in product_img_files){ //文件数组
+                     formData.append('product[]',product_img_files[k]);
+                }*/
+                for(var i = 0;i < files.length;i++){
+                    formData.append('file', files[i]);
+                }
               　$.ajax({
-                  url:"/admin/jar/uploadJar?group_name="+$this.groupName,
+                  url:"/admin/jar/uploadJar?group_name="+$this.groupName+"&hostPorts="+importJar.checkedHosts,
                   type:"post",
                   data:formData,
                   processData:false,
                   contentType:false,
                   cache: false,
                   success:function(data){
-                     $this.groupList();
+                     JqdeBox.unloading();
+                     console.log(data);
                      JqdeBox.message(data.ok, data.message);
                   }
                 });
