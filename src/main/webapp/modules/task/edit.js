@@ -70,7 +70,7 @@ vmApp.module = new Vue({
                 Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: task}).then(function (data) {
                     JqdeBox.unloading();
                     setTimeout(function () {
-                        location.hash = '/task/list.html';
+                        location.hash = '/task/list.html?name=' + task.groupName;
                     }, 200);
                 }).catch(function (req) {
                     JqdeBox.unloading();
