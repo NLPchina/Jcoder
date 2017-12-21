@@ -51,13 +51,15 @@ vmApp.module = new Vue({
     data: {
         apiTasks: [],
         cronTasks: [],
-        recycleTasks: []
+        recycleTasks: [],
+        groupName: null
     },
 
     mounted: function () {
         $("#tabs").tabs();
 
         var me = this;
+        me.groupName = param.name;
 
         // 加载API
         me.loadTasks(1).then(function (data) {
@@ -77,11 +79,9 @@ vmApp.module = new Vue({
 
     methods: {
 
-        loadTasks: function (taskType, cb) {
-            return Jcoder.ajax('/admin/task/list', 'GET', {
-                groupName: Tools.parseQuery(location.hash).name,
-                taskType: taskType
-            }).catch(function (req) {
+        loadTasks: function (taskType) {
+            var me = this;
+            return Jcoder.ajax('/admin/task/list', 'GET', {groupName: me.groupName, taskType: taskType}).catch(function (req) {
                 JqdeBox.message(false, req.responseText);
             });
         },
