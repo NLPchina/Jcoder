@@ -7,10 +7,7 @@ import com.google.common.collect.Sets;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.http.Header;
-import org.nutz.http.Request;
-import org.nutz.http.Response;
-import org.nutz.http.Sender;
+import org.nutz.http.*;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
 import org.nutz.mvc.Mvcs;
@@ -263,7 +260,64 @@ public class ProxyService {
 					} catch (Exception e) {
 						LOG.error("post to url : http://" + hostPort + path + " error ", e);
 
-						content = Restful.instance(false,"请求异常：" + e.getMessage()).toJsonString();
+						content = Restful.instance(false, "请求异常：" + e.getMessage()).toJsonString();
+					}
+					return content;
+				});
+				queue.add(future);
+			}
+
+
+			for (int i = 0; i < urlList.size(); i++) {
+				result.put(urlList.get(i), queue.take().get());
+			}
+		} finally {
+			if (threadPool != null) {
+				threadPool.shutdown();
+			}
+		}
+
+		return result;
+
+	}
+
+
+	/**
+	 * 同时向多个主机提交
+	 *
+	 * @param hostPorts
+	 * @param params
+	 * @param timeout
+	 * @return
+	 * @throws Exception
+	 */
+	public Map<String, String> upload(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+
+		String token = getOrCreateToken();
+
+		final String fToken = token;
+
+		List<String> urlList = new ArrayList<>(hostPorts);
+
+		Map<String, String> result = new LinkedHashMap<>();
+
+		ExecutorService threadPool = null;
+		try {
+			threadPool = Executors.newFixedThreadPool(urlList.size());
+
+			BlockingQueue<Future<String>> queue = new LinkedBlockingQueue<Future<String>>(urlList.size());
+
+			for (String hostPort : urlList) {
+				Future<String> future = threadPool.submit(() -> {
+					LOG.info("post url : http://" + hostPort + path);
+					String content = null;
+					try {
+						Response send = Http.upload(path, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)), timeout);
+						content = send.getContent();
+					} catch (Exception e) {
+						LOG.error("post to url : http://" + hostPort + path + " error ", e);
+
+						content = Restful.instance(false, "请求异常：" + e.getMessage()).toJsonString();
 					}
 					return content;
 				});
