@@ -4,8 +4,8 @@ public class BootstrapTestAnsj {
 
 	//private static String host = "192.168.31.227";
 	//private static String zk = "192.168.31.227:2181";
-//	private static String zk = "192.168.3.137:2181";
-	private static String zk = "192.168.3.66:2181";
+	private static String zk = "192.168.3.137:2181";
+//	private static String zk = "192.168.3.66:2181";
 	private static String host = "192.168.3.66";
 
 	@Test
