@@ -8,7 +8,6 @@ import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -29,9 +28,6 @@ public class TaskAction {
 
 	@Inject
 	private TaskService taskService;
-
-	@Inject
-	private BasicDao basicDao;
 
 	/**
 	 * 获得task列表

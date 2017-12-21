@@ -9,7 +9,6 @@ import org.nutz.mvc.ioc.provider.ComboIocProvider;
 @IocBy(type = ComboIocProvider.class, args = {"*anno", "org.nlpcn.jcoder"})
 @Encoding(input = "UTF-8", output = "UTF-8")
 @SetupBy(SiteSetup.class)
-@Chain("jcoder")
 @ChainBy(type = JcoderActionChainMaker.class, args = {})
 public class App {
 }
