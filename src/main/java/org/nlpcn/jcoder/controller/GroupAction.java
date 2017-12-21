@@ -71,11 +71,6 @@ public class GroupAction {
 
 
 	@At
-	public Restful delete(@Param("name") String name) throws Exception {
-		return null;
-	}
-
-	@At
 	public Restful changeWeight(@Param("groupName") String groupName, @Param("hostPort") String hostPort, @Param("weight") Integer weight) {
 		if (weight == null) {
 			return Restful.instance().ok(false).msg("权重必须为正整数");
