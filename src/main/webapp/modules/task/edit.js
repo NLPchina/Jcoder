@@ -6,7 +6,8 @@ vmApp.module = new Vue({
         groups: [],
         task: {
             type: 1,
-            status: 0
+            status: 0,
+            groupName: param.group
         },
 
         editor: null
@@ -15,17 +16,6 @@ vmApp.module = new Vue({
     mounted: function () {
         var me = this;
 
-        // 获取所有的分组
-        Jcoder.ajax('/admin/group/list', 'GET', {}).then(function (data) {
-            me.groups = _.pluck(data.obj, 'name');
-            if (!me.task.id) {
-                me.task.groupName = me.groups[0];
-            }
-        }).catch(function (req) {
-            JqdeBox.message(false, req.responseText);
-        });
-
-        //
         Vue.nextTick(function () {
             (me.editor = CodeMirror.fromTextArea(document.getElementById("code"), {
                 lineNumbers: true,

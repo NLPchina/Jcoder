@@ -3,7 +3,6 @@ package org.nlpcn.jcoder.controller;
 import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.User;
-import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -86,10 +85,10 @@ public class UserAction {
 			return Restful.OK.msg("删除用户："+ user.getName()+"成功！");
 		}
 		Condition co = Cnd.where("userId", "=", user.getId());
-		int num = basicDao.delByCondition(UserGroup.class, co);
+		/*int num = basicDao.delByCondition(UserGroup.class, co);
 		if (num > 0) {
 			LOG.info("del userGroup's num:" + num);
-		}
+		}*/
 		return Restful.OK;
 	}
 

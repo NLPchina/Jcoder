@@ -24,7 +24,7 @@ public class CommonAction {
     private GroupService groupService;
 
     @At
-    public Restful host() throws Exception {
-        return Restful.instance(groupService.getAllHosts());
+    public Restful host(String groupName) throws Exception {
+        return Restful.instance(groupService.getGroupHostList(groupName));
     }
 }

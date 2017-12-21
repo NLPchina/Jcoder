@@ -4,13 +4,11 @@ import java.util.List;
 
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
-import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
-import org.nutz.dao.Cnd;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.At;
@@ -124,10 +122,10 @@ public class ThreadAction {
 
 		Task task = TaskService.findTaskByCache(name);
 
-		UserGroup ug = basicDao.findByCondition(UserGroup.class, Cnd.where("groupId", "=", task.getGroupId()).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
+		/*UserGroup ug = basicDao.findByCondition(UserGroup.class, Cnd.where("groupId", "=", task.getGroupId()).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
 		if (ug == null || ug.getAuth() != 2) {
-			throw new Exception("not have editor auth in groupId:" + task.getGroupId());
-		}
+			throw new Exception("not have editor auth in groupName:" + task.getGroupName());
+		}*/
 	}
 
 }
