@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
 import org.apache.curator.framework.api.CuratorListener;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.NodeCache;
-import org.apache.curator.framework.recipes.cache.NodeCacheListener;
-import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -122,7 +119,7 @@ public class SharedSpaceService {
 	/**
 	 * 在线主机
 	 */
-	private NodeCache hostCache;
+	private PathChildrenCache groupCache;
 
 
 	/**
@@ -567,6 +564,24 @@ public class SharedSpaceService {
 		 */
 		hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
 
+		/**
+		 * 监听各个group
+		 */
+		groupCache = new PathChildrenCache(zkDao.getZk(), GROUP_PATH, false);
+
+		groupCache.getListenable().addListener((client, event) -> {
+			String path = event.getData().getPath();
+			switch (event.getType()) {
+				case CHILD_ADDED:
+				case CHILD_UPDATED:
+				case CHILD_REMOVED:
+				default:
+					LOG.info("groupCache other info {}" + event.getType(), path);
+					break;
+			}
+		});
+		groupCache.start();
+
 		//监听task运行
 		NodeCache nodeCache = new NodeCache(zkDao.getZk(), MESSAGE_PATH);
 		nodeCache.getListenable().addListener(new NodeCacheListener() {
@@ -588,6 +603,7 @@ public class SharedSpaceService {
 	 */
 	public void release() throws Exception {
 		LOG.info("release SharedSpace");
+		Optional.of(groupCache).ifPresent(o -> closeWithoutException(o));
 		Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
 		Optional.of(mappingCache).ifPresent((o) -> closeWithoutException(o));
 		Optional.of(tokenCache).ifPresent((o) -> closeWithoutException(o));
@@ -959,12 +975,12 @@ public class SharedSpaceService {
 	}
 
 
-    public <T> T getData(String path, Class<T> c) throws Exception {
-		byte[] bytes = getData2ZK(path) ;
-		if(bytes==null){
-			return null ;
+	public <T> T getData(String path, Class<T> c) throws Exception {
+		byte[] bytes = getData2ZK(path);
+		if (bytes == null) {
+			return null;
 		}
-		return JSONObject.parseObject(bytes,c);
+		return JSONObject.parseObject(bytes, c);
 
-    }
+	}
 }
