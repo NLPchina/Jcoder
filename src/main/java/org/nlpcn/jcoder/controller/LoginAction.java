@@ -1,20 +1,12 @@
 package org.nlpcn.jcoder.controller;
 
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
-import org.nlpcn.jcoder.domain.UserGroup;
 import org.nlpcn.jcoder.filter.IpErrorCountFilter;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.service.TokenService;

@@ -13,6 +13,7 @@ var Jcoder = {
     				resolve(data);
     			},
     			error: function (XMLHttpRequest, textStatus, errorThrown) {
+    			    if (callback) callback();
     				if (errorThrown=="450") {
                         if (window.location.hash) {
                             JqdeBox.alert(XMLHttpRequest.responseJSON.message, function () {

@@ -27,8 +27,8 @@ public class TaskHistory {
 	@Column
 	private String code;
 
-	@Column("group_id")
-	private Long groupId;
+	@Column("group_name")
+	private String groupName;
 
 	@Column("create_user")
 	private String createUser;
@@ -92,12 +92,12 @@ public class TaskHistory {
 		this.code = code;
 	}
 
-	public Long getGroupId() {
-		return groupId;
+	public String getGroupName() {
+		return groupName;
 	}
 
-	public void setGroupId(Long groupId) {
-		this.groupId = groupId;
+	public void setGroupId(String groupName) {
+		this.groupName = groupName;
 	}
 
 	public String getCreateUser() {
@@ -158,7 +158,7 @@ public class TaskHistory {
 		this.createTime = t.getCreateTime();
 		this.createUser = t.getCreateUser();
 		this.description = t.getDescription();
-		this.groupId = t.getGroupId();
+		this.groupName = t.getGroupName();
 		this.name = t.getName();
 		this.scheduleStr = t.getScheduleStr();
 		this.status = t.getStatus();
@@ -183,6 +183,4 @@ public class TaskHistory {
 	public void setVersion(String version) {
 		this.version = version;
 	}
-
-	
 }

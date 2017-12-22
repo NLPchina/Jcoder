@@ -168,9 +168,13 @@ public class JarAction {
 				return Restful.instance().ok(true).msg("保存成功！");
 
 			}else{
-				Set<String> hostPortsArr = new HashSet<>();
-				String message = proxyService.post(hostPortsArr, "/admin/jar/save", ImmutableMap.of("groupName", groupName,"code", content,"first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
-				jarService.savePomInfo(groupName,content);
+                Set<String> hostPortsArr = new HashSet<>();
+                Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+
+				String message = proxyService.post(hostPortsArr, "/admin/jar/save",
+						ImmutableMap.of("groupName", groupName,"content", content,"first", false), 100000,
+						ProxyService.MERGE_MESSAGE_CALLBACK);
+				//jarService.savePomInfo(groupName,content);
 				return Restful.instance().ok(true).msg(message);
 			}
 		} catch (Exception e) {
@@ -180,8 +184,9 @@ public class JarAction {
 	}
 
 	@At
-	public Restful uploadJar(@Param("group_name") String groupName, @Param("file") TempFile file) throws IOException {
-
+	@AdaptBy(type = UploadAdaptor.class)
+	public Restful uploadJar(@Param("hostPorts") String[] hostPorts,@Param("group_name") String groupName,
+                             @Param("file") TempFile[] file,@Param("fileNames") String[] fileNames,@Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) Stream.of(file).filter(f -> f.getSubmittedFileName().toLowerCase().endsWith(".jar")).count();
 
 		if (fileNum <= 0) {
@@ -189,28 +194,37 @@ public class JarAction {
 		}
 
 		JarService jarService = JarService.getOrCreate(groupName) ;
-
-		synchronized (jarService) {
-			TempFile tempFile = file;
-			//for (TempFile tempFile : file) {
-				String fileName = tempFile.getSubmittedFileName();
-				if (fileName.toLowerCase().endsWith(".jar")) {
-					try {
-						File to = new File(jarService.getJarPath()+"/" + tempFile.getSubmittedFileName());
-						tempFile.write(to.getAbsolutePath());
-						LOG.info("write file to " + to.getAbsolutePath());
-						fileNum++;
-					} catch (IOException e) {
-						e.printStackTrace();
+        try {
+            if(!first){
+				for (int i = 0; i < fileNames.length; i++) {
+					String fileName = fileNames[i];
+					if (fileName.toLowerCase().endsWith(".jar")) {
+						try {
+							File to = new File(jarService.getJarPath()+"/" + fileName);
+							file[i].write(to.getAbsolutePath());
+							LOG.info("write file to " + to.getAbsolutePath());
+							fileNum++;
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					} else {
+						LOG.warn(fileName + " not a jar ! so skip it!");
 					}
-				} else {
-					LOG.warn(fileName + " not a jar ! so skip it!");
 				}
-			//}
-
-			JarService.remove(groupName);
-			return Restful.instance().msg("upload " + fileNum + " file ok!");
-		}
+				JarService.remove(groupName);
+            }else{
+                Set<String> hostPortsArr = new HashSet<>();
+                Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
+                File[] files = Arrays.stream(file).map(f -> f.getFile()).toArray(File[]::new) ;
+				String[] fns = Arrays.stream(file).map(f -> f.getSubmittedFileName()).toArray(String[]::new) ;
+                proxyService.upload(hostPortsArr, "/admin/jar/uploadJar",ImmutableMap.of("group_name",groupName,"file",files,
+						"fileNames",fns,"first",false) , 100000);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+        }
+		return Restful.instance().ok(true).msg("upload " + fileNum + " file ok!");
 	}
 
 }

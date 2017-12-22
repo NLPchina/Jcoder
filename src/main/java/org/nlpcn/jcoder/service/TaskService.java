@@ -19,7 +19,6 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpSession;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.*;
@@ -62,7 +61,7 @@ public class TaskService {
 
 	public List<Task> getTasksByGroupName(String groupName) {
 		Group group = basicDao.findByCondition(Group.class, Cnd.where("name","=",groupName)) ;
-		return basicDao.search(Task.class,Cnd.where("groupId","=",group.getId())) ;
+		return basicDao.search(Task.class,Cnd.where("groupName","=",group.getName())) ;
 	}
 
 	/**
@@ -71,24 +70,7 @@ public class TaskService {
 	 * @param task
 	 * @throws Exception
 	 */
-	public boolean saveOrUpdate(Task task, Long groupId) throws Exception {
-
-		// 进行权限认证
-		authEditorValidate(groupId);
-		authEditorValidate(task.getGroupId());
-
-		if (task.getStatus() == 1) {// check code throw Exception
-			new JavaRunner(task).check();
-		}
-
-		checkTask(task);
-
-		HttpSession session = Mvcs.getHttpSession();
-		String userName = session.getAttribute("user").toString();
-		Date date = new Date();
-		task.setUpdateTime(date);
-		task.setUpdateUser(userName);
-
+	public boolean saveOrUpdate(Task task) throws Exception {
 		// 历史库版本保存
 		boolean isModify = checkTaskModify(task);
 
@@ -98,8 +80,6 @@ public class TaskService {
 		}
 
 		if (task.getId() == null) {
-			task.setCreateTime(date);
-			task.setCreateUser(userName);
 			task = basicDao.save(task);
 		} else {
 			basicDao.update(task);
@@ -171,22 +151,6 @@ public class TaskService {
 		}
 	}
 
-	public void checkTask(Task task) throws Exception {
-		if (task == null) {
-			throw new Exception("task is null!");
-		} else if (StringUtil.isBlank(task.getName())) {
-			throw new Exception("task is name null or empty!");
-		} else if (StringUtil.isBlank(task.getDescription())) {
-			throw new Exception("task is description null or empty!");
-		} else if (StringUtil.isBlank(task.getCode())) {
-			throw new Exception("task is code null or empty!");
-		} else if (TASK_MAP_CACHE.contains(task.getName())) {
-			if (!TASK_MAP_CACHE.get(task.getName()).getId().equals(task.getId())) {
-				throw new Exception("task name is unique !");
-			}
-		}
-	}
-
 	/**
 	 * 删除一个任务
 	 *
@@ -194,10 +158,10 @@ public class TaskService {
 	 * @throws Exception
 	 */
 	public void delete(Task task) throws Exception {
-		authEditorValidate(task.getGroupId());
+		//authEditorValidate(task.getGroupId());
 		task.setType(0);
 		task.setStatus(0);
-		saveOrUpdate(task, task.getGroupId());
+		saveOrUpdate(task);
 	}
 
 	/**
@@ -207,7 +171,7 @@ public class TaskService {
 	 * @throws Exception
 	 */
 	public void delete(TaskHistory task) throws Exception {
-		authEditorValidate(task.getGroupId());
+		//authEditorValidate(task.getGroupId());
 		basicDao.delById(task.getId(), TaskHistory.class);
 	}
 
@@ -218,7 +182,7 @@ public class TaskService {
 	 * @throws Exception
 	 */
 	public void delByDB(Task task) throws Exception {
-		authEditorValidate(task.getGroupId());
+		//authEditorValidate(task.getGroupId());
 		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));//delete history
 		basicDao.delById(task.getId(), Task.class); // 不需要通知队列了
 	}
@@ -248,7 +212,7 @@ public class TaskService {
 	 */
 	public void initTaskFromDB(String groupName) throws TaskException {
 		Group group = this.basicDao.findByCondition(Group.class, Cnd.where("name", "=", groupName));
-		List<Task> search = this.basicDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
+		List<Task> search = this.basicDao.search(Task.class, Cnd.where("groupName", "=", group.getName()));
 		flushTaskMappingAndCache(search);
 	}
 
@@ -317,14 +281,14 @@ public class TaskService {
 	/**
 	 * 根据组id获得task集合
 	 *
-	 * @param groupId
+	 * @param groupName
 	 * @return
 	 */
-	public List<Task> tasksList(Long groupId) {
-		if (groupId == null) {
+	public List<Task> tasksList(String groupName) {
+		if (groupName == null) {
 			return null;
 		}
-		return basicDao.search(Task.class, Cnd.where("groupId", "=", groupId));
+		return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
 	}
 
 	/**
@@ -337,10 +301,10 @@ public class TaskService {
 		if ((Integer) Mvcs.getHttpSession().getAttribute("userType") == 1) {
 			return;
 		}
-		UserGroup ug = basicDao.findByCondition(UserGroup.class, Cnd.where("groupId", "=", groupId).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
+		/*UserGroup ug = basicDao.findByCondition(UserGroup.class, Cnd.where("groupId", "=", groupId).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
 		if (ug == null || ug.getAuth() != 2) {
 			throw new Exception("not have editor auth in groupId:" + groupId);
-		}
+		}*/
 	}
 
 	/**

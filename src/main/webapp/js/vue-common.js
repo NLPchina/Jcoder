@@ -36,7 +36,7 @@ Vue.filter('formatNumber', function (value, decimals) {
 
 /** HOST组件 */
 Vue.component('host-component', {
-    props: ['hosts'],
+    props: ['group', 'hosts'],
     template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
     '<span class="label label-xlg label-info label-white" style="margin:2px;text-align:left;" v-for="item in hosts">' +
     '<label>' +
@@ -46,9 +46,9 @@ Vue.component('host-component', {
     '</span></div>',
     mounted: function () {
         var me = this;
-        Jcoder.ajax('/admin/common/host', 'GET', {}).then(function (data) {
+        Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.group}).then(function (data) {
             _.each(data.obj, function (ele) {
-                me.hosts.push({host: ele, checked: true});
+                me.hosts.push({host: ele.hostPort, checked: ele.current});
             });
         }).catch(function (req) {
             JqdeBox.message(false, req.responseText);

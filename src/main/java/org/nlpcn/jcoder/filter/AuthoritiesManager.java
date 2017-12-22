@@ -13,6 +13,8 @@ import org.nutz.mvc.View;
 
 import javax.servlet.http.HttpSession;
 
+import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
+
 public class AuthoritiesManager implements ActionFilter {
 
 	public static final String TOKEN = "token";
@@ -23,17 +25,17 @@ public class AuthoritiesManager implements ActionFilter {
 
 		String tokenStr = actionContext.getRequest().getHeader(TokenService.CLUSTER_HEAD);
 
-		Object obj = session.getAttribute(TOKEN);
+		Object obj = session.getAttribute(CURRENT_USER);
 
-		if(obj!=null){
-			return null ;
+		if (obj != null) {
+			return null;
 		}
 
 		if (StringUtil.isNotBlank(tokenStr)) {
 			try {
 				Token token = TokenService.getToken(tokenStr);
 				if (token != null) {
-					actionContext.getRequest().getSession().setAttribute(TOKEN, token);
+					actionContext.getRequest().getSession().setAttribute(CURRENT_USER, token.getUser());
 					return null;
 				}
 			} catch (Exception e) {
@@ -43,7 +45,6 @@ public class AuthoritiesManager implements ActionFilter {
 
 
 		return new JsonView(Restful.instance().code(ApiException.TokenAuthorNotFound).msg("未登录").ok(false));
-
 	}
 
 }

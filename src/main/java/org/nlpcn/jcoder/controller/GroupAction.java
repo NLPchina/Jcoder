@@ -267,7 +267,7 @@ public class GroupAction {
 		jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
 		for (Object o : jarry) {
 			Task task = JSONObject.toJavaObject((JSON) o, Task.class);
-			task.setGroupId(group.getId());
+			task.setGroupName(group.getName());
 			basicDao.save(task);
 			LOG.info("install task ", task.getName());
 		}

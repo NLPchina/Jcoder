@@ -1,0 +1,78 @@
+<style>
+.CodeMirror {
+    border-radius: 3px;
+    overflow: hidden;
+    font-size: 14px;
+    height: 520px;
+    background-color: #000;
+    color: #2ec607;
+    line-height: 1;
+    border-top: 1px solid #eee;
+	border-bottom: 1px solid #eee;
+	font-size: 18px;
+	line-height:120% ;
+}
+
+.CodeMirror-sizer{
+    margin-left: 29px !important;
+}
+</style>
+<div id="resourceManager" class="page-content" style="overflow: hidden; height: 60%;">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="alert alert-block alert-success">
+                <p>
+                <ul>
+                    <li v-for="host in hosts" style="float:left;list-style:none;margin:3px;">
+                        <input type="checkbox" :value="host" v-model="checkedHosts" />
+                        <label>{{host}}</label>
+                    </li>
+                </ul>
+                </p>
+                <span>&nbsp;</span>
+            </div>
+            <div class="widget-box">
+                <div class="widget-header">
+                    <h4 class="widget-title lighter smaller">
+                        <i class="ace-icon fa fa-pencil-square-o blue"></i>
+                        Resource
+                    </h4>
+                </div>
+
+                <div class="widget-body">
+                    <div class="widget-main">
+                        <table id="dynamic-table" class="table table-striped table-bordered table-hover">
+                            <thead>
+                            <tr>
+                                <th class="center">文件名</th>
+                                <th class="center">文件大小</th>
+                                <th class="center">修改时间</th>
+                                <th class="center">文件路径</th>
+                                <th class="center">操作</th>
+                            </tr>
+                            </thead>
+                            <tbody class="infor-tbody">
+                            <tr v-for="(resource, index) in resources">
+                                <td  class="center">{{resource.file.name}}</td>
+                                <td  class="center">{{resource.file.length()/1024}}k</td>
+                                <td  class="center">{{resource.date}}</td>
+                                <td  class="center">{{resource.encodingPath</td>
+                                <td  class="center">
+                                    <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+                                        <div class="editbutton" style="display:inline;">
+                                            <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
+                                                <i class="ace-icon fa fa-trash-o  bigger-130" @click="del(resource);"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div><!-- /.widget-main  padding: 1em;-->
+                </div><!-- /.widget-body -->
+            </div>
+        </div>
+    </div>
+</div>
+<script src="modules/resource/main.js"></script>

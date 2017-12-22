@@ -11,7 +11,6 @@ import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
@@ -19,7 +18,6 @@ import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.JavaDocUtil;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -56,10 +54,10 @@ public class ApiAction {
 	public Object api(@Param(value = "type", df = "1") int type) {
 
 		List<ClassDoc> result = TaskService.findTaskList(type).stream().sorted((t1, t2) -> {
-			int v = (int) (t1.getGroupId() - t2.getGroupId());
+			/*int v = (int) (t1.getGroupId() - t2.getGroupId());
 			if (v != 0) {
 				return v;
-			}
+			}*/
 			return (int) (t1.getId() - t2.getId());
 		}).map((t) -> {
 			boolean compile = false;

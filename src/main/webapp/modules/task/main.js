@@ -87,7 +87,7 @@ vmApp.module = new Vue({
         },
 
         add: function () {
-            location.hash = '/task/edit.html'
+            location.hash = '/task/edit.html?group=' + this.groupName;
         }
     }
 });

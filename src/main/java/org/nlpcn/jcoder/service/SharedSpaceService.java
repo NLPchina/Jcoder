@@ -644,7 +644,7 @@ public class SharedSpaceService {
 
 		String groupName = group.getName();
 
-		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupId", "=", group.getId()));
+		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupName", "=", group.getName()));
 
 		List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
 
@@ -958,4 +958,13 @@ public class SharedSpaceService {
 		return hostGroupCache;
 	}
 
+
+    public <T> T getData(String path, Class<T> c) throws Exception {
+		byte[] bytes = getData2ZK(path) ;
+		if(bytes==null){
+			return null ;
+		}
+		return JSONObject.parseObject(bytes,c);
+
+    }
 }
