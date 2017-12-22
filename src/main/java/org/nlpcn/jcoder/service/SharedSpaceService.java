@@ -101,6 +101,7 @@ public class SharedSpaceService {
 
 	private ZookeeperDao zkDao;
 
+
 	/**
 	 * 选举
 	 */
@@ -566,7 +567,6 @@ public class SharedSpaceService {
 		 */
 		hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
 
-
 		//监听task运行
 		NodeCache nodeCache = new NodeCache(zkDao.getZk(), MESSAGE_PATH);
 		nodeCache.getListenable().addListener(new NodeCacheListener() {
@@ -695,8 +695,7 @@ public class SharedSpaceService {
 				});
 
 			} catch (Exception e) {
-				//TODO: e.printStackTrace();
-				LOG.error("compile {}/{} err ", task.getGroupName(), task.getName());
+				LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
 			}
 		});
 		return diffs;
@@ -958,4 +957,5 @@ public class SharedSpaceService {
 	public ZKMap<HostGroup> getHostGroupCache() {
 		return hostGroupCache;
 	}
+
 }

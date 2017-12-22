@@ -25,14 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -282,5 +276,23 @@ public class GroupAction {
 		groupService.flush(group);
 
 		return Restful.instance().msg("克隆成功");
+	}
+
+	/**
+	 * 刷新一个group到集群中
+	 * @param hostPort 需要刷新的主机
+	 * @param groupName
+	 * @return 不同
+	 * @throws Exception
+	 */
+	@At
+	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
+		if(StaticValue.getHostPort().equals(hostPort)){
+			return Restful.instance(groupService.flush(groupName));
+		}else {
+			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of(hostPort, hostPort, groupName, groupName), 120000);
+			return JSONObject.toJavaObject((JSON)JSON.parse(post.getContent()),Restful.class) ;
+		}
+
 	}
 }
