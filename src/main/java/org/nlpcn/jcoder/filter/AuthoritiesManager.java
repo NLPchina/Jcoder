@@ -17,14 +17,19 @@ import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
 
 public class AuthoritiesManager implements ActionFilter {
 
-	public AuthoritiesManager() {
-	}
+	public static final String TOKEN = "token";
 
 	@Override
 	public View match(ActionContext actionContext) {
 		HttpSession session = Mvcs.getHttpSession();
 
 		String tokenStr = actionContext.getRequest().getHeader(TokenService.CLUSTER_HEAD);
+
+		Object obj = session.getAttribute(CURRENT_USER);
+
+		if (obj != null) {
+			return null;
+		}
 
 		if (StringUtil.isNotBlank(tokenStr)) {
 			try {
@@ -38,13 +43,8 @@ public class AuthoritiesManager implements ActionFilter {
 			}
 		}
 
-		@SuppressWarnings("all")
-		Object obj = session.getAttribute(CURRENT_USER);
-		if (obj == null) {
-			return new JsonView(Restful.instance().code(ApiException.TokenAuthorNotFound).msg("未登录").ok(false));
-		}
 
-		return null;
+		return new JsonView(Restful.instance().code(ApiException.TokenAuthorNotFound).msg("未登录").ok(false));
 	}
 
 }

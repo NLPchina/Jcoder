@@ -146,7 +146,7 @@ public class GroupService {
 
 		JarService.getOrCreate(name).release(); //释放环境变量
 
-		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
+		Group group = findGroupByName(name);
 
 		if (group != null) {
 			basicDao.delById(group.getId(), Group.class);
@@ -174,11 +174,30 @@ public class GroupService {
 
 	}
 
+	private Group findGroupByName(String name) {
+		return basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
+	}
+
 
 	/**
 	 * 刷新一个group重新加载到集群中
 	 *
+	 * @param groupName
+	 */
+	public List<Different> flush(String groupName) throws IOException {
+		Group group = findGroupByName(groupName);
+		if (group == null) {
+			throw new RuntimeException("group not found " + groupName);
+		}
+		return flush(group);
+	}
+
+	/**
+	 * 刷新
+	 *
 	 * @param group
+	 * @return
+	 * @throws IOException
 	 */
 	public List<Different> flush(Group group) throws IOException {
 		return sharedSpaceService.joinCluster(group);
