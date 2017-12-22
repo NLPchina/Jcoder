@@ -1,4 +1,8 @@
 <div class="row" id="vmTaskModule">
+    <div>
+        <host-component :group="groupName" :hosts.sync="hosts"/>
+    </div>
+
     <div id="tabs">
         <ul>
             <li><a href="#tabs-api">接口</a></li>
@@ -17,13 +21,13 @@
         </ul>
 
         <div id="tabs-api" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :tasks="apiTasks"></task-component>
+            <task-component :type="apiType"></task-component>
         </div>
         <div id="tabs-cron" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :tasks="cronTasks"></task-component>
+            <task-component :type="cronType"></task-component>
         </div>
         <div id="tabs-recycle" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :tasks="recycleTasks"></task-component>
+            <task-component :type="recycleType"></task-component>
         </div>
     </div>
 </div>

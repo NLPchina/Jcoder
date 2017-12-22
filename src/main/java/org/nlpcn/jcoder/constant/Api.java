@@ -6,7 +6,8 @@ package org.nlpcn.jcoder.constant;
 public enum Api {
 
     TASK_CHECK(Api.BASE_PATH + "/task/__check__"),
-    TASK_SAVE(Api.BASE_PATH + "/task/__save__");
+    TASK_SAVE(Api.BASE_PATH + "/task/__save__"),
+    TASK_DELETE(Api.BASE_PATH + "/task/__delete__");
 
     private static final String BASE_PATH = "/admin";
 
