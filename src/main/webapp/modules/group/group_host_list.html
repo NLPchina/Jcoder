@@ -143,6 +143,7 @@ var groupHostList = new Vue({
 					JqdeBox.unloading();
 					if(data.ok){
 						$this.hostList();
+
 						JqdeBox.message(true, data.message);
 					}else{
 						JqdeBox.message(false, data.message);

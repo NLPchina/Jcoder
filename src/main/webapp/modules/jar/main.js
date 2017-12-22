@@ -12,7 +12,7 @@ var jarManager = new Vue({
   methods:{
 	  jarList:function(){
 		  var $this = this;
-		  Jcoder.ajax('/admin/jar/list', 'post',null,null).then(function (data) {
+		  Jcoder.ajax('/admin/jar/list', 'post',{group_name:$this.groupName},null).then(function (data) {
               JqdeBox.unloading();
               if(data.ok){
             	  $this.mavenJars = data.obj.Maven;

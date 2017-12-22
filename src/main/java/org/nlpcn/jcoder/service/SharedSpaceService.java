@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.service;
 
+import com.alibaba.druid.support.json.JSONParser;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -228,6 +229,23 @@ public class SharedSpaceService {
 			for (String child : children) {
 				walkAllDataNode(set, path + "/" + child);
 			}
+		} catch (Exception e) {
+			LOG.error("walk file err: " + path);
+		}
+	}
+
+	/**
+	 * 递归查询所有子文件
+	 *
+	 * @param set
+	 * @param path
+	 * @return
+	 * @throws Exception
+	 */
+	public void walkDataNode(Set<String> set, String path) throws Exception {
+		try {
+			byte[] nodes = zkDao.getZk().getData().forPath(path);
+			Object o = JSONObject.parseObject(nodes, String[].class);
 		} catch (Exception e) {
 			LOG.error("walk file err: " + path);
 		}

@@ -1,7 +1,7 @@
 var resourceManager = new Vue({
   el: '#resourceManager',
   data: {
-    resources:{},
+    resources:[],
     checkedHosts:[],
     hosts:[],
     groupName:param.name
@@ -9,7 +9,7 @@ var resourceManager = new Vue({
   mounted:function(){
 	  var $this = this;
 	  $this.hostList();
-	  $this.resourceList();
+	  $this.resourceList('');
   },
   methods:{
 	  hostList:function(){
@@ -26,9 +26,9 @@ var resourceManager = new Vue({
 			    }
 		  });
 	  },
-	  resourceList:function(){
+	  resourceList:function(filePath){
           var $this = this;
-          Jcoder.ajax('/admin/resource/list', 'post',{groupName:$this.groupName},null).then(function (data) {
+          Jcoder.ajax('/admin/resource/list', 'post',{groupName:$this.groupName,path:filePath},null).then(function (data) {
             JqdeBox.unloading();
             debugger;
             if(data.ok){

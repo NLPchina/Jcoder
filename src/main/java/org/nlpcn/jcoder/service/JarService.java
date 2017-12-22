@@ -3,14 +3,18 @@ package org.nlpcn.jcoder.service;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.*;
 import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.dao.BasicDao;
+import org.nutz.dao.Cnd;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.lang.Lang;
@@ -35,7 +39,11 @@ import java.util.*;
 @IocBean
 public class JarService {
 
+
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
+
+	@Inject
+	private BasicDao basicDao ;
 
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
 			.removalListener((RemovalListener<String, JarService>) notification -> {
@@ -338,10 +346,22 @@ public class JarService {
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
 	 */
-	public void savePomInfo(String groupName, String content) throws IOException, NoSuchAlgorithmException {
+	public void savePom(String groupName, String content) throws IOException, NoSuchAlgorithmException {
 		File pom = new File(StaticValue.GROUP_FILE, groupName + "/lib");
 		IOUtil.Writer(new File(pom, "pom.xml").getAbsolutePath(), "utf-8", content);
 		flushMaven();
+	}
+
+	public void savePomInfo(String groupName,String code) throws Exception {
+		FileInfo fileInfo = new FileInfo() ;
+		fileInfo.setFile(new File(StaticValue.GROUP_FILE,groupName+"/lib/pom.xml"));
+		fileInfo.setMd5(code);
+		fileInfo.setDirectory(false);
+		fileInfo.setLength(code.getBytes("utf-8").length);
+		fileInfo.setName("pom.xml");
+		fileInfo.setRelativePath("lib/pom.xml");
+
+		StaticValue.space().getZk().setData().forPath(SharedSpaceService.GROUP_PATH+"/"+groupName+"/file/lib/pom.xml", JSONObject.toJSONBytes(fileInfo));
 	}
 
 	/**
