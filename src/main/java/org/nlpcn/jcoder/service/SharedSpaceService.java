@@ -958,4 +958,13 @@ public class SharedSpaceService {
 	public ZKMap<HostGroup> getHostGroupCache() {
 		return hostGroupCache;
 	}
+
+    public <T> T getData(String path, Class<T> c) throws Exception {
+		byte[] bytes = getData2ZK(path) ;
+		if(bytes==null){
+			return null ;
+		}
+		return JSONObject.parseObject(bytes,c);
+
+    }
 }
