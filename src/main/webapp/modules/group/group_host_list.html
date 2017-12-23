@@ -99,7 +99,7 @@
 
 
 	<h5 class="header smaller lighter blue"  v-show="diffs.length>0">
-		冲突处理
+		<i class="ace-icon fa fa-hand-o-right green"></i>冲突处理
 	</h5>
 
 	<div class="row" v-show="diffs.length>0">
@@ -144,17 +144,27 @@
 						</td>
 						<td  class="center">
 							<button type="button" class="btn btn-info btn-sm">
-								<i class="ace-icon fa fa-upload bigger-110"></i>当前替换集群
+								<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
 							</button>
 
 							<button type="button" class="btn btn-info btn-sm">
-								<i class="ace-icon fa fa-download bigger-110"></i>集群替换当前
+								<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 							</button>
 
 						</td>
 					</tr>
 					</tbody>
 				</table>
+
+				<div  class="row center">
+					<button type="button" class="btn btn-info btn-sm">
+						<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
+					</button>
+
+					<button type="button" class="btn btn-info btn-sm">
+						<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -223,7 +233,6 @@ var groupHostList = new Vue({
 					JqdeBox.unloading();
 					if(data.ok){
 						$this.hostList();
-
 						JqdeBox.message(true, data.message);
 					}else{
 						JqdeBox.message(false, data.message);
@@ -296,6 +305,10 @@ var groupHostList = new Vue({
 			if(data.ok){
 				console.log(data.obj)
 				$this.diffs = data.obj ;
+				$this.hostList();
+				if($this.diffs.length==0){
+					JqdeBox.message(data.ok, hostPort+" 已与主版本一致");
+				}
 				$this.diffHostPort = hostPort ;
 				$this.items.forEach(function(v){
 					if(v.current){
