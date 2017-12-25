@@ -49,6 +49,7 @@ public class JarAction {
 	@Inject
 	private ProxyService proxyService;
 
+	@At
 	public Restful list(@Param("group_name") String groupName) throws IOException, URISyntaxException {
 
 		JarService jarService = JarService.getOrCreate(groupName) ;
@@ -163,18 +164,17 @@ public class JarAction {
 		JarService jarService = JarService.getOrCreate(groupName) ;
 		try {
 			if(!first){
-				jarService.savePomInfo(groupName, content);
+				jarService.savePom(groupName, content);
 				//jarService.release();
 				return Restful.instance().ok(true).msg("保存成功！");
 
 			}else{
                 Set<String> hostPortsArr = new HashSet<>();
                 Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-
 				String message = proxyService.post(hostPortsArr, "/admin/jar/save",
 						ImmutableMap.of("groupName", groupName,"content", content,"first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
-				//jarService.savePomInfo(groupName,content);
+				jarService.savePomInfo(groupName,content);
 				return Restful.instance().ok(true).msg(message);
 			}
 		} catch (Exception e) {

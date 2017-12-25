@@ -39,6 +39,9 @@ var mavenFileEdit = new Vue({
             groupName:$this.groupName,content:$this.editor.getValue(),first:true},null).then(function (data) {
             JqdeBox.unloading();
             JqdeBox.message(data.ok, data.message);
+            setTimeout(function(){
+                location.hash = 'jar/list.html?name='+$this.groupName;
+            },800)
         });
       },
       findMavenInfoByGroupName:function(){

@@ -234,6 +234,23 @@ public class SharedSpaceService {
 	}
 
 	/**
+	 * 递归查询所有子文件
+	 *
+	 * @param set
+	 * @param path
+	 * @return
+	 * @throws Exception
+	 */
+	public void walkDataNode(Set<String> set, String path) throws Exception {
+		try {
+			byte[] nodes = zkDao.getZk().getData().forPath(path);
+			Object o = JSONObject.parseObject(nodes, String[].class);
+		} catch (Exception e) {
+			LOG.error("walk file err: " + path);
+		}
+	}
+
+	/**
 	 * 注册一个token,token必须是刻一用路径描述的
 	 *
 	 * @param token
@@ -779,7 +796,7 @@ public class SharedSpaceService {
 			different.setType(1);
 
 			if (!sets.contains(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath())) {
-				different.addMessage("文件在集群中不存在");
+				different.addMessage("文件在主版本中不存在");
 			} else {
 				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
@@ -979,6 +996,10 @@ public class SharedSpaceService {
 		return hostGroupCache;
 	}
 
+	public PathChildrenCache getGroupCache() {
+		return groupCache;
+	}
+
 
 	public <T> T getData(String path, Class<T> c) throws Exception {
 		byte[] bytes = getData2ZK(path);
@@ -988,7 +1009,4 @@ public class SharedSpaceService {
 		return JSONObject.parseObject(bytes, c);
 	}
 
-	public PathChildrenCache getGroupCache() {
-		return groupCache;
-	}
 }
