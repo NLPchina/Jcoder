@@ -12,4 +12,9 @@ public interface Constants {
      */
     String CURRENT_USER = "user";
 
+    /**
+     * master主机标识
+     */
+    String HOST_MASTER = "master";
+
 }

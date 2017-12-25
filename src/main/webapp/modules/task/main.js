@@ -9,49 +9,15 @@ vmApp.module = new Vue({
                 return {tasks: null};
             },
 
-            template: '<table class="table table-striped table-bordered table-hover dataTable">' +
-            '<thead>' +
-            '<tr>' +
-            '<th width="20%">名称</th>' +
-            '<th>描述</th>' +
-            '<th width="6.8%">状态</th>' +
-            '<th width="14%">创建时间</th>' +
-            '<th width="14%">更新时间</th>' +
-            '<th width="7%">操作</th>' +
-            '</tr>' +
-            '</thead>' +
-            '<tbody>' +
-            '<tr v-for="(item, index) in tasks">' +
-            '<td>{{item.name}}</td>' +
-            '<td :title="item.description">' +
-            '<span style="width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display: block;" v-text="item.description"></span>' +
-            '</td>' +
-            '<td>' +
-            '    <span v-if="item.status==1" class="label label-success label-white middle">' +
-            '        <i class="ace-icon glyphicon glyphicon-ok bigger-120"></i>' +
-            '        激活' +
-            '    </span>' +
-            '    <span v-else class="label label-warning label-white middle">' +
-            '        <i class="ace-icon fa fa-exclamation-triangle bigger-120"></i>' +
-            '        停用' +
-            '    </span>' +
-            '</td>' +
-            '<td>{{item.createTime}}</td>' +
-            '<td>{{item.updateTime}}</td>' +
-            '<td>' +
-            '    <div class="hidden-sm hidden-xs btn-group">' +
-            '        <button class="btn btn-xs btn-info" type="button" title="编辑" @click="edit(item.name)">' +
-            '            <i class="ace-icon fa fa-pencil bigger-120"></i>' +
-            '        </button>' +
-            '        <button class="btn btn-xs btn-danger" type="button" title="删除" @click="remove(item.name)">' +
-            '            <i class="ace-icon fa fa-trash-o bigger-120"></i>' +
-            '        </button>' +
-            '    </div>' +
-            '</td>' +
-            '</tr>' +
-            '</tbody></table>',
+            template: '#task-template',
 
             mounted: function () {
+                $('#task-table').on('click', '.show-details-btn', function (e) {
+                    e.preventDefault();
+                    $(this).closest('tr').next().toggleClass('open');
+                    $(this).find(ace.vars['.icon']).toggleClass('fa-angle-double-down').toggleClass('fa-angle-double-up');
+                });
+
                 this.loadTasks();
             },
 
@@ -72,23 +38,24 @@ vmApp.module = new Vue({
                     this.$parent.add(name);
                 },
 
-                remove: function (name) {
-                    var me = this;
-                    JqdeBox.confirm("确定删除任务 " + name + " ？", function (confirm) {
+                remove: function (name, host) {
+                    var me = this, msg = "确定删除" + (host ? "主机 " + host + " " : "所有主机") + "任务 " + name + " ？";
+                    JqdeBox.confirm(msg, function (confirm) {
                         if (!confirm) return;
-
-                        // hosts的处理
-                        var hosts = _.chain(me.hosts).where({checked: true}).pluck('host').value();
 
                         JqdeBox.loading();
                         Jcoder.ajax('/admin/task/delete', 'POST', {
-                            hosts: hosts,
+                            host: host,
                             groupName: me.$parent.groupName,
                             name: name,
                             type: me.type
                         }).then(function () {
                             JqdeBox.unloading();
                             me.loadTasks();
+
+                            //
+                            var parent = me.$parent;
+                            me.type != parent.recycleType && parent.$children[2].loadTasks();
                         }).catch(function (req) {
                             JqdeBox.unloading();
                             JqdeBox.message(false, req.responseText);
@@ -103,8 +70,7 @@ vmApp.module = new Vue({
         apiType: 1,
         cronType: 2,
         recycleType: 0,
-        groupName: param.name,
-        hosts: []
+        groupName: param.name
     },
 
     mounted: function () {
