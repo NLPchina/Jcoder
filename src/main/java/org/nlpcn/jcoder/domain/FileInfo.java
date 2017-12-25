@@ -111,7 +111,7 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		if (!(obj instanceof FileInfo)) {
 			return false;
 		}
-		return this.relativePath.equals(((FileInfo) obj).relativePath) && this.md5.equals(((FileInfo) obj).md5);
+		return this.relativePath.equals(((FileInfo) obj).relativePath) && this.getMd5().equals(((FileInfo) obj).getMd5());
 	}
 
 	public Date lastModified() {

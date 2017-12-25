@@ -115,7 +115,7 @@ public class SharedSpaceService {
 
 	private ZKMap<Token> tokenCache;
 
-	//缓存在线主机 key:127.0.0.1:2181 HostGroup.java
+	//缓存在线主机 key:127.0.0.1:2181_groupName HostGroup.java
 	private ZKMap<HostGroup> hostGroupCache;
 
 	/**
@@ -590,10 +590,10 @@ public class SharedSpaceService {
 
 		groupCache.getListenable().addListener((client, event) -> {
 			String path = event.getData().getPath();
-			try{
+			try {
 				byte[] data = event.getData().getData();
 				System.out.println(new String(data));
-			}catch (Exception e){
+			} catch (Exception e) {
 
 			}
 			switch (event.getType()) {
@@ -946,12 +946,12 @@ public class SharedSpaceService {
 		List<Long> collect = result.stream().map(fi -> fi.lastModified().getTime()).sorted().collect(Collectors.toList());
 		String nowTimeMd5 = MD5Util.md5(collect.toString()); //当前文件的修改时间md5
 
-		GroupCache groupCache = null ;
+		GroupCache groupCache = null;
 
-		try{
-			groupCache = JSONObject.parseObject(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8"), GroupCache.class) ;
-		}catch (Exception e){
-			LOG.warn(groupName+" cache read err so create new ");
+		try {
+			groupCache = JSONObject.parseObject(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8"), GroupCache.class);
+		} catch (Exception e) {
+			LOG.warn(groupName + " cache read err so create new ");
 		}
 
 		//本group本身的插入zk中用来比较md5加快对比
@@ -965,7 +965,7 @@ public class SharedSpaceService {
 			LOG.info("to computer md5 in gourp: " + groupName);
 			Set<String> ts = new TreeSet<>(result.stream().map(fi -> fi.getMd5()).collect(Collectors.toSet()));
 
-			groupCache = new GroupCache() ;
+			groupCache = new GroupCache();
 			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
 			groupCache.setTimeMD5(nowTimeMd5);
 			groupCache.setPomMD5(JarService.getOrCreate(groupName).getPomMd5());
@@ -978,6 +978,52 @@ public class SharedSpaceService {
 		result.add(root);
 
 		return result;
+	}
+
+
+	/**
+	 * 将文件同步更新到集群中
+	 *
+	 * @param groupName
+	 */
+	public void upCluster(String groupName, String relativePath) throws Exception {
+		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+		if (file.exists()) {
+			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file)));
+			LOG.info("up file to {} -> {}", groupName, relativePath);
+		} else {
+			zkDao.getZk().delete().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
+			LOG.info("delete file to {} -> {}", groupName, relativePath);
+		}
+
+
+	}
+
+	public <T> T getData(String path, Class<T> c) throws Exception {
+		byte[] bytes = getData2ZK(path);
+		if (bytes == null) {
+			return null;
+		}
+		return JSONObject.parseObject(bytes, c);
+	}
+
+	/**
+	 * 随机的获取一台和主版本同步着的主机
+	 *
+	 * @param groupName
+	 * @return
+	 */
+	public List<String> getCurrentHostPort(String groupName) {
+		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).collect(Collectors.toList());
+		return collect;
+	}
+
+	public String getRandomCurrentHostPort(String groupName) {
+		List<String> collect = getCurrentHostPort(groupName);
+		if (collect.size() == 0) {
+			return null;
+		}
+		return collect.get(new Random().nextInt(collect.size())).split("_")[0];
 	}
 
 	public CuratorFramework getZk() {
@@ -1000,13 +1046,5 @@ public class SharedSpaceService {
 		return groupCache;
 	}
 
-
-	public <T> T getData(String path, Class<T> c) throws Exception {
-		byte[] bytes = getData2ZK(path);
-		if (bytes == null) {
-			return null;
-		}
-		return JSONObject.parseObject(bytes, c);
-	}
 
 }
