@@ -121,8 +121,8 @@ public class Bootstrap {
 		});
 
 		//设置session过期时间
-		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setMaxAge(7200);
-		context.getSessionHandler().getSessionManager().getSessionCookieConfig().setName("JCODER" + port);
+		context.getSessionHandler().getSessionCookieConfig().setMaxAge(7200);
+		context.getSessionHandler().getSessionCookieConfig().setName("JCODER" + port);
 
 		context.setWelcomeFiles(new String[]{"index.html"});
 

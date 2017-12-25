@@ -788,7 +788,7 @@ public class SharedSpaceService {
 			different.setType(1);
 
 			if (!sets.contains(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath())) {
-				different.addMessage("文件在集群中不存在");
+				different.addMessage("文件在主版本中不存在");
 			} else {
 				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
