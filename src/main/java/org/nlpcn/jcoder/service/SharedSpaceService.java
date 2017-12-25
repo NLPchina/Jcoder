@@ -23,7 +23,9 @@ import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,7 +119,7 @@ public class SharedSpaceService {
 	private ZKMap<HostGroup> hostGroupCache;
 
 	/**
-	 * 在线主机
+	 * 在线groupcache
 	 */
 	private PathChildrenCache groupCache;
 
@@ -571,12 +573,18 @@ public class SharedSpaceService {
 
 		groupCache.getListenable().addListener((client, event) -> {
 			String path = event.getData().getPath();
+			try{
+				byte[] data = event.getData().getData();
+				System.out.println(new String(data));
+			}catch (Exception e){
+
+			}
 			switch (event.getType()) {
 				case CHILD_ADDED:
 				case CHILD_UPDATED:
 				case CHILD_REMOVED:
 				default:
-					LOG.info("groupCache other info {}" + event.getType(), path);
+					LOG.info("groupCache other info {} " + event.getType(), path);
 					break;
 			}
 		});
@@ -918,41 +926,38 @@ public class SharedSpaceService {
 
 
 		//先查缓存中是否存在用缓存做对比
-		String md5 = null;
 		List<Long> collect = result.stream().map(fi -> fi.lastModified().getTime()).sorted().collect(Collectors.toList());
 		String nowTimeMd5 = MD5Util.md5(collect.toString()); //当前文件的修改时间md5
-		File file = new File(StaticValue.GROUP_FILE, groupName + ".cache");
-		if (file.exists()) {
-			try (BufferedReader br = IOUtil.getReader(new FileInputStream(file), IOUtil.UTF8)) {
-				String temp = null;
-				while ((temp = br.readLine()) != null) {
-					String[] split = temp.split("\t");
-					if (split.length == 3 && groupName.equals(split[0])) {
-						String timeMd5 = split[1];
-						if (timeMd5.equals(nowTimeMd5)) {
-							md5 = split[2];
-						}
-					}
-				}
 
-			}
+		GroupCache groupCache = null ;
+
+		try{
+			groupCache = JSONObject.parseObject(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8"), GroupCache.class) ;
+		}catch (Exception e){
+			LOG.warn(groupName+" cache read err so create new ");
 		}
 
 		//本group本身的插入zk中用来比较md5加快对比
 		FileInfo root = new FileInfo(path.toFile());
-
 		root.setLength(result.stream().mapToLong(f -> f.getLength()).sum());
 
-		if (StringUtil.isBlank(md5)) {
+		if (groupCache != null && nowTimeMd5.equals(groupCache.getTimeMD5())) {
+			LOG.info(groupName + " time md5 same so add it");
+			root.setMd5(groupCache.getGroupMD5());
+		} else {
 			LOG.info("to computer md5 in gourp: " + groupName);
 			Set<String> ts = new TreeSet<>(result.stream().map(fi -> fi.getMd5()).collect(Collectors.toSet()));
-			md5 = MD5Util.md5(ts.toString());
-			root.setMd5(md5);
-			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, groupName + "\t" + nowTimeMd5 + "\t" + md5 + "\n");
-		} else {
-			LOG.info(groupName + " time md5 same so add it");
-			root.setMd5(md5);
+
+			groupCache = new GroupCache() ;
+			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
+			groupCache.setTimeMD5(nowTimeMd5);
+			groupCache.setPomMD5(JarService.getOrCreate(groupName).getPomMd5());
+			root.setMd5(groupCache.getGroupMD5());
+
+			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, JSONObject.toJSONString(groupCache));
 		}
+
+
 		result.add(root);
 
 		return result;
@@ -981,6 +986,9 @@ public class SharedSpaceService {
 			return null;
 		}
 		return JSONObject.parseObject(bytes, c);
+	}
 
+	public PathChildrenCache getGroupCache() {
+		return groupCache;
 	}
 }

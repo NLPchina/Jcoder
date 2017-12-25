@@ -1,8 +1,12 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.cache.*;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
 import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.GroupCache;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -73,7 +77,6 @@ public class JarService {
 
 
 	private static final String MAVEN_PATH = "maven";
-	private static final String MD5 = "md5";
 
 	private String groupName;
 
@@ -254,8 +257,47 @@ public class JarService {
 	 * @throws IOException
 	 */
 	public synchronized void flushMaven() throws IOException {
-		clean();
-		copy();
+		//判断文件是否发生改变
+
+		File pomFile = new File(pomPath);
+
+		if (!pomFile.exists()) {
+			LOG.warn(pomFile.getCanonicalPath() + " not found in local");
+			return;
+		}
+
+		GroupCache groupCache = null;
+
+		try {
+			groupCache = JSONObject.parseObject(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8"), GroupCache.class);
+		} catch (Exception e) {
+			groupCache = new GroupCache();
+			LOG.warn(groupName + " cache read err so create new ");
+		}
+
+		String pomMD5 = getPomMd5();
+
+		if (groupCache == null || !pomMD5.equals(groupCache.getPomMD5())) {
+			groupCache.setPomMD5(pomMD5);
+			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getAbsolutePath(), "utf-8", JSONObject.toJSONString(groupCache));
+			clean();
+			copy();
+		}
+	}
+
+
+	/**
+	 * 获得当前group pom的md5
+	 *
+	 * @return
+	 */
+	public String getPomMd5() {
+		File file = new File(pomPath);
+		if (!file.exists()) {
+			return null;
+		}
+		String localMd5 = MD5Util.getMd5ByFile(file);
+		return localMd5;
 	}
 
 	private String execute(String... args) throws IOException {

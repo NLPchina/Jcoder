@@ -106,13 +106,13 @@ public class SiteSetup implements Setup {
 	 * 检查机器是否可以运行
 	 */
 	private void checkServer() {
-		if (!StaticValue.IS_LOCAL) {
-			if ("127.0.0.1".equals(StaticValue.getHost())
-					|| "localhost".equals(StaticValue.getHost())) {
-				LOG.error("cluster model must set host by LAN IP or domain");
-				System.exit(-1);
-			}
-		}
+//		if (!StaticValue.IS_LOCAL) {
+//			if ("127.0.0.1".equals(StaticValue.getHost())
+//					|| "localhost".equals(StaticValue.getHost())) {
+//				LOG.error("cluster model must set host by LAN IP or domain");
+//				System.exit(-1);
+//			}
+//		}
 	}
 
 }
