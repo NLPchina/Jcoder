@@ -6,11 +6,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
 import org.nlpcn.jcoder.domain.FileInfo;
-<<<<<<< HEAD
 import org.nlpcn.jcoder.domain.GroupCache;
-=======
-import org.nlpcn.jcoder.domain.Group;
->>>>>>> a0c8d0c5ae3426103d58d7a24696517464a41f17
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -18,7 +14,6 @@ import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
-import org.nutz.dao.Cnd;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.impl.NutIoc;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -50,7 +45,7 @@ public class JarService {
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
 
 	@Inject
-	private BasicDao basicDao ;
+	private BasicDao basicDao;
 
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
 			.removalListener((RemovalListener<String, JarService>) notification -> {
@@ -397,16 +392,16 @@ public class JarService {
 		flushMaven();
 	}
 
-	public void savePomInfo(String groupName,String code) throws Exception {
-		FileInfo fileInfo = new FileInfo() ;
-		fileInfo.setFile(new File(StaticValue.GROUP_FILE,groupName+"/lib/pom.xml"));
+	public void savePomInfo(String groupName, String code) throws Exception {
+		FileInfo fileInfo = new FileInfo();
+		fileInfo.setFile(new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml"));
 		fileInfo.setMd5(code);
 		fileInfo.setDirectory(false);
 		fileInfo.setLength(code.getBytes("utf-8").length);
 		fileInfo.setName("pom.xml");
 		fileInfo.setRelativePath("lib/pom.xml");
 
-		StaticValue.space().getZk().setData().forPath(SharedSpaceService.GROUP_PATH+"/"+groupName+"/file/lib/pom.xml", JSONObject.toJSONBytes(fileInfo));
+		StaticValue.space().getZk().setData().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/file/lib/pom.xml", JSONObject.toJSONBytes(fileInfo));
 	}
 
 	/**
