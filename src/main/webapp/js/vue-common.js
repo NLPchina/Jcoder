@@ -37,8 +37,8 @@ Vue.filter('formatNumber', function (value, decimals) {
 /** HOST组件 */
 Vue.component('host-component', {
     props: ['group', 'hosts'],
-    template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
-    '<span class="label label-xlg label-info label-white" style="margin:2px;text-align:left;" v-for="item in hosts">' +
+    template: '<div class="alert alert-block alert-success" style="padding:8px;height:50px;">' +
+    '<span v-for="item in hosts" v-bind="{class:item.isCurrent?\'label label-xlg label-info label-white\':\'label label-xlg label-danger label-white\'}" style="margin:2px;text-align:left;">' +
     '<label>' +
     '    <input name="form-field-checkbox" class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
     '    <span class="lbl" style="width:163px;"> {{item.host}}</span>' +
@@ -48,7 +48,7 @@ Vue.component('host-component', {
         var me = this;
         Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.group}).then(function (data) {
             _.each(data.obj, function (ele) {
-                me.hosts.push({host: ele.hostPort, checked: ele.current});
+                me.hosts.push({host: ele.hostPort, checked: ele.current, isCurrent: ele.current});
             });
         }).catch(function (req) {
             JqdeBox.message(false, req.responseText);
