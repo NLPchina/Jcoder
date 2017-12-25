@@ -1,6 +1,5 @@
 package org.nlpcn.jcoder.service;
 
-import com.alibaba.druid.support.json.JSONParser;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorEvent;
@@ -990,6 +989,10 @@ public class SharedSpaceService {
 
 	public ZKMap<HostGroup> getHostGroupCache() {
 		return hostGroupCache;
+	}
+
+	public PathChildrenCache getGroupCache() {
+		return groupCache;
 	}
 
 
