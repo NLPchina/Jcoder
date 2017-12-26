@@ -47,11 +47,11 @@ vmApp.module = new Vue({
                 JqdeBox.unloading();
 
                 //
-                var task = data.obj;
+                var task = data.obj || {};
                 if (_.isNumber(task.id)) {
                     me.editor.setValue((me.task = task).code);
                 } else {
-                    me.task = {type: 1, status: 0, groupName: me.task.group};
+                    me.task = {type: 1, status: 0, groupName: me.task.group, name: t.name};
                     me.editor.setValue("");
                     JqdeBox.message("warning", me.sourceHost + " 不存在任务 " + t.name + " ，请选择其他版本！");
                 }
