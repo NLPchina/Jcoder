@@ -500,7 +500,7 @@ public class SharedSpaceService {
 		long start = System.currentTimeMillis();
 		LOG.info("shared space init");
 
-		this.zkDao = new ZookeeperDao(StaticValue.ZK);
+		this.zkDao = new ZookeeperDao(StaticValue.ZK).start();
 
 		//注册监听事件
 		zkDao.getZk().getConnectionStateListenable().addListener((client, connectionState) -> {
@@ -601,7 +601,7 @@ public class SharedSpaceService {
 				case CHILD_UPDATED:
 				case CHILD_REMOVED:
 				default:
-					LOG.info("groupCache other info {} " + event.getType(), path);
+					LOG.info("---------------------- groupCache other info {} " + event.getType(), path);
 					break;
 			}
 		});

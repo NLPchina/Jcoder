@@ -214,30 +214,37 @@ public class FileInfoAction {
 	 * @param relativePath
 	 */
 	@At
-	public void copyFile(@Param("fromHostPort") String fromHostPort,@Param("groupName") String groupName,@Param("relativePath") String relativePath) throws Exception {
+	public void copyFile(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
+		for (String relativePath : relativePaths) {
+			if (StringUtil.isBlank(relativePath)) {
+				continue;
+			}
 
-		long start = System.currentTimeMillis();
+			long start = System.currentTimeMillis();
 
-		Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
 
-		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
-		if (post.getStatus() == 404) { //没找到，那么就删除本地
-			org.nutz.lang.Files.deleteFile(file);
-			LOG.info("delete file {} -> {} ", groupName, relativePath);
-		} else if (post.getStatus() == 200) {
-			IOUtil.writeAndClose(post.getStream(), file);
-			LOG.info("down ok : {} use time : {} ", relativePath, System.currentTimeMillis() - start);
-		} else {
-			LOG.error("down error : {} ", post.getContent());
+			if (post.getStatus() == 404) { //没找到，那么就删除本地
+				org.nutz.lang.Files.deleteFile(file);
+				LOG.info("delete file {} -> {} ", groupName, relativePath);
+			} else if (post.getStatus() == 200) {
+				IOUtil.writeAndClose(post.getStream(), file);
+				LOG.info("down ok : {} use time : {} ", relativePath, System.currentTimeMillis() - start);
+			} else {
+				LOG.error("down error : {} ", post.getContent());
+			}
+
 		}
-
 	}
 
 	@At
-	public Restful upCluster(@Param("groupName") String groupName,@Param("relativePath") String relativePath) throws Exception {
-		StaticValue.space().upCluster(groupName ,relativePath) ;
-		return Restful.OK ;
+	public Restful upCluster(@Param("groupName") String groupName, @Param("relativePath") String[] relativePaths) throws Exception {
+		for (String relativePath : relativePaths) {
+			StaticValue.space().upCluster(groupName, relativePath);
+		}
+		return Restful.OK;
 	}
 
 
