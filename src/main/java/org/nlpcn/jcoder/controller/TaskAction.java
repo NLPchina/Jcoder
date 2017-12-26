@@ -24,6 +24,7 @@ import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.Mvcs;
+import org.nutz.mvc.adaptor.WhaleAdaptor;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,6 +225,7 @@ public class TaskAction {
      * @throws Exception
      */
     @At
+    @AdaptBy(type=WhaleAdaptor.class)
     public Restful task(String groupName, String name, @Param(value = "sourceHost", df = Constants.HOST_MASTER) String sourceHost) throws Exception {
         if (StringUtil.isBlank(groupName)) {
             throw new IllegalArgumentException("empty groupName");

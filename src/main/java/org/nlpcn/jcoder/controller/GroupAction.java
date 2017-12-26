@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
@@ -313,21 +314,41 @@ public class GroupAction {
 			return Restful.instance(false, "主版本中不存在任何实例，所以无法同步");
 		}
 
-		if (StringUtil.isBlank(fromHostPort)) {
-			fromHostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
-			if (fromHostPort == null) {
-				return Restful.instance(false, "未找到任何一台主机包含同步版本");
+		if (relativePath.startsWith("/")) {//更新文件的
+			if (StringUtil.isBlank(fromHostPort)) {
+				fromHostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+				if (fromHostPort == null) {
+					return Restful.instance(false, "未找到任何一台主机包含同步版本");
+				} else {
+					Response post = proxyService.post(toHostPort, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000);
+					return JSONObject.parseObject(post.getContent(), Restful.class);
+				}
 			} else {
-				Response post = proxyService.post(toHostPort, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000);
-				return JSONObject.parseObject(post.getContent(), Restful.class);
+				List<String> toHostPorts = StaticValue.space().getCurrentHostPort(groupName);
+				//更新所有机器
+				String post = proxyService.post(new HashSet<>(toHostPorts), "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+				//更新集群
+				Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
+				return Restful.instance().msg(post + "，" + post1.getContent());
 			}
-		} else {
-			List<String> toHostPorts = StaticValue.space().getCurrentHostPort(groupName);
-			//更新所有机器
-			String post = proxyService.post(new HashSet<>(toHostPorts), "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
-			//更新集群
-			Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
-			return Restful.instance().msg(post + "，"+post1.getContent());
+		} else {//更新task的
+			if (StringUtil.isBlank(fromHostPort)) {
+				fromHostPort = Constants.HOST_MASTER;
+			}
+
+			if (StringUtil.isBlank(toHostPort)) {
+				toHostPort = Constants.HOST_MASTER;
+			}
+
+			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath ,"sourceHost",fromHostPort), 10000);
+			Object obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
+			if (obj == null) {
+				return Restful.fail().msg("任务不存在");
+			}
+
+			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts", toHostPort, "task", obj), 1000);
+
+			return JSONObject.parseObject(post.getContent(), Restful.class);
 		}
 
 
