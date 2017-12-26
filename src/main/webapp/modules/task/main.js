@@ -3,91 +3,86 @@ vmApp.module = new Vue({
 
     components: {
         'task-component': {
-            props: ['tasks'],
-            template: '<table class="table table-striped table-bordered table-hover dataTable">' +
-            '<thead>' +
-            '<tr>' +
-            '<th width="20%">名称</th>' +
-            '<th>描述</th>' +
-            '<th width="6.8%">状态</th>' +
-            '<th width="14%">创建时间</th>' +
-            '<th width="14%">更新时间</th>' +
-            '<th width="7%">操作</th>' +
-            '</tr>' +
-            '</thead>' +
-            '<tbody>' +
-            '<tr v-for="(item, index) in tasks">' +
-            '<td>{{item.name}}</td>' +
-            '<td :title="item.describe">' +
-            '<span style="width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display: block;" v-text="item.describe"></span>' +
-            '</td>' +
-            '<td>' +
-            '    <span v-if="item.status==1" class="label label-success label-white middle">' +
-            '        <i class="ace-icon glyphicon glyphicon-ok bigger-120"></i>' +
-            '        激活' +
-            '    </span>' +
-            '    <span v-else class="label label-warning label-white middle">' +
-            '        <i class="ace-icon fa fa-exclamation-triangle bigger-120"></i>' +
-            '        停用' +
-            '    </span>' +
-            '</td>' +
-            '<td>{{item.createTime}}</td>' +
-            '<td>{{item.updateTime}}</td>' +
-            '<td>' +
-            '    <div class="hidden-sm hidden-xs btn-group">' +
-            '        <button class="btn btn-xs btn-info" title="编辑">' +
-            '            <i class="ace-icon fa fa-pencil bigger-120"></i>' +
-            '        </button>' +
-            '        <button class="btn btn-xs btn-danger" title="删除">' +
-            '            <i class="ace-icon fa fa-trash-o bigger-120"></i>' +
-            '        </button>' +
-            '    </div>' +
-            '</td>' +
-            '</tr>' +
-            '</tbody></table>'
+            props: ['type'],
+
+            data: function () {
+                return {tasks: null};
+            },
+
+            template: '#task-template',
+
+            mounted: function () {
+                $('#task-table').on('click', '.show-details-btn', function (e) {
+                    e.preventDefault();
+                    $(this).closest('tr').next().toggleClass('open');
+                    $(this).find(ace.vars['.icon']).toggleClass('fa-angle-double-down').toggleClass('fa-angle-double-up');
+                });
+
+                this.loadTasks();
+            },
+
+            methods: {
+                loadTasks: function () {
+                    var me = this;
+                    return Jcoder.ajax('/admin/task/list', 'GET', {
+                        groupName: me.$parent.groupName,
+                        taskType: me.type
+                    }).then(function (data) {
+                        me.tasks = data.obj;
+                    }).catch(function (req) {
+                        JqdeBox.message(false, req.responseText);
+                    });
+                },
+
+                edit: function (name) {
+                    this.$parent.add(name);
+                },
+
+                remove: function (name, host) {
+                    var me = this, msg = "确定删除" + (host ? "主机 " + host + " " : "所有主机") + "任务 " + name + " ？";
+                    JqdeBox.confirm(msg, function (confirm) {
+                        if (!confirm) return;
+
+                        JqdeBox.loading();
+                        Jcoder.ajax('/admin/task/delete', 'POST', {
+                            host: host,
+                            groupName: me.$parent.groupName,
+                            name: name,
+                            type: me.type
+                        }).then(function () {
+                            JqdeBox.unloading();
+                            me.loadTasks();
+
+                            //
+                            var parent = me.$parent;
+                            me.type != parent.recycleType && parent.$children[2].loadTasks();
+                        }).catch(function (req) {
+                            JqdeBox.unloading();
+                            JqdeBox.message(false, req.responseText);
+                        });
+                    });
+                }
+            }
         }
     },
 
     data: {
-        apiTasks: [],
-        cronTasks: [],
-        recycleTasks: [],
-        groupName: null
+        apiType: 1,
+        cronType: 2,
+        recycleType: 0,
+        groupName: param.name
     },
 
     mounted: function () {
-        $("#tabs").tabs();
-
-        var me = this;
-        me.groupName = param.name;
-
-        // 加载API
-        me.loadTasks(1).then(function (data) {
-            me.apiTasks = data.obj;
-        });
-
-        // 加载CRON
-        me.loadTasks(2).then(function (data) {
-            me.cronTasks = data.obj;
-        });
-
-        // 加载RECYCLE
-        me.loadTasks(0).then(function (data) {
-            me.recycleTasks = data.obj;
-        });
     },
 
     methods: {
-
-        loadTasks: function (taskType) {
-            var me = this;
-            return Jcoder.ajax('/admin/task/list', 'GET', {groupName: me.groupName, taskType: taskType}).catch(function (req) {
-                JqdeBox.message(false, req.responseText);
-            });
-        },
-
-        add: function () {
-            location.hash = '/task/edit.html?group=' + this.groupName;
+        add: function (name) {
+            var h = '/task/edit.html?group=' + this.groupName;
+            if (name) {
+                h += '&name=' + name;
+            }
+            location.hash = h;
         }
     }
 });

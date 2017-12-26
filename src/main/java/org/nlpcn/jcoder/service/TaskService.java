@@ -2,11 +2,12 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
+import org.nlpcn.jcoder.constant.TaskStatus;
+import org.nlpcn.jcoder.constant.TaskType;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.filter.TestingFilter;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -14,7 +15,6 @@ import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,10 +59,18 @@ public class TaskService {
 		return tasks;
 	}
 
-	public List<Task> getTasksByGroupName(String groupName) {
-		Group group = basicDao.findByCondition(Group.class, Cnd.where("name","=",groupName)) ;
-		return basicDao.search(Task.class,Cnd.where("groupName","=",group.getName())) ;
-	}
+    /**
+     * 删除ZK集群里的Task
+     *
+     * @param groupName 组名
+     * @param taskName  任务名
+     * @throws Exception
+     */
+    public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
+        String path = GROUP_PATH + "/" + groupName + "/" + taskName;
+        LOG.info("to delete task in zookeeper: {}", path);
+        StaticValue.space().getZk().delete().forPath(path);
+    }
 
 	/**
 	 * 保存或者更新一个任务
@@ -151,41 +159,43 @@ public class TaskService {
 		}
 	}
 
-	/**
-	 * 删除一个任务
-	 *
-	 * @param task
-	 * @throws Exception
-	 */
-	public void delete(Task task) throws Exception {
-		//authEditorValidate(task.getGroupId());
-		task.setType(0);
-		task.setStatus(0);
-		saveOrUpdate(task);
-	}
+    /**
+     * 删除一个任务
+     *
+     * @param task
+     * @throws Exception
+     */
+    public void delete(Task task) throws Exception {
+        task.setType(TaskType.RECYCLE.getValue());
+        task.setStatus(TaskStatus.STOP.getValue());
+        saveOrUpdate(task);
+    }
 
-	/**
-	 * 删除一个历史任务
-	 *
-	 * @param task
-	 * @throws Exception
-	 */
-	public void delete(TaskHistory task) throws Exception {
-		//authEditorValidate(task.getGroupId());
-		basicDao.delById(task.getId(), TaskHistory.class);
-	}
+    /**
+     * 彻底删除一个任务
+     *
+     * @param task
+     * @throws Exception
+     */
+    public void delByDB(Task task) {
+        // 删除任务历史
+        basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
 
-	/**
-	 * 彻底删除一个任务
-	 *
-	 * @param task
-	 * @throws Exception
-	 */
-	public void delByDB(Task task) throws Exception {
-		//authEditorValidate(task.getGroupId());
-		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));//delete history
-		basicDao.delById(task.getId(), Task.class); // 不需要通知队列了
-	}
+        // 删除任务
+        basicDao.delById(task.getId(), Task.class);
+    }
+
+    public Task findTask(String groupName, String name) {
+        return basicDao.findByCondition(Task.class, Cnd.where("groupName", "=", groupName).and("name", "=", name));
+    }
+
+    public List<Task> findTasksByGroupName(String groupName) {
+        if (groupName == null) {
+            return null;
+        }
+
+        return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
+    }
 
 	/**
 	 * 找到task根据groupName
@@ -205,16 +215,15 @@ public class TaskService {
 		return result;
 	}
 
-	/**
-	 * 从数据库中init所有的task
-	 *
-	 * @throws TaskException
-	 */
-	public void initTaskFromDB(String groupName) throws TaskException {
-		Group group = this.basicDao.findByCondition(Group.class, Cnd.where("name", "=", groupName));
-		List<Task> search = this.basicDao.search(Task.class, Cnd.where("groupName", "=", group.getName()));
-		flushTaskMappingAndCache(search);
-	}
+    /**
+     * 从数据库中init所有的task
+     *
+     * @param groupName
+     */
+    public void initTaskFromDB(String groupName) {
+        List<Task> search = findTasksByGroupName(groupName);
+        flushTaskMappingAndCache(search);
+    }
 
 	/**
 	 * 刷新传入的tasks mapping and cache
@@ -279,35 +288,6 @@ public class TaskService {
 	}
 
 	/**
-	 * 根据组id获得task集合
-	 *
-	 * @param groupName
-	 * @return
-	 */
-	public List<Task> tasksList(String groupName) {
-		if (groupName == null) {
-			return null;
-		}
-		return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
-	}
-
-	/**
-	 * 编辑task权限验证
-	 *
-	 * @param groupId
-	 * @throws Exception
-	 */
-	private void authEditorValidate(Long groupId) throws Exception {
-		if ((Integer) Mvcs.getHttpSession().getAttribute("userType") == 1) {
-			return;
-		}
-		/*UserGroup ug = basicDao.findByCondition(UserGroup.class, Cnd.where("groupId", "=", groupId).and("userId", "=", Mvcs.getHttpSession().getAttribute("userId")));
-		if (ug == null || ug.getAuth() != 2) {
-			throw new Exception("not have editor auth in groupId:" + groupId);
-		}*/
-	}
-
-	/**
 	 * @param taskId
 	 * @param size
 	 * @return
@@ -332,10 +312,6 @@ public class TaskService {
 		sb.append(VERSION_SPLIT);
 		sb.append(DateUtils.formatDate(t.getUpdateTime(), "yyyy-MM-dd HH:mm:ss"));
 		return sb.toString();
-	}
-
-	public List<Task> getTasks(int... ids) {
-		return basicDao.searchByIds(Task.class, ids, "name");
 	}
 
 	/**

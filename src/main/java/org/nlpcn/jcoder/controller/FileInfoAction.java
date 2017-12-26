@@ -1,14 +1,19 @@
 package org.nlpcn.jcoder.controller;
 
+import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.*;
 import org.nutz.dao.Cnd;
+import org.nutz.http.Response;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
+import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
@@ -44,6 +49,10 @@ import java.util.zip.ZipOutputStream;
 public class FileInfoAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FileInfoAction.class);
+
+
+	@Inject
+	private ProxyService proxyService;
 
 	/**
 	 * 获取文件列表
@@ -106,6 +115,7 @@ public class FileInfoAction {
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
 		if (!file.exists()) {
+			Mvcs.getResp().setStatus(404);//设置错误头
 			throw new FileNotFoundException(file.toURI().getPath() + " not found in " + StaticValue.getHostPort());
 		}
 
@@ -197,6 +207,46 @@ public class FileInfoAction {
 		return Restful.instance().ok(true).msg("上传成功");
 	}
 
+	/**
+	 * 文件复制，如果源无文件则删除目标文件,是拉的方式
+	 *
+	 * @param fromHostPort
+	 * @param relativePath
+	 */
+	@At
+	public void copyFile(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
+		for (String relativePath : relativePaths) {
+			if (StringUtil.isBlank(relativePath)) {
+				continue;
+			}
+
+			long start = System.currentTimeMillis();
+
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
+
+			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+
+			if (post.getStatus() == 404) { //没找到，那么就删除本地
+				org.nutz.lang.Files.deleteFile(file);
+				LOG.info("delete file {} -> {} ", groupName, relativePath);
+			} else if (post.getStatus() == 200) {
+				IOUtil.writeAndClose(post.getStream(), file);
+				LOG.info("down ok : {} use time : {} ", relativePath, System.currentTimeMillis() - start);
+			} else {
+				LOG.error("down error : {} ", post.getContent());
+			}
+
+		}
+	}
+
+	@At
+	public Restful upCluster(@Param("groupName") String groupName, @Param("relativePath") String[] relativePaths) throws Exception {
+		for (String relativePath : relativePaths) {
+			StaticValue.space().upCluster(groupName, relativePath);
+		}
+		return Restful.OK;
+	}
+
 
 	/**
 	 * 下载开发者工具
@@ -223,7 +273,7 @@ public class FileInfoAction {
 
 		int len = 0;
 
-		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName,"utf-8") + ".zip");
+		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName, "utf-8") + ".zip");
 		response.setContentType("application/octet-stream");
 
 		try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
@@ -311,7 +361,6 @@ public class FileInfoAction {
 			});
 
 		}
-
 	}
 
 }

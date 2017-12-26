@@ -143,11 +143,11 @@
 							{{item.message}}
 						</td>
 						<td  class="center">
-							<button type="button" class="btn btn-info btn-sm">
+							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, item.path)">
 								<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
 							</button>
 
-							<button type="button" class="btn btn-info btn-sm">
+							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, item.path)">
 								<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 							</button>
 
@@ -318,6 +318,21 @@ var groupHostList = new Vue({
 			}else{
 				JqdeBox.message(false, data.message);
 			}
+		});
+	},
+
+
+	fixDiff: function(fromHostPort ,toHostPort, relativePath){
+		var $this = this;
+		Jcoder.ajax("/admin/group/fixDiff", 'post',{"fromHostPort":fromHostPort,"groupName":$this.groupName,"relativePath":relativePath},null).then(function (data) {
+			JqdeBox.message(data.ok, data.message);
+			if(fromHostPort){
+				$this.flush(fromHostPort);
+			}
+			if(toHostPort){
+				$this.flush(toHostPort);
+			}
+			JqdeBox.unloading();
 		});
 	}
 

@@ -3,14 +3,18 @@ package org.nlpcn.jcoder.controller;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.h2.util.DateTimeUtils;
 import org.nlpcn.jcoder.constant.Api;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.constant.TaskStatus;
+import org.nlpcn.jcoder.constant.TaskType;
+import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
@@ -23,15 +27,11 @@ import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
-import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
+import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
 import static org.nlpcn.jcoder.util.ApiException.ServerException;
 
@@ -41,35 +41,58 @@ import static org.nlpcn.jcoder.util.ApiException.ServerException;
 @Ok("json")
 public class TaskAction {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TaskAction.class);
 
-	@Inject
-	private TaskService taskService;
+    private static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+    @Inject
+    private TaskService taskService;
 
     @Inject
     private ProxyService proxyService;
 
-	/**
-	 * 获得task列表
-	 *
-	 * @param groupName 组名
-	 * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
-	 * @return
-	 * @throws Exception
-	 */
-	@At
-	public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
-		Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
-				.stream()
-				.filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
-				.map(t -> ImmutableMap.of("name", t.getName(), "describe", t.getDescription(), "status", t.getStatus(), "createTime", t.getCreateTime(), "updateTime", t.getUpdateTime()))
-				.toArray();
-		return Restful.instance(tasks);
-	}
+    @Inject
+    private GroupService groupService;
 
-	@At
+    /**
+     * 获得task列表
+     *
+     * @param groupName 组名
+     * @param taskType  task类型: 0、垃圾；1、独立；2、计划；3、调度
+     * @return
+     * @throws Exception
+     */
+    @At
+    public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
+        List<HostGroup> hosts = new ArrayList<>(groupService.getGroupHostList(groupName));
+        Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
+                .stream()
+                .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
+                .map(t -> {
+                    Map<String, Object> m = new HashMap<>(6);
+                    m.put("name", t.getName());
+                    m.put("description", t.getDescription());
+                    m.put("status", t.getStatus());
+                    m.put("hosts", hosts);
+                    m.put("createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null));
+                    m.put("updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null));
+                    return m;
+                })
+                .toArray();
+        return Restful.instance(tasks);
+    }
+
+    /**
+     * 保存或更新任务
+     *
+     * @param hosts
+     * @param task
+     * @return
+     * @throws Exception
+     */
+    @At
     public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) throws Exception {
-        if (hosts == null) {
+        if (hosts == null || hosts.length < 1) {
             throw new IllegalArgumentException("empty hosts");
         }
 
@@ -77,19 +100,23 @@ public class TaskAction {
             throw new IllegalArgumentException("task is null");
         }
 
-        if (StringUtil.isBlank(task.getName()) || StringUtil.isBlank(task.getDescription()) || StringUtil.isBlank(task.getCode())) {
-            throw new IllegalArgumentException("task name, description or code is empty");
+        if (StringUtil.isBlank(task.getName()) || StringUtil.isBlank(task.getCode())) {
+            throw new IllegalArgumentException("task name or code is empty");
         }
+
+        // 是否更新主版本
+        Set<String> hostPorts = new HashSet<>(Arrays.asList(hosts));
+        boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
 
         // 如果激活任务, 需要检查代码
         if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
-            String errorMessage = proxyService.post(hosts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            String errorMessage = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
             if (StringUtil.isNotBlank(errorMessage)) {
                 return Restful.ERR.code(ServerException).msg(errorMessage);
             }
         }
 
-        // 保存, 先存入ZK，再分发到集群的每台机器保存
+        // 保存
         User u = (User) Mvcs.getHttpSession().getAttribute(CURRENT_USER);
         Date now = new Date();
         if (task.getId() == null) {
@@ -98,14 +125,24 @@ public class TaskAction {
         }
         task.setUpdateUser(u.getName());
         task.setUpdateTime(now);
-        StaticValue.space().addTask(task);
-        String errorMessage = proxyService.post(hosts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+
+        // 集群的每台机器保存
+        String errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
         if (StringUtil.isNotBlank(errorMessage)) {
             return Restful.ERR.code(ServerException).msg(errorMessage);
         }
 
+        // 如果更新主版本
+        if (containsMaster) {
+            // 给任务设置ID值, 方便后续做编辑
+            task.setId(0L);
+
+            // ZK保存
+            StaticValue.space().addTask(task);
+        }
+
         return Restful.OK;
-	}
+    }
 
     @At
     public Restful __check__(@Param("::task") Task task) throws CodeException, IOException {
@@ -117,113 +154,169 @@ public class TaskAction {
 
     @At
     public Restful __save__(@Param("::task") Task task) throws Exception {
+        // 如果是编辑, 得替换成本地任务ID
+        if (task.getId() != null) {
+            Task t = taskService.findTask(task.getGroupName(), task.getName());
+            task.setId(t.getId());
+        }
+        LOG.info("to save task[{}-{}]: {}", task.getGroupName(), task.getName(), taskService.saveOrUpdate(task));
+        return Restful.OK;
+    }
 
-        LOG.info("task[{}-{}] is modified: {}", task.getGroupName(), task.getName(), taskService.saveOrUpdate(task));
+    /**
+     * 获取任务
+     *
+     * @param groupName  组名
+     * @param name       任务名
+     * @param sourceHost 来源主机, 即获取哪个主机的任务, 默认主版本
+     * @return
+     * @throws Exception
+     */
+    @At
+    public Restful task(String groupName, String name, @Param(value = "sourceHost", df = Constants.HOST_MASTER) String sourceHost) throws Exception {
+        if (StringUtil.isBlank(groupName)) {
+            throw new IllegalArgumentException("empty groupName");
+        }
+
+        if (StringUtil.isBlank(name)) {
+            throw new IllegalArgumentException("empty name");
+        }
+
+        // 如果取主版本, 直接访问ZK
+        if (Constants.HOST_MASTER.equals(sourceHost)) {
+            Optional<Task> opt = taskService.getTasksByGroupNameFromCluster(groupName).stream().filter(t -> Objects.equals(t.getName(), name)).findAny();
+            if (!opt.isPresent()) {
+                LOG.warn("task[{}-{}] not found in zookeeper", groupName, name);
+                return Restful.OK;
+            }
+
+            return Restful.OK.obj(opt.get());
+        }
+
+        // 如果取其他机器版本
+        String content = proxyService.post(sourceHost, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT).getContent();
+        JSONObject res = JSONObject.parseObject(content);
+        return res.getBooleanValue("ok") ? Restful.OK.obj(res.get("obj")) : Restful.ERR.code(ServerException).msg(res.getString("message"));
+    }
+
+    @At
+    public Restful __task__(String groupName, String name) {
+        // 从本地数据库中找到任务
+        Task t = taskService.findTask(groupName, name);
+        if (t == null) {
+            LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
+            return Restful.OK;
+        }
+
+        return Restful.OK.obj(t);
+    }
+
+    /**
+     * 删除任务, 支持删除单台机器和所有机器(包括ZK)
+     * 如果任务类型是垃圾, 就物理删除
+     * 如果任务类型不是垃圾, 就更改任务类型和状态
+     *
+     * @param host      主机, 如果有, 就删除指定机器, 否则删除所有
+     * @param groupName
+     * @param name
+     * @param type
+     * @return
+     * @throws Exception
+     */
+    @At
+    public Restful delete(String host, String groupName, String name, int type) throws Exception {
+        if (StringUtil.isBlank(groupName)) {
+            throw new IllegalArgumentException("empty groupName");
+        }
+
+        if (StringUtil.isBlank(name)) {
+            throw new IllegalArgumentException("empty name");
+        }
+
+        User u = (User) Mvcs.getHttpSession().getAttribute(CURRENT_USER);
+        Date now = new Date();
+
+        // 主机列表
+        boolean isSingle = StringUtil.isNotBlank(host);
+        String[] hosts = isSingle ? new String[]{host} : groupService.getGroupHostList(groupName).stream().map(HostGroup::getHostPort).toArray(String[]::new);
+
+        if (type == TaskType.RECYCLE.getValue()) {
+            // 如果是垃圾, 物理删除
+            // 删除集群的每台机器
+            String errorMessage = proxyService.post(hosts, Api.TASK_DELETE.getPath(), ImmutableMap.of("force", true, "groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.ERR.code(ServerException).msg(errorMessage);
+            }
+
+            if (!isSingle) {
+                // 如果删除所有的, 删ZK
+                taskService.deleteTaskFromCluster(groupName, name);
+            }
+        } else {
+            // 更改类型为垃圾, 并停用
+            // 更新集群的每台机器
+            String errorMessage = proxyService.post(hosts, Api.TASK_DELETE.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.ERR.code(ServerException).msg(errorMessage);
+            }
+
+            if (!isSingle) {
+                // 如果更新所有的, 更新ZK
+                Task task = taskService.getTasksByGroupNameFromCluster(groupName).parallelStream().filter(t -> Objects.equals(t.getName(), name)).findAny().get();
+                task.setUpdateUser(u.getName());
+                task.setUpdateTime(now);
+                task.setType(TaskType.RECYCLE.getValue());
+                task.setStatus(TaskStatus.STOP.getValue());
+                StaticValue.space().addTask(task);
+            }
+        }
 
         return Restful.OK;
     }
 
-	@At("/task/editor/?/?")
-	@Ok("jsp:/task/task_editor.jsp")
-	public void find(Long groupId, Long taskId, @Param("version") String version) {
-		Mvcs.getReq().setAttribute("groupId", groupId);
-		if (!StringUtil.isBlank(version)) {
-			TaskHistory task = TaskService.findTaskByDBHistory(taskId, version);
-			Mvcs.getReq().setAttribute("task", task);
-			taskId = task.getTaskId();
-		} else {
-			Task task = TaskService.findTaskByDB(taskId);
-			Mvcs.getReq().setAttribute("task", new TaskHistory(task));
-			version = task.getVersion();
-			taskId = task.getId();
-		}
+    /**
+     * 内部调用删除任务
+     *
+     * @param force     是否强制删除任务, 如果是就删除数据库的任务
+     * @param groupName 组名
+     * @param name      任务名
+     * @param user      删除这个任务的用户
+     * @param time      删除这个任务的时间
+     * @return
+     * @throws Exception
+     */
+    @At
+    public Restful __delete__(@Param(value = "force", df = "false") boolean force, String groupName, String name, String user, Date time) throws Exception {
 
-		List<String> versions = taskService.versions(taskId, 100);
-		Mvcs.getReq().setAttribute("versions", versions);
-	}
+        LOG.info("to force[{}] delete task[{}-{}]", force, groupName, name);
 
-	@At("/task/find/?/?")
-	@Ok("json")
-	public JSONObject findApi(Long groupId, Long taskId, @Param("version") String version) {
-		JSONObject result = new JSONObject();
-		Mvcs.getReq().setAttribute("groupId", groupId);
-		if (!StringUtil.isBlank(version)) {
-			TaskHistory task = TaskService.findTaskByDBHistory(taskId, version);
-			result.put("task", task);
-			taskId = task.getTaskId();
-		} else {
-			Task task = TaskService.findTaskByDB(taskId);
-			result.put("task", new TaskHistory(task));
-			version = task.getVersion();
-			taskId = task.getId();
-		}
-		return result;
-	}
+        // 从本地数据库中找到任务
+        Task t = taskService.findTask(groupName, name);
+        if (t == null) {
+            LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
+            return Restful.OK;
+        }
 
-	@At("/task/_new/?")
-	@Ok("jsp:/task/task_editor.jsp")
-	public void create(Long groupId) {
-		Mvcs.getReq().setAttribute("groupId", groupId);
-	}
+        t.setUpdateUser(user);
+        t.setUpdateTime(time);
+        taskService.delete(t);
 
-	@At("/task/delete/?")
-	@Ok("raw")
-	public boolean delete(String name) {
-		Task task = TaskService.findTaskByCache(name);
-		task = TaskService.findTaskByDB(task.getId()); // old task and new task must not same
-		try {
-			taskService.delete(task);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
+        // 如果强制删除, 删除数据库中任务
+        if (force) {
+            taskService.delByDB(t);
+        }
 
-	@At("/task/del/?")
-	@Ok("raw")
-	public boolean del(String name) {
-		Task task = TaskService.findTaskByCache(name);
-		try {
-			taskService.delByDB(task);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-		return true;
-	}
+        return Restful.OK;
+    }
 
-	/**
-	 * 通过一个接口获取这个group下的所有task，包括未激活或者删除的task，镜像用
-	 *
-	 * @param groupName
-	 */
-	@At
-	public Restful taskGroupList(@Param("groupName") String groupName) {
-		return Restful.instance(taskService.getTasksByGroupName(groupName));
-
-	}
-
-	/**
-	 * 查看权限验证
-	 *
-	 * @param groupId
-	 */
-	private void authValidateView(Long groupId) {
-		HttpSession session = Mvcs.getHttpSession();
-
-		if ((Integer) session.getAttribute("userType") == 1) {
-			return;
-		}
-
-		@SuppressWarnings("unchecked")
-		Map<Long, Integer> authMap = (Map<Long, Integer>) session.getAttribute("AUTH_MAP");
-
-		if (authMap.containsKey(groupId)) {
-			return;
-		}
-
-		throw new RuntimeException("auth error !");
-	}
-
+    /**
+     * 通过一个接口获取这个group下的所有task，包括未激活或者删除的task，镜像用
+     *
+     * @param groupName
+     * @return
+     */
+    @At
+    public Restful taskGroupList(@Param("groupName") String groupName) {
+        return Restful.instance(taskService.findTasksByGroupName(groupName));
+    }
 }

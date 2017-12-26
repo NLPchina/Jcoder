@@ -1,9 +1,24 @@
 <div class="row" id="vmTaskModule">
-    <div id="tabs">
-        <ul>
-            <li><a href="#tabs-api">接口</a></li>
-            <li><a href="#tabs-cron">定时任务</a></li>
-            <li><a href="#tabs-recycle">回收站</a></li>
+    <div class="tabbable">
+        <ul class="nav nav-tabs">
+            <li class="active">
+                <a data-toggle="tab" href="#tabs-api">
+                    <i class="green ace-icon fa fa-info-circle bigger-100"></i>
+                    接口
+                </a>
+            </li>
+            <li>
+                <a data-toggle="tab" href="#tabs-cron">
+                    <i class="orange2 ace-icon glyphicon glyphicon-time bigger-100"></i>
+                    定时任务
+                </a>
+            </li>
+            <li>
+                <a data-toggle="tab" href="#tabs-recycle">
+                    <i class="red ace-icon glyphicon glyphicon-trash bigger-100"></i>
+                    回收站
+                </a>
+            </li>
             <div class="clearfix">
                 <div class="pull-right">
                     <a class="btn btn-info" title="添加" style="border: none;" @click="add()">
@@ -16,15 +31,97 @@
             </div>
         </ul>
 
-        <div id="tabs-api" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :tasks="apiTasks"></task-component>
-        </div>
-        <div id="tabs-cron" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :tasks="cronTasks"></task-component>
-        </div>
-        <div id="tabs-recycle" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :tasks="recycleTasks"></task-component>
+        <div class="tab-content" style="border:none;padding-left:0;padding-right:0;">
+            <div id="tabs-api" class="tab-pane fade in active">
+                <task-component :type="apiType"></task-component>
+            </div>
+            <div id="tabs-cron" class="tab-pane fade">
+                <task-component :type="cronType"></task-component>
+            </div>
+            <div id="tabs-recycle" class="tab-pane fade">
+                <task-component :type="recycleType"></task-component>
+            </div>
         </div>
     </div>
 </div>
+
+<script type="text/x-template" id="task-template">
+    <table id="task-table" class="table table-striped table-bordered table-hover dataTable">
+        <thead>
+        <tr>
+            <th width="17%">名称</th>
+            <th>描述</th>
+            <th width="6.8%">状态</th>
+            <th width="14%">创建时间</th>
+            <th width="14%">更新时间</th>
+            <th width="7%">主机</th>
+            <th width="7%">操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <template v-for="(item, index) in tasks">
+            <tr>
+                <td>{{item.name}}</td>
+                <td :title="item.description">
+                <span style="width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display: block;" v-text="item.description"></span>
+                </td>
+                <td>
+                    <span v-if="item.status==1" class="label label-success label-white middle">
+                        <i class="ace-icon glyphicon glyphicon-ok bigger-120"></i>
+                        激活
+                    </span>
+                    <span v-else class="label label-warning label-white middle">
+                        <i class="ace-icon fa fa-exclamation-triangle bigger-120"></i>
+                        停用
+                    </span>
+                </td>
+                <td>{{item.createTime}}</td>
+                <td>{{item.updateTime}}</td>
+                <td>
+                    {{item.hosts.length}}个
+                    <span v-if="0<item.hosts.length" class="action-buttons">
+                        <a href="#" class="green bigger-140 show-details-btn" title="显示详情">
+                            <i class="ace-icon fa fa-angle-double-down"></i>
+                        </a>
+                    </span>
+                </td>
+                <td>
+                    <div class="hidden-sm hidden-xs btn-group">
+                        <button class="btn btn-xs btn-info" type="button" title="编辑" @click="edit(item.name)">
+                            <i class="ace-icon fa fa-pencil bigger-120"></i>
+                        </button>
+                        <button class="btn btn-xs btn-danger" type="button" title="删除" @click="remove(item.name)">
+                            <i class="ace-icon fa fa-trash-o bigger-120"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            <tr class="detail-row">
+                <td colspan="7">
+                    <div class="table-detail" style="max-height:213px;overflow-x:hidden;overflow-y:auto;">
+                        <div class="row">
+                            <div class="profile-user-info profile-user-info-striped">
+                                <div class="profile-info-row">
+                                    <div class="profile-info-name" style="text-align:left;">
+                                        <span v-for="h in item.hosts" v-bind="{class:h.current?'label label-xlg label-info label-white':'label label-xlg label-danger label-white'}" style="margin:3px;">
+                                            <label>
+                                                <span class="lbl" style="width:163px;"> {{h.hostPort}}</span>
+                                            </label>
+                                            <span class="hidden-sm hidden-xs action-buttons">
+                                                <a href="javascript:void(0);" title="删除" @click="remove(item.name,h.hostPort)">
+                                                    <i class="ace-icon fa fa-trash-o bigger-130 red"></i>
+                                                </a>
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </template>
+        </tbody>
+    </table>
+</script>
 <script src="modules/task/main.js"/>

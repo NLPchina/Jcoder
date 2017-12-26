@@ -236,6 +236,10 @@ public class ProxyService {
 	 */
 	public Map<String, String> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
+		if(hostPorts.size()==0){
+			return new HashMap<>() ;
+		}
+
 		String token = getOrCreateToken();
 
 		final String fToken = token;
