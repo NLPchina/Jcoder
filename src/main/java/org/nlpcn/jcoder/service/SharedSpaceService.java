@@ -295,10 +295,19 @@ public class SharedSpaceService {
 	 * 增加一个mapping到
 	 */
 	public void addMapping(String groupName, String className, String methodName) {
-		String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + StaticValue.getHostPort();
+
+		StringBuilder sb = new StringBuilder(MAPPING_PATH);
+		sb.append("/").append(groupName).append("/").append(className).append("/");
+
+		if (StringUtil.isNotBlank(methodName)) {
+			sb.append(methodName).append("/");
+		}
+		sb.append(StaticValue.getHostPort());
+
+		String path = sb.toString();
 
 		try {
-			setData2ZKByEphemeral(path, new byte[0]);
+			setData2ZK(path,new byte[0]);//TODO: 这个不是临时节点。所以需要定时清理
 			LOG.info("add mapping: {} ok", path);
 		} catch (Exception e) {
 			LOG.error("Add mapping " + path + " err", e);
