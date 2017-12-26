@@ -30,7 +30,7 @@ vmApp.module = new Vue({
                 matchBrackets: true,
                 theme: "monokai",
                 showCursorWhenSelecting: true
-            })).setSize($(me.$el).find('form:first').width() - 23);
+            })).setSize($(me.$el).find('form:first').width() - 37);
         });
     },
 
