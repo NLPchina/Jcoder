@@ -22,6 +22,7 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Lang;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
@@ -64,22 +67,58 @@ public class TaskAction {
      */
     @At
     public Restful list(String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
-        List<HostGroup> hosts = new ArrayList<>(groupService.getGroupHostList(groupName));
         Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
                 .stream()
                 .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
-                .map(t -> {
-                    Map<String, Object> m = new HashMap<>(6);
-                    m.put("name", t.getName());
-                    m.put("description", t.getDescription());
-                    m.put("status", t.getStatus());
-                    m.put("hosts", hosts);
-                    m.put("createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null));
-                    m.put("updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null));
-                    return m;
-                })
+                .map(t -> ImmutableMap.of("name", t.getName(),
+                        "description", t.getDescription(),
+                        "status", t.getStatus(),
+                        "createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
+                        "updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null)))
                 .toArray();
         return Restful.instance(tasks);
+    }
+
+    /**
+     * 获得每个任务对应的主机列表
+     *
+     * @param groupName 组名
+     * @param names     任务名数组
+     * @param taskType
+     * @return
+     * @throws Exception
+     */
+    @At("/host/list")
+    public Restful hostList(String groupName, @Param("names[]") String[] names, int taskType) throws Exception {
+        if (StringUtil.isBlank(groupName)) {
+            throw new IllegalArgumentException("empty groupName");
+        }
+
+        if (names == null || names.length < 1) {
+            throw new IllegalArgumentException("empty names");
+        }
+
+        // 获取有这个组的所有主机
+        Map<String, HostGroup> m = groupService.getGroupHostList(groupName).stream().collect(Collectors.toMap(HostGroup::getHostPort, Function.identity()));
+
+        // 询问主机是否有这个任务
+        Set<String> hosts = m.keySet();
+        Map<String, Object[]> results = new HashMap<>(names.length);
+        for (String name : names) {
+            results.put(name, hosts.parallelStream().filter(h -> {
+                String content;
+                try {
+                    content = proxyService.post(h, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT).getContent();
+                } catch (Exception e) {
+                    throw Lang.wrapThrow(e);
+                }
+
+                JSONObject t = JSON.parseObject(content).getJSONObject("obj");
+                return t != null && Objects.equals(t.getInteger("type"), taskType);
+            }).map(m::get).toArray());
+        }
+
+        return Restful.instance(results);
     }
 
     /**
@@ -135,7 +174,7 @@ public class TaskAction {
         // 如果更新主版本
         if (containsMaster) {
             // 给任务设置ID值, 方便后续做编辑
-            task.setId(0L);
+            task.setId(Constants.MASTER_TASK_ID);
 
             // ZK保存
             StaticValue.space().addTask(task);
@@ -157,7 +196,19 @@ public class TaskAction {
         // 如果是编辑, 得替换成本地任务ID
         if (task.getId() != null) {
             Task t = taskService.findTask(task.getGroupName(), task.getName());
-            task.setId(t.getId());
+            if (t != null) {
+                task.setId(t.getId());
+            } else {
+                if (task.getId() == Constants.MASTER_TASK_ID) {
+                    // 如果将主版本的任务保存到本地
+                    task.setId(null);
+                    task.setCreateUser(task.getUpdateUser());
+                    task.setCreateTime(task.getUpdateTime());
+                } else {
+                    // 如果本地没有该任务, 则无法执行更新操作
+                    throw new IllegalStateException("can't update null task[" + task.getGroupName() + "-" + task.getName() + "]");
+                }
+            }
         }
         LOG.info("to save task[{}-{}]: {}", task.getGroupName(), task.getName(), taskService.saveOrUpdate(task));
         return Restful.ok();

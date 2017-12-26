@@ -12,7 +12,7 @@ vmApp.module = new Vue({
             template: '#task-template',
 
             mounted: function () {
-                $('#task-table').on('click', '.show-details-btn', function (e) {
+                $('.task-table').on('click', '.show-details-btn', function (e) {
                     e.preventDefault();
                     $(this).closest('tr').next().toggleClass('open');
                     $(this).find(ace.vars['.icon']).toggleClass('fa-angle-double-down').toggleClass('fa-angle-double-up');
@@ -28,7 +28,29 @@ vmApp.module = new Vue({
                         groupName: me.$parent.groupName,
                         taskType: me.type
                     }).then(function (data) {
-                        me.tasks = data.obj;
+                        me.tasks = _.each(data.obj, function (ele) {
+                            ele.hosts = [];
+                        });
+
+                        // 更新主机列
+                        me.loadHostList();
+                    }).catch(function (req) {
+                        JqdeBox.message(false, req.responseText);
+                    });
+                },
+
+                loadHostList: function () {
+                    var me = this, tasks = me.tasks;
+                    if (!tasks || tasks.length < 1) return;
+                    Jcoder.ajax('/admin/task/host/list', 'POST', {
+                        groupName: me.$parent.groupName,
+                        names: _.pluck(tasks, 'name'),
+                        taskType: me.type
+                    }).then(function (data) {
+                        data = data.obj || {};
+                        _.each(tasks, function (ele) {
+                            ele.hosts = data[ele.name];
+                        });
                     }).catch(function (req) {
                         JqdeBox.message(false, req.responseText);
                     });

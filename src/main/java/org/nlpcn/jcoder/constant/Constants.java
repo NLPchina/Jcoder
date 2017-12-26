@@ -17,4 +17,8 @@ public interface Constants {
      */
     String HOST_MASTER = "master";
 
+    /**
+     * master主机任务ID
+     */
+    long MASTER_TASK_ID = 0L;
 }
