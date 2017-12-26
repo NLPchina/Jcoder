@@ -120,6 +120,7 @@
 						<th class="center">路径</th>
 						<th class="center">类型</th>
 						<th class="center">信息</th>
+						<th class="center">详细</th>
 						<th class="center">操作</th>
 					</tr>
 					</thead>
@@ -139,8 +140,13 @@
 						<td  class="center">
 							{{item.type==1?"文件":"Task"}}
 						</td>
-						<td  class="center">
+						<td class="center">
 							{{item.message}}
+						</td>
+						<td class="center">
+							<button class="btn btn-xs btn-warning" @click="showDiff(item)">
+									<i class="ace-icon fa fa-flag bigger-120"></i>
+							</button>
 						</td>
 						<td  class="center">
 							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, item.path ,false)">
@@ -150,7 +156,6 @@
 							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, item.path ,false)">
 								<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 							</button>
-
 						</td>
 					</tr>
 					</tbody>
@@ -350,11 +355,19 @@ var groupHostList = new Vue({
 			}
 			JqdeBox.unloading();
 		});
-	}
+	},
+
+	showDiff: function(){
+		JqdeBox.dialog({
+		  title: "对比",
+		  url: 'modules/group/diff.html',
+		  confirm: function () {
+
+		  }
+		});
+  	},
 
   }
-
-
 
 });
 </script>
