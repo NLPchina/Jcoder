@@ -968,7 +968,6 @@ public class SharedSpaceService {
 			groupCache = new GroupCache();
 			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
 			groupCache.setTimeMD5(nowTimeMd5);
-			System.out.println(JarService.getOrCreate(groupName));
 			groupCache.setPomMD5(JarService.getOrCreate(groupName).getPomMd5());
 			root.setMd5(groupCache.getGroupMD5());
 
