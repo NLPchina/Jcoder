@@ -104,9 +104,13 @@ public class TaskAction {
             throw new IllegalArgumentException("task name or code is empty");
         }
 
+        // 是否更新主版本
+        Set<String> hostPorts = new HashSet<>(Arrays.asList(hosts));
+        boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
+
         // 如果激活任务, 需要检查代码
         if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
-            String errorMessage = proxyService.post(hosts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            String errorMessage = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
             if (StringUtil.isNotBlank(errorMessage)) {
                 return Restful.ERR.code(ServerException).msg(errorMessage);
             }
@@ -123,14 +127,19 @@ public class TaskAction {
         task.setUpdateTime(now);
 
         // 集群的每台机器保存
-        String errorMessage = proxyService.post(hosts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+        String errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
         if (StringUtil.isNotBlank(errorMessage)) {
             return Restful.ERR.code(ServerException).msg(errorMessage);
         }
 
-        // ZK保存, 给任务设置ID值, 方便后续做编辑
-        task.setId(0L);
-        StaticValue.space().addTask(task);
+        // 如果更新主版本
+        if (containsMaster) {
+            // 给任务设置ID值, 方便后续做编辑
+            task.setId(0L);
+
+            // ZK保存
+            StaticValue.space().addTask(task);
+        }
 
         return Restful.OK;
     }
