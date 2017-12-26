@@ -112,7 +112,7 @@ public class TaskAction {
         if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
             String errorMessage = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
             if (StringUtil.isNotBlank(errorMessage)) {
-                return Restful.ERR.code(ServerException).msg(errorMessage);
+                return Restful.fail().code(ServerException).msg(errorMessage);
             }
         }
 
@@ -129,7 +129,7 @@ public class TaskAction {
         // 集群的每台机器保存
         String errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
         if (StringUtil.isNotBlank(errorMessage)) {
-            return Restful.ERR.code(ServerException).msg(errorMessage);
+            return Restful.fail().code(ServerException).msg(errorMessage);
         }
 
         // 如果更新主版本
@@ -141,7 +141,7 @@ public class TaskAction {
             StaticValue.space().addTask(task);
         }
 
-        return Restful.OK;
+        return Restful.ok();
     }
 
     @At
@@ -149,7 +149,7 @@ public class TaskAction {
         if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
             new JavaRunner(task).check();
         }
-        return Restful.OK;
+        return Restful.ok();
     }
 
     @At
@@ -160,7 +160,7 @@ public class TaskAction {
             task.setId(t.getId());
         }
         LOG.info("to save task[{}-{}]: {}", task.getGroupName(), task.getName(), taskService.saveOrUpdate(task));
-        return Restful.OK;
+        return Restful.ok();
     }
 
     /**
@@ -187,16 +187,16 @@ public class TaskAction {
             Optional<Task> opt = taskService.getTasksByGroupNameFromCluster(groupName).stream().filter(t -> Objects.equals(t.getName(), name)).findAny();
             if (!opt.isPresent()) {
                 LOG.warn("task[{}-{}] not found in zookeeper", groupName, name);
-                return Restful.OK;
+                return Restful.ok();
             }
 
-            return Restful.OK.obj(opt.get());
+            return Restful.ok().obj(opt.get());
         }
 
         // 如果取其他机器版本
         String content = proxyService.post(sourceHost, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT).getContent();
         JSONObject res = JSONObject.parseObject(content);
-        return res.getBooleanValue("ok") ? Restful.OK.obj(res.get("obj")) : Restful.ERR.code(ServerException).msg(res.getString("message"));
+        return res.getBooleanValue("ok") ? Restful.ok().obj(res.get("obj")) : Restful.fail().code(ServerException).msg(res.getString("message"));
     }
 
     @At
@@ -205,10 +205,10 @@ public class TaskAction {
         Task t = taskService.findTask(groupName, name);
         if (t == null) {
             LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
-            return Restful.OK;
+            return Restful.ok();
         }
 
-        return Restful.OK.obj(t);
+        return Restful.ok().obj(t);
     }
 
     /**
@@ -245,7 +245,7 @@ public class TaskAction {
             // 删除集群的每台机器
             String errorMessage = proxyService.post(hosts, Api.TASK_DELETE.getPath(), ImmutableMap.of("force", true, "groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
             if (StringUtil.isNotBlank(errorMessage)) {
-                return Restful.ERR.code(ServerException).msg(errorMessage);
+                return Restful.fail().code(ServerException).msg(errorMessage);
             }
 
             if (!isSingle) {
@@ -257,7 +257,7 @@ public class TaskAction {
             // 更新集群的每台机器
             String errorMessage = proxyService.post(hosts, Api.TASK_DELETE.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
             if (StringUtil.isNotBlank(errorMessage)) {
-                return Restful.ERR.code(ServerException).msg(errorMessage);
+                return Restful.fail().code(ServerException).msg(errorMessage);
             }
 
             if (!isSingle) {
@@ -271,7 +271,7 @@ public class TaskAction {
             }
         }
 
-        return Restful.OK;
+        return Restful.ok();
     }
 
     /**
@@ -294,7 +294,7 @@ public class TaskAction {
         Task t = taskService.findTask(groupName, name);
         if (t == null) {
             LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
-            return Restful.OK;
+            return Restful.ok();
         }
 
         t.setUpdateUser(user);
@@ -306,7 +306,7 @@ public class TaskAction {
             taskService.delByDB(t);
         }
 
-        return Restful.OK;
+        return Restful.ok();
     }
 
     /**

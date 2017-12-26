@@ -37,7 +37,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 	public void process(ActionContext ac) throws Throwable {
 
 		if (ac.getRequest().getParameter("_clean_cache") != null) {
-			ac.setMethodReturn(Restful.OK);
+			ac.setMethodReturn(Restful.ok());
 			cacheEntry = null;
 			doNext(ac);
 			return;

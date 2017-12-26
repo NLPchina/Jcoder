@@ -74,20 +74,20 @@ public class IocAction {
 	@At
 	public Restful hostList(@Param("groupName") String groupName) {
 		try {
-			return Restful.OK.obj(iocService.getAllHosts(groupName));
+			return Restful.ok().obj(iocService.getAllHosts(groupName));
 		} catch (Exception e) {
 			e.printStackTrace();
-			return Restful.ERR.msg(e.getMessage());
+			return Restful.fail().msg(e.getMessage());
 		}
 	}
 
 	@At
 	public Restful findIocInfoByGroupName(@Param("groupName") String groupName) {
 		try {
-			return Restful.OK.obj(iocService.getIocInfo(groupName));
+			return Restful.ok().obj(iocService.getIocInfo(groupName));
 		} catch (Exception e) {
 			e.printStackTrace();
-			return Restful.ERR.msg(e.getMessage());
+			return Restful.fail().msg(e.getMessage());
 		}
 	}
 }

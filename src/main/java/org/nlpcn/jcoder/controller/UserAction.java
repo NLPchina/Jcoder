@@ -60,9 +60,9 @@ public class UserAction {
 			user.setCreateTime(new Date());
 			basicDao.save(user);
 			LOG.info("add user:" + user.getName());
-			return Restful.OK.msg("添加成功！");
+			return Restful.ok().msg("添加成功！");
 		}else{
-			return Restful.ERR.msg("有相同名字用户！");
+			return Restful.fail().msg("有相同名字用户！");
 		}
 		
 	}
@@ -76,26 +76,26 @@ public class UserAction {
 			int count = basicDao.searchCount(User.class, con);
 			if (count == 1) {
 				LOG.info("fail to del the last super user!");
-				return Restful.ERR.msg("至少保证有一个超级管理员！");
+				return Restful.fail().msg("至少保证有一个超级管理员！");
 			}
 		}
 		boolean flag = basicDao.delById(user.getId(), User.class);
 		if (flag) {
 			LOG.info("del user:" + user.getName());
-			return Restful.OK.msg("删除用户："+ user.getName()+"成功！");
+			return Restful.ok().msg("删除用户："+ user.getName()+"成功！");
 		}
 		Condition co = Cnd.where("userId", "=", user.getId());
 		/*int num = basicDao.delByCondition(UserGroup.class, co);
 		if (num > 0) {
 			LOG.info("del userGroup's num:" + num);
 		}*/
-		return Restful.OK;
+		return Restful.ok();
 	}
 
 	@At("/admin/user/modify")
 	public Restful modify(@Param("..") User user) throws Exception {
 		if (user == null) {
-			return Restful.ERR.msg("修改失败！");
+			return Restful.fail().msg("修改失败！");
 		}
 		
 		User dbUser = basicDao.find(user.getId(), User.class);
@@ -107,9 +107,9 @@ public class UserAction {
 		boolean flag = basicDao.update(user);
 		if (flag) {
 			LOG.info("modify user:" + user);
-			return Restful.OK.msg("修改成功！");
+			return Restful.ok().msg("修改成功！");
 		}
-		return Restful.OK;
+		return Restful.ok();
 	}
 
 

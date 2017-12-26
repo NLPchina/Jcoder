@@ -57,11 +57,11 @@ public class LoginAction {
 				session.setAttribute("userToken", TokenService.regToken(user));
 			}
 
-			return Restful.OK.obj(restful) ;
+			return Restful.ok().obj(restful) ;
 		} else {
 			int err = IpErrorCountFilter.err();
 			LOG.info("user " + name + "login err ,times : " + err);
-			return Restful.ERR ;
+			return Restful.fail() ;
 		}
 	}
 	

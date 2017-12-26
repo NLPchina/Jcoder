@@ -44,7 +44,7 @@ public class ResourceAction {
 				jsonArray.add(s);
 			}
 		}
-		return Restful.OK.obj(jsonArray);
+		return Restful.ok().obj(jsonArray);
 		/*try {
 			JSONArray jsonArray = new JSONArray();
 

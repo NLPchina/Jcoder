@@ -151,10 +151,10 @@ public class JarAction {
 	public Restful findMavenInfoByGroupName(@Param("group_name") String groupName) {
 		try {
 			JarService jarService = JarService.getOrCreate(groupName) ;
-			return Restful.OK.obj(jarService.getPomInfo(groupName));
+			return Restful.ok().obj(jarService.getPomInfo(groupName));
 		} catch (Exception e) {
 			e.printStackTrace();
-			return Restful.ERR.msg(e.getMessage());
+			return Restful.fail().msg(e.getMessage());
 		}
 	}
 

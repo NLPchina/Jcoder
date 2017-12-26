@@ -310,7 +310,7 @@ public class GroupAction {
 	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, String relativePath) throws Exception {
 
 		if (StringUtil.isBlank(fromHostPort) && StringUtil.isBlank(toHostPort)) {
-			return Restful.instance(false, "你疯了？");
+			return Restful.instance(false, "主版本中不存在任何实例，所以无法同步");
 		}
 
 		if (StringUtil.isBlank(fromHostPort)) {

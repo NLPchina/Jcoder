@@ -143,11 +143,11 @@
 							{{item.message}}
 						</td>
 						<td  class="center">
-							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, item.path)">
+							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, item.path ,false)">
 								<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
 							</button>
 
-							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, item.path)">
+							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, item.path ,false)">
 								<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 							</button>
 
@@ -157,11 +157,11 @@
 				</table>
 
 				<div  class="row center">
-					<button type="button" class="btn btn-info btn-sm">
+					<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, null,true)">
 						<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
 					</button>
 
-					<button type="button" class="btn btn-info btn-sm">
+					<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, null,true)">
 						<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 					</button>
 				</div>
@@ -303,7 +303,6 @@ var groupHostList = new Vue({
 		Jcoder.ajax("/admin/group/flush", 'post',{"hostPort":hostPort,"groupName":$this.groupName},null).then(function (data) {
 			JqdeBox.unloading();
 			if(data.ok){
-				console.log(data.obj)
 				$this.diffs = data.obj ;
 				$this.hostList();
 				if($this.diffs.length==0){
@@ -322,8 +321,25 @@ var groupHostList = new Vue({
 	},
 
 
-	fixDiff: function(fromHostPort ,toHostPort, relativePath){
+	fixDiff: function(fromHostPort ,toHostPort, relativePath, isCheckout){
 		var $this = this;
+
+		if(isCheckout){ //如果是checkout ，则从checkbox中取得
+			var list = [] ;
+			$('#diff-table').find('td input[type=checkbox]').each(function(i,v) {
+				if(v.checked){
+					list.push($this.diffs[i].path)
+				}
+			});
+
+			if(list.length==0){
+				JqdeBox.message(false, "至少选择一项");
+				return ;
+			}
+
+			relativePath = list.toString() ;
+		}
+
 		Jcoder.ajax("/admin/group/fixDiff", 'post',{"fromHostPort":fromHostPort,"groupName":$this.groupName,"relativePath":relativePath},null).then(function (data) {
 			JqdeBox.message(data.ok, data.message);
 			if(fromHostPort){

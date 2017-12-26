@@ -172,7 +172,7 @@ public class FileInfoAction {
 		} else {
 			org.nutz.lang.Files.deleteFile(file);
 		}
-		return Restful.OK;
+		return Restful.ok();
 	}
 
 
@@ -244,7 +244,7 @@ public class FileInfoAction {
 		for (String relativePath : relativePaths) {
 			StaticValue.space().upCluster(groupName, relativePath);
 		}
-		return Restful.OK;
+		return Restful.ok();
 	}
 
 
