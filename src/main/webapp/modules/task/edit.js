@@ -51,8 +51,9 @@ vmApp.module = new Vue({
                 if (_.isNumber(task.id)) {
                     me.editor.setValue((me.task = task).code);
                 } else {
-                    me.editor.setValue((me.task = {type: 1, status: 0, groupName: me.task.group}).code);
-                    JqdeBox.message("warning", "主机 " + me.sourceHost + " 不存在任务 " + t.name + " ，请选择其他版本！");
+                    me.task = {type: 1, status: 0, groupName: me.task.group};
+                    me.editor.setValue("");
+                    JqdeBox.message("warning", me.sourceHost + " 不存在任务 " + t.name + " ，请选择其他版本！");
                 }
             }).catch(function (req) {
                 JqdeBox.unloading();

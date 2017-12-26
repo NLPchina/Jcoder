@@ -41,7 +41,8 @@ Vue.component('host-component', {
     '<span v-for="item in hosts" v-bind="{class:item.isCurrent?\'label label-xlg label-info label-white\':\'label label-xlg label-danger label-white\'}" style="margin:2px;text-align:left;">' +
     '<label>' +
     '    <input name="form-field-checkbox" class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
-    '    <span class="lbl" style="width:163px;"> {{item.host}}</span>' +
+    '    <span v-if="item.host==\'master\'" class="lbl" style="width:163px;" :title="item.host"> <i v-for="n in 5" style="margin-left:8px;font-size:18px;" class="star-on-png"></i></span>' +
+    '    <span v-else class="lbl" style="width:163px;"> {{item.host}}</span>' +
     '</label>' +
     '</span></div>',
     mounted: function () {
