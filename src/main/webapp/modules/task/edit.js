@@ -49,6 +49,7 @@ vmApp.module = new Vue({
                 //
                 var task = data.obj || {};
                 if (_.isNumber(task.id)) {
+                    task.type = $.trim(task.scheduleStr) ? 2 : 1;
                     me.editor.setValue((me.task = task).code);
                 } else {
                     me.task = {type: 1, status: 0, groupName: t.groupName, name: t.name};
