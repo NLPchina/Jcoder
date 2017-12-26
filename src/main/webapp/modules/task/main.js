@@ -74,7 +74,6 @@ vmApp.module = new Vue({
     },
 
     mounted: function () {
-        $("#tabs").tabs();
     },
 
     methods: {

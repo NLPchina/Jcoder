@@ -1,20 +1,20 @@
 <div class="row" id="vmTaskModule">
-    <div id="tabs">
-        <ul>
-            <li>
-                <a href="#tabs-api">
+    <div class="tabbable">
+        <ul class="nav nav-tabs">
+            <li class="active">
+                <a data-toggle="tab" href="#tabs-api">
                     <i class="green ace-icon fa fa-info-circle bigger-100"></i>
                     接口
                 </a>
             </li>
             <li>
-                <a href="#tabs-cron">
+                <a data-toggle="tab" href="#tabs-cron">
                     <i class="orange2 ace-icon glyphicon glyphicon-time bigger-100"></i>
                     定时任务
                 </a>
             </li>
             <li>
-                <a href="#tabs-recycle">
+                <a data-toggle="tab" href="#tabs-recycle">
                     <i class="red ace-icon glyphicon glyphicon-trash bigger-100"></i>
                     回收站
                 </a>
@@ -31,14 +31,16 @@
             </div>
         </ul>
 
-        <div id="tabs-api" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :type="apiType"></task-component>
-        </div>
-        <div id="tabs-cron" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :type="cronType"></task-component>
-        </div>
-        <div id="tabs-recycle" style="border:none; padding-left: 0; padding-right: 0;">
-            <task-component :type="recycleType"></task-component>
+        <div class="tab-content" style="border:none;padding-left:0;padding-right:0;">
+            <div id="tabs-api" class="tab-pane fade in active">
+                <task-component :type="apiType"></task-component>
+            </div>
+            <div id="tabs-cron" class="tab-pane fade">
+                <task-component :type="cronType"></task-component>
+            </div>
+            <div id="tabs-recycle" class="tab-pane fade">
+                <task-component :type="recycleType"></task-component>
+            </div>
         </div>
     </div>
 </div>
