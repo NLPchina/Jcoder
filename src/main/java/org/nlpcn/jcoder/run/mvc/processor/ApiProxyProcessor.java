@@ -33,13 +33,10 @@ public class ApiProxyProcessor extends ViewProcessor {
 
 		HttpServletRequest request = ac.getRequest();
 		HttpServletResponse response = ac.getResponse() ;
-		String path = request.getPathInfo() ;
-
 		if(StaticValue.IS_LOCAL || request.getHeader(ProxyService.PROXY_HEADER)!=null){ //head中包含则条过
 			doNext(ac);
 			return ;
 		}
-
 		String proxyUrl = StaticValue.space().host(ac.getRequest().getHeader("jcoder_group"), request.getHeader("jcoder_group"));
 		proxyService.service(request,response,proxyUrl) ;
 		response.getOutputStream().flush();

@@ -138,7 +138,7 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param("maxSize") int maxSize) throws Exception {
+	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "maxSize",df = "20480") int maxSize) throws Exception {
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
 			if(hostPort==null){
@@ -148,7 +148,7 @@ public class FileInfoAction {
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
 			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 			if (!file.exists()) {
-				return Restful.fail().msg("内容为空");//obj是空
+				return Restful.fail().msg("文件不存在");//obj是空
 			}
 
 			if (file.isDirectory()) {
@@ -159,8 +159,10 @@ public class FileInfoAction {
 
 			try (FileInputStream fis = new FileInputStream(file)) {
 				int len = fis.read(bytes);
-				String content = new String(bytes, 0, len);
-				;
+				String content = "" ;
+				if(len>0){
+					content = new String(bytes, 0, len);
+				}
 				return Restful.ok().msg(content);
 			}
 		} else {

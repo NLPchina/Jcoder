@@ -3,10 +3,12 @@ var diffMergely = new Vue({
     data: {
         groupName: param.groupName,
         hosts:[],
+        lHost:param.leftHostPort,
+        rHost:param.rightHostPort,
         lFiles:[],
         rFiles:[],
-        lFilePath:"",
-        rFilePath:"" ,
+        lFilePath:param.relativePath,
+        rFilePath:param.relativePath ,
         //hostPort 如果为master则从一台同步主机中获取。
 
 
@@ -17,13 +19,11 @@ var diffMergely = new Vue({
 
     	this.hostList() ;
 
-		this.listFiles('127.0.0.1:9095',this.groupName,this.lFiles) ;
+		this.listFiles(true) ;
+		this.listFiles(false) ;
 
-		this.listFiles('127.0.0.1:9095',this.groupName,this.rFiles) ;
-
-		this.lFilePath = _.chain(this.lFiles).where({relativePath: this.relativePath}).value()[0].relativePath ;
-		this.rFilePath = _.chain(this.rFiles).where({relativePath: this.relativePath}).value()[0].relativePath ;
-
+		this.setContent(true) ;
+		this.setContent(false) ;
 
         $('#compare').mergely({
             cmsettings: {
@@ -54,18 +54,35 @@ var diffMergely = new Vue({
 			});
 		},
 
-		listFiles:function(hostPort,groupName,files){
+		listFiles:function(flag){
 			var $this = this ;
-			Jcoder.ajax('/admin/fileInfo/listFiles', 'post',{"hostPort":hostPort,"groupName":groupName},null).then(function (data) {
+			var hostPort = flag?$this.lHost:$this.rHost ;
+			Jcoder.ajax('/admin/fileInfo/listFiles', 'post',{"hostPort":hostPort,"groupName":$this.groupName},null).then(function (data) {
 				if(data.ok){
-					files.splice(0,files.length);
-					data.obj.forEach(function(v){
-						files.push(v) ;
-					}) ;
+					if(flag){
+						$this.lFiles = data.obj ;
+					}else{
+						$this.rFiles = data.obj ;
+					}
 				}else{
 					JqdeBox.message(false, data.message);
 				}
 			});
+		},
+
+		setContent:function(flag){
+			var $this = this ;
+			var hostPort = flag?$this.lHost:$this.rHost ;
+			Jcoder.ajax('/admin/fileInfo/fileContent', 'post',{"hostPort":hostPort,"groupName":$this.groupName,"relativePath":$this.lFilePath},null).then(function (data) {
+                if(!data.ok){
+                    JqdeBox.message(false, data.message);
+                }
+                if(flag){
+                    $('#compare').mergely('lhs', data.message);
+                }else{
+					$('#compare').mergely('rhs', data.message);
+                }
+            });
 		}
 
 	}

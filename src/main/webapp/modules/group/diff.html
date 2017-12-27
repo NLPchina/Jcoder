@@ -23,27 +23,28 @@
 					<tbody>
 					<tr>
 						<td>
-							<select class="chosen-select form-control">
+							<select class="chosen-select form-control" v-model="lHost" :onchange="listFiles(true)">
+								<option value="master">主版本</option>
 								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
 						</td>
 						<td class="center">对比主机</td>
 						<td>
-							<select class="chosen-select form-control">
+							<select class="chosen-select form-control" v-model="rHost" :onchange="listFiles(false)">
+								<option value="master">主版本</option>
 								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<select class="chosen-select form-control">
-								<option :value="lFilePath" >{{lFilePath}}</option>
+							<select class="chosen-select form-control" v-model="lFilePath" :onchange="setContent(true)">
 								<option v-for="(item,index) in lFiles" :value="item.relativePath" >{{item.relativePath}}</option>
 							</select>
 						</td>
 						<td class="center">对比文件</td>
 						<td>
-							<select class="chosen-select form-control">
+							<select class="chosen-select form-control" v-model="lFilePath" :onchange="setContent(false)">
 								<option v-for="(item,index) in rFiles">{{item.relativePath}}</option>
 							</select>
 						</td>
