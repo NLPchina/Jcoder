@@ -1027,6 +1027,11 @@ public class SharedSpaceService {
 		return collect;
 	}
 
+	/**
+	 * 从主机集群中获取随机一个同步版本的机器，如果机器不存在则返回null
+	 * @param groupName 组名称
+	 * @return
+	 */
 	public String getRandomCurrentHostPort(String groupName) {
 		List<String> collect = getCurrentHostPort(groupName);
 		if (collect.size() == 0) {
