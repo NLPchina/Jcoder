@@ -110,6 +110,7 @@ var diffMergely = new Vue({
   el: '#diffMergely',
   data: {
 
+		groupName:param.groupName
 		//hostPort 如果为master则从一台同步主机中获取。
   		//获取文件列表 /admin/fileInfo/listFiles {hostPort,groupName}
   		//获取文件内容 /admin/fileInfo/fileContent {hostPort, groupName, relativePath, maxSize}

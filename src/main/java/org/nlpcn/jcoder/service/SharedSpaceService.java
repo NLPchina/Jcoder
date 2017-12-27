@@ -11,6 +11,8 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -307,7 +309,7 @@ public class SharedSpaceService {
 		String path = sb.toString();
 
 		try {
-			setData2ZK(path,new byte[0]);//TODO: 这个不是临时节点。所以需要定时清理
+			setData2ZK(path, new byte[0]);//TODO: 这个不是临时节点。所以需要定时清理
 			LOG.info("add mapping: {} ok", path);
 		} catch (Exception e) {
 			LOG.error("Add mapping " + path + " err", e);
@@ -485,7 +487,7 @@ public class SharedSpaceService {
 	 * @param data
 	 * @throws Exception
 	 */
-	private void setData2ZKByEphemeral(String path, byte[] data) throws Exception {
+	private void setData2ZKByEphemeral(String path, byte[] data, Watcher watcher) throws Exception {
 
 		boolean flag = true;
 
@@ -500,6 +502,10 @@ public class SharedSpaceService {
 
 		if (flag) {
 			zkDao.getZk().setData().forPath(path, data);
+		}
+
+		if (watcher != null) {
+			zkDao.getZk().getData().usingWatcher(watcher).forPath(path); //注册监听
 		}
 	}
 
@@ -577,7 +583,18 @@ public class SharedSpaceService {
 
 		Map<String, List<Different>> diffMaps = joinCluster();
 
-		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0]);
+		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
+			@Override
+			public void process(WatchedEvent event) {
+				if (event.getType() == Watcher.Event.EventType.NodeDeleted) { //节点删除了
+					try {
+						setData2ZKByEphemeral(event.getPath(), new byte[0], this);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		});
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -728,7 +745,7 @@ public class SharedSpaceService {
 		hostGroup.setCurrent(diffs.size() == 0);
 		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
 		try {
-			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
+			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup),null);
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			LOG.error("add host group info err !!!!!", e1);
@@ -1029,6 +1046,7 @@ public class SharedSpaceService {
 
 	/**
 	 * 从主机集群中获取随机一个同步版本的机器，如果机器不存在则返回null
+	 *
 	 * @param groupName 组名称
 	 * @return
 	 */
