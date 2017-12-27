@@ -15,6 +15,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.job.CheckClusterJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
@@ -69,7 +70,7 @@ public class SharedSpaceService {
 	 * /jcoder/host_group/[ipPort_groupName],[hostGroupInfo]
 	 * /jcoder/host_group/[ipPort]
 	 */
-	private static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
+	public static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
 
 
 	/**
@@ -481,13 +482,13 @@ public class SharedSpaceService {
 
 
 	/**
-	 * 将数据写入到zk中
+	 * 将临时数据写入到zk中
 	 *
 	 * @param path
 	 * @param data
 	 * @throws Exception
 	 */
-	private void setData2ZKByEphemeral(String path, byte[] data, Watcher watcher) throws Exception {
+	public void setData2ZKByEphemeral(String path, byte[] data, Watcher watcher) throws Exception {
 
 		boolean flag = true;
 
@@ -532,13 +533,6 @@ public class SharedSpaceService {
 						LOG.error("reconn zk server ", e);
 					}
 				}
-			}
-		});
-
-		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener() {
-			@Override
-			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
-				LOG.info("+++++++++++++++++++++++++++++++++" + event);
 			}
 		});
 
@@ -588,6 +582,7 @@ public class SharedSpaceService {
 			public void process(WatchedEvent event) {
 				if (event.getType() == Watcher.Event.EventType.NodeDeleted) { //节点删除了
 					try {
+						LOG.info("I lost node so add it again " + event.getPath());
 						setData2ZKByEphemeral(event.getPath(), new byte[0], this);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -616,18 +611,13 @@ public class SharedSpaceService {
 
 		groupCache.getListenable().addListener((client, event) -> {
 			String path = event.getData().getPath();
-			try {
-				byte[] data = event.getData().getData();
-				System.out.println(new String(data));
-			} catch (Exception e) {
-
-			}
+			String groupName = path.substring(GROUP_PATH.length()+1).split("/")[0] ;
 			switch (event.getType()) {
 				case CHILD_ADDED:
 				case CHILD_UPDATED:
 				case CHILD_REMOVED:
 				default:
-					LOG.info("---------------------- groupCache other info {} " + event.getType(), path);
+					CheckClusterJob.changeGroup(groupName);
 					break;
 			}
 		});
@@ -745,7 +735,7 @@ public class SharedSpaceService {
 		hostGroup.setCurrent(diffs.size() == 0);
 		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
 		try {
-			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup),null);
+			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			LOG.error("add host group info err !!!!!", e1);
