@@ -1,14 +1,22 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.apache.zookeeper.data.Stat;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.dao.Cnd;
+import org.nutz.http.Header;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -54,6 +62,9 @@ public class FileInfoAction {
 	@Inject
 	private ProxyService proxyService;
 
+	@Inject
+	private GroupService groupService;
+
 	/**
 	 * 获取文件列表
 	 *
@@ -62,41 +73,102 @@ public class FileInfoAction {
 	 * @throws IOException
 	 */
 	@At
-	public Restful listFiles(@Param("groupName") String groupName) throws IOException {
+	public Restful listFiles(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
 
-		List<FileInfo> result = new ArrayList<>();
-
-		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
-
-		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-			// 在访问子目录前触发该方法
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				File file = dir.toFile();
-				if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-					LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-					return FileVisitResult.SKIP_SUBTREE;
-				}
-				return FileVisitResult.CONTINUE;
+		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
+			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			if(hostPort==null){
+				return Restful.fail().msg("无同步主机") ;
 			}
+		}
 
-			@Override
-			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-				File file = path.toFile();
-				if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-					LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+			List<FileInfo> result = new ArrayList<>();
+
+			Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
+
+			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+				// 在访问子目录前触发该方法
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					File file = dir.toFile();
+					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+						return FileVisitResult.SKIP_SUBTREE;
+					}
 					return FileVisitResult.CONTINUE;
 				}
-				try {
-					result.add(new FileInfo(file));
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				return FileVisitResult.CONTINUE;
-			}
-		});
 
-		return Restful.instance().obj(result);
+				@Override
+				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+					File file = path.toFile();
+					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+						return FileVisitResult.CONTINUE;
+					}
+					try {
+						result.add(new FileInfo(file));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					return FileVisitResult.CONTINUE;
+				}
+			});
+
+			return Restful.instance().obj(result);
+		} else {
+			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 10000);
+
+			if (response.isOK()) {
+				return JSONObject.parseObject(response.getContent(), Restful.class);
+			} else {
+				return Restful.fail().msg(response.getContent());
+			}
+		}
+
+
+	}
+
+
+	/**
+	 * 获得文件的正文
+	 *
+	 * @param hostPort
+	 * @param relativePath
+	 */
+	@At
+	@Ok("void")
+	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param("maxSize") int maxSize) throws Exception {
+		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
+			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			if(hostPort==null){
+				return Restful.fail().msg("无同步主机") ;
+			}
+		}
+		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+			if (!file.exists()) {
+				return Restful.fail().msg("内容为空");//obj是空
+			}
+
+			if (file.isDirectory()) {
+				return Restful.fail().msg(relativePath + " 是目录");
+			}
+
+			byte[] bytes = new byte[maxSize];
+
+			try (FileInputStream fis = new FileInputStream(file)) {
+				int len = fis.read(bytes);
+				String content = new String(bytes, 0, len);
+				;
+				return Restful.ok().msg(content);
+			}
+		} else {
+			Response post = proxyService.post(hostPort, "/admin/fileInfo/fileContent", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "maxSize", maxSize), 10000);
+
+			return JSONObject.parseObject(post.getContent(), Restful.class);
+		}
+
 	}
 
 	/**
@@ -106,52 +178,67 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public void downFile(@Param("groupName") String groupName, @Param("relativePath") String relativePath, HttpServletResponse response) throws IOException {
+	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, HttpServletResponse response) throws Exception {
 
-		if (relativePath.contains("..")) {
-			throw new FileNotFoundException("下载路径不能包含`..`字符");
+		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
+			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			if(hostPort==null){
+				throw new RuntimeException("无同步主机") ;
+			}
 		}
 
-		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
-		if (!file.exists()) {
-			Mvcs.getResp().setStatus(404);//设置错误头
-			throw new FileNotFoundException(file.toURI().getPath() + " not found in " + StaticValue.getHostPort());
-		}
 
-		response.setContentType("application/octet-stream");
+		if(StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)){
+			if (relativePath.contains("..")) {
+				throw new FileNotFoundException("下载路径不能包含`..`字符");
+			}
 
-		if (file.isDirectory()) {
-			response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "utf-8") + ".zip");
-			try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
-				Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
-					@Override
-					public FileVisitResult visitFile(Path tempFile, BasicFileAttributes attrs) throws IOException {
-						File f = tempFile.toFile();
-						out.putNextEntry(new ZipEntry(f.getAbsolutePath().replace(file.getAbsolutePath(), "")));
-						int len = 0;
-						byte[] buffer = new byte[10240];
-						if (!f.isDirectory() && f.canRead()) {
-							try (FileInputStream fis = new FileInputStream(f)) {
-								while ((len = fis.read(buffer)) > 0) {
-									out.write(buffer, 0, len);
+			if (!file.exists()) {
+				Mvcs.getResp().setStatus(404);//设置错误头
+				throw new FileNotFoundException(file.toURI().getPath() + " not found in " + StaticValue.getHostPort());
+			}
+
+			response.setContentType("application/octet-stream");
+			
+			if (file.isDirectory()) {
+				response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "utf-8") + ".zip");
+				try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
+					Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+
+						@Override
+						public FileVisitResult visitFile(Path tempFile, BasicFileAttributes attrs) throws IOException {
+							File f = tempFile.toFile();
+							out.putNextEntry(new ZipEntry(f.getAbsolutePath().replace(file.getAbsolutePath(), "")));
+							int len = 0;
+							byte[] buffer = new byte[10240];
+							if (!f.isDirectory() && f.canRead()) {
+								try (FileInputStream fis = new FileInputStream(f)) {
+									while ((len = fis.read(buffer)) > 0) {
+										out.write(buffer, 0, len);
+									}
 								}
 							}
+							return FileVisitResult.CONTINUE;
 						}
-						return FileVisitResult.CONTINUE;
-					}
-				});
-			}
-		} else {
-			response.setContentLength((int) file.length());
-			response.addHeader("Content-Disposition", "attachment;filename=" + file.getName());
-			ServletOutputStream outputStream = response.getOutputStream();
+					});
+				}
+			} else {
+				response.setContentLength((int) file.length());
+				response.addHeader("Content-Disposition", "attachment;filename=" + file.getName());
+				ServletOutputStream outputStream = response.getOutputStream();
 
-			try (FileInputStream fis = new FileInputStream(file)) {
-				Streams.write(outputStream, fis);
+				try (FileInputStream fis = new FileInputStream(file)) {
+					Streams.write(outputStream, fis);
+				}
 			}
+		}else{
+			Response post = proxyService.post(hostPort, "/admin/fileInfo/downFile", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath), 100000);
+			IOUtil.writeAndClose(post,response);
 		}
+
 	}
 
 	/**
@@ -211,7 +298,6 @@ public class FileInfoAction {
 	 * 文件复制，如果源无文件则删除目标文件,是拉的方式
 	 *
 	 * @param fromHostPort
-	 * @param relativePath
 	 */
 	@At
 	public void copyFile(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
@@ -362,5 +448,6 @@ public class FileInfoAction {
 
 		}
 	}
+
 
 }

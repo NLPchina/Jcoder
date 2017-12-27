@@ -144,9 +144,11 @@
 							{{item.message}}
 						</td>
 						<td class="center">
-							<button class="btn btn-xs btn-warning" @click="showDiff(item)">
-									<i class="ace-icon fa fa-flag bigger-120"></i>
-							</button>
+							<a  :href="'#/group/diff.html?groupName='+groupName+'&leftHostPort='+diffHostPort+'&rightHostPort=master'+'&relativePath='+item.path" target="_blank">
+								<button class="btn btn-xs btn-warning">
+										<i class="ace-icon fa fa-flag bigger-120"></i>
+								</button>
+							</a>
 						</td>
 						<td  class="center">
 							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, item.path ,false)">

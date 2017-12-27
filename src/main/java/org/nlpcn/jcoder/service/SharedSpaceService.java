@@ -11,8 +11,11 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.job.CheckClusterJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
@@ -67,7 +70,7 @@ public class SharedSpaceService {
 	 * /jcoder/host_group/[ipPort_groupName],[hostGroupInfo]
 	 * /jcoder/host_group/[ipPort]
 	 */
-	private static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
+	public static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
 
 
 	/**
@@ -307,7 +310,7 @@ public class SharedSpaceService {
 		String path = sb.toString();
 
 		try {
-			setData2ZK(path,new byte[0]);//TODO: 这个不是临时节点。所以需要定时清理
+			setData2ZK(path, new byte[0]);//TODO: 这个不是临时节点。所以需要定时清理
 			LOG.info("add mapping: {} ok", path);
 		} catch (Exception e) {
 			LOG.error("Add mapping " + path + " err", e);
@@ -479,13 +482,13 @@ public class SharedSpaceService {
 
 
 	/**
-	 * 将数据写入到zk中
+	 * 将临时数据写入到zk中
 	 *
 	 * @param path
 	 * @param data
 	 * @throws Exception
 	 */
-	private void setData2ZKByEphemeral(String path, byte[] data) throws Exception {
+	public void setData2ZKByEphemeral(String path, byte[] data, Watcher watcher) throws Exception {
 
 		boolean flag = true;
 
@@ -500,6 +503,10 @@ public class SharedSpaceService {
 
 		if (flag) {
 			zkDao.getZk().setData().forPath(path, data);
+		}
+
+		if (watcher != null) {
+			zkDao.getZk().getData().usingWatcher(watcher).forPath(path); //注册监听
 		}
 	}
 
@@ -526,13 +533,6 @@ public class SharedSpaceService {
 						LOG.error("reconn zk server ", e);
 					}
 				}
-			}
-		});
-
-		zkDao.getZk().getCuratorListenable().addListener(new CuratorListener() {
-			@Override
-			public void eventReceived(CuratorFramework client, CuratorEvent event) throws Exception {
-				LOG.info("+++++++++++++++++++++++++++++++++" + event);
 			}
 		});
 
@@ -577,7 +577,19 @@ public class SharedSpaceService {
 
 		Map<String, List<Different>> diffMaps = joinCluster();
 
-		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0]);
+		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
+			@Override
+			public void process(WatchedEvent event) {
+				if (event.getType() == Watcher.Event.EventType.NodeDeleted) { //节点删除了
+					try {
+						LOG.info("I lost node so add it again " + event.getPath());
+						setData2ZKByEphemeral(event.getPath(), new byte[0], this);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+		});
 
 		//映射信息
 		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
@@ -599,18 +611,13 @@ public class SharedSpaceService {
 
 		groupCache.getListenable().addListener((client, event) -> {
 			String path = event.getData().getPath();
-			try {
-				byte[] data = event.getData().getData();
-				System.out.println(new String(data));
-			} catch (Exception e) {
-
-			}
+			String groupName = path.substring(GROUP_PATH.length()+1).split("/")[0] ;
 			switch (event.getType()) {
 				case CHILD_ADDED:
 				case CHILD_UPDATED:
 				case CHILD_REMOVED:
 				default:
-					LOG.info("---------------------- groupCache other info {} " + event.getType(), path);
+					CheckClusterJob.changeGroup(groupName);
 					break;
 			}
 		});
@@ -728,7 +735,7 @@ public class SharedSpaceService {
 		hostGroup.setCurrent(diffs.size() == 0);
 		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
 		try {
-			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup));
+			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			LOG.error("add host group info err !!!!!", e1);
@@ -1027,6 +1034,12 @@ public class SharedSpaceService {
 		return collect;
 	}
 
+	/**
+	 * 从主机集群中获取随机一个同步版本的机器，如果机器不存在则返回null
+	 *
+	 * @param groupName 组名称
+	 * @return
+	 */
 	public String getRandomCurrentHostPort(String groupName) {
 		List<String> collect = getCurrentHostPort(groupName);
 		if (collect.size() == 0) {
