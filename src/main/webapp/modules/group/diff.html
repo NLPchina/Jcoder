@@ -24,28 +24,27 @@
 					<tr>
 						<td>
 							<select class="chosen-select form-control">
-								<option value="">主版本</option>
-								<option value="AL">Alabama</option>
+								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
 						</td>
 						<td class="center">对比主机</td>
 						<td>
 							<select class="chosen-select form-control">
-								<option value="">主版本</option>
-								<option value="AL">Alabama</option>
+								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
 						</td>
 					</tr>
 					<tr>
 						<td>
 							<select class="chosen-select form-control">
-								<option value=""">{{host}}</option>
+								<option :value="lFilePath" >{{lFilePath}}</option>
+								<option v-for="(item,index) in lFiles" :value="item.relativePath" >{{item.relativePath}}</option>
 							</select>
 						</td>
 						<td class="center">对比文件</td>
 						<td>
 							<select class="chosen-select form-control">
-								<option value="">{{host}}</option>
+								<option v-for="(item,index) in rFiles">{{item.relativePath}}</option>
 							</select>
 						</td>
 					</tr>
@@ -105,36 +104,4 @@
 <script type="text/javascript" src="/vendors/mergely/lib/mergely.js"></script>
 <link type="text/css" rel="stylesheet" href="/vendors/mergely/lib/mergely.css"/>
 
-<script type="text/javascript">
-var diffMergely = new Vue({
-  el: '#diffMergely',
-  data: {
-
-		groupName:param.groupName
-		//hostPort 如果为master则从一台同步主机中获取。
-  		//获取文件列表 /admin/fileInfo/listFiles {hostPort,groupName}
-  		//获取文件内容 /admin/fileInfo/fileContent {hostPort, groupName, relativePath, maxSize}
-
-  },
-  mounted:function(){
-
-     $('#compare').mergely({
-        cmsettings: { mode: 'javascript',readOnly: false },
-        width: 'auto',
-        height: 600,
-        lhs: function(setValue) {
-            //设置值
-            setValue('the quick red fox\njumped over the hairy dog');
-        },
-        rhs: function(setValue) {
-            //设置值
-            setValue('the quick brown fox\njumped over the lazy dog');
-        }
-     });
-  },
-  methods:{
-
-  }
-});
-
-</script>
+<script type="text/javascript" src="modules/group/diff.js"></script>
