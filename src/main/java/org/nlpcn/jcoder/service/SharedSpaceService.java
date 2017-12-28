@@ -2,8 +2,6 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.CuratorEvent;
-import org.apache.curator.framework.api.CuratorListener;
 import org.apache.curator.framework.recipes.cache.*;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -611,7 +609,7 @@ public class SharedSpaceService {
 
 		groupCache.getListenable().addListener((client, event) -> {
 			String path = event.getData().getPath();
-			String groupName = path.substring(GROUP_PATH.length()+1).split("/")[0] ;
+			String groupName = path.substring(GROUP_PATH.length() + 1).split("/")[0];
 			switch (event.getType()) {
 				case CHILD_ADDED:
 				case CHILD_UPDATED:
@@ -965,7 +963,13 @@ public class SharedSpaceService {
 		GroupCache groupCache = null;
 
 		try {
-			groupCache = JSONObject.parseObject(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8"), GroupCache.class);
+			File cacheFile = new File(StaticValue.GROUP_FILE, groupName + ".cache");
+			if (cacheFile.exists()) {
+				String content = IOUtil.getContent(cacheFile, "utf-8");
+				if (org.nlpcn.jcoder.util.StringUtil.isNotBlank(content)) {
+					groupCache = JSONObject.parseObject(content, GroupCache.class);
+				}
+			}
 		} catch (Exception e) {
 			LOG.warn(groupName + " cache read err so create new ");
 		}
