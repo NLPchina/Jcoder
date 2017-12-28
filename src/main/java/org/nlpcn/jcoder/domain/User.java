@@ -10,6 +10,17 @@ import java.util.Date;
 @Table("user")
 public class User implements Serializable {
 
+	public static final User CLUSTER_USER = new User();
+
+	static {
+		CLUSTER_USER.setId((long) -1);
+		CLUSTER_USER.setName("cluster");
+		CLUSTER_USER.setCreateTime(new Date());
+		CLUSTER_USER.setMail("cluster@jcoder.com");
+		CLUSTER_USER.setPassword("");
+		CLUSTER_USER.type = 1;
+	}
+
 	@Id
 	private Long id;
 
@@ -57,6 +68,9 @@ public class User implements Serializable {
 	}
 
 	public void setType(int type) {
+		if (this.id == -1 && type != 1) { //cluster user不让改类型
+			throw new RuntimeException("cluster user must not modify");
+		}
 		this.type = type;
 	}
 

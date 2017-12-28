@@ -11,18 +11,17 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.http.*;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
-import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @IocBean
 public class ProxyService {
@@ -31,7 +30,7 @@ public class ProxyService {
 
 	public static final String PROXY_HEADER = "PROXY_HEADER";
 
-	private String myToken = null ;
+	private String myToken = null;
 
 	protected static final Set<String> HOP_HEADERS = Sets.newHashSet("Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
 			"TE", "Trailers", "Transfer-Encoding", "Upgrade", "Content-Encoding");
@@ -237,10 +236,23 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
+	public Map<String, String> post(String[] hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+		return post(Arrays.stream(hostPorts).collect(Collectors.toSet()), path, params, timeout);
+	}
+
+	/**
+	 * 同时向多个主机提交
+	 *
+	 * @param hostPorts
+	 * @param params
+	 * @param timeout
+	 * @return
+	 * @throws Exception
+	 */
 	public Map<String, String> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
-		if(hostPorts.size()==0){
-			return new HashMap<>() ;
+		if (hostPorts.size() == 0) {
+			return new HashMap<>();
 		}
 
 		String token = getOrCreateToken();
@@ -348,6 +360,7 @@ public class ProxyService {
 
 	/**
 	 * 获取一个token
+	 *
 	 * @return
 	 * @throws Exception
 	 */
@@ -355,8 +368,7 @@ public class ProxyService {
 	private synchronized String getOrCreateToken() throws Exception {
 		if (myToken == null || StaticValue.space().getToken(myToken) == null) {
 			LOG.info("token timeout so create it ");
-			User user = (User) Mvcs.getReq().getSession().getAttribute("user");
-			myToken = TokenService.regToken(user);
+			myToken = TokenService.regToken(User.CLUSTER_USER);
 		}
 		return myToken;
 	}
