@@ -4,10 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import org.h2.util.DateTimeUtils;
-import org.nlpcn.jcoder.constant.Api;
-import org.nlpcn.jcoder.constant.Constants;
-import org.nlpcn.jcoder.constant.TaskStatus;
-import org.nlpcn.jcoder.constant.TaskType;
+import org.nlpcn.jcoder.constant.*;
 import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.User;
@@ -34,7 +31,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
 import static org.nlpcn.jcoder.util.ApiException.ServerException;
@@ -157,7 +153,7 @@ public class TaskAction {
         }
 
         // 保存
-        User u = (User) Mvcs.getHttpSession().getAttribute(CURRENT_USER);
+        User u = (User) Mvcs.getHttpSession().getAttribute(UserConstants.USER);
         Date now = new Date();
         if (task.getId() == null) {
             task.setCreateUser(u.getName());
@@ -286,7 +282,7 @@ public class TaskAction {
             throw new IllegalArgumentException("empty name");
         }
 
-        User u = (User) Mvcs.getHttpSession().getAttribute(CURRENT_USER);
+        User u = (User) Mvcs.getHttpSession().getAttribute(UserConstants.USER);
         Date now = new Date();
 
         // 主机列表

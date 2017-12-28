@@ -4,6 +4,7 @@ package org.nlpcn.jcoder.service;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -259,7 +260,7 @@ public class ProxyService {
 					LOG.info("post url : http://" + hostPort + path);
 					String content = null;
 					try {
-						Response send = Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)))).setTimeout(timeout).setConnTimeout(timeout).send();
+						Response send = Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(UserConstants.CLUSTER_TOKEN_HEAD, fToken)))).setTimeout(timeout).setConnTimeout(timeout).send();
 						content = send.getContent();
 					} catch (Exception e) {
 						LOG.error("post to url : http://" + hostPort + path + " error ", e);
@@ -316,7 +317,7 @@ public class ProxyService {
 					LOG.info("post url : http://" + hostPort + path);
 					String content = null;
 					try {
-						Response send = Http.upload("http://" + hostPort + path, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, fToken)), timeout);
+						Response send = Http.upload("http://" + hostPort + path, params, Header.create(ImmutableMap.of(UserConstants.CLUSTER_TOKEN_HEAD, fToken)), timeout);
 						content = send.getContent();
 					} catch (Exception e) {
 						LOG.error("post to url : http://" + hostPort + path + " error ", e);
@@ -344,14 +345,13 @@ public class ProxyService {
 
 	private String getOrCreateToken() throws Exception {
 		HttpSession session = Mvcs.getReq().getSession();
-		String token = (String) session.getAttribute("userToken");
+		String token = (String) session.getAttribute(UserConstants.USER_TOKEN);
 
 		if (token == null || StaticValue.space().getToken(token) == null) {
 			LOG.info("token timeout so create it ");
 			User user = (User) session.getAttribute("user");
 			token = TokenService.regToken(user);
-			session.setAttribute("userToken", token);
-
+			session.setAttribute(UserConstants.USER_TOKEN, token);
 		}
 		return token;
 	}
@@ -367,7 +367,7 @@ public class ProxyService {
 	 * @throws Exception
 	 */
 	public Response post(String hostPort, String path, Map<String, Object> params, int timeout) throws Exception {
-		return Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(TokenService.CLUSTER_HEAD, getOrCreateToken())))).setTimeout(timeout).setConnTimeout(timeout).send();
+		return Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(UserConstants.CLUSTER_TOKEN_HEAD, getOrCreateToken())))).setTimeout(timeout).setConnTimeout(timeout).send();
 	}
 
 

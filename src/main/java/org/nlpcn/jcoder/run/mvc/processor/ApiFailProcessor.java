@@ -1,7 +1,9 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
+import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
 import org.nutz.mvc.ActionContext;
@@ -44,6 +46,12 @@ public class ApiFailProcessor extends ViewProcessor {
 			}
 
 			view.render(ac.getRequest(), ac.getResponse(), Restful.instance(false, message).code(500));
+		}
+
+		String header = ac.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD);
+		if(StringUtil.isNotBlank(header)){
+			//如果存在。说明是集群调用需要清除session
+			ac.getRequest().getSession().invalidate();
 		}
 
 		doNext(ac);
