@@ -23,10 +23,7 @@ import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -275,7 +272,12 @@ public class JarService {
 		GroupCache groupCache = null;
 
 		try {
-			groupCache = JSONObject.parseObject(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8"), GroupCache.class);
+			String content = IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + ".cache"), "utf-8");
+			if(StringUtil.isNotBlank(content)) {
+				groupCache = JSONObject.parseObject(content, GroupCache.class);
+			}else{
+				groupCache = new GroupCache();
+			}
 		} catch (Exception e) {
 			groupCache = new GroupCache();
 			LOG.warn(groupName + " cache read err so create new ");
@@ -283,7 +285,7 @@ public class JarService {
 
 		String pomMD5 = getPomMd5();
 
-		if (groupCache == null || !pomMD5.equals(groupCache.getPomMD5())) {
+		if (!pomMD5.equals(groupCache.getPomMD5())) {
 			groupCache.setPomMD5(pomMD5);
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getAbsolutePath(), "utf-8", JSONObject.toJSONString(groupCache));
 			clean();

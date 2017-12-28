@@ -45,31 +45,31 @@ public class ResourceAction {
 	public Restful list(@Param("groupName") String groupName, @Param("path") String path) {
 		JSONArray jsonArray = new JSONArray();
 		try {
-			resourceService.getResourceFiles(jsonArray,groupName,path,"0");
+			resourceService.getResourceFiles(jsonArray, groupName, path, "0");
 		} catch (Exception e) {
 			e.printStackTrace();
-			return Restful.ERR.msg(e.getMessage());
+			return Restful.fail().msg(e.getMessage());
 		}
 		JSONObject jsonObject = new JSONObject();
-		jsonObject.put("name",groupName);
-		jsonObject.put("id",0);
-		jsonObject.put("open",true);
-		jsonObject.put("iconOpen","modules/resource/css/zTreeStyle/img/diy/1_open.png");
-		jsonObject.put("iconClose","modules/resource/css/zTreeStyle/img/diy/1_close.png");
+		jsonObject.put("name", groupName);
+		jsonObject.put("id", 0);
+		jsonObject.put("open", true);
+		jsonObject.put("iconOpen", "modules/resource/css/zTreeStyle/img/diy/1_open.png");
+		jsonObject.put("iconClose", "modules/resource/css/zTreeStyle/img/diy/1_close.png");
 		jsonArray.add(jsonObject);
-		return Restful.OK.obj(jsonArray);
+		return Restful.ok().obj(jsonArray);
 	}
 
 	@At
 	@Ok("void")
-	public void downFile(@Param("groupName") String groupName, @Param("path") String path, HttpServletResponse response){
+	public void downFile(@Param("groupName") String groupName, @Param("path") String path, HttpServletResponse response) {
 		try {
 			FileInfo fileInfo = resourceService.getFileInfo(groupName, path);
 			ByteArrayInputStream bais = new ByteArrayInputStream(fileInfo.getMd5().getBytes("utf-8"));
 			response.addHeader("Content-Disposition", "attachment;filename=" +
 					URLEncoder.encode(fileInfo.getName(), "utf-8"));
 			response.setContentType("application/octet-stream");
-			IOUtil.writeAndClose(bais,response.getOutputStream());
+			IOUtil.writeAndClose(bais, response.getOutputStream());
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -77,8 +77,8 @@ public class ResourceAction {
 
 	@At
 	public Restful createFolder(@Param("hostPorts") String[] hostPorts,@Param("groupName") String groupName,
-							 @Param("path") String path, @Param("folderName") String folderName,
-							 @Param(value = "first", df = "true") boolean first){
+								@Param("path") String path, @Param("folderName") String folderName,
+								@Param(value = "first", df = "true") boolean first){
 		try {
 			if(!first){
 				resourceService.createFolder(groupName,path,folderName);
@@ -102,7 +102,7 @@ public class ResourceAction {
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
 	public Restful uploadFile(@Param("hostPorts") String[] hostPorts, @Param("group_name") String groupName,
-							 @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames,
+							  @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames,
 							  @Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) Stream.of(file).filter(f -> f.getSubmittedFileName().toLowerCase().endsWith(".jar")).count();
 
@@ -144,3 +144,6 @@ public class ResourceAction {
 		return Restful.instance().ok(true).msg("upload " + fileNum + " file ok!");
 	}
 }
+
+
+

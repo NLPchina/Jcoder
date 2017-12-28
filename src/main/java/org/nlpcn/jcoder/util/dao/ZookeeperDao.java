@@ -19,10 +19,12 @@ public class ZookeeperDao implements Closeable {
 				connStr,
 				new RetryNTimes(10, 2000)
 		);
-		client.start();
-
 	}
 
+	public ZookeeperDao start(){
+		client.start();
+		return this ;
+	}
 
 	@Override
 	public void close() {

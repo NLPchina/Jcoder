@@ -162,11 +162,11 @@ public class ApiAction {
 			LOG.info(taskName + " will be to stop ! ");
 			ThreadManager.stop(taskName);
 			LOG.info(taskName + " stoped ! ");
-			return Restful.OK;
+			return Restful.ok();
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(taskName + " err " + ExceptionUtil.printStackTraceWithOutLine(e));
-			return Restful.ERR;
+			return Restful.fail();
 		}
 	}
 

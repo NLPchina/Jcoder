@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.HostGroup;
@@ -206,7 +207,7 @@ public class GroupAction {
 		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName, "utf-8") + ".zip");
 		response.setContentType("application/octet-stream");
 
-		IOUtil.writeAndClose(rep.getStream(),response.getOutputStream());
+		IOUtil.writeAndClose(rep.getStream(), response.getOutputStream());
 	}
 
 
@@ -248,7 +249,7 @@ public class GroupAction {
 			long start = System.currentTimeMillis();
 			LOG.info("to down " + fileInfo.getRelativePath());
 			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 120000);
-			IOUtil.writeAndClose(post.getStream(),file);
+			IOUtil.writeAndClose(post.getStream(), file);
 			LOG.info("down ok : {} use time : {} ", fileInfo.getRelativePath(), System.currentTimeMillis() - start);
 		}
 
@@ -280,19 +281,76 @@ public class GroupAction {
 
 	/**
 	 * 刷新一个group到集群中
-	 * @param hostPort 需要刷新的主机
+	 *
+	 * @param hostPort  需要刷新的主机
 	 * @param groupName
 	 * @return 不同
 	 * @throws Exception
 	 */
 	@At
 	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
-		if(StaticValue.getHostPort().equals(hostPort)){
+		if (StaticValue.getHostPort().equals(hostPort)) {
 			return Restful.instance(groupService.flush(groupName));
-		}else {
+		} else {
 			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of(hostPort, hostPort, groupName, groupName), 120000);
-			return JSONObject.toJavaObject((JSON)JSON.parse(post.getContent()),Restful.class) ;
+			return JSONObject.toJavaObject((JSON) JSON.parse(post.getContent()), Restful.class);
 		}
+
+	}
+
+	/**
+	 * 修复不同
+	 *
+	 * @param fromHostPort
+	 * @param toHostPort
+	 * @param groupName
+	 * @param relativePath
+	 * @return
+	 */
+	@At
+	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, String relativePath) throws Exception {
+
+		if (StringUtil.isBlank(fromHostPort) && StringUtil.isBlank(toHostPort)) {
+			return Restful.instance(false, "主版本中不存在任何实例，所以无法同步");
+		}
+
+		if (relativePath.startsWith("/")) {//更新文件的
+			if (StringUtil.isBlank(fromHostPort)) {
+				fromHostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+				if (fromHostPort == null) {
+					return Restful.instance(false, "未找到任何一台主机包含同步版本");
+				} else {
+					Response post = proxyService.post(toHostPort, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000);
+					return JSONObject.parseObject(post.getContent(), Restful.class);
+				}
+			} else {
+				List<String> toHostPorts = StaticValue.space().getCurrentHostPort(groupName);
+				//更新所有机器
+				String post = proxyService.post(new HashSet<>(toHostPorts), "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+				//更新集群
+				Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
+				return Restful.instance().msg(post + "，" + post1.getContent());
+			}
+		} else {//更新task的
+			if (StringUtil.isBlank(fromHostPort)) {
+				fromHostPort = Constants.HOST_MASTER;
+			}
+
+			if (StringUtil.isBlank(toHostPort)) {
+				toHostPort = Constants.HOST_MASTER;
+			}
+
+			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath ,"sourceHost",fromHostPort), 10000);
+			Object obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
+			if (obj == null) {
+				return Restful.fail().msg("任务不存在");
+			}
+
+			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts", toHostPort, "task", obj), 1000);
+
+			return JSONObject.parseObject(post.getContent(), Restful.class);
+		}
+
 
 	}
 }

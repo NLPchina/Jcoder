@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
@@ -29,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSONObject;
 
 @IocBean
-@Filters(@By(type = IpErrorCountFilter.class, args = { "20" }))
+@Filters(@By(type = IpErrorCountFilter.class, args = {"20"}))
 @Ok("json")
 public class LoginAction {
 
@@ -44,27 +45,27 @@ public class LoginAction {
 		User user = basicDao.findByCondition(User.class, con);
 
 		if (user != null && user.getPassword().equals(StaticValue.passwordEncoding(password))) {
-			restful.put("user", name);
-			restful.put("userId", user.getId());
-			restful.put("userType", user.getType());
-			
+			restful.put(UserConstants.USER, name);
+			restful.put(UserConstants.USER_ID, user.getId());
+			restful.put(UserConstants.USER_TYPE, user.getType());
+
 			HttpSession session = Mvcs.getHttpSession();
 			session.setAttribute("user", user);
 
 			LOG.info("user " + name + "login ok");
 
-			if(!StaticValue.IS_LOCAL) { //集群模式相互访问使用token
+			if (!StaticValue.IS_LOCAL) { //集群模式相互访问使用token
 				session.setAttribute("userToken", TokenService.regToken(user));
 			}
 
-			return Restful.OK.obj(restful) ;
+			return Restful.ok().obj(restful);
 		} else {
 			int err = IpErrorCountFilter.err();
 			LOG.info("user " + name + "login err ,times : " + err);
-			return Restful.ERR ;
+			return Restful.fail();
 		}
 	}
-	
+
 
 	private static final String origin = "*";
 	private static final String methods = "get, post, put, delete, options";
@@ -73,12 +74,12 @@ public class LoginAction {
 
 	@At("/login/api")
 	@Ok("json")
-	public Restful loginApi(HttpServletRequest req,HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws Exception {
+	public Restful loginApi(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws Exception {
 		resp.addHeader("Access-Control-Allow-Origin", origin);
 		resp.addHeader("Access-Control-Allow-Methods", methods);
 		resp.addHeader("Access-Control-Allow-Headers", headers);
 		resp.addHeader("Access-Control-Allow-Credentials", credentials);
-		
+
 		int err = IpErrorCountFilter.err();// for client login to many times , 
 		Condition con = Cnd.where("name", "=", name);
 		User user = basicDao.findByCondition(User.class, con);
@@ -93,7 +94,7 @@ public class LoginAction {
 	@At("/loginOut/api")
 	@Ok("json")
 	public Restful loginOutApi(HttpServletRequest req) throws Exception {
-		String token = req.getHeader("authorization");
+		String token = req.getHeader(UserConstants.USER_TOKEN_HEAD);
 		if (StringUtil.isBlank(token)) {
 			return Restful.instance(false, "token 'authorization' not in header ");
 		} else {
@@ -103,13 +104,12 @@ public class LoginAction {
 			} else {
 				return Restful.instance(true, removeToken.getUser().getName() + " login out ok");
 			}
-
 		}
 	}
 
 	@At("/validation/token")
 	public void validation(String token) throws Exception {
-		Token t = TokenService.getToken("token");
+		Token t = TokenService.getToken(token);
 		if (t == null) {
 			new JsonView(ApiException.NotFound);
 		} else {
@@ -121,15 +121,15 @@ public class LoginAction {
 	@Ok("redirect:/login.html")
 	public void loginOut() {
 		HttpSession session = Mvcs.getHttpSession();
-		session.removeAttribute("user");
-		session.removeAttribute("userId");
-		session.removeAttribute("userType");
+		session.removeAttribute(UserConstants.USER);
+		session.removeAttribute(UserConstants.USER_ID);
+		session.removeAttribute(UserConstants.USER_TYPE);
 		try {
-			TokenService.removeToken(String.valueOf(session.getAttribute("userToken"))) ;
+			TokenService.removeToken(String.valueOf(session.getAttribute(UserConstants.USER_TOKEN)));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		session.removeAttribute("userToken");
+		session.removeAttribute(UserConstants.USER_TOKEN);
 	}
 
 }

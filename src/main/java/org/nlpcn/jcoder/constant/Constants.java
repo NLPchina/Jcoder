@@ -8,8 +8,12 @@ public interface Constants {
     int TIMEOUT = 100000;
 
     /**
-     * SESSION中用户KEY
+     * master主机标识
      */
-    String CURRENT_USER = "user";
+    String HOST_MASTER = "master";
 
+    /**
+     * master主机任务ID
+     */
+    long MASTER_TASK_ID = 0L;
 }

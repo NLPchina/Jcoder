@@ -120,6 +120,7 @@
 						<th class="center">路径</th>
 						<th class="center">类型</th>
 						<th class="center">信息</th>
+						<th class="center">详细</th>
 						<th class="center">操作</th>
 					</tr>
 					</thead>
@@ -139,29 +140,35 @@
 						<td  class="center">
 							{{item.type==1?"文件":"Task"}}
 						</td>
-						<td  class="center">
+						<td class="center">
 							{{item.message}}
 						</td>
+						<td class="center">
+							<a  :href="'#/group/diff.html?groupName='+groupName+'&leftHostPort='+diffHostPort+'&rightHostPort=master'+'&relativePath='+item.path" target="_blank">
+								<button class="btn btn-xs btn-warning">
+										<i class="ace-icon fa fa-flag bigger-120"></i>
+								</button>
+							</a>
+						</td>
 						<td  class="center">
-							<button type="button" class="btn btn-info btn-sm">
+							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, item.path ,false)">
 								<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
 							</button>
 
-							<button type="button" class="btn btn-info btn-sm">
+							<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, item.path ,false)">
 								<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 							</button>
-
 						</td>
 					</tr>
 					</tbody>
 				</table>
 
 				<div  class="row center">
-					<button type="button" class="btn btn-info btn-sm">
+					<button type="button" class="btn btn-info btn-sm" @click="fixDiff(diffHostPort ,null, null,true)">
 						<i class="ace-icon fa fa-upload bigger-110"></i>当前替换主版本
 					</button>
 
-					<button type="button" class="btn btn-info btn-sm">
+					<button type="button" class="btn btn-info btn-sm" @click="fixDiff(null ,diffHostPort, null,true)">
 						<i class="ace-icon fa fa-download bigger-110"></i>主版本替换当前
 					</button>
 				</div>
@@ -303,7 +310,6 @@ var groupHostList = new Vue({
 		Jcoder.ajax("/admin/group/flush", 'post',{"hostPort":hostPort,"groupName":$this.groupName},null).then(function (data) {
 			JqdeBox.unloading();
 			if(data.ok){
-				console.log(data.obj)
 				$this.diffs = data.obj ;
 				$this.hostList();
 				if($this.diffs.length==0){
@@ -319,11 +325,51 @@ var groupHostList = new Vue({
 				JqdeBox.message(false, data.message);
 			}
 		});
-	}
+	},
+
+
+	fixDiff: function(fromHostPort ,toHostPort, relativePath, isCheckout){
+		var $this = this;
+
+		if(isCheckout){ //如果是checkout ，则从checkbox中取得
+			var list = [] ;
+			$('#diff-table').find('td input[type=checkbox]').each(function(i,v) {
+				if(v.checked){
+					list.push($this.diffs[i].path)
+				}
+			});
+
+			if(list.length==0){
+				JqdeBox.message(false, "至少选择一项");
+				return ;
+			}
+
+			relativePath = list.toString() ;
+		}
+
+		Jcoder.ajax("/admin/group/fixDiff", 'post',{"fromHostPort":fromHostPort,"groupName":$this.groupName,"relativePath":relativePath},null).then(function (data) {
+			JqdeBox.message(data.ok, data.message);
+			if(fromHostPort){
+				$this.flush(fromHostPort);
+			}
+			if(toHostPort){
+				$this.flush(toHostPort);
+			}
+			JqdeBox.unloading();
+		});
+	},
+
+	showDiff: function(){
+		JqdeBox.dialog({
+		  title: "对比",
+		  url: 'modules/group/diff.html',
+		  confirm: function () {
+
+		  }
+		});
+  	},
 
   }
-
-
 
 });
 </script>

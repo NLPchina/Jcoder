@@ -1,0 +1,101 @@
+<div id="diffMergely" class="tabbable">
+	<ul class="nav nav-tabs" id="myTab">
+		<li class="active">
+			<a data-toggle="tab" href="#home">
+				<i class="green ace-icon fa fa-pencil-square-o bigger-120"></i>
+				{{groupName}}: 文件对比
+			</a>
+		</li>
+	</ul>
+	<div class="tab-content">
+		<div id="home" class="tab-pane fade in active">
+
+			<div class="col-xs-12">
+				<table id="simple-table" class="table  table-bordered table-hover">
+					<thead>
+					<tr>
+						<th class="center col-xs-5">当前版本</th>
+						<th class="center">名称</th>
+						<th class="center col-xs-5">对比版本</th>
+					</tr>
+					</thead>
+
+					<tbody>
+					<tr>
+						<td>
+							<select class="chosen-select form-control" v-model="lHost" @change="lFilePath='';listFiles(true)">
+								<option value="master">主版本</option>
+								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
+							</select>
+						</td>
+						<td class="center">对比主机</td>
+						<td>
+							<select class="chosen-select form-control" v-model="rHost" @change="rFilePath='';listFiles(false)">
+								<option value="master">主版本</option>
+								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<select class="chosen-select form-control" v-model="lFilePath" @change="setContent(true)">
+								<option value="">请选择对比文件</option>
+								<option v-for="(item,index) in lFiles" :value="item.relativePath" >{{item.relativePath}}</option>
+							</select>
+						</td>
+						<td class="center">对比文件</td>
+						<td>
+							<select class="chosen-select form-control" v-model="rFilePath" @change="setContent(false)">
+								<option value="">请选择对比文件</option>
+								<option v-for="(item,index) in rFiles">{{item.relativePath}}</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							{{lFileInfo.length}}
+						</td>
+						<td class="center">文件大小</td>
+						<td align="right">
+							{{rFileInfo.length}}
+						</td>
+					</tr>
+					<tr>
+						<td>
+							{{lFileInfo.md5}}
+						</td>
+						<td class="center">MD5</td>
+						<td align="right">
+							{{rFileInfo.md5}}
+						</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+
+
+			<div class="row">
+				<div class="col-xs-12" id="share-div">
+					<div class="form-group">
+						<div id="mergely-resizer">
+							<div id="compare">
+							</div>
+						</div>
+					</div>
+				</div><!-- /.col -->
+			</div>
+
+		</div>
+	</div>
+</div>
+
+
+<!-- Requires CodeMirror -->
+<script type="text/javascript" src="/vendors/mergely/lib/codemirror.js"></script>
+<link type="text/css" rel="stylesheet" href="/vendors/mergely/lib/codemirror.css"/>
+
+<!-- Requires Mergely -->
+<script type="text/javascript" src="/vendors/mergely/lib/mergely.js"></script>
+<link type="text/css" rel="stylesheet" href="/vendors/mergely/lib/mergely.css"/>
+
+<script type="text/javascript" src="modules/group/diff.js"></script>

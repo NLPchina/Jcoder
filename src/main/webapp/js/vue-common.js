@@ -37,18 +37,19 @@ Vue.filter('formatNumber', function (value, decimals) {
 /** HOST组件 */
 Vue.component('host-component', {
     props: ['group', 'hosts'],
-    template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
-    '<span class="label label-xlg label-info label-white" style="margin:2px;text-align:left;" v-for="item in hosts">' +
+    template: '<div class="alert alert-block alert-success" style="padding:8px;height:50px;">' +
+    '<span v-for="item in hosts" v-bind="{class:item.isCurrent?\'label label-xlg label-info label-white\':\'label label-xlg label-danger label-white\'}" style="margin:2px;text-align:left;">' +
     '<label>' +
     '    <input name="form-field-checkbox" class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
-    '    <span class="lbl" style="width:163px;"> {{item.host}}</span>' +
+    '    <span v-if="item.host==\'master\'" class="lbl" style="width:163px;" :title="item.host"> <i v-for="n in 5" style="margin-left:8px;font-size:18px;" class="star-on-png"></i></span>' +
+    '    <span v-else class="lbl" style="width:163px;"> {{item.host}}</span>' +
     '</label>' +
     '</span></div>',
     mounted: function () {
         var me = this;
         Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.group}).then(function (data) {
             _.each(data.obj, function (ele) {
-                me.hosts.push({host: ele.hostPort, checked: ele.current});
+                me.hosts.push({host: ele.hostPort, checked: ele.current, isCurrent: ele.current});
             });
         }).catch(function (req) {
             JqdeBox.message(false, req.responseText);

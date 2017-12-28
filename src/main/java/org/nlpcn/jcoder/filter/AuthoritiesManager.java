@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.filter;
 
+import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.service.TokenService;
@@ -13,19 +14,15 @@ import org.nutz.mvc.View;
 
 import javax.servlet.http.HttpSession;
 
-import static org.nlpcn.jcoder.constant.Constants.CURRENT_USER;
-
 public class AuthoritiesManager implements ActionFilter {
-
-	public static final String TOKEN = "token";
 
 	@Override
 	public View match(ActionContext actionContext) {
 		HttpSession session = Mvcs.getHttpSession();
 
-		String tokenStr = actionContext.getRequest().getHeader(TokenService.CLUSTER_HEAD);
+		String tokenStr = actionContext.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD);
 
-		Object obj = session.getAttribute(CURRENT_USER);
+		Object obj = session.getAttribute(UserConstants.USER);
 
 		if (obj != null) {
 			return null;
@@ -35,7 +32,7 @@ public class AuthoritiesManager implements ActionFilter {
 			try {
 				Token token = TokenService.getToken(tokenStr);
 				if (token != null) {
-					actionContext.getRequest().getSession().setAttribute(CURRENT_USER, token.getUser());
+					actionContext.getRequest().getSession().setAttribute(UserConstants.USER, token.getUser());
 					return null;
 				}
 			} catch (Exception e) {

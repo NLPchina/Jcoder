@@ -4,8 +4,13 @@ import com.alibaba.fastjson.JSON;
 
 public class Restful {
 
-	public static Restful OK = new Restful(true);
-	public static Restful ERR = new Restful(false);
+	public static Restful ok(){
+		return new Restful(true) ;
+	}
+
+	public static Restful fail(){
+		return new Restful(false) ;
+	}
 
 	private boolean ok = true;
 

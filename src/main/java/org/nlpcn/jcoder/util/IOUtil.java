@@ -1,5 +1,9 @@
 package org.nlpcn.jcoder.util;
 
+import org.nutz.http.Header;
+import org.nutz.http.Response;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 
 /**
@@ -192,6 +196,19 @@ public class IOUtil {
 		}
 		close(os);
 		close(is);
+	}
+
+
+	/**
+	 * 将结果和输出流对接
+	 * @param response
+	 * @param response
+	 */
+	public static void writeAndClose(Response post, HttpServletResponse response) throws IOException {
+		Header header = post.getHeader();
+		header.keys().forEach(k -> response.addHeader(k,header.get(k)));
+		response.setStatus(post.getStatus());
+		IOUtil.writeAndClose(post.getStream(),response.getOutputStream());
 	}
 
 

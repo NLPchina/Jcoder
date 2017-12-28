@@ -151,7 +151,7 @@ public class GroupService {
 		if (group != null) {
 			basicDao.delById(group.getId(), Group.class);
 
-			List<Task> tasks = taskService.tasksList(group.getName());
+			List<Task> tasks = taskService.findTasksByGroupName(group.getName());
 
 			for (Task task : tasks) {
 				try {

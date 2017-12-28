@@ -18,8 +18,6 @@ import java.util.concurrent.ExecutionException;
 public class TokenService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TokenService.class);
-	public static final String HEAD = "authorization";
-	public static final String CLUSTER_HEAD = "cluster_authorization";
 
 
 	public static Token getToken(String key) throws Exception {
