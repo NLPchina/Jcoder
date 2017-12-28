@@ -377,7 +377,7 @@ public class TaskAction {
 	 * @return
 	 */
 	@At
-	public Restful statistics(@Param("groupName") String groupName, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
+	public Restful statistics(@Param("groupName") String groupName, @Param(value = "name", df = "") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 		if (!first) {
 			long success = 0;
 			long error = 0;
