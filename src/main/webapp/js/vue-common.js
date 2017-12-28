@@ -37,19 +37,54 @@ Vue.filter('formatNumber', function (value, decimals) {
 /** HOST组件 */
 Vue.component('host-component', {
     props: ['group', 'hosts'],
-    template: '<div class="alert alert-block alert-success" style="padding:8px;height:50px;">' +
-    '<span v-for="item in hosts" v-bind="{class:item.isCurrent?\'label label-xlg label-info label-white\':\'label label-xlg label-danger label-white\'}" style="margin:2px;text-align:left;">' +
-    '<label>' +
-    '    <input name="form-field-checkbox" class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
-    '    <span v-if="item.host==\'master\'" class="lbl" style="width:163px;" :title="item.host"> <i v-for="n in 5" style="margin-left:8px;font-size:18px;" class="star-on-png"></i></span>' +
-    '    <span v-else class="lbl" style="width:163px;"> {{item.host}}</span>' +
+    template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
+    '<label v-for="item in hosts"' +
+    '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.current?\'infobox-green\':\'\'),style:\'cursor:pointer;margin:2px;width:210px;\'+(!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
+    '<div class="infobox-progress">' +
+    '    <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">' +
+    '        <span class="percent">{{item.weight}}</span>%' +
+    '    </div>' +
+    '</div>' +
+    '<div class="infobox-data">' +
+    '    <div class="infobox-content" style="width:153px;max-width:153px;">' +
+    '        {{item.host}}' +
+    '        <label class="pull-right">' +
+    '            <input class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
+    '            <span class="lbl"></span>' +
+    '        </label>' +
+    '    </div>' +
+    '    <div class="infobox-content" style="width:153px;max-width:153px;">' +
+    '        <span class="green"><i class="ace-icon fa fa-check"></i> 0000</span>' +
+    '        &nbsp;&nbsp;&nbsp;&nbsp;' +
+    '        <span class="red"><i class="ace-icon fa fa-bolt"></i> 0000</span>' +
+    '    </div>' +
+    '</div>' +
     '</label>' +
-    '</span></div>',
+    '</div>',
     mounted: function () {
         var me = this;
         Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.group}).then(function (data) {
+            var hosts = me.hosts;
             _.each(data.obj, function (ele) {
-                me.hosts.push({host: ele.hostPort, checked: ele.current, isCurrent: ele.current});
+                hosts.push({host: ele.hostPort, checked: ele.current, current: ele.current, weight: ele.hostPort == 'master' ? 100 : ele.weight});
+            });
+
+            Vue.nextTick(function () {
+                $('.easy-pie-chart.percentage').each(function () {
+                    var $box = $(this).closest('.infobox'),
+                        barColor = $(this).data('color') || (!$box.hasClass('infobox-dark') ? $box.css('color') : 'rgba(255,255,255,0.95)'),
+                        trackColor = barColor == 'rgba(255,255,255,0.95)' ? 'rgba(255,255,255,0.25)' : '#E2E2E2',
+                        size = parseInt($(this).data('size')) || 50;
+                    $(this).easyPieChart({
+                        barColor: barColor,
+                        trackColor: trackColor,
+                        scaleColor: false,
+                        lineCap: 'butt',
+                        lineWidth: parseInt(size / 10),
+                        animate: ace.vars['old_ie'] ? false : 1000,
+                        size: size
+                    });
+                });
             });
         }).catch(function (req) {
             JqdeBox.message(false, req.responseText);
