@@ -378,12 +378,11 @@ public class TaskAction {
 	 * @return
 	 */
 	@At
-	public Restful tasksStatistics(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String gourpName, @Param("name") String name) throws Exception {
-		if (hostPorts == null || hostPorts.length == 0) {
-			Task taskByCache = TaskService.findTaskByCache(name);
+	public Restful statistics(@Param("groupName") String groupName, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
+		if (!first) {
 			long success = 0;
 			long error = 0;
-
+			Task taskByCache = TaskService.findTaskByCache(name);
 			if (taskByCache != null) {
 				success = taskByCache.success();
 				error = taskByCache.error();
@@ -391,27 +390,49 @@ public class TaskAction {
 
 			return Restful.ok().msg(success + "_" + error);
 		} else {
-			Map<String, String> map = proxyService.post(hostPorts, "/admin/task/tasksStatistics", ImmutableMap.of("name", name), 1000);
+
+			List<HostGroup> groupHostList = groupService.getGroupHostList(groupName);
+
+			String[] hostPorts = groupHostList.stream().map(gh -> gh.getHostPort()).toArray(String[]::new);
+
+			Map<String, String> map = proxyService.post(hostPorts, "/admin/task/statistics", ImmutableMap.of("groupName", groupName, "name", name, "first", false), 1000);
 
 			List<TaskStatistics> result = new ArrayList<>();
 
-			for (String hostPort : hostPorts) {
-				String content = map.get(hostPort);
-				String[] split = JSONObject.parseObject(content).getString("message").split("_");
+			JSONObject jsonObject = null ;
+			for (HostGroup hostGroup : groupHostList) {
+				String content = map.get(hostGroup.getHostPort());
+				try{
+					jsonObject = JSONObject.parseObject(content);
+					if(!jsonObject.getBoolean("ok")){
+						continue;
+					}
+				}catch (Exception e){
+					continue;
+				}
+
+				String[] split = jsonObject.getString("message").split("_");
 
 				TaskStatistics ts = new TaskStatistics();
-				ts.setHostPort(hostPort);
+				ts.setHostPort(hostGroup.getHostPort());
 				ts.setSuccess(Long.parseLong(split[0]));
 				ts.setError(Long.parseLong(split[1]));
-				HostGroup hostGroup = StaticValue.space().getHostGroupCache().get(hostPort + "_" + gourpName);
-				if (hostGroup != null) {
-					ts.setWeight(hostGroup.getWeight());
-				}
+				ts.setWeight(hostGroup.getWeight());
+				ts.setHostGroup(hostGroup);
 				result.add(ts);
 			}
 
 			final long sum = result.stream().mapToLong(t -> t.getWeight()).sum();
 			result.forEach(t -> t.setSumWeight(sum));
+
+			TaskStatistics master = new TaskStatistics() ;
+			master.setSumWeight(sum);
+			master.setWeight(sum);
+			master.setError(result.stream().mapToLong(t->t.getError()).sum());
+			master.setSuccess(result.stream().mapToLong(t->t.getSuccess()).sum());
+			master.setHostPort("master");
+
+			result.add(0,master);
 
 			return Restful.ok().obj(result);
 		}

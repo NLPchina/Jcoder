@@ -14,6 +14,8 @@ public class TaskStatistics {
 
 	private long weight;
 
+	private HostGroup hostGroup ;
+
 	public String getHostPort() {
 		return hostPort;
 	}
@@ -74,5 +76,13 @@ public class TaskStatistics {
 
 	public void setWeight(long weight) {
 		this.weight = weight;
+	}
+
+	public HostGroup getHostGroup() {
+		return hostGroup;
+	}
+
+	public void setHostGroup(HostGroup hostGroup) {
+		this.hostGroup = hostGroup;
 	}
 }
