@@ -163,7 +163,7 @@ public class FileInfoAction {
 				if(len>0){
 					content = new String(bytes, 0, len);
 				}
-				return Restful.ok().msg(content);
+				return Restful.ok().msg(content).obj(new FileInfo(file));
 			}
 		} else {
 			Response post = proxyService.post(hostPort, "/admin/fileInfo/fileContent", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "maxSize", maxSize), 10000);

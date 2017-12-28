@@ -9,6 +9,9 @@ var diffMergely = new Vue({
         rFiles:[],
         lFilePath:param.relativePath,
         rFilePath:param.relativePath ,
+        defaultFileInfo:{md5:"",length:0},
+        lFileInfo:{},
+        rFileInfo:{}
         //hostPort 如果为master则从一台同步主机中获取。
 
 
@@ -22,24 +25,13 @@ var diffMergely = new Vue({
 		this.listFiles(true) ;
 		this.listFiles(false) ;
 
-		this.setContent(true) ;
-		this.setContent(false) ;
-
         $('#compare').mergely({
             cmsettings: {
                 mode: 'javascript',
                 readOnly: false
             },
             width: 'auto',
-            height: 600,
-            lhs: function(setValue) {
-                //设置值
-                setValue('the quick red fox\njumped over the hairy dog');
-            },
-            rhs: function(setValue) {
-                //设置值
-                setValue('the quick brown fox\njumped over the lazy dog');
-            }
+            height: 600
         });
     },
     methods: {
@@ -58,31 +50,54 @@ var diffMergely = new Vue({
 			var $this = this ;
 			var hostPort = flag?$this.lHost:$this.rHost ;
 			Jcoder.ajax('/admin/fileInfo/listFiles', 'post',{"hostPort":hostPort,"groupName":$this.groupName},null).then(function (data) {
-				if(data.ok){
-					if(flag){
-						$this.lFiles = data.obj ;
-					}else{
-						$this.rFiles = data.obj ;
+				var files = []
+				if(!data.ok){
+					JqdeBox.message(false, data.message);
+				}else{
+					files = data.obj ;
+				}
+				if(flag){
+					$this.lFiles = files ;
+					if(!files||files.length==0){
+						$this.lFilePath = "" ;
 					}
 				}else{
-					JqdeBox.message(false, data.message);
+					$this.rFiles = files ;
+					if(!files||files.length==0){
+                        $this.rFilePath = "" ;
+                    }
 				}
+				$this.setContent(flag) ;
 			});
 		},
 
 		setContent:function(flag){
+
 			var $this = this ;
 			var hostPort = flag?$this.lHost:$this.rHost ;
-			Jcoder.ajax('/admin/fileInfo/fileContent', 'post',{"hostPort":hostPort,"groupName":$this.groupName,"relativePath":$this.lFilePath},null).then(function (data) {
-                if(!data.ok){
-                    JqdeBox.message(false, data.message);
-                }
-                if(flag){
-                    $('#compare').mergely('lhs', data.message);
+			var filePath = flag?$this.lFilePath:$this.rFilePath ;
+			if(filePath!=""){
+				Jcoder.ajax('/admin/fileInfo/fileContent', 'post',{"hostPort":hostPort,"groupName":$this.groupName,"relativePath":filePath},null).then(function (data) {
+                    if(!data.ok){
+                        JqdeBox.message(false, data.message);
+                    }
+                    if(flag){
+                        $this.lFileInfo = data.obj ;
+                        $('#compare').mergely('lhs', data.message);
+                    }else{
+                        $this.rFileInfo = data.obj ;
+                        $('#compare').mergely('rhs', data.message);
+                    }
+                });
+			}else{
+				if(flag){
+					$this.lFileInfo = $this.defaultFileInfo ;
+                    $('#compare').mergely('lhs', "请选择对比文件");
                 }else{
-					$('#compare').mergely('rhs', data.message);
+                    $this.rFileInfo = $this.defaultFileInfo ;
+                    $('#compare').mergely('rhs', "请选择对比文件");
                 }
-            });
+			}
 		}
 
 	}

@@ -23,14 +23,14 @@
 					<tbody>
 					<tr>
 						<td>
-							<select class="chosen-select form-control" v-model="lHost" :onchange="listFiles(true)">
+							<select class="chosen-select form-control" v-model="lHost" @change="lFilePath='';listFiles(true)">
 								<option value="master">主版本</option>
 								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
 						</td>
 						<td class="center">对比主机</td>
 						<td>
-							<select class="chosen-select form-control" v-model="rHost" :onchange="listFiles(false)">
+							<select class="chosen-select form-control" v-model="rHost" @change="rFilePath='';listFiles(false)">
 								<option value="master">主版本</option>
 								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
@@ -38,42 +38,35 @@
 					</tr>
 					<tr>
 						<td>
-							<select class="chosen-select form-control" v-model="lFilePath" :onchange="setContent(true)">
+							<select class="chosen-select form-control" v-model="lFilePath" @change="setContent(true)">
+								<option value="">请选择对比文件</option>
 								<option v-for="(item,index) in lFiles" :value="item.relativePath" >{{item.relativePath}}</option>
 							</select>
 						</td>
 						<td class="center">对比文件</td>
 						<td>
-							<select class="chosen-select form-control" v-model="lFilePath" :onchange="setContent(false)">
+							<select class="chosen-select form-control" v-model="rFilePath" @change="setContent(false)">
+								<option value="">请选择对比文件</option>
 								<option v-for="(item,index) in rFiles">{{item.relativePath}}</option>
 							</select>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							100000
+							{{lFileInfo.length}}
 						</td>
 						<td class="center">文件大小</td>
 						<td align="right">
-							200000
+							{{rFileInfo.length}}
 						</td>
 					</tr>
 					<tr>
 						<td>
-							aaaaaadsfsdfsdf
+							{{lFileInfo.md5}}
 						</td>
 						<td class="center">MD5</td>
 						<td align="right">
-							aaaaaadsfsdfsdf
-						</td>
-					</tr>
-					<tr>
-						<td>
-							aaaaaadsfsdfsdf
-						</td>
-						<td class="center">修改时间</td>
-						<td align="right">
-							aaaaaadsfsdfsdf
+							{{rFileInfo.md5}}
 						</td>
 					</tr>
 					</tbody>
