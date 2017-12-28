@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.job;
 
+import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.slf4j.Logger;
@@ -44,7 +45,10 @@ public class CheckClusterJob implements Runnable {
 				if (groupNames.size() > 0) {
 					for (String groupName : groupNames) {
 						long start = System.currentTimeMillis();
-						StaticValue.getSystemIoc().get(GroupService.class, "groupService").flush(groupName);
+						Group group = StaticValue.getSystemIoc().get(GroupService.class,"groupService").findGroupByName(groupName);
+						if (group != null) {
+							StaticValue.getSystemIoc().get(GroupService.class, "groupService").flush(groupName);
+						}
 						GROUP_TIME.remove(groupName);
 						LOG.info("{} to flush ok use time: {}" + (System.currentTimeMillis() - start));
 					}

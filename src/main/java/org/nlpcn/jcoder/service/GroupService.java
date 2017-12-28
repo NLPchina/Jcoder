@@ -165,7 +165,14 @@ public class GroupService {
 			}
 		}
 
-		sharedSpaceService.getHostGroupCache().remove(StaticValue.getHostPort() + "_" + name);
+		String key = StaticValue.getHostPort() + "_" + name;
+
+		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
+		if (hostGroup != null) {
+			hostGroup.setWeight(-1);
+			sharedSpaceService.getHostGroupCache().put(key, hostGroup);
+		}
+
 
 		Files.deleteFile(new File(StaticValue.GROUP_FILE, name + ".cache"));
 
@@ -174,7 +181,7 @@ public class GroupService {
 
 	}
 
-	private Group findGroupByName(String name) {
+	public Group findGroupByName(String name) {
 		return basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
 	}
 
