@@ -10,7 +10,7 @@
 
 <div class="row" id="vmTaskEditModule">
     <div>
-        <host-component :group="task.groupName" :hosts.sync="hosts"/>
+        <host-component :group-name="task.groupName" :task-name="task.name" :hosts.sync="hosts"/>
     </div>
 
     <form class="form-horizontal">

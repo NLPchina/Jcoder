@@ -36,37 +36,46 @@ Vue.filter('formatNumber', function (value, decimals) {
 
 /** HOST组件 */
 Vue.component('host-component', {
-    props: ['group', 'hosts'],
+    props: ['groupName', 'taskName', 'hosts'],
     template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
     '<label v-for="item in hosts"' +
-    '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.current?\'infobox-green\':\'\'),style:\'cursor:pointer;margin:2px;width:210px;\'+(!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
+    '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.current?\'infobox-green\':\'\'),style:\'cursor:pointer;margin:2px;width:228px;\'+(!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
     '<div class="infobox-progress">' +
     '    <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">' +
     '        <span class="percent">{{item.weight}}</span>%' +
     '    </div>' +
     '</div>' +
     '<div class="infobox-data">' +
-    '    <div class="infobox-content" style="width:153px;max-width:153px;">' +
+    '    <div class="infobox-content" style="width:173px;max-width:173px;">' +
     '        {{item.host}}' +
     '        <label class="pull-right">' +
     '            <input class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
     '            <span class="lbl"></span>' +
     '        </label>' +
     '    </div>' +
-    '    <div class="infobox-content" style="width:153px;max-width:153px;">' +
-    '        <span class="green"><i class="ace-icon fa fa-check"></i> 0000</span>' +
-    '        &nbsp;&nbsp;&nbsp;&nbsp;' +
-    '        <span class="red"><i class="ace-icon fa fa-bolt"></i> 0000</span>' +
+    '    <div class="infobox-content" style="width:173px;max-width:173px;">' +
+    '        <span class="green" style="width:72px;display:inline-block;"><i class="ace-icon fa fa-check"></i> {{item.success}}</span>' +
+    '        &nbsp;&nbsp;' +
+    '        <span class="red"><i class="ace-icon fa fa-bolt"></i> {{item.error}}</span>' +
     '    </div>' +
     '</div>' +
     '</label>' +
     '</div>',
     mounted: function () {
         var me = this;
-        Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.group}).then(function (data) {
+        Jcoder.ajax('/admin/task/statistics', 'GET', {groupName: me.groupName, name: me.taskName}).then(function (data) {
+            data = data.obj;
             var hosts = me.hosts;
-            _.each(data.obj, function (ele) {
-                hosts.push({host: ele.hostPort, checked: ele.current, current: ele.current, weight: ele.hostPort == 'master' ? 100 : ele.weight});
+            _.each(data, function (ele) {
+                var current = ele.hostGroup ? ele.hostGroup.current : true;
+                hosts.push({
+                    host: ele.hostPort,
+                    checked: current,
+                    current: current,
+                    weight: (ele.weight / ele.sumWeight * 100).toFixed(0),
+                    success: ele.success,
+                    error: ele.error
+                });
             });
 
             Vue.nextTick(function () {
