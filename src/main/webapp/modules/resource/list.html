@@ -50,7 +50,7 @@
                                         </div>
                                         <div class="space-4"></div>
 
-                                        <div class="row" style=" height:370px;overflow-x:hidden;overflow-y :auto">
+                                        <div class="row" style="height:570px;overflow-x:hidden;overflow-y :auto">
                                             <div class="col-xs-1"></div>
                                             <div class="col-xs-11" class="" id="tree_list" style="overflow-y:auto;overflow-x:hidden;">
                                                 <ul id="treeDemo" class="ztree" style="border: 0; background-color: white; width: 340px;overflow: visible"></ul>
@@ -60,49 +60,60 @@
                                     <div class="col-sm-8 no-padding-right" >
                                         <div class="widget-header">
                                             <h5 class="widget-title">节点详情</h5>
+                                            <span class="widget-toolbar">
+                                                <i title="下载文件" @click="downFile()" class="ace-icon fa fa-cloud-download bigger-150" v-show="isFile"></i>
+                                                <i title="创建文件夹" @click="createFolder()" class="ace-icon fa fa-folder-open bigger-150" v-show="!isFile"></i>
+                                                <i title="上传文件" @click="uploadFile()" class="ace-icon fa fa-cloud-upload bigger-150" v-show="!isFile"></i>
+                                            </span>
                                         </div>
                                         <div class="space-4"></div>
-                                        <div class="row" id="right-content" >
-                                            <div class="col-xs-12">
 
+                                        <div class="row" id="right-content" >
+                                            <div id="fileContent" class="widget-main" style="display:none;">
+                                                <textarea id="fileInfoDlg" style="width: 100%;" >{{fileInfo}}</textarea>
+                                            </div>
+                                            <div id="folderContent" class="col-xs-12">
+                                                <table id="dynamic-table" class="table table-striped table-bordered table-hover" >
+                                                    <thead>
+                                                    <tr>
+                                                        <th class="center">文件名</th>
+                                                        <th class="center">文件大小</th>
+                                                        <th class="center">修改时间</th>
+                                                        <th class="center">文件路径</th>
+                                                        <th class="center">操作</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="infor-tbody">
+                                                    <tr v-for="(resource, index) in resources">
+                                                        <td  class="center">{{resource.file.name}}</td>
+                                                        <td  class="center">{{resource.file.length/1024}}k</td>
+                                                        <td  class="center">{{resource.file.date | datetime('yyyy-MM-dd HH:mm:ss')}}</td>
+                                                        <td  class="center">{{resource.file.relativePath}}</td>
+                                                        <td  class="center">
+                                                            <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+                                                                <div class="editbutton" style="display:inline;">
+                                                                    <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
+                                                                        <i class="ace-icon fa fa-trash-o  bigger-130" @click="del(resource);"></i>
+                                                                    </a>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <!--<table id="dynamic-table" class="table table-striped table-bordered table-hover">
-                            <thead>
-                            <tr>
-                                <th class="center">文件名</th>
-                                <th class="center">文件大小</th>
-                                <th class="center">修改时间</th>
-                                <th class="center">文件路径</th>
-                                <th class="center">操作</th>
-                            </tr>
-                            </thead>
-                            <tbody class="infor-tbody">
-                            <tr v-for="(resource, index) in resources">
-                                <td  class="center">{{resource.file.name}}</td>
-                                <td  class="center">{{resource.file.length()/1024}}k</td>
-                                <td  class="center">{{resource.date}}</td>
-                                <td  class="center">{{resource.encodingPath</td>
-                                <td  class="center">
-                                    <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
-                                        <div class="editbutton" style="display:inline;">
-                                            <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
-                                                <i class="ace-icon fa fa-trash-o  bigger-130" @click="del(resource);"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>-->
                     </div><!-- /.widget-main  padding: 1em;-->
                 </div><!-- /.widget-body -->
             </div>
         </div>
     </div>
 </div>
+<link rel="stylesheet" href="modules/resource/css/demo.css" type="text/css">
+<link rel="stylesheet" href="modules/resource/css/zTreeStyle/zTreeStyle.css" type="text/css">
+<script type="text/javascript" src="modules/resource/jquery.ztree.core-3.5.js"></script>
 <script src="modules/resource/main.js"></script>
