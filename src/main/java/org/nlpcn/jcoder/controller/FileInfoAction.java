@@ -2,7 +2,6 @@ package org.nlpcn.jcoder.controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
-import org.apache.zookeeper.data.Stat;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Task;
@@ -16,12 +15,10 @@ import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.dao.Cnd;
-import org.nutz.http.Header;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
-import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
@@ -77,8 +74,8 @@ public class FileInfoAction {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
-			if(hostPort==null){
-				return Restful.fail().msg("无同步主机") ;
+			if (hostPort == null) {
+				return Restful.fail().msg("无同步主机");
 			}
 		}
 
@@ -138,11 +135,11 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "maxSize",df = "20480") int maxSize) throws Exception {
+	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "maxSize", df = "20480") int maxSize) throws Exception {
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
-			if(hostPort==null){
-				return Restful.fail().msg("无同步主机") ;
+			if (hostPort == null) {
+				return Restful.fail().msg("无同步主机");
 			}
 		}
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
@@ -159,8 +156,8 @@ public class FileInfoAction {
 
 			try (FileInputStream fis = new FileInputStream(file)) {
 				int len = fis.read(bytes);
-				String content = "" ;
-				if(len>0){
+				String content = "";
+				if (len > 0) {
 					content = new String(bytes, 0, len);
 				}
 				return Restful.ok().msg(content).obj(new FileInfo(file));
@@ -180,18 +177,17 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, HttpServletResponse response) throws Exception {
+	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, HttpServletResponse response) throws Throwable {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
-			if(hostPort==null){
-				throw new RuntimeException("无同步主机") ;
+			if (hostPort == null) {
+				throw new RuntimeException("无同步主机");
 			}
 		}
 
 
-
-		if(StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)){
+		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
 			if (relativePath.contains("..")) {
 				throw new FileNotFoundException("下载路径不能包含`..`字符");
 			}
@@ -199,12 +195,14 @@ public class FileInfoAction {
 			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
 			if (!file.exists()) {
-				Mvcs.getResp().setStatus(404);//设置错误头
-				throw new FileNotFoundException(file.toURI().getPath() + " not found in " + StaticValue.getHostPort());
+				response.setStatus(404);
+				response.getWriter().write(Restful.fail().msg("fail not found exception").code(404).toJsonString());
+				return;
+
 			}
 
 			response.setContentType("application/octet-stream");
-			
+
 			if (file.isDirectory()) {
 				response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "utf-8") + ".zip");
 				try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
@@ -236,9 +234,9 @@ public class FileInfoAction {
 					Streams.write(outputStream, fis);
 				}
 			}
-		}else{
+		} else {
 			Response post = proxyService.post(hostPort, "/admin/fileInfo/downFile", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath), 100000);
-			IOUtil.writeAndClose(post,response);
+			IOUtil.writeAndClose(post, response);
 		}
 
 	}
@@ -302,7 +300,9 @@ public class FileInfoAction {
 	 * @param fromHostPort
 	 */
 	@At
-	public void copyFile(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
+	public Restful copyFile(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
+		StringBuilder sb = new StringBuilder();
+		boolean flag = true;
 		for (String relativePath : relativePaths) {
 			if (StringUtil.isBlank(relativePath)) {
 				continue;
@@ -322,13 +322,16 @@ public class FileInfoAction {
 				LOG.info("down ok : {} use time : {} ", relativePath, System.currentTimeMillis() - start);
 			} else {
 				LOG.error("down error : {} ", post.getContent());
+				sb.append(relativePath + " 下载错误: " + post.getContent());
+				flag = false;
 			}
-
 		}
+
+		return Restful.instance(flag, sb.toString());
 	}
 
 	@At
-	public Restful upCluster(@Param("groupName") String groupName, @Param("relativePath") String[] relativePaths) throws Exception {
+	public Restful upCluster(@Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
 		for (String relativePath : relativePaths) {
 			StaticValue.space().upCluster(groupName, relativePath);
 		}

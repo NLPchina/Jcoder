@@ -31,6 +31,8 @@ public class ProxyService {
 
 	public static final String PROXY_HEADER = "PROXY_HEADER";
 
+	private String myToken = null ;
+
 	protected static final Set<String> HOP_HEADERS = Sets.newHashSet("Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
 			"TE", "Trailers", "Transfer-Encoding", "Upgrade", "Content-Encoding");
 
@@ -343,17 +345,20 @@ public class ProxyService {
 
 	}
 
-	private String getOrCreateToken() throws Exception {
-		HttpSession session = Mvcs.getReq().getSession();
-		String token = (String) session.getAttribute(UserConstants.USER_TOKEN);
 
-		if (token == null || StaticValue.space().getToken(token) == null) {
+	/**
+	 * 获取一个token
+	 * @return
+	 * @throws Exception
+	 */
+
+	private synchronized String getOrCreateToken() throws Exception {
+		if (myToken == null || StaticValue.space().getToken(myToken) == null) {
 			LOG.info("token timeout so create it ");
-			User user = (User) session.getAttribute("user");
-			token = TokenService.regToken(user);
-			session.setAttribute(UserConstants.USER_TOKEN, token);
+			User user = (User) Mvcs.getReq().getSession().getAttribute("user");
+			myToken = TokenService.regToken(user);
 		}
-		return token;
+		return myToken;
 	}
 
 

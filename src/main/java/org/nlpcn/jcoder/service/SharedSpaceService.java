@@ -608,15 +608,17 @@ public class SharedSpaceService {
 		groupCache = new PathChildrenCache(zkDao.getZk(), GROUP_PATH, false);
 
 		groupCache.getListenable().addListener((client, event) -> {
-			String path = event.getData().getPath();
-			String groupName = path.substring(GROUP_PATH.length() + 1).split("/")[0];
-			switch (event.getType()) {
-				case CHILD_ADDED:
-				case CHILD_UPDATED:
-				case CHILD_REMOVED:
-				default:
-					CheckClusterJob.changeGroup(groupName);
-					break;
+			if(event.getData()!=null) {
+				String path = event.getData().getPath();
+				String groupName = path.substring(GROUP_PATH.length() + 1).split("/")[0];
+				switch (event.getType()) {
+					case CHILD_ADDED:
+					case CHILD_UPDATED:
+					case CHILD_REMOVED:
+					default:
+						CheckClusterJob.changeGroup(groupName);
+						break;
+				}
 			}
 		});
 		groupCache.start();
@@ -983,7 +985,7 @@ public class SharedSpaceService {
 			root.setMd5(groupCache.getGroupMD5());
 		} else {
 			LOG.info("to computer md5 in gourp: " + groupName);
-			Set<String> ts = new TreeSet<>(result.stream().map(fi -> fi.getMd5()).collect(Collectors.toSet()));
+			List<String> ts = result.stream().map(fi -> fi.getRelativePath()+fi.getMd5()).sorted().collect(Collectors.toList());
 
 			groupCache = new GroupCache();
 			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
@@ -1034,7 +1036,7 @@ public class SharedSpaceService {
 	 * @return
 	 */
 	public List<String> getCurrentHostPort(String groupName) {
-		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).collect(Collectors.toList());
+		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k-> k.split("_")[0]).collect(Collectors.toList());
 		return collect;
 	}
 
@@ -1049,7 +1051,7 @@ public class SharedSpaceService {
 		if (collect.size() == 0) {
 			return null;
 		}
-		return collect.get(new Random().nextInt(collect.size())).split("_")[0];
+		return collect.get(new Random().nextInt(collect.size()));
 	}
 
 	public CuratorFramework getZk() {

@@ -20,13 +20,13 @@ public class AuthoritiesManager implements ActionFilter {
 	public View match(ActionContext actionContext) {
 		HttpSession session = Mvcs.getHttpSession();
 
-		String tokenStr = actionContext.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD);
-
 		Object obj = session.getAttribute(UserConstants.USER);
 
 		if (obj != null) {
 			return null;
 		}
+
+		String tokenStr = actionContext.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD);
 
 		if (StringUtil.isNotBlank(tokenStr)) {
 			try {

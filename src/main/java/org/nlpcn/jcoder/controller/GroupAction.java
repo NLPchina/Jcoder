@@ -289,11 +289,11 @@ public class GroupAction {
 	 */
 	@At
 	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
-		if (StaticValue.getHostPort().equals(hostPort)) {
+		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
 			return Restful.instance(groupService.flush(groupName));
 		} else {
-			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of(hostPort, hostPort, groupName, groupName), 120000);
-			return JSONObject.toJavaObject((JSON) JSON.parse(post.getContent()), Restful.class);
+			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName), 120000);
+			return JSONObject.parseObject(post.getContent(),Restful.class) ;
 		}
 
 	}
@@ -310,27 +310,34 @@ public class GroupAction {
 	@At
 	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, String relativePath) throws Exception {
 
-		if (StringUtil.isBlank(fromHostPort) && StringUtil.isBlank(toHostPort)) {
-			return Restful.instance(false, "主版本中不存在任何实例，所以无法同步");
+		boolean toMaster = Constants.HOST_MASTER.equals(toHostPort);
+
+		Set<String> toHostPorts = new HashSet<>();
+
+		if (Constants.HOST_MASTER.equals(fromHostPort)) { //说明是主机
+			fromHostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			if (fromHostPort == null) {
+				return Restful.fail().msg("主版本中不存在任何实例，所以无法同步");
+			}
+		}
+
+		if (toMaster) {
+			List<String> currentHostPort = StaticValue.space().getCurrentHostPort(groupName);
+			toHostPorts.addAll(currentHostPort);
+		} else {
+			toHostPorts.add(toHostPort);
 		}
 
 		if (relativePath.startsWith("/")) {//更新文件的
-			if (StringUtil.isBlank(fromHostPort)) {
-				fromHostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
-				if (fromHostPort == null) {
-					return Restful.instance(false, "未找到任何一台主机包含同步版本");
-				} else {
-					Response post = proxyService.post(toHostPort, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000);
-					return JSONObject.parseObject(post.getContent(), Restful.class);
-				}
-			} else {
-				List<String> toHostPorts = StaticValue.space().getCurrentHostPort(groupName);
-				//更新所有机器
-				String post = proxyService.post(new HashSet<>(toHostPorts), "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
-				//更新集群
-				Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
-				return Restful.instance().msg(post + "，" + post1.getContent());
+			StringBuilder sb = new StringBuilder();
+			String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+			sb.append(post);
+			if (toMaster) {
+				Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePaths", relativePath), 120000);
+				sb.append("，" + post1.getContent());
 			}
+			return Restful.instance().msg(sb.toString());
+
 		} else {//更新task的
 			if (StringUtil.isBlank(fromHostPort)) {
 				fromHostPort = Constants.HOST_MASTER;
@@ -340,7 +347,7 @@ public class GroupAction {
 				toHostPort = Constants.HOST_MASTER;
 			}
 
-			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath ,"sourceHost",fromHostPort), 10000);
+			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 10000);
 			Object obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
 			if (obj == null) {
 				return Restful.fail().msg("任务不存在");
