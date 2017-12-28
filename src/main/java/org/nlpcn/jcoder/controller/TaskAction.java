@@ -374,7 +374,6 @@ public class TaskAction {
 	/**
 	 * 传入多个主机获取主机们的成功失败数字
 	 *
-	 * @param hostPorts
 	 * @return
 	 */
 	@At
@@ -382,10 +381,12 @@ public class TaskAction {
 		if (!first) {
 			long success = 0;
 			long error = 0;
-			Task taskByCache = TaskService.findTaskByCache(name);
-			if (taskByCache != null) {
-				success = taskByCache.success();
-				error = taskByCache.error();
+			if (StringUtil.isNotBlank(name)) {
+				Task taskByCache = TaskService.findTaskByCache(name);
+				if (taskByCache != null) {
+					success = taskByCache.success();
+					error = taskByCache.error();
+				}
 			}
 
 			return Restful.ok().msg(success + "_" + error);
@@ -399,15 +400,15 @@ public class TaskAction {
 
 			List<TaskStatistics> result = new ArrayList<>();
 
-			JSONObject jsonObject = null ;
+			JSONObject jsonObject = null;
 			for (HostGroup hostGroup : groupHostList) {
 				String content = map.get(hostGroup.getHostPort());
-				try{
+				try {
 					jsonObject = JSONObject.parseObject(content);
-					if(!jsonObject.getBoolean("ok")){
+					if (!jsonObject.getBoolean("ok")) {
 						continue;
 					}
-				}catch (Exception e){
+				} catch (Exception e) {
 					continue;
 				}
 
@@ -425,14 +426,14 @@ public class TaskAction {
 			final long sum = result.stream().mapToLong(t -> t.getWeight()).sum();
 			result.forEach(t -> t.setSumWeight(sum));
 
-			TaskStatistics master = new TaskStatistics() ;
+			TaskStatistics master = new TaskStatistics();
 			master.setSumWeight(sum);
 			master.setWeight(sum);
-			master.setError(result.stream().mapToLong(t->t.getError()).sum());
-			master.setSuccess(result.stream().mapToLong(t->t.getSuccess()).sum());
+			master.setError(result.stream().mapToLong(t -> t.getError()).sum());
+			master.setSuccess(result.stream().mapToLong(t -> t.getSuccess()).sum());
 			master.setHostPort("master");
 
-			result.add(0,master);
+			result.add(0, master);
 
 			return Restful.ok().obj(result);
 		}
