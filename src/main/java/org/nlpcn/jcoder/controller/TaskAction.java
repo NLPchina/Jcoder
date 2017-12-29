@@ -128,7 +128,7 @@ public class TaskAction {
 	 * @throws Exception
 	 */
 	@At
-	public Restful save(@Param("hosts[]") String[] hosts, @Param("::task") Task task) throws Exception {
+	public Restful save(@Param("hosts[]") String[] hosts, @Param("task") Task task) throws Exception {
 		if (hosts == null || hosts.length < 1) {
 			throw new IllegalArgumentException("empty hosts");
 		}
