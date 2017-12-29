@@ -225,7 +225,7 @@ var groupHostList = new Vue({
 	changeWeight:function(hostPort,weight){
 		var $this = this;
 		JqdeBox.loading();
-		Jcoder.ajax('/admin/group/changeWeight', 'post',{"name":$this.groupName,"weight":weight,"hostPort":hostPort},null).then(function (data) {
+		Jcoder.ajax('/admin/group/changeWeight', 'post',{"groupName":$this.groupName,"weight":weight,"hostPort":hostPort},null).then(function (data) {
 			JqdeBox.unloading();
 			JqdeBox.message(data.ok, data.message);
 		});
