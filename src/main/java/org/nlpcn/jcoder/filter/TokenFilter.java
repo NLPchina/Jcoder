@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.filter;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 
+import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
@@ -35,10 +36,10 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 	@Override
 	public View match(ActionContext actionContext) {
 
-		String token = actionContext.getRequest().getHeader("authorization");
+		String token = actionContext.getRequest().getHeader(UserConstants.USER_TOKEN_HEAD);
 
 		if (token == null) { //尝试从参数中获取
-			token = actionContext.getRequest().getParameter("_authorization");
+			token = actionContext.getRequest().getParameter("_" + UserConstants.USER_TOKEN_HEAD);
 		}
 
 		if (StringUtil.isBlank(token)) {
@@ -65,10 +66,10 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 			String path = actionContext.getPath();
 
 			String[] split = path.replace("/api/", "").split("/");
-			
-			
-			if(split.length<2){
-				split = new String[]{split[0],null} ;
+
+
+			if (split.length < 2) {
+				split = new String[]{split[0], null};
 			}
 
 			if (!token2.authorize(split[0], split[1])) {
@@ -89,7 +90,7 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 		String token = req.getTokenStr();
 
 		if (token == null) { //尝试从参数中获取
-			token = (String) Rpcs.getContext().get("_authorization");
+			token = (String) Rpcs.getContext().get("_"+UserConstants.USER_TOKEN_HEAD);
 		}
 
 		if (StringUtil.isBlank(token)) {

@@ -348,12 +348,13 @@ public class GroupAction {
 			}
 
 			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 10000);
-			Object obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
+			JSONObject obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
 			if (obj == null) {
 				return Restful.fail().msg("任务不存在");
 			}
 
-			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts", toHostPort, "task", obj), 1000);
+			obj.remove("id") ;
+			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 1000);
 
 			return JSONObject.parseObject(post.getContent(), Restful.class);
 		}

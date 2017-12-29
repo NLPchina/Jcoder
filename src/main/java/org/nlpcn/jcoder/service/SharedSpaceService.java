@@ -852,7 +852,7 @@ public class SharedSpaceService {
 	private void diffTask(Task task, Different different) {
 		try {
 
-			byte[] bytes = getData2ZK(GROUP_PATH + GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName());
+			byte[] bytes = getData2ZK(GROUP_PATH  + "/" + task.getGroupName() + "/" + task.getName());
 
 			if (bytes == null) {
 				different.addMessage("集群中不存在此Task");
@@ -873,7 +873,7 @@ public class SharedSpaceService {
 			if (task.getType() == 2 && !Objects.equals(task.getScheduleStr(), cluster.getScheduleStr())) {
 				different.addMessage("定时计划不一致");
 			}
-			if (Objects.equals(task.getDescription(), cluster.getDescription())) {
+			if (!Objects.equals(task.getDescription(), cluster.getDescription())) {
 				different.addMessage("简介不一致");
 			}
 		} catch (Exception e) {
