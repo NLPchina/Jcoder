@@ -36,50 +36,34 @@ Vue.filter('formatNumber', function (value, decimals) {
 
 /** HOST组件 */
 Vue.component('host-component', {
-    props: ['groupName', 'taskName', 'hosts'],
-    template: '<div class="alert alert-block alert-success" style="padding:8px;">' +
-    '<label v-for="item in hosts"' +
-    '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.current?\'infobox-green\':\'\'),style:\'cursor:pointer;margin:2px;width:228px;\'+(!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
+    props: ['groupName', 'hosts'],
+    template: '<div class="alert alert-block alert-success host-component" style="padding:8px;">' +
+    '<div v-on:click="select(item)" v-for="item in hosts"' +
+    '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.selected?\'infobox-blue\':(item.current?\'infobox-green\':\'\')),style:\'cursor:pointer;margin:2px;width:210px;\'+(!item.selected&&!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
     '<div class="infobox-progress">' +
     '    <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">' +
     '        <span class="percent">{{item.weight}}</span>%' +
     '    </div>' +
     '</div>' +
     '<div class="infobox-data">' +
-    '    <div class="infobox-content" style="width:173px;max-width:173px;">' +
+    '    <div class="infobox-content">' +
     '        {{item.host}}' +
-    '        <label class="pull-right">' +
-    '            <input class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">' +
-    '            <span class="lbl"></span>' +
-    '        </label>' +
-    '    </div>' +
-    '    <div class="infobox-content" style="width:173px;max-width:173px;">' +
-    '        <span class="green" style="width:72px;display:inline-block;"><i class="ace-icon fa fa-check"></i> {{item.success}}</span>' +
-    '        &nbsp;&nbsp;' +
-    '        <span class="red"><i class="ace-icon fa fa-bolt"></i> {{item.error}}</span>' +
     '    </div>' +
     '</div>' +
-    '</label>' +
+    '</div>' +
     '</div>',
     mounted: function () {
         var me = this;
-        Jcoder.ajax('/admin/task/statistics', 'GET', {groupName: me.groupName, name: me.taskName}).then(function (data) {
+        Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.groupName}).then(function (data) {
             data = data.obj;
-            var hosts = me.hosts;
+            var hosts = (me.hosts = me.hosts || []), sum = _.chain(data).pluck("weight").reduce(function (memo, num) {return memo + num;}, 0).value();
+            if (sum == 0) sum = 1;
             _.each(data, function (ele) {
-                var current = ele.hostGroup ? ele.hostGroup.current : true;
-                hosts.push({
-                    host: ele.hostPort,
-                    checked: current,
-                    current: current,
-                    weight: (ele.weight / ele.sumWeight * 100).toFixed(0),
-                    success: ele.success,
-                    error: ele.error
-                });
+                hosts.push({host: ele.hostPort, selected: ele.current, current: ele.current, weight: ele.hostPort == "master" ? 100 : (ele.weight / sum * 100).toFixed(0)});
             });
 
             Vue.nextTick(function () {
-                $('.easy-pie-chart.percentage').each(function () {
+                $(".host-component").find('.easy-pie-chart.percentage').each(function () {
                     var $box = $(this).closest('.infobox'),
                         barColor = $(this).data('color') || (!$box.hasClass('infobox-dark') ? $box.css('color') : 'rgba(255,255,255,0.95)'),
                         trackColor = barColor == 'rgba(255,255,255,0.95)' ? 'rgba(255,255,255,0.25)' : '#E2E2E2',
@@ -96,8 +80,24 @@ Vue.component('host-component', {
                 });
             });
         }).catch(function (req) {
-            JqdeBox.message(false, req.responseText);
+            JqdeBox.message(false, req.responseText || req.message);
         });
+    },
+    methods: {
+        select: function (ele) {
+            if (ele.selected) return;
+            if (ele.current) {
+                _.each(this.hosts, function (ele) {
+                    ele.selected = !!ele.current;
+                });
+            } else {
+                var host = ele.host;
+                _.each(this.hosts, function (ele) {
+                    ele.selected = ele.host == host;
+                });
+            }
+            this.$emit('select', ele);
+        }
     }
 });
 
