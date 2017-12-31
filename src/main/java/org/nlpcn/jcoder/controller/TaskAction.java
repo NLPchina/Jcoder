@@ -69,7 +69,7 @@ public class TaskAction {
 				.stream()
 				.filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
 				.map(t -> ImmutableMap.of("name", t.getName(),
-						"description", t.getDescription(),
+                        "description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
 						"status", t.getStatus(),
 						"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
 						"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null)))

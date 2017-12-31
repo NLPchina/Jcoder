@@ -2,6 +2,8 @@ package org.nlpcn.jcoder.util;
 
 public class StringUtil {
 
+    public static final String EMPTY = "";
+
     private static final String NULL = "null";
 
     /**
