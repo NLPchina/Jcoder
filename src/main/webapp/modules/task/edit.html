@@ -10,7 +10,7 @@
 
 <div class="row" id="vmTaskEditModule">
     <div>
-        <host-component :group-name="task.groupName" :task-name="task.name" :hosts.sync="hosts"/>
+        <host-component :hosts.sync="hosts"/>
     </div>
 
     <form class="form-horizontal">
@@ -77,4 +77,30 @@
     </form>
 </div>
 
+<script type="text/x-template" id="host-component">
+    <div class="alert alert-block alert-success" style="padding:8px;">
+        <label v-for="item in hosts"
+               v-bind="{class:'infobox infobox-small infobox-dark '+(item.current?'infobox-green':''),style:'cursor:pointer;margin:2px;width:228px;'+(!item.current?'background-color:#E08374;border-color:#E08374;':'')}">
+            <div class="infobox-progress">
+                <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">
+                    <span class="percent">{{item.weight}}</span>%
+                </div>
+            </div>
+            <div class="infobox-data">
+                <div class="infobox-content" style="width:173px;max-width:173px;">
+                    {{item.host}}
+                    <label class="pull-right">
+                        <input class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">
+                        <span class="lbl"></span>
+                    </label>
+                </div>
+                <div class="infobox-content" style="width:173px;max-width:173px;">
+                    <span class="green" style="width:72px;display:inline-block;"><i class="ace-icon fa fa-check"></i> {{item.success}}</span>
+                    &nbsp;&nbsp;
+                    <span class="red"><i class="ace-icon fa fa-bolt"></i> {{item.error}}</span>
+                </div>
+            </div>
+        </label>
+    </div>
+</script>
 <script src="modules/task/edit.js"/>

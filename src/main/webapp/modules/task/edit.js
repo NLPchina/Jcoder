@@ -1,6 +1,54 @@
 vmApp.module = new Vue({
     el: '#vmTaskEditModule',
 
+    components: {
+        'host-component': {
+            props: ['hosts'],
+            template: '#host-component',
+            mounted: function () {
+                var me = this, parent = me.$parent, task = parent.task;
+                Jcoder.ajax('/admin/task/statistics', 'GET', {
+                    groupName: task.groupName,
+                    name: task.name
+                }).then(function (data) {
+                    data = data.obj;
+                    var hosts = me.hosts;
+                    _.each(data, function (ele) {
+                        var current = ele.hostGroup ? ele.hostGroup.current : true;
+                        hosts.push({
+                            host: ele.hostPort,
+                            checked: current,
+                            current: current,
+                            weight: (ele.weight / ele.sumWeight * 100).toFixed(0),
+                            success: ele.success,
+                            error: ele.error
+                        });
+                    });
+
+                    Vue.nextTick(function () {
+                        $(parent.$el).find('.easy-pie-chart.percentage').each(function () {
+                            var $box = $(this).closest('.infobox'),
+                                barColor = $(this).data('color') || (!$box.hasClass('infobox-dark') ? $box.css('color') : 'rgba(255,255,255,0.95)'),
+                                trackColor = barColor == 'rgba(255,255,255,0.95)' ? 'rgba(255,255,255,0.25)' : '#E2E2E2',
+                                size = parseInt($(this).data('size')) || 50;
+                            $(this).easyPieChart({
+                                barColor: barColor,
+                                trackColor: trackColor,
+                                scaleColor: false,
+                                lineCap: 'butt',
+                                lineWidth: parseInt(size / 10),
+                                animate: ace.vars['old_ie'] ? false : 1000,
+                                size: size
+                            });
+                        });
+                    });
+                }).catch(function (req) {
+                    JqdeBox.message(false, req.responseText);
+                });
+            }
+        }
+    },
+
     data: {
         hosts: [],
         groups: [],
