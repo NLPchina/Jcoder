@@ -1,7 +1,10 @@
 package org.nlpcn.jcoder.scheduler;
 
+import org.nlpcn.jcoder.constant.Constants;
+import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
+import org.nlpcn.jcoder.job.MasterJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.DateUtils;
@@ -24,18 +27,22 @@ public class ThreadManager {
 	/**
 	 * 增加一个task 只有master可以添加任务
 	 *
-	 * @param task
 	 * @throws SchedulerException
 	 * @throws TaskException
 	 */
 	public synchronized static boolean add(String groupName, String taskName, String scheduleStr) throws TaskException, SchedulerException {
+		if (StringUtil.isBlank(scheduleStr)) {
+			MasterJob.addQueue(KeyValue.with(groupName,taskName)) ;
+			return true ;
+		}
+
 		boolean flag;
 		try {
-			flag = QuartzSchedulerManager.addJob(groupName + "_" + taskName, scheduleStr);
-		} catch (SchedulerException e) {
+			flag = QuartzSchedulerManager.addJob(groupName + Constants.GROUP_TASK_SPLIT + taskName, scheduleStr);
+		} catch (Exception e) {
 			flag = false;
+			e.printStackTrace();
 			LOG.error(e.getMessage(), e);
-			throw new TaskException(e.getMessage());
 		}
 		return flag;
 	}
@@ -54,7 +61,6 @@ public class ThreadManager {
 				return;
 			}
 		}
-
 		String threadName = task.getName() + "@" + JOB_ID.getAndIncrement() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss");
 
 		TaskRunManager.runTaskJob(new TaskJob(threadName, task));

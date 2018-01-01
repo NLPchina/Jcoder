@@ -12,9 +12,12 @@ import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.scheduler.TaskException;
+import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -69,7 +72,7 @@ public class TaskAction {
 				.stream()
 				.filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
 				.map(t -> ImmutableMap.of("name", t.getName(),
-                        "description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
+						"description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
 						"status", t.getStatus(),
 						"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
 						"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null)))
@@ -437,5 +440,37 @@ public class TaskAction {
 
 			return Restful.ok().obj(result);
 		}
+	}
+
+	/**
+	 * 接收定时任务的接口，无法通过外部api调用
+	 *
+	 * @param groupName
+	 * @param taskName
+	 * @return
+	 */
+	@At
+	public Restful __cron__(@Param("groupName") String groupName, @Param("taskName") String taskName) {
+		User user = (User) Mvcs.getHttpSession(false).getAttribute(UserConstants.USER);
+		if (user != User.CLUSTER_USER) {
+			return Restful.fail().code(ApiException.TokenNoPermissions).msg("your account not support this api");
+		}
+		Task task = TaskService.findTaskByCache(taskName);
+		if (task == null) {
+			return Restful.fail().code(ApiException.NotFound).msg(taskName + " not found ");
+		}
+
+		if (task.getStatus() == 0) {
+			return Restful.fail().code(ApiException.Forbidden).msg("task " + taskName + " status is 0 so skip !");
+		}
+
+		try {
+			ThreadManager.run(task);
+		} catch (TaskException e) {
+			e.printStackTrace();
+			return Restful.fail().code(ApiException.ServerException).msg("task run fail " + taskName + e.getMessage());
+		}
+
+		return Restful.ok();
 	}
 }

@@ -14,6 +14,7 @@ import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.CheckClusterJob;
+import org.nlpcn.jcoder.job.MasterJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
@@ -46,11 +47,6 @@ public class SharedSpaceService {
 	 * 路由表
 	 */
 	public static final String MAPPING_PATH = StaticValue.ZK_ROOT + "/mapping";
-
-	/**
-	 * 广播体操
-	 */
-	private static final String MESSAGE_PATH = StaticValue.ZK_ROOT + "/message";
 
 	/**
 	 * Token
@@ -123,26 +119,6 @@ public class SharedSpaceService {
 	 * 在线groupcache
 	 */
 	private PathChildrenCache groupCache;
-
-
-	/**
-	 * {groupName , className , path:存放路径 , type :0 普通任务 ， 1 while 任务  2.all任务}
-	 * 增加一个任务到任务队列
-	 */
-	public void add2TaskQueue(String groupName, String className, String scheduleStr) throws Exception {
-		String id = UUID.randomUUID().toString();
-		JSONObject job = new JSONObject();
-		job.put("groupName", groupName);
-		job.put("className", className);
-		int type = 0;
-		if ("while".equalsIgnoreCase(scheduleStr)) {
-			type = 1;
-		} else if ("all".equalsIgnoreCase(scheduleStr)) {
-			type = 2;
-		}
-		job.put("type", type);
-		zkDao.getZk().setData().forPath(MESSAGE_PATH + "/" + id, job.getBytes("utf-8"));
-	}
 
 
 	/**
@@ -229,23 +205,6 @@ public class SharedSpaceService {
 			for (String child : children) {
 				walkAllDataNode(set, path + "/" + child);
 			}
-		} catch (Exception e) {
-			LOG.error("walk file err: " + path);
-		}
-	}
-
-	/**
-	 * 递归查询所有子文件
-	 *
-	 * @param set
-	 * @param path
-	 * @return
-	 * @throws Exception
-	 */
-	public void walkDataNode(Set<String> set, String path) throws Exception {
-		try {
-			byte[] nodes = zkDao.getZk().getData().forPath(path);
-			Object o = JSONObject.parseObject(nodes, String[].class);
 		} catch (Exception e) {
 			LOG.error("walk file err: " + path);
 		}
@@ -544,12 +503,14 @@ public class SharedSpaceService {
 			public void isLeader() {
 				StaticValue.setMaster(true);
 				LOG.info("I am master my host is " + StaticValue.getHostPort());
+				MasterJob.startJob();
 			}
 
 			@Override
 			public void notLeader() {
 				StaticValue.setMaster(false);
-				LOG.info("I am lost leader " + StaticValue.getHostPort());
+				LOG.info("I am lost master " + StaticValue.getHostPort());
+				MasterJob.stopJob();
 			}
 
 		});
@@ -608,7 +569,7 @@ public class SharedSpaceService {
 		groupCache = new PathChildrenCache(zkDao.getZk(), GROUP_PATH, false);
 
 		groupCache.getListenable().addListener((client, event) -> {
-			if(event.getData()!=null) {
+			if (event.getData() != null) {
 				String path = event.getData().getPath();
 				String groupName = path.substring(GROUP_PATH.length() + 1).split("/")[0];
 				switch (event.getType()) {
@@ -616,7 +577,7 @@ public class SharedSpaceService {
 					case CHILD_UPDATED:
 					case CHILD_REMOVED:
 					default:
-						if(StaticValue.isMaster()){ //如果是master检查定时任务
+						if (StaticValue.isMaster()) { //如果是master检查定时任务
 
 						}
 						CheckClusterJob.changeGroup(groupName);
@@ -626,16 +587,6 @@ public class SharedSpaceService {
 		});
 		groupCache.start();
 
-		//监听task运行
-		NodeCache nodeCache = new NodeCache(zkDao.getZk(), MESSAGE_PATH);
-		nodeCache.getListenable().addListener(new NodeCacheListener() {
-			@Override
-			public void nodeChanged() throws Exception {
-				byte[] data = nodeCache.getCurrentData().getData();
-				//TODO: 拿到任务后去执行吧。。心累
-			}
-		});
-		nodeCache.start();
 
 		LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
 		return this;
@@ -855,7 +806,7 @@ public class SharedSpaceService {
 	private void diffTask(Task task, Different different) {
 		try {
 
-			byte[] bytes = getData2ZK(GROUP_PATH  + "/" + task.getGroupName() + "/" + task.getName());
+			byte[] bytes = getData2ZK(GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName());
 
 			if (bytes == null) {
 				different.addMessage("集群中不存在此Task");
@@ -988,7 +939,7 @@ public class SharedSpaceService {
 			root.setMd5(groupCache.getGroupMD5());
 		} else {
 			LOG.info("to computer md5 in gourp: " + groupName);
-			List<String> ts = result.stream().map(fi -> fi.getRelativePath()+fi.getMd5()).sorted().collect(Collectors.toList());
+			List<String> ts = result.stream().map(fi -> fi.getRelativePath() + fi.getMd5()).sorted().collect(Collectors.toList());
 
 			groupCache = new GroupCache();
 			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
@@ -1039,7 +990,7 @@ public class SharedSpaceService {
 	 * @return
 	 */
 	public List<String> getCurrentHostPort(String groupName) {
-		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k-> k.split("_")[0]).collect(Collectors.toList());
+		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k -> k.split("_")[0]).collect(Collectors.toList());
 		return collect;
 	}
 
@@ -1077,5 +1028,17 @@ public class SharedSpaceService {
 		return groupCache;
 	}
 
+	/**
+	 * 重置master
+	 */
+	public void resetMaster() {
+		Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
+
+		try {
+			leader.start();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 }

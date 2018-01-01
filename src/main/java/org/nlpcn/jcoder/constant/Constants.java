@@ -16,4 +16,10 @@ public interface Constants {
      * master主机任务ID
      */
     long MASTER_TASK_ID = 0L;
+
+
+    /**
+     * 定时任务，group和task的分隔符
+     */
+    String GROUP_TASK_SPLIT = "_____SPLIT_____" ;
 }
