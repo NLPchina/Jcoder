@@ -77,7 +77,7 @@ public class Bootstrap {
 			port = findPort(port);
 			putEnv(PREFIX + "port", String.valueOf(port));
 		} else {
-			port = Integer.parseInt(portStr) ;
+			port = Integer.parseInt(portStr);
 		}
 
 		System.setProperty("java.awt.headless", "true"); // support kaptcha
@@ -166,8 +166,8 @@ public class Bootstrap {
 	 * @return
 	 */
 	private static int findPort(int port) throws UnknownHostException {
-		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1)) {
-			port = port + 2;
+		while (isPortUsing("127.0.0.1", port) || isPortUsing("127.0.0.1", port + 1) || isPortUsing("127.0.0.1", port + 2)) {
+			port = port + 3;
 		}
 		return port;
 	}

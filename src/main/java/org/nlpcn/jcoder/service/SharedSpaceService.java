@@ -616,6 +616,9 @@ public class SharedSpaceService {
 					case CHILD_UPDATED:
 					case CHILD_REMOVED:
 					default:
+						if(StaticValue.isMaster()){ //如果是master检查定时任务
+
+						}
 						CheckClusterJob.changeGroup(groupName);
 						break;
 				}

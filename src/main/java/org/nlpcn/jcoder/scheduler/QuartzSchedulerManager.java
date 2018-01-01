@@ -5,6 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.nlpcn.jcoder.service.SharedSpaceService;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.service.TaskService;
@@ -67,7 +70,6 @@ class QuartzSchedulerManager {
 		LOG.info(groupTaskName + " add to the schedulejob! ");
 		scheduler.scheduleJob(makeJobDetail(groupTaskName), makeTrigger(scheduleStr));
 		return true;
-
 	}
 
 	protected static JobDetail makeJobDetail(String groupTaskName) {
@@ -136,6 +138,7 @@ class QuartzSchedulerManager {
 		}
 		List<Task> list = new ArrayList<>();
 		Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.anyJobGroup());
+
 		for (JobKey jobKey : jobKeys) {
 			Task task = TaskService.findTaskByCache(jobKey.getName());
 			task.setRunStatus("Schedulerd");

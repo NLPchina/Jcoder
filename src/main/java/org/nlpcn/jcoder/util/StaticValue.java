@@ -29,6 +29,7 @@ public class StaticValue {
 	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
 	private static final String HOST = getValueOrCreate("host", "*");
 	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
+	private static final String HOST_PORT = getHost() + ":" + PORT;
 	public static final int RPCPORT = TypeUtils.castToInt(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
 	//default token
 	public static final String TOKEN = getValueOrCreate("token", null);
@@ -215,6 +216,6 @@ public class StaticValue {
 	 * @return
 	 */
 	public static String getHostPort() {
-		return getHost() + ":" + PORT;
+		return HOST_PORT;
 	}
 }

@@ -28,10 +28,10 @@ public class ThreadManager {
 	 * @throws SchedulerException
 	 * @throws TaskException
 	 */
-	public synchronized static boolean add(String groupTaskName, String scheduleStr) throws TaskException, SchedulerException {
+	public synchronized static boolean add(String groupName, String taskName, String scheduleStr) throws TaskException, SchedulerException {
 		boolean flag;
 		try {
-			flag = QuartzSchedulerManager.addJob(groupTaskName, scheduleStr);
+			flag = QuartzSchedulerManager.addJob(groupName + "_" + taskName, scheduleStr);
 		} catch (SchedulerException e) {
 			flag = false;
 			LOG.error(e.getMessage(), e);
@@ -47,7 +47,6 @@ public class ThreadManager {
 	 * @throws TaskException
 	 */
 	public static void run(Task task) throws TaskException {
-
 		//如果是while或者一次性任务将不再添加进来
 		if (StringUtil.isBlank(task.getScheduleStr()) || "while".equals(task.getScheduleStr().toLowerCase())) {
 			if (TaskRunManager.checkTaskExists(task.getName())) {
@@ -126,7 +125,6 @@ public class ThreadManager {
 			oldTask.codeInfo().getExecuteMethods().forEach(m -> {
 				StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
 			});
-
 
 
 			/**

@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.job;
 
 import org.nlpcn.jcoder.server.H2Server;
+import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -44,16 +45,11 @@ public class SiteSetup implements Setup {
 		 */
 		if (StaticValue.IS_LOCAL) {
 			LOG.info("stared server by local model");
+			ZKServer.startServer();
 			StaticValue.setMaster(true);
 		} else {
 			LOG.info("stared server by cluster model");
 			StaticValue.setMaster(false);
-			try {
-				StaticValue.setSharedSpace(new SharedSpaceService().init());
-			} catch (Exception e) {
-				LOG.error("zookper err ",e);
-				System.exit(-1);
-			}
 		}
 
 		try {
@@ -61,6 +57,13 @@ public class SiteSetup implements Setup {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);
+		}
+
+		try {
+			StaticValue.setSharedSpace(new SharedSpaceService().init());
+		} catch (Exception e) {
+			LOG.error("zookpeer err ", e);
+			System.exit(-1);
 		}
 
 		// task 其他定时任务的运行状况
