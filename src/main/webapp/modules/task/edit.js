@@ -51,9 +51,8 @@ vmApp.module = new Vue({
 
     data: {
         hosts: [],
-        groups: [],
 
-        sourceHost: "master",
+        sourceHost: param.host || "master",
         task: {
             type: 1,
             status: 0,

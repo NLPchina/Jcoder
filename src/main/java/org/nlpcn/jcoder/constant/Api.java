@@ -5,6 +5,7 @@ package org.nlpcn.jcoder.constant;
  */
 public enum Api {
 
+    TASK_LIST(Api.BASE_PATH + "/task/__list__"),
     TASK_CHECK(Api.BASE_PATH + "/task/__check__"),
     TASK_SAVE(Api.BASE_PATH + "/task/__save__"),
     TASK_DELETE(Api.BASE_PATH + "/task/__delete__"),

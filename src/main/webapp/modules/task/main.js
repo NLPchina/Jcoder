@@ -12,45 +12,19 @@ vmApp.module = new Vue({
             template: '#task-template',
 
             mounted: function () {
-                $('.task-table').on('click', '.show-details-btn', function (e) {
-                    e.preventDefault();
-                    $(this).closest('tr').next().toggleClass('open');
-                    $(this).find(ace.vars['.icon']).toggleClass('fa-angle-double-down').toggleClass('fa-angle-double-up');
-                });
-
                 this.loadTasks();
             },
 
             methods: {
                 loadTasks: function () {
-                    var me = this;
-                    return Jcoder.ajax('/admin/task/list', 'GET', {
-                        groupName: me.$parent.groupName,
+                    var me = this, parent = me.$parent,
+                        hostGroup = _.findWhere(parent.hosts, {selected: true}) || {current: true};
+                    Jcoder.ajax('/admin/task/list', 'GET', {
+                        host: hostGroup.current ? null : hostGroup.host,
+                        groupName: parent.groupName,
                         taskType: me.type
                     }).then(function (data) {
-                        me.tasks = _.each(data.obj, function (ele) {
-                            ele.hosts = [];
-                        });
-
-                        // 更新主机列
-                        me.loadHostList();
-                    }).catch(function (req) {
-                        JqdeBox.message(false, req.responseText);
-                    });
-                },
-
-                loadHostList: function () {
-                    var me = this, tasks = me.tasks;
-                    if (!tasks || tasks.length < 1) return;
-                    Jcoder.ajax('/admin/task/host/list', 'POST', {
-                        groupName: me.$parent.groupName,
-                        names: _.pluck(tasks, 'name'),
-                        taskType: me.type
-                    }).then(function (data) {
-                        data = data.obj || {};
-                        _.each(tasks, function (ele) {
-                            ele.hosts = data[ele.name];
-                        });
+                        me.tasks = data.obj;
                     }).catch(function (req) {
                         JqdeBox.message(false, req.responseText);
                     });
@@ -60,15 +34,16 @@ vmApp.module = new Vue({
                     this.$parent.add(name);
                 },
 
-                remove: function (name, host) {
-                    var me = this, msg = "确定删除" + (host ? "主机 " + host + " " : "所有主机") + "任务 " + name + " ？";
-                    JqdeBox.confirm(msg, function (confirm) {
+                remove: function (name) {
+                    var me = this, parent = me.$parent,
+                        hosts = _.chain(parent.hosts).where({selected: true}).pluck("host").value();
+                    JqdeBox.confirm("确定删除主机 " + hosts + " 任务 " + name + " ？", function (confirm) {
                         if (!confirm) return;
 
                         JqdeBox.loading();
                         Jcoder.ajax('/admin/task/delete', 'POST', {
-                            host: host,
-                            groupName: me.$parent.groupName,
+                            hosts: hosts,
+                            groupName: parent.groupName,
                             name: name,
                             type: me.type
                         }).then(function () {
@@ -76,8 +51,7 @@ vmApp.module = new Vue({
                             me.loadTasks();
 
                             //
-                            var parent = me.$parent;
-                            me.type != parent.recycleType && parent.$children[2].loadTasks();
+                            me.type != parent.recycleType && parent.$children[3].loadTasks();
                         }).catch(function (req) {
                             JqdeBox.unloading();
                             JqdeBox.message(false, req.responseText);
@@ -92,7 +66,8 @@ vmApp.module = new Vue({
         apiType: 1,
         cronType: 2,
         recycleType: 0,
-        groupName: param.name
+        groupName: param.name,
+        hosts: []
     },
 
     mounted: function () {
@@ -102,9 +77,20 @@ vmApp.module = new Vue({
         add: function (name) {
             var h = '/task/edit.html?group=' + this.groupName;
             if (name) {
+                // 如果是编辑
                 h += '&name=' + name;
+                var hostGroup = _.findWhere(this.hosts, {selected: true});
+                if (!hostGroup.current) {
+                    h += "&host=" + hostGroup.host;
+                }
             }
             location.hash = h;
+        },
+
+        change: function () {
+            _.each(this.$children.slice(1), function (child) {
+                child.loadTasks();
+            });
         }
     }
 });

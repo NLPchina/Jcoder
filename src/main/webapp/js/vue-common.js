@@ -85,18 +85,23 @@ Vue.component('host-component', {
     },
     methods: {
         select: function (ele) {
-            if (ele.selected) return;
+            if (ele.selected) {
+                if (1 < _.filter(this.hosts, function (ele) {return ele.current && ele.selected;}).length) {
+                    ele.selected = false;
+                }
+                return;
+            }
+
             if (ele.current) {
-                _.each(this.hosts, function (ele) {
-                    ele.selected = !!ele.current;
-                });
+                var changed = _.some(this.hosts, function (ele) {return !ele.current && ele.selected;});
+                _.each(this.hosts, function (ele) {ele.selected = !!ele.current;});
+                if (!changed) return;
             } else {
                 var host = ele.host;
-                _.each(this.hosts, function (ele) {
-                    ele.selected = ele.host == host;
-                });
+                _.each(this.hosts, function (ele) {ele.selected = ele.host == host;});
             }
-            this.$emit('select', ele);
+
+            this.$emit('change', ele);
         }
     }
 });
