@@ -136,15 +136,7 @@ public class TaskAction {
         }
 
         // 获取有这个组的所有主机
-        boolean containsMaster = false;
-        List<HostGroup> hostList = groupService.getGroupHostList(groupName);
-        List<String> hosts = new ArrayList<>(hostList.size());
-        for (HostGroup hg : hostList) {
-            if (!containsMaster && hg.isCurrent()) {
-                containsMaster = true;
-            }
-            hosts.add(hg.getHostPort());
-        }
+        List<String> hosts = groupService.getGroupHostList(groupName).stream().map(HostGroup::getHostPort).collect(Collectors.toList());
 
         // 询问主机是否有这个任务
         hosts = hosts.parallelStream().filter(h -> {
@@ -157,7 +149,8 @@ public class TaskAction {
             return JSON.parseObject(content).get("obj") != null;
         }).collect(Collectors.toList());
 
-        if (containsMaster) {
+        //
+        if (taskService.getTasksByGroupNameFromCluster(groupName).stream().anyMatch(t -> Objects.equals(t.getName(), name))) {
             hosts.add(0, Constants.HOST_MASTER);
         }
 
