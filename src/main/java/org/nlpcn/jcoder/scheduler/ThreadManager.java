@@ -95,8 +95,8 @@ public class ThreadManager {
 
 			TaskRunManager.stopAll(taskName);
 
-			// 从定时任务中移除
-			QuartzSchedulerManager.stopTaskJob(taskName);
+			// 从定时任务中移除,只有master做这件事情。
+			//QuartzSchedulerManager.stopTaskJob(taskName);
 
 		} catch (Exception e) {
 			LOG.error(e.getMessage(), e);

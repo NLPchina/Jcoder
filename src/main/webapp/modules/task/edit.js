@@ -53,6 +53,8 @@ vmApp.module = new Vue({
         hosts: [],
 
         sourceHost: param.host || "master",
+        sourceHosts: [],
+
         task: {
             type: 1,
             status: 0,
@@ -65,9 +67,13 @@ vmApp.module = new Vue({
     mounted: function () {
         var me = this;
 
-        // 如果是编辑, 加载任务
+        // 如果是编辑
         if (me.task.name = param.name) {
+            // 加载任务
             me.loadTask();
+
+            // 加载任务对应的主机列表
+            me.loadSourceHosts();
         }
 
         Vue.nextTick(function () {
@@ -107,6 +113,17 @@ vmApp.module = new Vue({
                 JqdeBox.unloading();
                 JqdeBox.message(false, req.responseText);
             });
+        },
+
+        loadSourceHosts: function () {
+            var me = this, t = me.task;
+            Jcoder.ajax('/admin/task/host/list', 'GET', {groupName: t.groupName, name: t.name})
+                .then(function (data) {
+                    me.sourceHosts = data.obj;
+                })
+                .catch(function (req) {
+                    JqdeBox.message(false, req.responseText);
+                });
         },
 
         /**

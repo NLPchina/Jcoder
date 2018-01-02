@@ -40,7 +40,7 @@
                 <label class="col-sm-3 control-label no-padding-right" style="visibility:hidden;" v-else>&nbsp;</label>
                 <div class="col-sm-9">
                     <select v-if="!!task.name" class="col-sm-12" v-model="sourceHost" @change="loadTask()">
-                        <option v-for="h in hosts" :value="h.host">{{h.host}}</option>
+                        <option v-for="item in sourceHosts" :value="item">{{item}}</option>
                     </select>
                 </div>
             </div>
