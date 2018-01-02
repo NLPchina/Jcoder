@@ -20,8 +20,8 @@
 <div id="resourceManager" class="page-content" style="overflow: hidden; height: 60%;">
     <div class="row">
         <div class="col-xs-12">
-            <div class="alert alert-block alert-success">
-                <p>
+            <div>
+                <!--<p>
                 <ul>
                     <li v-for="host in hosts" style="float:left;list-style:none;margin:3px;">
                         <input type="checkbox" :value="host" v-model="checkedHosts" />
@@ -29,7 +29,8 @@
                     </li>
                 </ul>
                 </p>
-                <span>&nbsp;</span>
+                <span>&nbsp;</span>-->
+                <host-component :hosts.sync="hosts" :group-name="groupName" @change="change"/>
             </div>
             <div class="widget-box">
                 <div class="widget-header">

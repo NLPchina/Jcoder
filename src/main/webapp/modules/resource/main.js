@@ -38,6 +38,7 @@ function beforeNodeClick(){
 
 //节点单机事件
 function treeNodeClick(treeId, treeNodes) {
+debugger;
 	var zTree = $.fn.zTree.getZTreeObj("treeDemo"),
 	nodes = zTree.getSelectedNodes(),//获取被选中的节点
 	treeNode = nodes[0];
@@ -90,7 +91,7 @@ var resourceManager = new Vue({
   el: '#resourceManager',
   data: {
     resources:[],
-    checkedHosts:[],
+    //checkedHosts:[],
     hosts:[],
     groupName:param.name,
     editor: '',
@@ -99,8 +100,8 @@ var resourceManager = new Vue({
   },
   mounted:function(){
 	  var $this = this;
-	  $this.hostList();
-	  $this.resourceList('');
+	  //$this.hostList();
+	  $this.resourceList('master',null);
 	  $this.editor = CodeMirror.fromTextArea(document.getElementById('fileInfoDlg'), {
          lineNumbers : true,
          mode : "xml",
@@ -108,6 +109,9 @@ var resourceManager = new Vue({
          theme : "monokai",
          showCursorWhenSelecting:true
       });
+      /*Vue.nextTick(function(){
+        $this.change();
+      });*/
   },
   /*watch:{
       'isFile':function(val){
@@ -138,11 +142,13 @@ var resourceManager = new Vue({
 			    }
 		  });
 	  },
-	  resourceList:function(filePath){
-          var $this = this;
-          Jcoder.ajax('/admin/resource/list', 'post',{groupName:$this.groupName,path:filePath},null).then(function (data) {
+	  resourceList:function(host){
+	      var $this = this;
+          Jcoder.ajax('/admin/fileInfo/getFileTree', 'post',{
+            hostPort: host,
+            groupName:$this.groupName
+          },null).then(function (data) {
             JqdeBox.unloading();
-            debugger;
             if(data.ok){
                 //Vue.nextTick(function(){
                     initResourceTree(data.obj);
@@ -208,6 +214,14 @@ var resourceManager = new Vue({
              JqdeBox.message(data.ok, data.message);
           }
         });
+      },
+      change: function () {
+          var $this = this;
+          _.each($this.hosts, function (host) {
+              if(host.selected){
+                $this.resourceList(host.host);
+              }
+          });
       }
   }
 });

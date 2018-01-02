@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.constant.Constants;
@@ -115,6 +116,94 @@ public class FileInfoAction {
 			return Restful.instance().obj(result);
 		} else {
 			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 10000);
+
+			if (response.isOK()) {
+				return JSONObject.parseObject(response.getContent(), Restful.class);
+			} else {
+				return Restful.fail().msg(response.getContent());
+			}
+		}
+
+
+	}
+
+	/**
+	 * 获取文件目录树
+	 *
+	 * @param groupName
+	 * @return
+	 * @throws IOException
+	 */
+	@At
+	public Restful getFileTree(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
+		JSONArray nodes = new JSONArray();
+		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
+			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			if (hostPort == null) {
+				return Restful.fail().msg("无同步主机");
+			}
+		}
+
+		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+			List<FileInfo> result = new ArrayList<>();
+
+			Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
+			Map<String,String> map = new HashMap<String,String>();
+			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+				// 在访问子目录前触发该方法
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					File file = dir.toFile();
+					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+						return FileVisitResult.SKIP_SUBTREE;
+					}
+					JSONObject jsonObject = new JSONObject();
+					jsonObject.put("name",file.getName());
+					UUID uuid = UUID.randomUUID();
+					map.put(file.getName(),uuid.toString());
+					jsonObject.put("id", uuid.toString());
+					jsonObject.put("open",true);
+					jsonObject.put("pId",file.getName().equals(groupName)?0:map.get(file.getParent()));
+					FileInfo fileInfo = new FileInfo(file);
+					JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
+					fi.put("date",fileInfo.lastModified());
+					jsonObject.put("file",fi);
+					nodes.add(jsonObject);
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+					File file = path.toFile();
+					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+						return FileVisitResult.CONTINUE;
+					}
+					try {
+						result.add(new FileInfo(file));
+						JSONObject jsonObject = new JSONObject();
+						jsonObject.put("name",file.getName());
+						UUID uuid = UUID.randomUUID();
+						map.put(file.getName(),uuid.toString());
+						jsonObject.put("id", uuid.toString());
+						jsonObject.put("open",true);
+						jsonObject.put("pId",file.getName().equals(groupName)?0:map.get(file.getParent()));
+						FileInfo fileInfo = new FileInfo(file);
+						JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
+						fi.put("date",fileInfo.lastModified());
+						jsonObject.put("file",fi);
+						nodes.add(jsonObject);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					return FileVisitResult.CONTINUE;
+				}
+			});
+
+			return Restful.instance().obj(nodes);
+		} else {
+			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("groupName", groupName), 10000);
 
 			if (response.isOK()) {
 				return JSONObject.parseObject(response.getContent(), Restful.class);
