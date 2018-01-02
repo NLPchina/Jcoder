@@ -144,17 +144,18 @@ public class ThreadManager {
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
 
-			Thread.sleep(1000L);
-
-			if (newTask == null || StringUtil.isBlank(newTask.getName()) || newTask.getStatus() == 0) {
-				return;
-			}
-
-			if (newTask.getType() == 1) {
-				addApi(oldTask, newTask);
-			}
-
 		}
+
+		Thread.sleep(1000L);
+
+		if (newTask == null || StringUtil.isBlank(newTask.getName()) || newTask.getStatus() == 0) {
+			return;
+		}
+
+		if (newTask.getType() == 1) {
+			addApi(oldTask, newTask);
+		}
+
 	}
 
 	private static void stopActionAndRemove(String taskName) throws TaskException {
