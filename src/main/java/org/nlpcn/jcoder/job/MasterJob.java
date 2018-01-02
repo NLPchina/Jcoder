@@ -33,6 +33,7 @@ public class MasterJob implements Runnable {
 	 */
 	public static void startJob() {
 		stopJob();
+		ThreadManager.startScheduler();
 		thread = new Thread(new MasterJob());
 		thread.start();
 	}
@@ -41,6 +42,7 @@ public class MasterJob implements Runnable {
 	 * 当失去master时候调用此方法
 	 */
 	public static void stopJob() {
+		ThreadManager.stopScheduler();
 		if (thread != null) {
 			try {
 				thread.interrupt();
