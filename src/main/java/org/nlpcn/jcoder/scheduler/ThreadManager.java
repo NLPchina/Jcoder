@@ -30,10 +30,10 @@ public class ThreadManager {
 	 * @throws SchedulerException
 	 * @throws TaskException
 	 */
-	public synchronized static boolean add(String groupName, String taskName, String scheduleStr) throws TaskException, SchedulerException {
+	public synchronized static boolean addJob(String groupName, String taskName, String scheduleStr) throws TaskException, SchedulerException {
 		if (StringUtil.isBlank(scheduleStr)) {
-			MasterJob.addQueue(KeyValue.with(groupName,taskName)) ;
-			return true ;
+			MasterJob.addQueue(KeyValue.with(groupName, taskName));
+			return true;
 		}
 
 		boolean flag;
@@ -45,6 +45,28 @@ public class ThreadManager {
 			LOG.error(e.getMessage(), e);
 		}
 		return flag;
+	}
+
+	/**
+	 * 更新映射
+	 *
+	 * @param oldTask
+	 * @param newTask
+	 */
+	public static void addApi(Task oldTask, Task newTask) {
+		StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
+
+		oldTask.codeInfo().getExecuteMethods().forEach(m -> {
+			StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
+		});
+
+		/**
+		 * 注册api到共享空间
+		 */
+		StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
+		newTask.codeInfo().getExecuteMethods().forEach(m -> {
+			StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), m.getName());
+		});
 	}
 
 	/**
@@ -122,25 +144,15 @@ public class ThreadManager {
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
 
+			Thread.sleep(1000L);
 
-			new JavaRunner(oldTask).compile();
-			new JavaRunner(newTask).compile();
+			if (newTask == null || StringUtil.isBlank(newTask.getName()) || newTask.getStatus() == 0) {
+				return;
+			}
 
-			StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
-
-			oldTask.codeInfo().getExecuteMethods().forEach(m -> {
-				StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
-			});
-
-
-			/**
-			 * 注册api到共享空间
-			 */
-			StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
-			newTask.codeInfo().getExecuteMethods().forEach(m -> {
-				StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), m.getName());
-			});
-
+			if (newTask.getType() == 1) {
+				addApi(oldTask, newTask);
+			}
 
 		}
 	}

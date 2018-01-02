@@ -73,7 +73,7 @@ public class MasterJob implements Runnable {
 			try {
 				Task task = space.getData(p, Task.class);
 				if (task.getType() == 2) {
-					if (ThreadManager.add(task.getGroupName(), task.getName(), task.getScheduleStr())) {
+					if (ThreadManager.addJob(task.getGroupName(), task.getName(), task.getScheduleStr())) {
 						LOG.info("regedit ok ! cornStr : " + task.getScheduleStr());
 					} else {
 						LOG.error("regedit fail ! cornStr : " + task.getScheduleStr());
