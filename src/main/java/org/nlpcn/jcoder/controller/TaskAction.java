@@ -24,6 +24,7 @@ import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Lang;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.adaptor.WhaleAdaptor;
 import org.nutz.mvc.annotation.*;
@@ -114,6 +115,53 @@ public class TaskAction {
                 .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
                 .collect(Collectors.toList());
         return Restful.instance(tasks);
+    }
+
+    /**
+     * 获得任务对应的主机列表
+     *
+     * @param groupName 组名
+     * @param name      任务名
+     * @return
+     * @throws Exception
+     */
+    @At("/host/list")
+    public Restful hostList(String groupName, String name) throws Exception {
+        if (StringUtil.isBlank(groupName)) {
+            throw new IllegalArgumentException("empty groupName");
+        }
+
+        if (StringUtil.isBlank(name)) {
+            throw new IllegalArgumentException("empty task name");
+        }
+
+        // 获取有这个组的所有主机
+        boolean containsMaster = false;
+        List<HostGroup> hostList = groupService.getGroupHostList(groupName);
+        List<String> hosts = new ArrayList<>(hostList.size());
+        for (HostGroup hg : hostList) {
+            if (!containsMaster && hg.isCurrent()) {
+                containsMaster = true;
+            }
+            hosts.add(hg.getHostPort());
+        }
+
+        // 询问主机是否有这个任务
+        hosts = hosts.parallelStream().filter(h -> {
+            String content;
+            try {
+                content = proxyService.post(h, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT).getContent();
+            } catch (Exception e) {
+                throw Lang.wrapThrow(e);
+            }
+            return JSON.parseObject(content).get("obj") != null;
+        }).collect(Collectors.toList());
+
+        if (containsMaster) {
+            hosts.add(0, Constants.HOST_MASTER);
+        }
+
+        return Restful.instance(hosts);
     }
 
     /**
