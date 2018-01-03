@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -538,7 +537,7 @@ public class SharedSpaceService {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 		}
 
-		Map<String, List<Different>> diffMaps = joinCluster();
+		joinCluster();
 
 		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
 			@Override
@@ -802,6 +801,73 @@ public class SharedSpaceService {
 
 	}
 
+
+	/**
+	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
+	 *
+	 * @param groupName
+	 * @param fileInfos
+	 * @throws Exception
+	 */
+	public void flushHostGroup(String groupName, List<Task> tasks, List<FileInfo> fileInfos) throws Exception {
+
+		List<Different> diffs = new ArrayList<>();
+
+		if (tasks != null && tasks.size() > 1) {
+			for (Task task : tasks) {
+				Different different = new Different();
+				different.setPath(task.getName());
+				different.setGroupName(groupName);
+				different.setType(0);
+				diffTask(task, different);
+				if (different.getMessage() != null) {
+					diffs.add(different);
+				}
+			}
+		}
+
+
+		if (fileInfos != null && fileInfos.size() > 1) {
+			for (FileInfo lInfo : fileInfos) {
+				Different different = new Different();
+				different.setGroupName(groupName);
+				different.setPath(lInfo.getRelativePath());
+				different.setType(1);
+
+				FileInfo cInfo = getData((GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath()), FileInfo.class);
+				if (cInfo == null) {
+					different.addMessage("文件在主版本中不存在");
+				} else {
+					if (!cInfo.equals(lInfo)) {
+						different.addMessage("文件内容不一致");
+					}
+
+				}
+				if (different.getMessage() != null) {
+					diffs.add(different);
+				}
+			}
+		}
+
+
+		HostGroup cHostGroup = hostGroupCache.get(StaticValue.getHostPort() + "_" + groupName);
+
+		if (cHostGroup.isCurrent() != (diffs.size() == 0 ? true : false)) {
+			HostGroup hostGroup = new HostGroup();
+			hostGroup.setSsl(StaticValue.IS_SSL);
+			hostGroup.setCurrent(diffs.size() == 0);
+			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+			try {
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				LOG.error("add host group info err !!!!!", e1);
+			}
+		}
+
+
+	}
+
 	/**
 	 * 比较两个task是否一致
 	 *
@@ -975,8 +1041,6 @@ public class SharedSpaceService {
 			zkDao.getZk().delete().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
 			LOG.info("delete file to {} -> {}", groupName, relativePath);
 		}
-
-
 	}
 
 	public <T> T getData(String path, Class<T> c) throws Exception {
