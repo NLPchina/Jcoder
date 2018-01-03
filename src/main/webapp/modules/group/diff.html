@@ -23,14 +23,14 @@
 					<tbody>
 					<tr>
 						<td>
-							<select class="chosen-select form-control" v-model="lHost" @change="lFilePath='';listFiles(true)">
+							<select class="chosen-select form-control" v-model="lHost" @change="lFilePath='';listFiles(true);listTasks(true)">
 								<option value="master">主版本</option>
 								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
 						</td>
 						<td class="center">对比主机</td>
 						<td>
-							<select class="chosen-select form-control" v-model="rHost" @change="rFilePath='';listFiles(false)">
+							<select class="chosen-select form-control" v-model="rHost" @change="rFilePath='';listFiles(false);listTasks(false)">
 								<option value="master">主版本</option>
 								<option :value="item.hostPort" v-for="(item,index) in hosts">{{item.hostPort}}--{{item.current?'同步':'冲突'}}</option>
 							</select>
@@ -41,6 +41,7 @@
 							<select class="chosen-select form-control" v-model="lFilePath" @change="setContent(true)">
 								<option value="">请选择对比文件</option>
 								<option v-for="(item,index) in lFiles" :value="item.relativePath" >{{item.relativePath}}</option>
+								<option v-for="(item,index) in lTasks" :value="item.name" >{{item.name}}</option>
 							</select>
 						</td>
 						<td class="center">对比文件</td>
@@ -48,16 +49,17 @@
 							<select class="chosen-select form-control" v-model="rFilePath" @change="setContent(false)">
 								<option value="">请选择对比文件</option>
 								<option v-for="(item,index) in rFiles">{{item.relativePath}}</option>
+								<option v-for="(item,index) in rTasks" :value="item.name" >{{item.name}}</option>
 							</select>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							{{lFileInfo.length}}
+							{{lFileInfo.length==0?lTask.code.length:lFileInfo.length}}
 						</td>
 						<td class="center">文件大小</td>
 						<td align="right">
-							{{rFileInfo.length}}
+							{{rFileInfo.length==0?rTask.code.length:rFileInfo.length}}
 						</td>
 					</tr>
 					<tr>

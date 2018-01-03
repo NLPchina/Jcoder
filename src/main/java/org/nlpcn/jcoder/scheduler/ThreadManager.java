@@ -4,8 +4,7 @@ import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
-import org.nlpcn.jcoder.job.MasterJob;
-import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -32,7 +31,7 @@ public class ThreadManager {
 	 */
 	public synchronized static boolean addJob(String groupName, String taskName, String scheduleStr) throws TaskException, SchedulerException {
 		if (StringUtil.isBlank(scheduleStr)) {
-			MasterJob.addQueue(KeyValue.with(groupName, taskName));
+			MasterRunTaskJob.addQueue(KeyValue.with(groupName, taskName));
 			return true;
 		}
 
@@ -69,6 +68,16 @@ public class ThreadManager {
 		});
 	}
 
+
+	/**
+	 * 停用一个task并从定时任务中删除
+	 * @param GroupName
+	 * @param taskName
+	 */
+	public static void removeTaskJob(String GroupName , String taskName) throws SchedulerException {
+		QuartzSchedulerManager.stopTaskJob(GroupName+Constants.GROUP_TASK_SPLIT+taskName) ;
+	}
+
 	/**
 	 * 运行一个task
 	 *
@@ -91,7 +100,6 @@ public class ThreadManager {
 	/**
 	 * 运行一个taskJob
 	 *
-	 * @param task
 	 * @throws TaskException
 	 */
 	public static void run(TaskJob taskJob) throws TaskException {
@@ -101,10 +109,9 @@ public class ThreadManager {
 	/**
 	 * 停止一个task
 	 *
-	 * @param task
 	 * @throws TaskException
 	 */
-	private static synchronized void stopTaskAndRemove(String taskName) throws TaskException {
+	private static synchronized void stopTask(String taskName) throws TaskException {
 		try {
 			// 从任务中移除
 			try {
@@ -117,8 +124,6 @@ public class ThreadManager {
 
 			TaskRunManager.stopAll(taskName);
 
-			// 从定时任务中移除,只有master做这件事情。
-			//QuartzSchedulerManager.stopTaskJob(taskName);
 
 		} catch (Exception e) {
 			LOG.error(e.getMessage(), e);
@@ -136,7 +141,7 @@ public class ThreadManager {
 
 			if (oldTask.getType() == 2) {
 				LOG.info("to stop oldTask " + oldTask.getName() + " BEGIN! ");
-				stopTaskAndRemove(oldTask.getName());
+				stopTask(oldTask.getName());
 				LOG.info("to stop oldTask " + oldTask.getName() + " OK! ");
 			} else if (oldTask.getType() == 1) {
 				LOG.info("to remove Api oldTask " + oldTask.getName() + " BEGIN! ");
@@ -186,9 +191,10 @@ public class ThreadManager {
 	 * @return
 	 * @throws SchedulerException
 	 */
-	public static boolean checkExists(String taskName) {
+	public static boolean checkExists(String groupName ,String taskName) {
 		try {
-			return QuartzSchedulerManager.checkExists(taskName) || TaskRunManager.checkExists(taskName);
+			String key = groupName+ Constants.GROUP_TASK_SPLIT+taskName ;
+			return QuartzSchedulerManager.checkExists(key) || TaskRunManager.checkExists(key);
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage());
@@ -297,7 +303,6 @@ public class ThreadManager {
 	 * 强行停止一个 thread
 	 *
 	 * @param key
-	 * @param taskName
 	 * @return
 	 * @throws TaskException
 	 */

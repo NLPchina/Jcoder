@@ -19,9 +19,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
-public class MasterJob implements Runnable {
+public class MasterRunTaskJob implements Runnable {
 
-	private static final Logger LOG = LoggerFactory.getLogger(MasterJob.class);
+	private static final Logger LOG = LoggerFactory.getLogger(MasterRunTaskJob.class);
 
 	private static BlockingQueue<KeyValue<String, String>> TASK_QUEUE = new SynchronousQueue<>();
 
@@ -33,7 +33,7 @@ public class MasterJob implements Runnable {
 	public static void startJob() {
 		stopJob();
 		ThreadManager.startScheduler();
-		thread = new Thread(new MasterJob());
+		thread = new Thread(new MasterRunTaskJob());
 		thread.start();
 	}
 
@@ -49,45 +49,28 @@ public class MasterJob implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		TASK_QUEUE.clear();
 		thread = null;
 	}
 
-	private MasterJob() {
+	private MasterRunTaskJob() {
 	}
 
 	@Override
 	public void run() {
-		LOG.info("I am master so to start master job");
-		//从 current 获取全部task，增加到定时任务,启动定时器
-		Set<String> paths = new HashSet<>();
-		SharedSpaceService space = StaticValue.space();
-		try {
-			space.walkAllDataNode(paths, SharedSpaceService.GROUP_PATH);
-		} catch (Exception e) {
-			e.printStackTrace();
-			LOG.error("start master error ");
-			space.resetMaster();
-			return;
-		}
 
-		paths.stream().filter(p -> !p.contains("/file/")).forEach(p -> {
-			try {
-				Task task = space.getData(p, Task.class);
-				if (task.getType() == 2) {
-					if (ThreadManager.addJob(task.getGroupName(), task.getName(), task.getScheduleStr())) {
-						LOG.info("regedit ok ! cornStr : " + task.getScheduleStr());
-					} else {
-						LOG.error("regedit fail ! cornStr : " + task.getScheduleStr());
-					}
-				}
 
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
 
 		ProxyService proxyService = StaticValue.getSystemIoc().get(ProxyService.class, "proxyService");
+		SharedSpaceService space = StaticValue.space();
 
+		LOG.info("I am master so to start master job");
+
+
+
+		/**
+		 *  监听任务变化
+		 */
 		while (StaticValue.isMaster()) {
 			try {
 				try {
@@ -117,7 +100,9 @@ public class MasterJob implements Runnable {
 				}
 			}
 		}
+
 	}
+
 
 	/**
 	 * 发布一个task到任务队列
@@ -127,4 +112,5 @@ public class MasterJob implements Runnable {
 	public static void addQueue(KeyValue kv) {
 		TASK_QUEUE.add(kv);
 	}
+
 }

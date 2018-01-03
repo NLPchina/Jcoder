@@ -2,7 +2,10 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.*;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -14,7 +17,8 @@ import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.CheckClusterJob;
-import org.nlpcn.jcoder.job.MasterJob;
+import org.nlpcn.jcoder.job.MasterGroupListenerJob;
+import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
@@ -503,14 +507,14 @@ public class SharedSpaceService {
 			public void isLeader() {
 				StaticValue.setMaster(true);
 				LOG.info("I am master my host is " + StaticValue.getHostPort());
-				MasterJob.startJob();
+				MasterRunTaskJob.startJob();
 			}
 
 			@Override
 			public void notLeader() {
 				StaticValue.setMaster(false);
 				LOG.info("I am lost master " + StaticValue.getHostPort());
-				MasterJob.stopJob();
+				MasterRunTaskJob.stopJob();
 			}
 
 		});
@@ -578,7 +582,7 @@ public class SharedSpaceService {
 					case CHILD_REMOVED:
 					default:
 						if (StaticValue.isMaster()) { //如果是master检查定时任务
-
+							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
 						}
 						CheckClusterJob.changeGroup(groupName);
 						break;

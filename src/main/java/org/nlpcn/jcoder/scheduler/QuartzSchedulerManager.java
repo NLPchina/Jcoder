@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.curator.framework.recipes.cache.ChildData;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -100,12 +101,11 @@ class QuartzSchedulerManager {
 	/**
 	 * 判断一个task是否运行
 	 * 
-	 * @param groupTaskName
 	 * @return
 	 * @throws SchedulerException
 	 */
-	public static synchronized boolean checkExists(String groupTaskName) throws SchedulerException {
-		return scheduler.checkExists(JobKey.jobKey(groupTaskName));
+	public static synchronized boolean checkExists(String key) throws SchedulerException {
+		return scheduler.checkExists(JobKey.jobKey(key));
 	}
 
 	/**
