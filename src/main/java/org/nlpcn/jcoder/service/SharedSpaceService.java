@@ -741,7 +741,7 @@ public class SharedSpaceService {
 			different.setPath(task.getName());
 			different.setGroupName(groupName);
 			different.setType(0);
-			diffTask(task, different);
+			diffTask(task, different, null, null);
 			if (different.getMessage() != null) {
 				diffs.add(different);
 			}
@@ -809,17 +809,18 @@ public class SharedSpaceService {
 	 * @param fileInfos
 	 * @throws Exception
 	 */
-	public void flushHostGroup(String groupName, List<Task> tasks, List<FileInfo> fileInfos) throws Exception {
+	public void flushHostGroup(String groupName, Set<String> taskNames, List<FileInfo> fileInfos) throws Exception {
 
 		List<Different> diffs = new ArrayList<>();
 
-		if (tasks != null && tasks.size() > 1) {
-			for (Task task : tasks) {
-				Different different = new Different();
-				different.setPath(task.getName());
-				different.setGroupName(groupName);
-				different.setType(0);
-				diffTask(task, different);
+		if (taskNames != null && taskNames.size() > 1) {
+            TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class);
+            for (String taskName : taskNames) {
+                Different different = new Different();
+                different.setPath(taskName);
+                different.setGroupName(groupName);
+                different.setType(0);
+                diffTask(taskService.findTask(groupName, taskName), different, groupName, taskName);
 				if (different.getMessage() != null) {
 					diffs.add(different);
 				}
@@ -873,15 +874,28 @@ public class SharedSpaceService {
 	 *
 	 * @param task
 	 */
-	private void diffTask(Task task, Different different) {
+	private void diffTask(Task task, Different different, String groupName, String taskName) {
+        if(task != null){
+            groupName = task.getGroupName();
+            taskName = task.getName();
+        }
+
 		try {
+			byte[] bytes = getData2ZK(GROUP_PATH + "/" + groupName + "/" + taskName);
 
-			byte[] bytes = getData2ZK(GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName());
+            if (bytes == null) {
+                if (task == null) {
+                    return;
+                }
 
-			if (bytes == null) {
 				different.addMessage("集群中不存在此Task");
 				return;
-			}
+			} else {
+                if (task == null) {
+                    different.addMessage("主机" + StaticValue.getHostPort() + "中不存在此Task");
+                    return;
+                }
+            }
 
 			Task cluster = JSONObject.parseObject(bytes, Task.class);
 

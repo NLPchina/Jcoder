@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
@@ -68,7 +69,7 @@ public class TaskAction {
      * @throws Exception
      */
     @At
-    public Restful list(String host, String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
+    public Restful list(String host, String groupName, int taskType) throws Exception {
         if (StringUtil.isBlank(groupName)) {
             throw new IllegalArgumentException("empty groupName");
         }
@@ -77,7 +78,7 @@ public class TaskAction {
         if (StringUtil.isBlank(host)) {
             Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
                     .stream()
-                    .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
+                    .filter(t -> Objects.equals(t.getType(), taskType))
                     .map(t -> ImmutableMap.of("name", t.getName(),
                             "description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
                             "status", t.getStatus(),
@@ -109,10 +110,10 @@ public class TaskAction {
     }
 
     @At
-    public Restful __list__(String groupName, int taskType) throws Exception {
+    public Restful __list__(String groupName, int taskType) {
         List<Task> tasks = taskService.findTasksByGroupName(groupName)
                 .stream()
-                .filter(t -> taskType == -1 || Objects.equals(t.getType(), taskType))
+                .filter(t -> Objects.equals(t.getType(), taskType))
                 .collect(Collectors.toList());
         return Restful.instance(tasks);
     }
@@ -162,11 +163,12 @@ public class TaskAction {
      *
      * @param hosts
      * @param task
+     * @param oldName 更新之前的名字
      * @return
      * @throws Exception
      */
     @At
-    public Restful save(@Param("hosts[]") String[] hosts, @Param("task") Task task) throws Exception {
+    public Restful save(@Param("hosts[]") String[] hosts, @Param("task") Task task, @Param(value = "oldName", df = StringUtil.EMPTY) String oldName) throws Exception {
         if (hosts == null || hosts.length < 1) {
             throw new IllegalArgumentException("empty hosts");
         }
@@ -182,6 +184,9 @@ public class TaskAction {
         // 是否更新主版本
         Set<String> hostPorts = new HashSet<>(Arrays.asList(hosts));
         boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
+        if (hostPorts.isEmpty()) {
+            throw new IllegalArgumentException("must contain non-master host");
+        }
 
         // 如果激活任务, 需要检查代码
         if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
@@ -200,12 +205,7 @@ public class TaskAction {
         }
         task.setUpdateUser(u.getName());
         task.setUpdateTime(now);
-
-        // 集群的每台机器保存
-        String errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-        if (StringUtil.isNotBlank(errorMessage)) {
-            return Restful.fail().code(ServerException).msg(errorMessage);
-        }
+        String taskStr = JSON.toJSONString(task);
 
         // 如果更新主版本
         if (containsMaster) {
@@ -214,6 +214,30 @@ public class TaskAction {
 
             // ZK保存
             StaticValue.space().addTask(task);
+
+            // 如果任务名变更, 需要删除之前的任务
+            if (StringUtil.isNotBlank(oldName) && !oldName.equals(task.getName())) {
+                taskService.deleteTaskFromCluster(task.getGroupName(), oldName);
+            }
+        }
+
+        // 集群的每台机器保存
+        String errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+        if (StringUtil.isNotBlank(errorMessage)) {
+            return Restful.fail().code(ServerException).msg(errorMessage);
+        }
+
+        // 如果更新了主版本, 所有机器都得做diff
+        if (containsMaster) {
+            // 首先排除这次指定更新的主机
+            Set<String> hostPortSet = groupService.getGroupHostList(task.getGroupName()).stream().map(HostGroup::getHostPort).collect(Collectors.toSet());
+            hostPortSet.removeAll(hostPorts);
+
+            // diff
+            errorMessage = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", task.getGroupName(), "taskName", task.getName(), "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.fail().code(ServerException).msg(errorMessage);
+            }
         }
 
         return Restful.ok();
@@ -228,7 +252,7 @@ public class TaskAction {
     }
 
     @At
-    public Restful __save__(@Param("::task") Task task) throws Exception {
+    public Restful __save__(@Param("::task") Task task, String oldName) throws Exception {
         // 如果是编辑, 得替换成本地任务ID
         if (task.getId() != null) {
             Task t = taskService.findTask(task.getGroupName(), task.getName());
@@ -247,6 +271,30 @@ public class TaskAction {
             }
         }
         LOG.info("to save task[{}-{}]: {}", task.getGroupName(), task.getName(), taskService.saveOrUpdate(task));
+
+        // 强制删除之前的任务, 但不做diff
+        if (StringUtil.isNotBlank(oldName) && !oldName.equals(task.getName())) {
+            __delete__(false, true, task.getGroupName(), oldName, StringUtil.EMPTY, new Date());
+        }
+
+        // diff
+        __diff__(task.getGroupName(), task.getName(), oldName);
+
+        return Restful.ok();
+    }
+
+    @At
+    public Restful __diff__(String groupName, String taskName, String oldName) throws Exception {
+
+        LOG.info("host[{}] begin to diff[group={}, taskName={}, oldName={}] with master", StaticValue.getHostPort(), groupName, taskName, oldName);
+
+        Set<String> taskNames = new HashSet<>(2);
+        taskNames.add(taskName);
+        if (StringUtil.isNotBlank(oldName)) {
+            taskNames.add(oldName);
+        }
+        StaticValue.space().flushHostGroup(groupName, taskNames, null);
+
         return Restful.ok();
     }
 
@@ -326,32 +374,29 @@ public class TaskAction {
         }
 
         // 是否删除主版本
-        Set<String> hostPorts = new HashSet<>(Arrays.asList(hosts));
+        Set<String> hostPorts = Stream.of(hosts).collect(Collectors.toSet());
         boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
+        if (hostPorts.isEmpty()) {
+            throw new IllegalArgumentException("must contain non-master host");
+        }
 
         User u = (User) Mvcs.getHttpSession().getAttribute(UserConstants.USER);
         Date now = new Date();
 
         if (type == TaskType.RECYCLE.getValue()) {
             // 如果是垃圾, 物理删除
-            // 删除集群的每台机器
-            String errorMessage = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("force", true, "groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-            if (StringUtil.isNotBlank(errorMessage)) {
-                return Restful.fail().code(ServerException).msg(errorMessage);
-            }
-
             if (containsMaster) {
                 // 删ZK
                 taskService.deleteTaskFromCluster(groupName, name);
             }
-        } else {
-            // 更改类型为垃圾, 并停用
-            // 更新集群的每台机器
-            String errorMessage = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+
+            // 集群的每台机器删除
+            String errorMessage = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("force", true, "groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
             if (StringUtil.isNotBlank(errorMessage)) {
                 return Restful.fail().code(ServerException).msg(errorMessage);
             }
-
+        } else {
+            // 更改类型为垃圾, 并停用
             if (containsMaster) {
                 // 更新ZK
                 Task task = taskService.getTasksByGroupNameFromCluster(groupName).parallelStream().filter(t -> Objects.equals(t.getName(), name)).findAny().get();
@@ -361,6 +406,25 @@ public class TaskAction {
                 task.setStatus(TaskStatus.STOP.getValue());
                 StaticValue.space().addTask(task);
             }
+
+            // 集群的每台机器更新
+            String errorMessage = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.fail().code(ServerException).msg(errorMessage);
+            }
+        }
+
+        // 如果更新了主版本, 所有机器都得做diff
+        if (containsMaster) {
+            // 首先排除这次指定更新的主机
+            Set<String> hostPortSet = groupService.getGroupHostList(groupName).stream().map(HostGroup::getHostPort).collect(Collectors.toSet());
+            hostPortSet.removeAll(hostPorts);
+
+            // diff
+            String errorMessage = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", groupName, "taskName", name, "oldName", name), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+            if (StringUtil.isNotBlank(errorMessage)) {
+                return Restful.fail().code(ServerException).msg(errorMessage);
+            }
         }
 
         return Restful.ok();
@@ -369,6 +433,7 @@ public class TaskAction {
     /**
      * 内部调用删除任务
      *
+     * @param diff      删除任务后是否与主版本diff, 默认是true
      * @param force     是否强制删除任务, 如果是就删除数据库的任务
      * @param groupName 组名
      * @param name      任务名
@@ -378,7 +443,7 @@ public class TaskAction {
      * @throws Exception
      */
     @At
-    public Restful __delete__(@Param(value = "force", df = "false") boolean force, String groupName, String name, String user, Date time) throws Exception {
+    public Restful __delete__(@Param(value = "diff", df = "true") boolean diff, @Param(value = "force", df = "false") boolean force, String groupName, String name, String user, Date time) throws Exception {
 
         LOG.info("to force[{}] delete task[{}-{}]", force, groupName, name);
 
@@ -396,6 +461,11 @@ public class TaskAction {
         // 如果强制删除, 删除数据库中任务
         if (force) {
             taskService.delByDB(t);
+        }
+
+        // diff
+        if (diff) {
+            __diff__(groupName, name, name);
         }
 
         return Restful.ok();

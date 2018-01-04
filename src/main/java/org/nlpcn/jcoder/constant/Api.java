@@ -8,6 +8,7 @@ public enum Api {
     TASK_LIST(Api.BASE_PATH + "/task/__list__"),
     TASK_CHECK(Api.BASE_PATH + "/task/__check__"),
     TASK_SAVE(Api.BASE_PATH + "/task/__save__"),
+    TASK_DIFF(Api.BASE_PATH + "/task/__diff__"),
     TASK_DELETE(Api.BASE_PATH + "/task/__delete__"),
     TASK_TASK(Api.BASE_PATH + "/task/__task__"),
     TASK_CRON(Api.BASE_PATH + "/task/__cron__");
