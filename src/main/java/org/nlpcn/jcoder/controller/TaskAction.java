@@ -70,7 +70,7 @@ public class TaskAction {
 	 * @throws Exception
 	 */
 	@At
-	public Restful list(String host, String groupName, int taskType) throws Exception {
+	public Restful list(String host, String groupName, @Param(value = "taskType", df = "-1") int taskType) throws Exception {
 		if (StringUtil.isBlank(groupName)) {
 			throw new IllegalArgumentException("empty groupName");
 		}
@@ -79,7 +79,7 @@ public class TaskAction {
 		if (StringUtil.isBlank(host)) {
 			Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
 					.stream()
-					.filter(t -> Objects.equals(t.getType(), taskType))
+					.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
 					.map(t -> ImmutableMap.of("name", t.getName(),
 							"description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
 							"status", t.getStatus(),
@@ -114,7 +114,7 @@ public class TaskAction {
 	public Restful __list__(String groupName, int taskType) {
 		List<Task> tasks = taskService.findTasksByGroupName(groupName)
 				.stream()
-				.filter(t -> Objects.equals(t.getType(), taskType))
+				.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
 				.collect(Collectors.toList());
 		return Restful.instance(tasks);
 	}
