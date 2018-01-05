@@ -351,15 +351,16 @@ public class GroupAction {
 			}
 
 			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
-			Restful restful = JSONObject.parseObject(post.getContent(), Restful.class);
+
+			Restful restful = Restful.instance(post) ;
 
 			if (restful.code()==404) {
 				if(Constants.HOST_MASTER.equals(toHostPort)){
 					StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH+"/"+groupName+"/"+relativePath) ;
 				}else{
-					post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), ImmutableMap.of("diff", false, "force", true, "user", "user", "time", new Date()), 1000);
+					post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), ImmutableMap.of("diff", false, "force", true, "user", "user", "time", System.currentTimeMillis()), 1000);
 				}
-				return JSONObject.parseObject(post.getContent(), Restful.class);
+				return Restful.instance(post);
 			}
 
 			JSONObject obj = restful.getObj();
@@ -371,7 +372,7 @@ public class GroupAction {
 			obj.remove("id") ;
 			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 1000);
 
-			return JSONObject.parseObject(post.getContent(), Restful.class);
+			return Restful.instance(post);
 		}
 	}
 

@@ -581,9 +581,9 @@ public class SharedSpaceService {
 					case CHILD_REMOVED:
 					default:
 						if (StaticValue.isMaster()) { //如果是master检查定时任务
-							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
+//TODO							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
 						}
-						CheckClusterJob.changeGroup(groupName);
+//TODO						CheckClusterJob.changeGroup(groupName);
 						break;
 				}
 			}
