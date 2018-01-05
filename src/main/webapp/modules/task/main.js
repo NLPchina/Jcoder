@@ -35,27 +35,67 @@ vmApp.module = new Vue({
                 },
 
                 remove: function (name) {
-                    var me = this, parent = me.$parent,
-                        hosts = _.chain(parent.hosts).where({selected: true}).pluck("host").value();
-                    JqdeBox.confirm("确定删除主机 " + hosts + " 任务 " + name + " ？", function (confirm) {
-                        if (!confirm) return;
+                    var me = this, parent = me.$parent;
+                    JqdeBox.dialog({
+                        title: '确认删除任务 ' + name,
+                        url: 'modules/task/remove_confirm.html',
+                        init: function () {
+                            (this.data = this.data || {}).vmTaskRemoveConfirm = new Vue({
+                                el: '#vmTaskRemoveConfirmModule',
+                                data: {
+                                    hosts: _.map(parent.hosts, function (ele) {
+                                        return {selected: ele.selected, current: ele.current, host: ele.host};
+                                    }),
+                                    all: false
+                                },
+                                mounted: function () {
+                                    var $scrollable = $(this.$el).find('.scrollable');
+                                    $scrollable.ace_scroll({size: $scrollable.attr('data-size')});
+                                },
+                                methods: {
+                                    selectAll: function () {
+                                        var all = this.all;
+                                        _.each(this.hosts, function (ele) {
+                                            ele.selected = all;
+                                        });
+                                    }
+                                }
+                            });
+                        },
+                        confirm: function () {
+                            var hosts = _.chain(this.data.vmTaskRemoveConfirm.hosts).where({selected: true}).pluck("host").value();
+                            if (!hosts || hosts.length < 1) {
+                                JqdeBox.alert("请选择主机 ！");
+                                return false;
+                            }
+                            if (hosts.length == 1 && hosts[0].trim().toLowerCase() == 'master') {
+                                JqdeBox.alert("请至少选择一个非主版本的主机 ！");
+                                return false;
+                            }
 
-                        JqdeBox.loading();
-                        Jcoder.ajax('/admin/task/delete', 'POST', {
-                            hosts: hosts,
-                            groupName: parent.groupName,
-                            name: name,
-                            type: me.type
-                        }).then(function () {
-                            JqdeBox.unloading();
-                            me.loadTasks();
+                            JqdeBox.loading();
+                            Jcoder.ajax('/admin/task/delete', 'POST', {
+                                hosts: hosts,
+                                groupName: parent.groupName,
+                                name: name,
+                                type: me.type
+                            }).then(function () {
+                                JqdeBox.unloading();
+                                JqdeBox.hideAll();
 
-                            //
-                            me.type != parent.recycleType && parent.$children[3].loadTasks();
-                        }).catch(function (req) {
-                            JqdeBox.unloading();
-                            JqdeBox.message(false, req.responseText);
-                        });
+                                // 刷新主机面板
+                                parent.$children[0].diff(hosts);
+
+                                // 刷新任务列表
+                                me.loadTasks();
+                                me.type != parent.recycleType && parent.$children[3].loadTasks();
+                            }).catch(function (req) {
+                                JqdeBox.unloading();
+                                JqdeBox.message(false, req.responseText);
+                            });
+
+                            return false;
+                        }
                     });
                 }
             }

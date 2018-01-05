@@ -234,6 +234,10 @@ var resourceManager = new Vue({
              });
           },
           confirm: function () {
+            if(importFile.checkedHosts.length == 1 && importFile.checkedHosts[0] == "master"){
+                JqdeBox.message(false, "无法只删除Master主机的文件！");
+                return false;
+            }
             Jcoder.ajax('/admin/fileInfo/deleteFile', 'post',
                 {hostPort:importFile.checkedHosts,groupName:$this.groupName,relativePath:path},null).then(function (data) {
                 JqdeBox.unloading();
@@ -276,6 +280,10 @@ var resourceManager = new Vue({
              });
           },
           confirm: function () {
+            if(importFile.checkedHosts.length == 1 && importFile.checkedHosts[0] == "master"){
+                JqdeBox.message(false, "无法把文件只上传到Master主机！");
+                return false;
+            }
             var formData = new FormData();
             var files = $('#id-input-file-3').prop("files");
             for(var i = 0;i < files.length;i++){

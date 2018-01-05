@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
+import static org.nlpcn.jcoder.util.ApiException.NotFound;
 import static org.nlpcn.jcoder.util.ApiException.ServerException;
 
 @IocBean
@@ -182,7 +183,7 @@ public class TaskAction {
         }
 
         // 是否更新主版本
-        Set<String> hostPorts = new HashSet<>(Arrays.asList(hosts));
+        Set<String> hostPorts = Stream.of(hosts).collect(Collectors.toSet());
         boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
         if (hostPorts.isEmpty()) {
             throw new IllegalArgumentException("must contain non-master host");
@@ -330,8 +331,11 @@ public class TaskAction {
         }
 
         // 如果取其他机器版本
-        String content = proxyService.post(sourceHost, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT).getContent();
-        JSONObject res = JSONObject.parseObject(content);
+        Response resp = proxyService.post(sourceHost, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT);
+        if (resp.getStatus() == NotFound) {
+            return Restful.ok();
+        }
+        JSONObject res = JSONObject.parseObject(resp.getContent());
         return res.getBooleanValue("ok") ? Restful.ok().obj(res.get("obj")) : Restful.fail().code(ServerException).msg(res.getString("message"));
     }
 
@@ -341,7 +345,7 @@ public class TaskAction {
         Task t = taskService.findTask(groupName, name);
         if (t == null) {
             LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
-            return Restful.ok();
+            return Restful.fail().code(NotFound);
         }
 
         return Restful.ok().obj(t);
@@ -565,7 +569,7 @@ public class TaskAction {
         }
         Task task = TaskService.findTaskByCache(taskName);
         if (task == null) {
-            return Restful.fail().code(ApiException.NotFound).msg(taskName + " not found ");
+            return Restful.fail().code(NotFound).msg(taskName + " not found ");
         }
 
         if (task.getStatus() == 0) {
