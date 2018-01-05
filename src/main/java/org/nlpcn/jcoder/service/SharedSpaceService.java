@@ -54,7 +54,7 @@ public class SharedSpaceService {
 	/**
 	 * Token
 	 */
-	private static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
+	public static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
 
 
 	/**
@@ -736,7 +736,14 @@ public class SharedSpaceService {
 	private List<Different> diffGroup(String groupName, List<Task> list, List<FileInfo> fileInfos) throws Exception {
 
 		final List<Different> diffs = new ArrayList<>();
+
+		String path = GROUP_PATH + "/" + groupName;
+
+		List<String> paths = zkDao.getZk().getChildren().forPath(path);
+		Set<String> clusterTaskNames = paths.stream().filter(p -> !p.equals("file")).collect(Collectors.toSet());
+
 		for (Task task : list) {
+			clusterTaskNames.remove(task.getName());
 			Different different = new Different();
 			different.setPath(task.getName());
 			different.setGroupName(groupName);
@@ -745,6 +752,17 @@ public class SharedSpaceService {
 			if (different.getMessage() != null) {
 				diffs.add(different);
 			}
+
+		}
+
+		for (String clusterTaskName : clusterTaskNames) {
+			Different different = new Different();
+			different.setPath(clusterTaskName);
+			different.setGroupName(groupName);
+			different.setType(0);
+			different.addMessage("本机中不存在此Task");
+			diffs.add(different);
+
 		}
 
 		//先判断根结点
@@ -814,13 +832,13 @@ public class SharedSpaceService {
 		List<Different> diffs = new ArrayList<>();
 
 		if (taskNames != null && taskNames.size() > 1) {
-            TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class);
-            for (String taskName : taskNames) {
-                Different different = new Different();
-                different.setPath(taskName);
-                different.setGroupName(groupName);
-                different.setType(0);
-                diffTask(taskService.findTask(groupName, taskName), different, groupName, taskName);
+			TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class);
+			for (String taskName : taskNames) {
+				Different different = new Different();
+				different.setPath(taskName);
+				different.setGroupName(groupName);
+				different.setType(0);
+				diffTask(taskService.findTask(groupName, taskName), different, groupName, taskName);
 				if (different.getMessage() != null) {
 					diffs.add(different);
 				}
@@ -875,27 +893,27 @@ public class SharedSpaceService {
 	 * @param task
 	 */
 	private void diffTask(Task task, Different different, String groupName, String taskName) {
-        if(task != null){
-            groupName = task.getGroupName();
-            taskName = task.getName();
-        }
+		if (task != null) {
+			groupName = task.getGroupName();
+			taskName = task.getName();
+		}
 
 		try {
 			byte[] bytes = getData2ZK(GROUP_PATH + "/" + groupName + "/" + taskName);
 
-            if (bytes == null) {
-                if (task == null) {
-                    return;
-                }
+			if (bytes == null) {
+				if (task == null) {
+					return;
+				}
 
 				different.addMessage("集群中不存在此Task");
 				return;
 			} else {
-                if (task == null) {
-                    different.addMessage("主机" + StaticValue.getHostPort() + "中不存在此Task");
-                    return;
-                }
-            }
+				if (task == null) {
+					different.addMessage("主机" + StaticValue.getHostPort() + "中不存在此Task");
+					return;
+				}
+			}
 
 			Task cluster = JSONObject.parseObject(bytes, Task.class);
 
