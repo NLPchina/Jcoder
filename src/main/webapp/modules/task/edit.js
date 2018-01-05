@@ -152,12 +152,15 @@ vmApp.module = new Vue({
             if (!hosts || hosts.length < 1) {
                 return JqdeBox.alert("请选择主机 ！");
             }
+            if (hosts.length == 1 && hosts[0].trim().toLowerCase() == 'master') {
+                return JqdeBox.alert("请至少选择一个非主版本的主机 ！");
+            }
 
             JqdeBox.confirm("确定保存修改 ？", function (confirm) {
                 if (!confirm) return;
 
                 JqdeBox.loading();
-                Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify(task)}).then(function (data) {
+                Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify(task), oldName: task.name}).then(function (data) {
                     JqdeBox.unloading();
                     setTimeout(function () {
                         location.hash = '/task/list.html?name=' + task.groupName;

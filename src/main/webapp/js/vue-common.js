@@ -102,6 +102,22 @@ Vue.component('host-component', {
             }
 
             this.$emit('change', ele);
+        },
+
+        diff: function (hosts) {
+            var me = this;
+            Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.groupName}).then(function (data) {
+                hosts = hosts || [];
+                data = _.reduce(data.obj, function (memo, ele) {
+                    if (hosts.length < 1 || _.contains(hosts, ele.hostPort)) {
+                        memo[ele.hostPort] = ele.current;
+                    }
+                    return memo;
+                }, {});
+                _.each(me.hosts, function (ele) {ele.current = !!data[ele.host];});
+            }).catch(function (req) {
+                JqdeBox.message(false, req.responseText || req.message);
+            });
         }
     }
 });

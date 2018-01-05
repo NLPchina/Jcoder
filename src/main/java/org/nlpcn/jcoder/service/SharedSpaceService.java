@@ -2,7 +2,9 @@ package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.*;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -14,7 +16,8 @@ import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.CheckClusterJob;
-import org.nlpcn.jcoder.job.MasterJob;
+import org.nlpcn.jcoder.job.MasterGroupListenerJob;
+import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
@@ -503,14 +506,14 @@ public class SharedSpaceService {
 			public void isLeader() {
 				StaticValue.setMaster(true);
 				LOG.info("I am master my host is " + StaticValue.getHostPort());
-				MasterJob.startJob();
+				MasterRunTaskJob.startJob();
 			}
 
 			@Override
 			public void notLeader() {
 				StaticValue.setMaster(false);
 				LOG.info("I am lost master " + StaticValue.getHostPort());
-				MasterJob.stopJob();
+				MasterRunTaskJob.stopJob();
 			}
 
 		});
@@ -534,7 +537,7 @@ public class SharedSpaceService {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 		}
 
-		Map<String, List<Different>> diffMaps = joinCluster();
+		joinCluster();
 
 		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
 			@Override
@@ -578,7 +581,7 @@ public class SharedSpaceService {
 					case CHILD_REMOVED:
 					default:
 						if (StaticValue.isMaster()) { //如果是master检查定时任务
-
+							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
 						}
 						CheckClusterJob.changeGroup(groupName);
 						break;
@@ -738,7 +741,7 @@ public class SharedSpaceService {
 			different.setPath(task.getName());
 			different.setGroupName(groupName);
 			different.setType(0);
-			diffTask(task, different);
+			diffTask(task, different, null, null);
 			if (different.getMessage() != null) {
 				diffs.add(different);
 			}
@@ -798,20 +801,101 @@ public class SharedSpaceService {
 
 	}
 
+
+	/**
+	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
+	 *
+	 * @param groupName
+	 * @param fileInfos
+	 * @throws Exception
+	 */
+	public void flushHostGroup(String groupName, Set<String> taskNames, List<FileInfo> fileInfos) throws Exception {
+
+		List<Different> diffs = new ArrayList<>();
+
+		if (taskNames != null && taskNames.size() > 1) {
+            TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class);
+            for (String taskName : taskNames) {
+                Different different = new Different();
+                different.setPath(taskName);
+                different.setGroupName(groupName);
+                different.setType(0);
+                diffTask(taskService.findTask(groupName, taskName), different, groupName, taskName);
+				if (different.getMessage() != null) {
+					diffs.add(different);
+				}
+			}
+		}
+
+
+		if (fileInfos != null && fileInfos.size() > 1) {
+			for (FileInfo lInfo : fileInfos) {
+				Different different = new Different();
+				different.setGroupName(groupName);
+				different.setPath(lInfo.getRelativePath());
+				different.setType(1);
+
+				FileInfo cInfo = getData((GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath()), FileInfo.class);
+				if (cInfo == null) {
+					different.addMessage("文件在主版本中不存在");
+				} else {
+					if (!cInfo.equals(lInfo)) {
+						different.addMessage("文件内容不一致");
+					}
+
+				}
+				if (different.getMessage() != null) {
+					diffs.add(different);
+				}
+			}
+		}
+
+
+		HostGroup cHostGroup = hostGroupCache.get(StaticValue.getHostPort() + "_" + groupName);
+
+		if (cHostGroup.isCurrent() != (diffs.size() == 0 ? true : false)) {
+			HostGroup hostGroup = new HostGroup();
+			hostGroup.setSsl(StaticValue.IS_SSL);
+			hostGroup.setCurrent(diffs.size() == 0);
+			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+			try {
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				LOG.error("add host group info err !!!!!", e1);
+			}
+		}
+
+
+	}
+
 	/**
 	 * 比较两个task是否一致
 	 *
 	 * @param task
 	 */
-	private void diffTask(Task task, Different different) {
+	private void diffTask(Task task, Different different, String groupName, String taskName) {
+        if(task != null){
+            groupName = task.getGroupName();
+            taskName = task.getName();
+        }
+
 		try {
+			byte[] bytes = getData2ZK(GROUP_PATH + "/" + groupName + "/" + taskName);
 
-			byte[] bytes = getData2ZK(GROUP_PATH + "/" + task.getGroupName() + "/" + task.getName());
+            if (bytes == null) {
+                if (task == null) {
+                    return;
+                }
 
-			if (bytes == null) {
 				different.addMessage("集群中不存在此Task");
 				return;
-			}
+			} else {
+                if (task == null) {
+                    different.addMessage("主机" + StaticValue.getHostPort() + "中不存在此Task");
+                    return;
+                }
+            }
 
 			Task cluster = JSONObject.parseObject(bytes, Task.class);
 
@@ -971,8 +1055,6 @@ public class SharedSpaceService {
 			zkDao.getZk().delete().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
 			LOG.info("delete file to {} -> {}", groupName, relativePath);
 		}
-
-
 	}
 
 	public <T> T getData(String path, Class<T> c) throws Exception {

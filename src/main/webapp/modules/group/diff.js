@@ -7,11 +7,16 @@ var diffMergely = new Vue({
         rHost:param.rightHostPort,
         lFiles:[],
         rFiles:[],
+        lTasks:[],
+        rTasks:[],
         lFilePath:param.relativePath,
         rFilePath:param.relativePath ,
         defaultFileInfo:{md5:"",length:0},
+        defaultTask:{md5:"",code:""},
         lFileInfo:{},
-        rFileInfo:{}
+        rFileInfo:{},
+        lTask:{md5:"",code:""},
+        rTask:{md5:"",code:""}
         //hostPort 如果为master则从一台同步主机中获取。
 
 
@@ -24,6 +29,9 @@ var diffMergely = new Vue({
 
 		this.listFiles(true) ;
 		this.listFiles(false) ;
+
+		this.listTasks(true) ;
+		this.listTasks(false) ;
 
         $('#compare').mergely({
             cmsettings: {
@@ -71,24 +79,61 @@ var diffMergely = new Vue({
 			});
 		},
 
+		listTasks:function(flag){
+			var $this = this ;
+			var hostPort = flag?$this.lHost:$this.rHost ;
+			Jcoder.ajax('/admin/task/list', 'post',{"host":hostPort,"groupName":$this.groupName,"taskType":-1},null).then(function (data) {
+				var tasks = []
+				if(!data.ok){
+					JqdeBox.message(false, data.message);
+				}else{
+					tasks = data.obj ;
+				}
+				if(flag){
+					$this.lTasks = tasks ;
+				}else{
+					$this.rTasks = tasks ;
+				}
+				$this.setContent(flag) ;
+			});
+		},
+
 		setContent:function(flag){
 
 			var $this = this ;
 			var hostPort = flag?$this.lHost:$this.rHost ;
 			var filePath = flag?$this.lFilePath:$this.rFilePath ;
-			if(filePath!=""){
+			if(filePath.startsWith("/")){
 				Jcoder.ajax('/admin/fileInfo/fileContent', 'post',{"hostPort":hostPort,"groupName":$this.groupName,"relativePath":filePath},null).then(function (data) {
                     if(!data.ok){
                         JqdeBox.message(false, data.message);
                     }
                     if(flag){
+                    	$this.lTask = $this.defaultTask ;
                         $this.lFileInfo = data.obj ;
                         $('#compare').mergely('lhs', data.message);
                     }else{
+                    	$this.rTask = $this.defaultTask ;
                         $this.rFileInfo = data.obj ;
                         $('#compare').mergely('rhs', data.message);
                     }
                 });
+			}else if(filePath!=""){
+				Jcoder.ajax('/admin/task/task', 'post',{"sourceHost":hostPort,"groupName":$this.groupName,"name":filePath},null).then(function (data) {
+					if(!data.ok){
+						JqdeBox.message(false, data.message);
+					}
+					if(flag){
+						$this.lFileInfo = $this.defaultFileInfo ;
+						$this.lTask = data.obj ;
+						$('#compare').mergely('lhs', data.obj.code);
+					}else{
+						$this.rFileInfo = $this.defaultFileInfo ;
+						$this.rTask = data.obj ;
+						$('#compare').mergely('rhs', data.obj.code);
+					}
+				});
+
 			}else{
 				if(flag){
 					$this.lFileInfo = $this.defaultFileInfo ;

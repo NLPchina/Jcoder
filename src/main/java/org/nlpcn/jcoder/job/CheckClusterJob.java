@@ -45,7 +45,7 @@ public class CheckClusterJob implements Runnable {
 				if (groupNames.size() > 0) {
 					for (String groupName : groupNames) {
 						long start = System.currentTimeMillis();
-						Group group = StaticValue.getSystemIoc().get(GroupService.class,"groupService").findGroupByName(groupName);
+						Group group = StaticValue.getSystemIoc().get(GroupService.class, "groupService").findGroupByName(groupName);
 						if (group != null) {
 							StaticValue.getSystemIoc().get(GroupService.class, "groupService").flush(groupName);
 						}
