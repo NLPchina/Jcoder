@@ -75,6 +75,10 @@ public class TaskAction {
 			throw new IllegalArgumentException("empty groupName");
 		}
 
+		if(Constants.HOST_MASTER.equals(host)){
+			host = null ;
+		}
+
 		// 从主板本取任务列表
 		if (StringUtil.isBlank(host)) {
 			Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
