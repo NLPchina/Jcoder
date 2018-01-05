@@ -1,0 +1,27 @@
+<div class="row" id="vmTaskRemoveConfirmModule">
+    <div class="col-sm-12 widget-container-col">
+        <div class="widget-box widget-color-red">
+            <div class="widget-header">
+                <h5 class="widget-title"><i class="ace-icon fa fa-exclamation-triangle bigger-120 orange2"></i> 请再三确认需要删除哪些主机的任务</h5>
+
+                <div class="widget-toolbar">
+                    <label>
+                        <input type="checkbox" class="ace ace-checkbox-2" @change="selectAll()" v-model="all"/>
+                        <span class="lbl"> 全选</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="widget-body">
+                <div class="widget-main padding-4 scrollable" data-size="300" style="height:308px;">
+                    <div class="content">
+                        <label v-bind="{class:'alert '+(item.selected?'alert-info':item.current?'alert-success':'alert-danger')}" v-for="item in hosts" style="padding:8px;margin-bottom:10px;display:block;cursor:pointer;">
+                            <input type="checkbox" class="ace ace-checkbox-2" v-model="item.selected"/>
+                            <span class="lbl">&nbsp;&nbsp;{{item.host}}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
