@@ -25,13 +25,11 @@ import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.IOUtils;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.FileVisitResult;
@@ -161,10 +159,13 @@ public class FileInfoAction {
 					JSONObject jsonObject = new JSONObject();
 					jsonObject.put("name",file.getName());
 					UUID uuid = UUID.randomUUID();
-					map.put(file.getName(),uuid.toString());
-					jsonObject.put("id", uuid.toString());
+					map.put(file.getName(),file.getName().equals(groupName)?"0":uuid.toString());
+					jsonObject.put("id", map.get(file.getName()));
 					jsonObject.put("open",true);
-					jsonObject.put("pId",file.getName().equals(groupName)?0:map.get(file.getParent()));
+					jsonObject.put("isParent",true);
+					if(!file.getName().equals(groupName)){
+						jsonObject.put("pId",map.get(file.getParentFile().getName()));
+					}
 					FileInfo fileInfo = new FileInfo(file);
 					JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
 					fi.put("date",fileInfo.lastModified());
@@ -188,7 +189,7 @@ public class FileInfoAction {
 						map.put(file.getName(),uuid.toString());
 						jsonObject.put("id", uuid.toString());
 						jsonObject.put("open",true);
-						jsonObject.put("pId",file.getName().equals(groupName)?0:map.get(file.getParent()));
+						jsonObject.put("pId",map.get(file.getParentFile().getName()));
 						FileInfo fileInfo = new FileInfo(file);
 						JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
 						fi.put("date",fileInfo.lastModified());
@@ -200,7 +201,6 @@ public class FileInfoAction {
 					return FileVisitResult.CONTINUE;
 				}
 			});
-
 			return Restful.instance().obj(nodes);
 		} else {
 			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("groupName", groupName), 10000);
@@ -211,8 +211,6 @@ public class FileInfoAction {
 				return Restful.fail().msg(response.getContent());
 			}
 		}
-
-
 	}
 
 
@@ -300,12 +298,13 @@ public class FileInfoAction {
 						@Override
 						public FileVisitResult visitFile(Path tempFile, BasicFileAttributes attrs) throws IOException {
 							File f = tempFile.toFile();
-							out.putNextEntry(new ZipEntry(f.getAbsolutePath().replace(file.getAbsolutePath(), "")));
+							out.putNextEntry(new ZipEntry(f.getName()));
 							int len = 0;
 							byte[] buffer = new byte[10240];
 							if (!f.isDirectory() && f.canRead()) {
 								try (FileInputStream fis = new FileInputStream(f)) {
-									while ((len = fis.read(buffer)) > 0) {
+									BufferedInputStream bis = new BufferedInputStream(fis, 1024*10);
+									while ((len = bis.read(buffer, 0, 1024*10)) != -1) {
 										out.write(buffer, 0, len);
 									}
 								}
@@ -351,6 +350,65 @@ public class FileInfoAction {
 		return Restful.ok();
 	}
 
+	/**
+	 * 删除一个文件或文件夹
+	 *
+	 * @param groupName
+	 * @param relativePath
+	 * @return
+	 */
+	@At
+	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts,@Param("groupName") String groupName,
+							  @Param("relativePath") String relativePath,
+							  @Param(value = "first", df = "true") boolean first) throws Exception {
+		try {
+			if(!first){
+				if (relativePath.contains("..")) {
+					return Restful.instance(false, "删除路径不能包含`..`字符");
+				}
+				File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+				if (file.isDirectory()) {
+                    boolean flag = org.nutz.lang.Files.deleteDir(file);
+                    if (!flag) {
+                        System.gc();//回收资源
+                        org.nutz.lang.Files.deleteDir(file);
+                    }
+                } else {
+                    boolean flag = org.nutz.lang.Files.deleteFile(file);
+                    if (!flag) {
+                        System.gc();//回收资源
+                        file.delete();
+                    }
+                }
+				return Restful.ok();
+			}else{
+				List<String> hosts = Arrays.asList(hostPorts);
+				Set<String> hostPortsArr = new HashSet<>(hosts);
+				Set<String> firstHost = new HashSet<String>();
+				if(hostPortsArr.contains(Constants.HOST_MASTER)){
+					hostPortsArr.remove(Constants.HOST_MASTER);
+					ArrayList arrayList = new ArrayList(hosts);
+					arrayList.remove(Constants.HOST_MASTER);
+					firstHost.add(arrayList.get(0).toString());
+				}
+				String message = proxyService.post(hostPortsArr, "/admin/fileInfo/deleteFile",
+						ImmutableMap.of("groupName", groupName,"relativePath",relativePath,"first", false), 100000,
+						ProxyService.MERGE_MESSAGE_CALLBACK);
+				//删除master数据节点
+				if(firstHost != null && firstHost.size() > 0){
+					String[] relativePaths = new String[]{relativePath};
+					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
+						ImmutableMap.of("groupName",groupName,"relativePaths",
+								relativePaths),100000);
+				}
+				return Restful.instance().ok(true).msg(message);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+		}
+	}
+
 
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
@@ -381,6 +439,68 @@ public class FileInfoAction {
 		}
 
 		return Restful.instance().ok(true).msg("上传成功");
+	}
+
+	@At
+	@AdaptBy(type = UploadAdaptor.class)
+	public Restful uploadFile(@Param("hostPorts") String[] hostPorts,@Param("group_name") String groupName,@Param("filePath") String filePath,
+							 @Param("file") TempFile[] file,@Param("fileNames") String[] fileNames,@Param(value = "first", df = "true") boolean first) throws IOException {
+		int fileNum = (int) file.length;
+
+		if (fileNum <= 0) {
+			LOG.warn(" not find any file!");
+		}
+
+       // File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+		try {
+			if(!first){
+				File folder = null;
+				if(StringUtil.isNotBlank(filePath)){
+					folder = new File(StaticValue.GROUP_FILE, groupName + filePath);
+					if(!folder.exists())folder.mkdir();
+				}
+				for (int i = 0; i < fileNames.length; i++) {
+					String fileName = fileNames[i];
+					try {
+						File to = new File(StaticValue.GROUP_FILE, groupName + filePath+"/" + fileName);
+						if(folder != null){
+							String path = folder.getCanonicalPath();
+							to = new File(path+"/"+fileName);
+						}
+						file[i].write(to.getAbsolutePath());
+						LOG.info("write file to " + to.getAbsolutePath());
+						fileNum++;
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+				JarService.remove(groupName);
+			}else{
+				List<String> hosts = Arrays.asList(hostPorts);
+				Set<String> hostPortsArr = new HashSet<>(hosts);
+				Set<String> firstHost = new HashSet<>();
+				if(hosts.contains(Constants.HOST_MASTER)){
+					hostPortsArr.remove(Constants.HOST_MASTER);
+					ArrayList arrayList = new ArrayList(hosts);
+					arrayList.remove(Constants.HOST_MASTER);
+					firstHost.add(arrayList.get(0).toString());
+				}
+				File[] files = Arrays.stream(file).map(f -> f.getFile()).toArray(File[]::new) ;
+				String[] fns = Arrays.stream(file).map(f -> f.getSubmittedFileName()).toArray(String[]::new) ;
+				proxyService.upload(hostPortsArr, "/admin/fileInfo/uploadFile",
+                        ImmutableMap.of("group_name",groupName,"file",files,"filePath",filePath,
+						"fileNames",fns,"first",false) , 100000);
+				//同步文件到Master
+                String[] relativePaths = Arrays.stream(file).map(f -> filePath+f.getSubmittedFileName()).toArray(String[]::new) ;
+				proxyService.post(firstHost, "/admin/fileInfo/upCluster",
+						ImmutableMap.of("groupName",groupName,"relativePaths",
+								relativePaths),100000);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+		}
+		return Restful.instance().ok(true).msg("upload " + fileNum + " file ok!");
 	}
 
 	/**

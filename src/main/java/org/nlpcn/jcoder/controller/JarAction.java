@@ -185,7 +185,7 @@ public class JarAction {
 
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
-	public Restful uploadJar(@Param("hostPorts") String[] hostPorts,@Param("group_name") String groupName,
+	public Restful uploadJar(@Param("hostPorts") String[] hostPorts,@Param("group_name") String groupName,@Param("filePath") String filePath,
                              @Param("file") TempFile[] file,@Param("fileNames") String[] fileNames,@Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) Stream.of(file).filter(f -> f.getSubmittedFileName().toLowerCase().endsWith(".jar")).count();
 
@@ -196,19 +196,24 @@ public class JarAction {
 		JarService jarService = JarService.getOrCreate(groupName) ;
         try {
             if(!first){
+				File folder = null;
+				if(StringUtil.isNotBlank(filePath)){
+					folder = new File(filePath);
+					if(folder.exists())folder.mkdir();
+				}
 				for (int i = 0; i < fileNames.length; i++) {
 					String fileName = fileNames[i];
-					if (fileName.toLowerCase().endsWith(".jar")) {
-						try {
-							File to = new File(jarService.getJarPath()+"/" + fileName);
-							file[i].write(to.getAbsolutePath());
-							LOG.info("write file to " + to.getAbsolutePath());
-							fileNum++;
-						} catch (IOException e) {
-							e.printStackTrace();
+					try {
+						File to = new File(jarService.getJarPath()+"/" + fileName);
+						if(folder != null){
+							String path = folder.getCanonicalPath();
+							to = new File(path+"/"+fileName);
 						}
-					} else {
-						LOG.warn(fileName + " not a jar ! so skip it!");
+						file[i].write(to.getAbsolutePath());
+						LOG.info("write file to " + to.getAbsolutePath());
+						fileNum++;
+					} catch (IOException e) {
+						e.printStackTrace();
 					}
 				}
 				JarService.remove(groupName);

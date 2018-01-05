@@ -1,16 +1,20 @@
 <div id="createFolder" class="tabbable">
     <div class="tab-content">
         <div id="home" class="tab-pane fade in active">
-            <form class="form-horizontal" id="createFolder-form" role="createFolder">
-                <div class="form-group">
-                    <label class="col-sm-2 control-label no-padding-right" for="folerName">文件夹名称 <span style="color:red;vertical-align:middle;">*</span> </label>
-                    <div class="col-sm-7">
-                        <div class="clearfix">
-                            <input type="text" placeholder="请输入文件夹名称..." style="width:337px;" class="col-xs-8" id="folerName" name="folerName" autocomplete="off" v-model="folerName"/>
+            <div class="row">
+                <div class="col-xs-12">
+                    <form class="form-horizontal" id="folderForm" role="form">
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label no-padding-right" for="fn">文件夹名称</label>
+                            <div class="col-sm-8">
+                                <div class="clearfix">
+                                    <input type="text" placeholder="请输入文件夹名称..." class="col-xs-12" id="fn" name="fn" autocomplete="off" v-model="folerName"/>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -22,16 +26,16 @@
         },
         mounted: function () { // 初始化执行
             var $this = this;
-            $('#createFolder-form').validate({
+            $('#folderForm').validate({
                 errorElement: 'div',
                 errorClass: 'help-block',
                 focusInvalid: true,
                 ignore: "",
                 rules: {
-                    folerName: {required: true}
+                    fn: {required:true}
                 },
                 messages: {
-                    folerName: {required: "文件夹名称不能为空"}
+                    fn: {required: "文件夹名称不能为空"}
                 },
                 highlight: function (e) {
                     $(e).closest('.form-group').removeClass('has-info').addClass('has-error');
@@ -48,7 +52,20 @@
         methods: { // 方法
             // 验证表单
             valid: function () {
-                return $('#createFolder-form').valid();
+                var $this = this;
+                $('#folderForm').valid();
+                return $this.ignorspace();
+            },
+            ignorspace:function(){
+                var folderName = $.trim($("#fn").val());//文件夹名称
+                //用户名
+                var passreg = /^[a-zA-Z0-9]{1,20}$/;
+                if(!passreg.test(folderName) || folderName.length==0){
+                    JqdeBox.message(false, "文件夹名称不可为空，只能包含字母和数字，且长度不能超过20！");
+                    $("#fn").focus();
+                    return false;
+                }
+                return true;
             }
         }
     });

@@ -18,11 +18,6 @@
                         <input type="text" id="filePath" class="col-sm-12" v-model="filePath" name="filePath" :disabled="filePath"/>
                     </div>
                 </div>
-                <div class="form-group">
-                    <div class="col-md-offset-1 col-xs-10">
-                        <input name="file" multiple="" type="file" id="id-input-file-3" />
-                    </div>
-                </div>
             </form>
         </div>
     </div>
@@ -38,17 +33,6 @@
         },
         mounted: function () { // 初始化执行
             var $this = this;
-            $('#id-input-file-3').ace_file_input({
-                style: 'well',
-                no_file:'没有选择文件',
-                btn_choose: '选择文件',
-                btn_change: null,
-                no_icon: 'ace-icon fa fa-cloud-upload',
-                droppable: true,
-                thumbnail: 'small'
-            }).on('file.error.ace', function(event, info) {
-                 JqdeBox.message(false,'请选择文件！');
-            });
         },
         methods: { // 方法
 

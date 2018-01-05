@@ -62,8 +62,8 @@
                                         <div class="widget-header">
                                             <h5 class="widget-title">节点详情</h5>
                                             <span class="widget-toolbar">
-                                                <i title="下载文件" @click="downFile()" class="ace-icon fa fa-cloud-download bigger-150" v-show="isFile"></i>
                                                 <i title="创建文件夹" @click="createFolder()" class="ace-icon fa fa-folder-open bigger-150" v-show="!isFile"></i>
+                                                <i title="下载文件" @click="downFile()" class="ace-icon fa fa-cloud-download bigger-150"></i>
                                                 <i title="上传文件" @click="uploadFile()" class="ace-icon fa fa-cloud-upload bigger-150" v-show="!isFile"></i>
                                             </span>
                                         </div>
@@ -79,6 +79,7 @@
                                                     <tr>
                                                         <th class="center">文件名</th>
                                                         <th class="center">文件大小</th>
+                                                        <th class="center">类型</th>
                                                         <th class="center">修改时间</th>
                                                         <th class="center">文件路径</th>
                                                         <th class="center">操作</th>
@@ -86,15 +87,23 @@
                                                     </thead>
                                                     <tbody class="infor-tbody">
                                                     <tr v-for="(resource, index) in resources">
-                                                        <td  class="center">{{resource.file.name}}</td>
+                                                        <td  class="center">
+                                                            <i class="glyphicon blue glyphicon-folder-open" v-if="resource.file.directory"></i>
+                                                            <i class="glyphicon blue glyphicon-file" v-else></i>
+                                                            <a href="javascript:void(0)" @click="nodeInfo(resource.file.name)">{{resource.file.name}}</a>
+                                                        </td>
                                                         <td  class="center">{{resource.file.length/1024}}k</td>
+                                                        <td  class="center">{{resource.file.directory?"文件夹":"文件"}}</td>
                                                         <td  class="center">{{resource.file.date | datetime('yyyy-MM-dd HH:mm:ss')}}</td>
                                                         <td  class="center">{{resource.file.relativePath}}</td>
                                                         <td  class="center">
                                                             <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
                                                                 <div class="editbutton" style="display:inline;">
                                                                     <a class="red" href="javascript:;" style="margin-left:7px;" title="删除">
-                                                                        <i class="ace-icon fa fa-trash-o  bigger-130" @click="del(resource);"></i>
+                                                                        <i class="ace-icon fa fa-trash-o  bigger-130" @click="del(resource.file.relativePath)"></i>
+                                                                    </a>
+                                                                    <a class="red" href="javascript:;" style="margin-left:7px;" title="下载">
+                                                                        <i title="下载文件" @click="downFile(resource.file.relativePath)" class="ace-icon fa fa-cloud-download bigger-130"></i>
                                                                     </a>
                                                                 </div>
                                                             </div>

@@ -46,7 +46,7 @@ var jarManager = new Vue({
                     formData.append('file', files[i]);
                 }
               　$.ajax({
-                  url:"/admin/jar/uploadJar?group_name="+$this.groupName+"&hostPorts="+importJar.checkedHosts,
+                  url:"/admin/jar/uploadJar?group_name="+$this.groupName+"&hostPorts="+importJar.checkedHosts+"&filePath=''",
                   type:"post",
                   data:formData,
                   processData:false,
