@@ -51,8 +51,8 @@ public class TaskService {
         List<Task> tasks = new ArrayList<>(taskNames.size());
         Task t;
         for (String name : taskNames) {
-            t = JSONObject.parseObject(zk.getData().forPath(path + "/" + name), Task.class);
-			if (t != null) {
+			t = JSONObject.parseObject(zk.getData().forPath(path + "/" + name), Task.class);
+			if (t != null && StringUtil.isNotBlank(t.getCode())) {
 				tasks.add(t);
 			}
 		}
