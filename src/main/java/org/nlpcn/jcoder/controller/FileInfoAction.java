@@ -451,7 +451,6 @@ public class FileInfoAction {
 			LOG.warn(" not find any file!");
 		}
 
-       // File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 		try {
 			if(!first){
 				File folder = null;
@@ -491,7 +490,6 @@ public class FileInfoAction {
                         ImmutableMap.of("group_name",groupName,"file",files,"filePath",filePath,
 						"fileNames",fns,"first",false) , 100000);
 				//同步文件到Master
-                /*if(filePath.lastIndexOf("/") == (filePath.length()-1))filePath.substring(0,(filePath.length() -1));*/
                 String[] relativePaths = Arrays.stream(file).map(f -> (filePath.endsWith("/")?filePath:filePath+"/")+f.getSubmittedFileName()).toArray(String[]::new) ;
 				proxyService.post(firstHost, "/admin/fileInfo/upCluster",
 						ImmutableMap.of("groupName",groupName,"relativePaths",
