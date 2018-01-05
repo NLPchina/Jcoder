@@ -396,7 +396,7 @@ public class FileInfoAction {
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
 				if(firstHost != null && firstHost.size() > 0){
-					String[] relativePaths = new String[]{relativePath};
+					String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
 						ImmutableMap.of("groupName",groupName,"relativePaths",
 								relativePaths),100000);
@@ -451,7 +451,6 @@ public class FileInfoAction {
 			LOG.warn(" not find any file!");
 		}
 
-       // File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 		try {
 			if(!first){
 				File folder = null;
@@ -491,7 +490,7 @@ public class FileInfoAction {
                         ImmutableMap.of("group_name",groupName,"file",files,"filePath",filePath,
 						"fileNames",fns,"first",false) , 100000);
 				//同步文件到Master
-                String[] relativePaths = Arrays.stream(file).map(f -> filePath+f.getSubmittedFileName()).toArray(String[]::new) ;
+                String[] relativePaths = Arrays.stream(file).map(f -> (filePath.endsWith("/")?filePath:filePath+"/")+f.getSubmittedFileName()).toArray(String[]::new) ;
 				proxyService.post(firstHost, "/admin/fileInfo/upCluster",
 						ImmutableMap.of("groupName",groupName,"relativePaths",
 								relativePaths),100000);
