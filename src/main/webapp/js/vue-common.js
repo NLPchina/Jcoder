@@ -114,7 +114,11 @@ Vue.component('host-component', {
                     }
                     return memo;
                 }, {});
-                _.each(me.hosts, function (ele) {ele.current = !!data[ele.host];});
+                _.each(me.hosts, function (ele) {
+                    if (_.isBoolean(data[ele.host])) {
+                        ele.current = !!data[ele.host];
+                    }
+                });
             }).catch(function (req) {
                 JqdeBox.message(false, req.responseText || req.message);
             });

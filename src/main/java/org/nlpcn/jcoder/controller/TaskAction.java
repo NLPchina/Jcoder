@@ -185,9 +185,6 @@ public class TaskAction {
         // 是否更新主版本
         Set<String> hostPorts = Stream.of(hosts).collect(Collectors.toSet());
         boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
-        if (hostPorts.isEmpty()) {
-            throw new IllegalArgumentException("must contain non-master host");
-        }
 
         // 如果激活任务, 需要检查代码
         if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
