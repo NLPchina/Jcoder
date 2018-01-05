@@ -824,6 +824,7 @@ public class SharedSpaceService {
 	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
 	 *
 	 * @param groupName
+	 * @param taskNames
 	 * @param fileInfos
 	 * @throws Exception
 	 */
@@ -831,7 +832,7 @@ public class SharedSpaceService {
 
 		List<Different> diffs = new ArrayList<>();
 
-		if (taskNames != null && taskNames.size() > 1) {
+		if (taskNames != null && !taskNames.isEmpty()) {
 			TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class);
 			for (String taskName : taskNames) {
 				Different different = new Different();
