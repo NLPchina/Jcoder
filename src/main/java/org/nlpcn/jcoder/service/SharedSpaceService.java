@@ -1070,7 +1070,7 @@ public class SharedSpaceService {
 			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file)));
 			LOG.info("up file to {} -> {}", groupName, relativePath);
 		} else {
-			zkDao.getZk().delete().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
+			zkDao.getZk().delete().deletingChildrenIfNeeded().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
 			LOG.info("delete file to {} -> {}", groupName, relativePath);
 		}
 	}
