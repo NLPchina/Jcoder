@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.apache.zookeeper.data.Stat;
+import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
@@ -12,6 +14,7 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
+import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -348,9 +351,21 @@ public class GroupAction {
 			}
 
 			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
-			JSONObject obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
-			if (obj == null) {
-				return Restful.fail().code(404).msg("任务不存在");
+			Restful restful = JSONObject.parseObject(post.getContent(), Restful.class);
+
+			if (restful.code()==404) {
+				if(Constants.HOST_MASTER.equals(toHostPort)){
+					StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH+"/"+groupName+"/"+relativePath) ;
+				}else{
+					post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), ImmutableMap.of("diff", false, "force", true, "user", "user", "time", new Date()), 1000);
+				}
+				return JSONObject.parseObject(post.getContent(), Restful.class);
+			}
+
+			JSONObject obj = restful.getObj();
+
+			if(obj==null){
+				return restful ;
 			}
 
 			obj.remove("id") ;

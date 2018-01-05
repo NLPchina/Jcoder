@@ -329,11 +329,8 @@ public class TaskAction {
 
         // 如果取其他机器版本
         Response resp = proxyService.post(sourceHost, Api.TASK_TASK.getPath(), ImmutableMap.of("groupName", groupName, "name", name), TIMEOUT);
-        if (resp.getStatus() == NotFound) {
-            return Restful.ok();
-        }
-        JSONObject res = JSONObject.parseObject(resp.getContent());
-        return res.getBooleanValue("ok") ? Restful.ok().obj(res.get("obj")) : Restful.fail().code(ServerException).msg(res.getString("message"));
+
+        return JSONObject.parseObject(resp.getContent(),Restful.class) ;
     }
 
     @At
