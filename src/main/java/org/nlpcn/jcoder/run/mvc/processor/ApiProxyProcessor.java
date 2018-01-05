@@ -37,7 +37,7 @@ public class ApiProxyProcessor extends ViewProcessor {
 			doNext(ac);
 			return ;
 		}
-		String proxyUrl = StaticValue.space().host(ac.getRequest().getHeader("jcoder_group"), request.getHeader("jcoder_group"));
+		String proxyUrl = StaticValue.space().host(ac.getRequest().getHeader("jcoder_group"), ac.getPath());
 		proxyService.service(request,response,proxyUrl) ;
 		response.getOutputStream().flush();
 		response.getOutputStream().close();

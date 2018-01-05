@@ -378,8 +378,7 @@ public class GroupAction {
 				return restful;
 			}
 
-			obj.remove("id");
-			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 1000);
+			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 20000);
 
 			return Restful.instance(post);
 		}
