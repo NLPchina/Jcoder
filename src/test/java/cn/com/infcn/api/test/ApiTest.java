@@ -28,13 +28,7 @@ public class ApiTest {
 	 */
 	@DefaultExecute
 	public Object test() throws Exception {
-		User user = new User() ;
-		user.setMail("aaa@aa.com");
-		user.setCreateTime(new Date());
-		user.setName("aaaa");
-		user.setType(0);
-		StaticValue.systemDao.save(user);
-		return null;
+		return "OK";
 	}
 
 }
