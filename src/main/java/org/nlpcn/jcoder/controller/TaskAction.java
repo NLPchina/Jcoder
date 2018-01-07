@@ -329,6 +329,8 @@ public class TaskAction {
 			}
 
 			return Restful.ok().obj(opt.get());
+		}else if(StaticValue.getHostPort().equals(sourceHost)){
+			return __task__(groupName,name) ;
 		}
 
 		// 如果取其他机器版本
