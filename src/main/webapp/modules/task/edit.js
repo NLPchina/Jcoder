@@ -4,6 +4,7 @@ vmApp.module = new Vue({
     components: {
         'host-component': {
             props: ['hosts'],
+            data: function () {return {isLoading: true};},
             template: '#host-component',
             mounted: function () {
                 var me = this, parent = me.$parent, task = parent.task;
@@ -11,6 +12,8 @@ vmApp.module = new Vue({
                     groupName: task.groupName,
                     name: task.name
                 }).then(function (data) {
+                    me.isLoading = false;
+
                     data = data.obj;
                     var hosts = me.hosts;
                     _.each(data, function (ele) {

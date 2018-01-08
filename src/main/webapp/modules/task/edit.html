@@ -79,7 +79,8 @@
 
 <script type="text/x-template" id="host-component">
     <div class="alert alert-block alert-success" style="padding:8px;">
-        <label v-for="item in hosts"
+        <i v-if="isLoading" class="ace-icon fa fa-spinner fa-spin orange bigger-140"></i>
+        <label v-else v-for="item in hosts"
                v-bind="{class:'infobox infobox-small infobox-dark '+(item.current?'infobox-green':''),style:'cursor:pointer;margin:2px;width:228px;'+(!item.current?'background-color:#E08374;border-color:#E08374;':'')}">
             <div class="infobox-progress">
                 <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">
