@@ -67,9 +67,13 @@ public class TaskService {
      * @throws Exception
      */
     public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
-        String path = GROUP_PATH + "/" + groupName + "/" + taskName;
-        LOG.info("to delete task in zookeeper: {}", path);
-        StaticValue.space().getZk().delete().forPath(path);
+		String path = GROUP_PATH + "/" + groupName + "/" + taskName;
+		LOG.info("to delete task in zookeeper: {}", path);
+		if (StaticValue.space().getZk().checkExists().forPath(path) == null) {
+			LOG.warn("task[{}] not found in zookeeper", path);
+		} else {
+			StaticValue.space().getZk().delete().forPath(path);
+		}
     }
 
 	/**
