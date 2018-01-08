@@ -190,13 +190,16 @@ public class TaskAction {
 		Set<String> hostPorts = Stream.of(hosts).collect(Collectors.toSet());
 		boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
 
-		// 如果激活任务, 需要检查代码
-		if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
-			String errorMessage = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-			if (StringUtil.isNotBlank(errorMessage)) {
-				return Restful.fail().code(ServerException).msg(errorMessage);
-			}
-		}
+        // 如果是新增, 检查主版本上是否已存在
+        if (containsMaster && task.getId() == null && taskService.existsInCluster(task.getGroupName(), task.getName())) {
+            return Restful.fail().msg("task[" + task.getGroupName() + "-" + task.getName() + "] already exists in [master]");
+        }
+        // 如果激活任务, 需要检查代码
+        // 如果是新增, 确保任务不存在
+        String errorMessage = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+        if (StringUtil.isNotBlank(errorMessage)) {
+            return Restful.fail().code(ServerException).msg(errorMessage);
+        }
 
 		// 保存
 		User u = (User) Mvcs.getHttpSession().getAttribute(UserConstants.USER);
@@ -224,7 +227,7 @@ public class TaskAction {
 		}
 
 		// 集群的每台机器保存
-		String errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+		errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
 		if (StringUtil.isNotBlank(errorMessage)) {
 			return Restful.fail().code(ServerException).msg(errorMessage);
 		}
@@ -247,11 +250,18 @@ public class TaskAction {
 
 	@At
 	public Restful __check__(@Param("::task") Task task) throws CodeException, IOException {
-		if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
-			new JavaRunner(task).check();
-		}
-		return Restful.ok();
-	}
+        // 如果是新增, 确保任务不存在
+        if (task.getId() == null && taskService.findTask(task.getGroupName(), task.getName()) != null) {
+            return Restful.fail().msg(String.format("task[%s-%s] already exists in [%s]", task.getGroupName(), task.getName(), StaticValue.getHostPort()));
+        }
+
+        // 如果激活任务, 需要检查代码
+        if (task.getStatus() == TaskStatus.ACTIVE.getValue()) {
+            new JavaRunner(task).check();
+        }
+
+        return Restful.ok();
+    }
 
 	@At
 	public Restful __save__(@Param("::task") Task task, String oldName) throws Exception {
