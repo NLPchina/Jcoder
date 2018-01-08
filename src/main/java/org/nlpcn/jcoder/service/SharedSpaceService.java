@@ -15,8 +15,6 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.nlpcn.jcoder.domain.*;
-import org.nlpcn.jcoder.job.CheckClusterJob;
-import org.nlpcn.jcoder.job.MasterGroupListenerJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -260,17 +258,14 @@ public class SharedSpaceService {
 	public void addMapping(String groupName, String className, String methodName) {
 
 		StringBuilder sb = new StringBuilder(MAPPING_PATH);
-		sb.append("/").append(groupName).append("/").append(className).append("/");
 
-		if (StringUtil.isNotBlank(methodName)) {
-			sb.append(methodName).append("/");
-		}
-		sb.append(StaticValue.getHostPort());
-
-		String path = sb.toString();
-
+		String path = null;
 		try {
-			setData2ZK(path, new byte[0]);//TODO: 这个不是临时节点。所以需要定时清理
+			sb.append("/").append(className).append("/").append(methodName).append("/");
+			zkDao.getZk().createContainers(sb.toString());
+			sb.append(StaticValue.getHostPort());
+			path = sb.toString();
+			setData2ZKByEphemeral(path, groupName.getBytes("utf-8"), null);
 			LOG.info("add mapping: {} ok", path);
 		} catch (Exception e) {
 			LOG.error("Add mapping " + path + " err", e);
@@ -349,11 +344,8 @@ public class SharedSpaceService {
 	public String host(String groupName, String className, String mehtodName) {
 
 		Map<String, ChildData> currentChildren = null;
-		if (StringUtil.isBlank(mehtodName)) {
-			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className);
-		} else {
-			currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className + "/" + mehtodName);
-		}
+
+		currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + className + "/" + mehtodName);
 
 		if (currentChildren == null || currentChildren.size() == 0) {
 			return null;
@@ -365,6 +357,14 @@ public class SharedSpaceService {
 		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
 
 			String hostPort = entry.getKey();
+
+			String hostPortGroupName = new String(entry.getValue().getData());
+
+			if (groupName != null && !hostPortGroupName.equals(groupName)) {
+				continue;
+			}else {
+				groupName = hostPortGroupName ;
+			}
 
 			HostGroup hostGroup = hostGroupCache.get(hostPort + "_" + groupName);
 
@@ -581,9 +581,9 @@ public class SharedSpaceService {
 					case CHILD_REMOVED:
 					default:
 						if (StaticValue.isMaster()) { //如果是master检查定时任务
-							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
+//TODO							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
 						}
-						CheckClusterJob.changeGroup(groupName);
+//TODO						CheckClusterJob.changeGroup(groupName);
 						break;
 				}
 			}
@@ -824,6 +824,7 @@ public class SharedSpaceService {
 	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
 	 *
 	 * @param groupName
+	 * @param taskNames
 	 * @param fileInfos
 	 * @throws Exception
 	 */
@@ -831,7 +832,7 @@ public class SharedSpaceService {
 
 		List<Different> diffs = new ArrayList<>();
 
-		if (taskNames != null && taskNames.size() > 1) {
+		if (taskNames != null && !taskNames.isEmpty()) {
 			TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class);
 			for (String taskName : taskNames) {
 				Different different = new Different();

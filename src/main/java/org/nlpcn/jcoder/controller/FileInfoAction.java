@@ -252,7 +252,7 @@ public class FileInfoAction {
 		} else {
 			Response post = proxyService.post(hostPort, "/admin/fileInfo/fileContent", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "maxSize", maxSize), 10000);
 
-			return JSONObject.parseObject(post.getContent(), Restful.class);
+			return Restful.instance(post);
 		}
 
 	}

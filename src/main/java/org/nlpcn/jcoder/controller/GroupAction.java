@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
@@ -12,6 +13,7 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
+import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -293,7 +295,7 @@ public class GroupAction {
 			return Restful.instance(groupService.flush(groupName));
 		} else {
 			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName), 120000);
-			return JSONObject.parseObject(post.getContent(),Restful.class) ;
+			return JSONObject.parseObject(post.getContent(), Restful.class);
 		}
 
 	}
@@ -348,15 +350,37 @@ public class GroupAction {
 			}
 
 			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
-			JSONObject obj = JSONObject.parseObject(post.getContent(), Restful.class).getObj();
-			if (obj == null) {
-				return Restful.fail().code(404).msg("任务不存在");
+
+			Restful restful = Restful.instance(post);
+
+			if (restful.code() == 404) {
+				if (Constants.HOST_MASTER.equals(toHostPort)) {
+					StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath);
+				} else {
+
+					Map<String, Object> params = new HashMap<>();
+
+					params.put("diff", false);
+					params.put("force", true);
+					params.put("groupName", groupName);
+					params.put("name", relativePath);
+					params.put("user", "user");
+					params.put("time", System.currentTimeMillis());
+
+					post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), params, 1000);
+				}
+				return Restful.instance(post);
 			}
 
-			obj.remove("id") ;
-			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 1000);
+			JSONObject obj = restful.getObj();
 
-			return JSONObject.parseObject(post.getContent(), Restful.class);
+			if (obj == null) {
+				return restful;
+			}
+
+			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 20000);
+
+			return Restful.instance(post);
 		}
 	}
 
