@@ -255,8 +255,8 @@ var resourceManager = new Vue({
                 confirm: function () {
                   if(createFolder.valid()){
                       var folderNode = {name:$("#fn").val(),id:"'"+new Date().getTime()+"'",
-                        pId:$this.currentNode.id,open:true,isParent:true,file:{directory:true,
-                        relativePath:$this.currentNode.file.relativePath+$("#fn").val()}};
+                        pId:$this.currentNode.id,open:true,isParent:true,file:{name:$("#fn").val(),length:0,directory:true,
+                        relativePath:$this.currentNode.file.relativePath+$("#fn").val(),date:new Date().getTime()}};
                       zNodes.push(folderNode);
                       initResourceTree(zNodes);
                   }else{
@@ -316,6 +316,31 @@ var resourceManager = new Vue({
       },
       nodeInfo:function(fileName){
             selectNode(fileName);
+      },
+      //保存文件内容并刷新
+      saveAndFlush:function(){
+        var $this = this;
+        JqdeBox.dialog({
+          title: '保存',
+          url: 'modules/resource/deleteFile.html',
+          init: function () {
+             importFile.filePath = $this.currentNode.file.relativePath;
+             _.each($this.hosts, function (host) {
+               importFile.hosts.push(host.host);
+               if(host.selected){
+                 importFile.checkedHosts.push(host.host);
+               }
+             });
+          },
+          confirm: function () {
+            Jcoder.ajax('/admin/resource/saveAndFlush', 'post',
+                {hostPorts:importFile.checkedHosts,groupName:$this.groupName,
+                content:$this.editor.getValue(),relativePath:$this.currentNode.file.relativePath},null).then(function (data) {
+                JqdeBox.unloading();
+                JqdeBox.message(data.ok, "成功！");
+            });
+          }
+        });
       }
   }
 });

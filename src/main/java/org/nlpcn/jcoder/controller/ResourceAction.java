@@ -3,13 +3,11 @@ package org.nlpcn.jcoder.controller;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
-import org.nlpcn.jcoder.service.JarService;
-import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.ResourceService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
+import org.nlpcn.jcoder.service.*;
 import org.nlpcn.jcoder.util.*;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -36,61 +34,49 @@ public class ResourceAction {
 	private static final Logger LOG = LoggerFactory.getLogger(ResourceAction.class);
 
 	@Inject
+	private IocService iocService;
+
+	@Inject
 	private ResourceService resourceService;
 
 	@Inject
 	private ProxyService proxyService;
 
 	@At
-	public Restful list(@Param("groupName") String groupName, @Param("path") String path) {
-		JSONArray jsonArray = new JSONArray();
-		try {
-			resourceService.getResourceFiles(jsonArray, groupName, path, "0");
-		} catch (Exception e) {
-			e.printStackTrace();
-			return Restful.fail().msg(e.getMessage());
-		}
-		JSONObject jsonObject = new JSONObject();
-		jsonObject.put("name", groupName);
-		jsonObject.put("id", 0);
-		jsonObject.put("open", true);
-		jsonObject.put("iconOpen", "modules/resource/css/zTreeStyle/img/diy/1_open.png");
-		jsonObject.put("iconClose", "modules/resource/css/zTreeStyle/img/diy/1_close.png");
-		jsonArray.add(jsonObject);
-		return Restful.ok().obj(jsonArray);
-	}
-
-	@At
-	@Ok("void")
-	public void downFile(@Param("groupName") String groupName, @Param("path") String path, HttpServletResponse response) {
-		try {
-			FileInfo fileInfo = resourceService.getFileInfo(groupName, path);
-			ByteArrayInputStream bais = new ByteArrayInputStream(fileInfo.getMd5().getBytes("utf-8"));
-			response.addHeader("Content-Disposition", "attachment;filename=" +
-					URLEncoder.encode(fileInfo.getName(), "utf-8"));
-			response.setContentType("application/octet-stream");
-			IOUtil.writeAndClose(bais, response.getOutputStream());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
-	@At
-	public Restful createFolder(@Param("hostPorts") String[] hostPorts,@Param("groupName") String groupName,
-								@Param("path") String path, @Param("folderName") String folderName,
-								@Param(value = "first", df = "true") boolean first){
+	public Restful saveAndFlush(@Param("hostPorts[]") String[] hostPorts,@Param("groupName") String groupName,
+						@Param("content") String content,
+						@Param("relativePath") String relativePath,
+						@Param(value = "first", df = "true") boolean first) {
 		try {
 			if(!first){
-				resourceService.createFolder(groupName,path,folderName);
-				return Restful.instance().ok(true).msg("保存成功！");
+				JarService jarService = JarService.getOrCreate(groupName) ;
+				if(relativePath.endsWith("ioc.js")){
+					jarService.saveIoc(groupName, content);
+				}else if(relativePath.endsWith("pom.xml")){
+					jarService.savePom(groupName, content);
+				}else{
 
+				}
+				return Restful.instance().ok(true).msg("保存并刷新成功！");
 			}else{
-				Set<String> hostPortsArr = new HashSet<>();
-				Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-				String message = proxyService.post(hostPortsArr, "/admin/resource/createFolder",
-						ImmutableMap.of("groupName", groupName,"path",path,"folderName",folderName,"first", false), 100000,
+				List<String> hosts = Arrays.asList(hostPorts);
+				Set<String> hostPortsArr = new HashSet<>(hosts);
+				Set<String> firstHost = new HashSet<String>();
+				if(hostPortsArr.contains(Constants.HOST_MASTER)){
+					hostPortsArr.remove(Constants.HOST_MASTER);
+					ArrayList arrayList = new ArrayList(hosts);
+					arrayList.remove(Constants.HOST_MASTER);
+					firstHost.add(arrayList.get(0).toString());
+				}
+				String message = proxyService.post(hostPortsArr, "/admin/resource/saveAndFlush",
+						ImmutableMap.of("groupName", groupName,"content",content,"first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
-				resourceService.createFolder2ZK(groupName,path,folderName);
+				//更新master数据节点
+				if(firstHost != null && firstHost.size() > 0){
+					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
+							ImmutableMap.of("groupName",groupName,"relativePaths",
+									new String[]{relativePath}),100000);
+				}
 				return Restful.instance().ok(true).msg(message);
 			}
 		} catch (Exception e) {
