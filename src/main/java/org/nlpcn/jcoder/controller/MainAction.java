@@ -58,7 +58,7 @@ public class MainAction {
 		//task 管理
 		JSONArray submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","task/list.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName.toString(),"url","task/list.html?name="+groupName)) ;
 		}
 		result.add(ImmutableMap.of("name","Task管理","submenus",submenus)) ;
 
@@ -66,38 +66,22 @@ public class MainAction {
 		//jar 管理
 		submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","jar/list.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName.toString(),"url","jar/list.html?name="+groupName)) ;
 		}
-		//submenus.add(ImmutableMap.of("name","上传","url","jar/importJar.html"));
 		result.add(ImmutableMap.of("name","Jar管理","submenus",submenus)) ;
 
 
 		//Resource管理
 		submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","resource/list.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName.toString(),"url","resource/list.html?name="+groupName)) ;
 		}
 		result.add(ImmutableMap.of("name","Resource管理","submenus",submenus)) ;
-
-		
-		//IOC管理	
-		submenus = new JSONArray() ;
-		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","ioc/index.html?name="+groupName)) ;
-		}
-		result.add(ImmutableMap.of("name","IOC管理","submenus",submenus)) ;
-
-		//IOC管理
-		submenus = new JSONArray() ;
-		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","ioc/index.html?name="+groupName)) ;
-		}
-		result.add(ImmutableMap.of("name","IOC管理","submenus",submenus)) ;
 
 		//Thread管理
 		submenus = new JSONArray() ;
 		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName,"url","thread/index.html?name="+groupName)) ;
+			submenus.add(ImmutableMap.of("name",groupName.toString(),"url","thread/index.html?name="+groupName)) ;
 		}
 		result.add(ImmutableMap.of("name","Thread管理","submenus",submenus)) ;
 

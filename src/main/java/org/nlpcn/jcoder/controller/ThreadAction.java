@@ -79,6 +79,7 @@ public class ThreadAction {
 
 			return Restful.ok().obj(json);
 		}
+		return null;
 	}
 
 	/**
