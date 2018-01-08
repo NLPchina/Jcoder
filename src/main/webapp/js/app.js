@@ -76,6 +76,7 @@ var vmApp = new Vue({
             });
     	},
     	init: function () {
+    	    var $this = this;
             if ($('#nav').length) {
                 this.checkURL();
             }
@@ -104,11 +105,19 @@ var vmApp = new Vue({
                 }
 
                 var href = '/' + urls[0] ;
-                
-                $('#nav li.active').removeClass("active");
-                $('#nav li.open').removeClass("open");
 
-                $('#nav li:has(a[href="#' + href.replace('/modules','') + '"])').addClass("active")
+                $('#nav li').each(function(){
+                    $(this).removeClass("active");
+                    $(this).removeClass("open");
+                });
+
+                var obj = null;
+                if(urls.length > 1){
+                    obj = $('#nav li:has(a[href="#' + href.replace('/modules','')+'?'+urls[1] + '"])');
+                }else{
+                    obj = $('#nav li:has(a[href="#' + href.replace('/modules','') + '"])');
+                }
+                obj.addClass("active")
                     .parents('li').addClass("active").addClass("open")
                     .siblings().find('.submenu').slideUp('fast');
 
