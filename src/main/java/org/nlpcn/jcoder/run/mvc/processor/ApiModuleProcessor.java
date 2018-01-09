@@ -4,10 +4,8 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nutz.ioc.Ioc;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
-import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.impl.processor.AbstractProcessor;
 
@@ -16,8 +14,7 @@ import java.lang.reflect.Method;
 /**
  * @author zozoh(zozohtnt@gmail.com)
  * @author wendal(wendal1985@gmail.com)
- * @author ansj
- * 设置ioc 和classloader
+ * @author ansj 设置ioc 和classloader
  */
 public class ApiModuleProcessor extends AbstractProcessor {
 

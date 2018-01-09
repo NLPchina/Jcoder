@@ -7,6 +7,7 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map.Entry;
 
+import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.util.MapCount;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -22,6 +23,7 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
+import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +165,14 @@ public class JavaRunner {
 	}
 
 	private void _instance() {
+
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+
+		Ioc contextIoc = Mvcs.getIoc();
+
+
 		try {
+
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
 
 			objInstance = codeInfo.getClassz().newInstance();
@@ -171,6 +180,9 @@ public class JavaRunner {
 			Ioc ioc = JarService.getOrCreate(task.getGroupName()).getIoc();
 
 			codeInfo.setioc(ioc);
+
+			Thread.currentThread().setContextClassLoader(codeInfo.getClassLoader());
+			Mvcs.setIoc(ioc);
 
 			Mirror<?> mirror = Mirror.me(codeInfo.getClassz());
 
@@ -184,6 +196,8 @@ public class JavaRunner {
 					} else if(field.getType().equals(org.slf4j.Logger.class)){
 						mirror.setValue(objInstance, field, LoggerFactory.getLogger(codeInfo.getClassz()));
 					}else {
+						Object t = ioc.get(field.getType(), StringUtil.isBlank(inject.value());
+						System.out.println(t);
 						mirror.setValue(objInstance, field, ioc.get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
 					}
 					field.setAccessible(false);
@@ -196,6 +210,9 @@ public class JavaRunner {
 		} catch (InstantiationException | IllegalAccessException e) {
 			e.printStackTrace();
 			throw new CodeRuntimeException(e);
+		}finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
+			Mvcs.setIoc(contextIoc);
 		}
 	}
 
@@ -228,7 +245,14 @@ public class JavaRunner {
 	 */
 	public Object execute(Method method, Object[] args) {
 		long start = System.currentTimeMillis();
+
+		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+
+		Ioc contextIoc = Mvcs.getIoc();
+
 		try {
+			Thread.currentThread().setContextClassLoader(codeInfo.getClassLoader());
+			Mvcs.setIoc(codeInfo.getIoc());
 			Object invoke = method.invoke(objInstance, args);
 			String endInfo = "Execute OK  " + task.getName() + "/" + method.getName() + " succesed ! use Time : " + (System.currentTimeMillis() - start);
 			LOG.info(endInfo);
@@ -239,6 +263,9 @@ public class JavaRunner {
 			this.task.updateError();
 			LOG.error("Execute ERR  " + task.getName() + "/" + method.getName() + " useTime " + (System.currentTimeMillis() - start) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 			throw new CodeRuntimeException(e);
+		}finally {
+			Thread.currentThread().setContextClassLoader(contextClassLoader);
+			Mvcs.setIoc(contextIoc);
 		}
 	}
 

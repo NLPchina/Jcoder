@@ -102,7 +102,7 @@ public class JarService {
 		this.groupName = groupName;
 		jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib").getCanonicalPath();
 		pomPath = new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml").getCanonicalPath();
-		iocPath = new File(StaticValue.GROUP_FILE, groupName + "/resource/ioc.js").getCanonicalPath();
+		iocPath = new File(StaticValue.GROUP_FILE, groupName + "/resources/ioc.js").getCanonicalPath();
 		engine = new DynamicEngine(groupName);
 		init();
 	}

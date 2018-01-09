@@ -43,6 +43,10 @@ public class CodeInfo {
 		return this.ioc != JarService.getOrCreate(groupName).getIoc();
 	}
 
+	public Ioc getIoc(){
+		return ioc ;
+	}
+
 	public boolean classLoaderChanged(String groupName) {
 		return this.classLoader != JarService.getOrCreate(groupName).getEngine().getClassLoader();
 	}
@@ -53,6 +57,10 @@ public class CodeInfo {
 
 	public void setClassLoader(ClassLoader classLoader) {
 		this.classLoader = classLoader;
+	}
+
+	public ClassLoader getClassLoader(){
+		return this.classLoader ;
 	}
 
 	public Class<?> getClassz() {
