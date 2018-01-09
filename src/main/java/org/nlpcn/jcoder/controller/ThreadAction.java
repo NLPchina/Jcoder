@@ -38,7 +38,7 @@ public class ThreadAction {
 
 	/**
 	 * 通过api的方式获得线程
-	 * 
+	 *
 	 * @return
 	 * @throws SchedulerException
 	 * @throws TaskException
@@ -87,7 +87,7 @@ public class ThreadAction {
 
 	/**
 	 * 停止一个运行的action
-	 * 
+	 *
 	 * @param host
 	 * @param name
 	 * @throws Exception
@@ -112,7 +112,7 @@ public class ThreadAction {
 
 	/**
 	 * 编辑task权限验证
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	private void authEditorValidate(String name) throws Exception {
