@@ -214,13 +214,17 @@ public class TaskAction {
 
         // 如果更新主版本
         if (containsMaster) {
-            // 给任务设置ID值, 方便后续做编辑
-            task.setId(Constants.MASTER_TASK_ID);
-
             // 如果任务名变更, 需要删除之前的任务
             if (StringUtil.isNotBlank(oldName) && !oldName.equals(task.getName())) {
                 taskService.deleteTaskFromCluster(task.getGroupName(), oldName);
+
+                // 重新创建一个任务
+                task.setCreateUser(task.getUpdateUser());
+                task.setCreateTime(task.getUpdateTime());
             }
+
+            // 给任务设置ID值, 方便后续做编辑
+            task.setId(Constants.MASTER_TASK_ID);
 
             // ZK保存
             StaticValue.space().addTask(task);
