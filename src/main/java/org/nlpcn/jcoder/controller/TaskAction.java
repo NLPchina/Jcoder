@@ -38,8 +38,7 @@ import java.util.stream.Stream;
 
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
-import static org.nlpcn.jcoder.util.ApiException.NotFound;
-import static org.nlpcn.jcoder.util.ApiException.ServerException;
+import static org.nlpcn.jcoder.util.ApiException.*;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -192,7 +191,7 @@ public class TaskAction {
 
         // 如果是新增, 检查主版本上是否已存在
         if (containsMaster && task.getId() == null && taskService.existsInCluster(task.getGroupName(), task.getName())) {
-            return Restful.fail().msg("task[" + task.getGroupName() + "-" + task.getName() + "] already exists in [master]");
+            return Restful.fail().code(Forbidden).msg("task[" + task.getGroupName() + "-" + task.getName() + "] already exists in [master]");
         }
         // 如果激活任务, 需要检查代码
         // 如果是新增, 确保任务不存在
@@ -256,7 +255,7 @@ public class TaskAction {
     public Restful __check__(@Param("::task") Task task) throws CodeException, IOException {
         // 如果是新增, 确保任务不存在
         if (task.getId() == null && taskService.findTask(task.getGroupName(), task.getName()) != null) {
-            return Restful.fail().msg(String.format("task[%s-%s] already exists in [%s]", task.getGroupName(), task.getName(), StaticValue.getHostPort()));
+            return Restful.fail().code(Forbidden).msg(String.format("task[%s-%s] already exists in [%s]", task.getGroupName(), task.getName(), StaticValue.getHostPort()));
         }
 
         // 如果激活任务, 需要检查代码

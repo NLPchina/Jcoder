@@ -36,6 +36,12 @@ public class ThreadAction {
 	@Inject
 	private ProxyService proxyService ;
 
+	/**
+	 * 通过api的方式获得线程
+	 *
+	 * @return
+	 * @throws TaskException
+	 */
 	@At
 	public Restful list(@Param("hostPorts[]") String[] hostPorts ,@Param("groupName") String groupName ,@Param(value = "first" , df = "true") boolean first) throws Exception {
 
@@ -83,6 +89,8 @@ public class ThreadAction {
 	}
 
 	/**
+	 * 停止一个运行的action
+	 *
 	 * 停止一个运行的action，或者task
 	 * 
 	 * @throws Exception
@@ -101,5 +109,4 @@ public class ThreadAction {
 			throw e ;
 		}
 	}
-
 }
