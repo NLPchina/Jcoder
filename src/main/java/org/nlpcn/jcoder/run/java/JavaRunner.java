@@ -57,79 +57,81 @@ public class JavaRunner {
 		}
 
 		synchronized (codeInfo) {
-			if (codeInfo.getClassz() == null) {
-				try {
+			if (codeInfo.getClassz() == null) try {
 
-					String code = task.getCode();
+				String code = task.getCode();
 
-					DynamicEngine de = JarService.getOrCreate(task.getGroupName()).getEngine();
+				JarService jarService = JarService.getOrCreate(task.getGroupName());
 
-					String pack = JavaSourceUtil.findPackage(code);
+				DynamicEngine de = jarService.getEngine();
 
-					String className = JavaSourceUtil.findClassName(code);
+				codeInfo.setioc(jarService.getIoc());
 
-					LOG.info("to compile " + pack + "." + className);
+				String pack = JavaSourceUtil.findPackage(code);
 
-					if (className == null) {
-						throw new CodeException("not find className");
-					}
+				String className = JavaSourceUtil.findClassName(code);
 
-					codeInfo.setClassLoader(de.getClassLoader());
+				LOG.info("to compile " + pack + "." + className);
 
-					Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
-
-					Single single = clz.getAnnotation(Single.class);
-
-					codeInfo.setClassz(clz);
-
-					if (single != null) {
-						codeInfo.setSingle(single.value());
-					}
-
-					MapCount<String> mc = new MapCount<>();
-					// set execute method
-					for (Method method : clz.getMethods()) {
-						if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
-							continue;
-						}
-						DefaultExecute dExecute = null;
-						Execute execute = null;
-						if ((dExecute = Mirror.getAnnotationDeep(method, DefaultExecute.class)) != null) {
-							codeInfo.setDefaultMethod(method, Sets.newHashSet(Arrays.asList(dExecute.methods())), dExecute.rpc(), dExecute.restful());
-							mc.add(method.getName());
-						} else if ((execute = Mirror.getAnnotationDeep(method, Execute.class)) != null) { // 先default
-							codeInfo.addMethod(method, Sets.newHashSet(Arrays.asList(execute.methods())), execute.rpc(), execute.restful());
-							mc.add(method.getName());
-						}
-					}
-
-					if (mc.size() == 0) {
-						throw new CodeRuntimeException("you must set a Execute or DefaultExecute annotation for execute");
-					}
-
-					StringBuilder sb = null;
-					for (Entry<String, Double> entry : mc.get().entrySet()) {
-						if (entry.getValue() > 1) {
-							if (sb == null) {
-								sb = new StringBuilder();
-							}
-							sb.append(entry.getKey() + " ");
-						}
-					}
-
-					if (sb != null && sb.length() > 0) {
-						sb.append(" Execute method name repetition");
-						throw new CodeRuntimeException(sb.toString());
-					}
-
-					codeInfo.getDefaultMethod(); // 空取一下，如果报异常活该
-
-					codeInfo.setClassz(clz);
-
-				} catch (IOException | CodeException e) {
-					e.printStackTrace();
-					throw new CodeRuntimeException(e);
+				if (className == null) {
+					throw new CodeException("not find className");
 				}
+
+				codeInfo.setClassLoader(de.getClassLoader());
+
+				Class<?> clz = (Class<?>) de.javaCodeToClass(pack + "." + className, code);
+
+				Single single = clz.getAnnotation(Single.class);
+
+				codeInfo.setClassz(clz);
+
+				if (single != null) {
+					codeInfo.setSingle(single.value());
+				}
+
+				MapCount<String> mc = new MapCount<>();
+				// set execute method
+				for (Method method : clz.getMethods()) {
+					if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
+						continue;
+					}
+					DefaultExecute dExecute = null;
+					Execute execute = null;
+					if ((dExecute = Mirror.getAnnotationDeep(method, DefaultExecute.class)) != null) {
+						codeInfo.setDefaultMethod(method, Sets.newHashSet(Arrays.asList(dExecute.methods())), dExecute.rpc(), dExecute.restful());
+						mc.add(method.getName());
+					} else if ((execute = Mirror.getAnnotationDeep(method, Execute.class)) != null) { // 先default
+						codeInfo.addMethod(method, Sets.newHashSet(Arrays.asList(execute.methods())), execute.rpc(), execute.restful());
+						mc.add(method.getName());
+					}
+				}
+
+				if (mc.size() == 0) {
+					throw new CodeRuntimeException("you must set a Execute or DefaultExecute annotation for execute");
+				}
+
+				StringBuilder sb = null;
+				for (Entry<String, Double> entry : mc.get().entrySet()) {
+					if (entry.getValue() > 1) {
+						if (sb == null) {
+							sb = new StringBuilder();
+						}
+						sb.append(entry.getKey() + " ");
+					}
+				}
+
+				if (sb != null && sb.length() > 0) {
+					sb.append(" Execute method name repetition");
+					throw new CodeRuntimeException(sb.toString());
+				}
+
+				codeInfo.getDefaultMethod(); // 空取一下，如果报异常活该
+
+				codeInfo.setClassz(clz);
+
+			} catch (IOException | CodeException e) {
+				e.printStackTrace();
+				throw new CodeRuntimeException(e);
 			}
 		}
 
@@ -172,17 +174,13 @@ public class JavaRunner {
 
 
 		try {
-
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
 
-			objInstance = codeInfo.getClassz().newInstance();
-
-			Ioc ioc = JarService.getOrCreate(task.getGroupName()).getIoc();
-
-			codeInfo.setioc(ioc);
 
 			Thread.currentThread().setContextClassLoader(codeInfo.getClassLoader());
-			Mvcs.setIoc(ioc);
+			Mvcs.setIoc(codeInfo.getIoc());
+
+			objInstance = codeInfo.getClassz().newInstance();
 
 			Mirror<?> mirror = Mirror.me(codeInfo.getClassz());
 
@@ -196,9 +194,7 @@ public class JavaRunner {
 					} else if(field.getType().equals(org.slf4j.Logger.class)){
 						mirror.setValue(objInstance, field, LoggerFactory.getLogger(codeInfo.getClassz()));
 					}else {
-						Object t = ioc.get(field.getType(), StringUtil.isBlank(inject.value());
-						System.out.println(t);
-						mirror.setValue(objInstance, field, ioc.get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
+						mirror.setValue(objInstance, field, codeInfo.getIoc().get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
 					}
 					field.setAccessible(false);
 				}
@@ -259,10 +255,10 @@ public class JavaRunner {
 			this.task.updateSuccess();
 			return invoke;
 		} catch (Exception e) {
-			e.printStackTrace();
 			this.task.updateError();
 			LOG.error("Execute ERR  " + task.getName() + "/" + method.getName() + " useTime " + (System.currentTimeMillis() - start) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
-			throw new CodeRuntimeException(e);
+			e.printStackTrace();
+			throw new CodeRuntimeException(ExceptionUtil.realException(e));
 		}finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 			Mvcs.setIoc(contextIoc);

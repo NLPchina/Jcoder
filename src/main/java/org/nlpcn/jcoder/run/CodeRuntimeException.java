@@ -6,7 +6,7 @@ public class CodeRuntimeException extends RuntimeException {
 		super(string);
 	}
 	
-	public CodeRuntimeException(Exception e){
+	public CodeRuntimeException(Throwable e){
 		super(e);
 	}
 

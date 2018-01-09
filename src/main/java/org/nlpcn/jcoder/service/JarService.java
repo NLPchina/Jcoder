@@ -139,7 +139,7 @@ public class JarService {
 			e1.printStackTrace();
 		}
 
-		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader().getParent()); //不在和系统的classload共享jar包，用来解决jar冲突
+		URLClassLoader classLoader = new URLClassLoader(urls, Thread.currentThread().getContextClassLoader());
 
 		try {
 			engine.flush(classLoader);
@@ -188,8 +188,8 @@ public class JarService {
 
 					//
 					ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-					Thread.currentThread().setContextClassLoader(engine.getClassLoader());
 					try {
+						Thread.currentThread().setContextClassLoader(engine.getClassLoader());
 						ioc.get(Lang.loadClass(entry.getValue().get("type").toString()), entry.getKey());
 					} catch (ClassNotFoundException e) {
 						throw Lang.wrapThrow(e);

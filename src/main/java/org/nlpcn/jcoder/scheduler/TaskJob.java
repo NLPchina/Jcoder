@@ -35,16 +35,13 @@ public class TaskJob extends Thread {
 	@Override
 	public void run() {
 		over = false;
-		ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 		try {
-			Thread.currentThread().setContextClassLoader(JarService.getOrCreate(task.getGroupName()).getEngine().getClassLoader());
 			new JavaRunner(task).compile().instance().execute() ;
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error(e.getMessage(),e);
 		} finally {
 			over = true;
-			Thread.currentThread().setContextClassLoader(contextClassLoader);
 			ThreadManager.removeTaskIfOver(this.getName());
 		}
 
