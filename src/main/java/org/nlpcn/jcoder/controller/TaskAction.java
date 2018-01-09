@@ -217,13 +217,13 @@ public class TaskAction {
             // 给任务设置ID值, 方便后续做编辑
             task.setId(Constants.MASTER_TASK_ID);
 
-            // ZK保存
-            StaticValue.space().addTask(task);
-
             // 如果任务名变更, 需要删除之前的任务
             if (StringUtil.isNotBlank(oldName) && !oldName.equals(task.getName())) {
                 taskService.deleteTaskFromCluster(task.getGroupName(), oldName);
             }
+
+            // ZK保存
+            StaticValue.space().addTask(task);
         }
 
         // 集群的每台机器保存
