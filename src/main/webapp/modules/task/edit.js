@@ -4,6 +4,7 @@ vmApp.module = new Vue({
     components: {
         'host-component': {
             props: ['hosts'],
+            data: function () {return {isLoading: true};},
             template: '#host-component',
             mounted: function () {
                 var me = this, parent = me.$parent, task = parent.task;
@@ -11,6 +12,8 @@ vmApp.module = new Vue({
                     groupName: task.groupName,
                     name: task.name
                 }).then(function (data) {
+                    me.isLoading = false;
+
                     data = data.obj;
                     var hosts = me.hosts;
                     _.each(data, function (ele) {
@@ -160,7 +163,7 @@ vmApp.module = new Vue({
                 if (!confirm) return;
 
                 JqdeBox.loading();
-                Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify(task), oldName: task.name}).then(function (data) {
+                Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify($.extend({}, task, {name: null})), oldName: task.name}).then(function (data) {
                     JqdeBox.unloading();
                     setTimeout(function () {
                         location.hash = '/task/list.html?name=' + task.groupName;

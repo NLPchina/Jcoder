@@ -177,7 +177,6 @@ public class JarService {
 		}
 		ioc = new NutIoc(loader);
 
-
 		// 实例化lazy为false的bean
 		loader.getMap().entrySet().stream()
 				.filter(entry -> entry.getValue().containsKey("type") && Objects.equals(false, entry.getValue().get("lazy")))
@@ -198,7 +197,6 @@ public class JarService {
 						Thread.currentThread().setContextClassLoader(contextClassLoader);
 					}
 				});
-
 	}
 
 	/**

@@ -37,8 +37,10 @@ Vue.filter('formatNumber', function (value, decimals) {
 /** HOST组件 */
 Vue.component('host-component', {
     props: ['groupName', 'hosts'],
+    data: function () {return {isLoading: true};},
     template: '<div class="alert alert-block alert-success host-component" style="padding:8px;">' +
-    '<div v-on:click="select(item)" v-for="item in hosts"' +
+    '<i v-if="isLoading" class="ace-icon fa fa-spinner fa-spin orange bigger-140"></i>' +
+    '<div v-else v-on:click="select(item)" v-for="item in hosts"' +
     '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.selected?\'infobox-blue\':(item.current?\'infobox-green\':\'\')),style:\'cursor:pointer;margin:2px;width:210px;\'+(!item.selected&&!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
     '<div class="infobox-progress">' +
     '    <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">' +
@@ -55,6 +57,8 @@ Vue.component('host-component', {
     mounted: function () {
         var me = this;
         Jcoder.ajax('/admin/common/host', 'GET', {groupName: me.groupName}).then(function (data) {
+            me.isLoading = false;
+
             data = data.obj;
             var hosts = (me.hosts = me.hosts || []), sum = _.chain(data).pluck("weight").reduce(function (memo, num) {return memo + num;}, 0).value();
             if (sum == 0) sum = 1;
