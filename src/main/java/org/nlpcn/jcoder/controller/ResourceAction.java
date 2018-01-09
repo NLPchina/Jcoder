@@ -69,7 +69,7 @@ public class ResourceAction {
 					firstHost.add(arrayList.get(0).toString());
 				}
 				String message = proxyService.post(hostPortsArr, "/admin/resource/saveAndFlush",
-						ImmutableMap.of("groupName", groupName,"content",content,"first", false), 100000,
+						ImmutableMap.of("groupName", groupName,"relativePath",relativePath,"content",content,"first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//更新master数据节点
 				if(firstHost != null && firstHost.size() > 0){
