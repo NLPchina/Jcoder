@@ -97,7 +97,7 @@
                                                             <i class="glyphicon blue glyphicon-file" v-else></i>
                                                             <a href="javascript:void(0)" @click="nodeInfo(resource.file.name)">{{resource.file.name}}</a>
                                                         </td>
-                                                        <td  class="center">{{resource.file.length/1024}}k</td>
+                                                        <td  class="center">{{(resource.file.length/1024).toFixed(2)}}k</td>
                                                         <td  class="center">{{resource.file.directory?"文件夹":"文件"}}</td>
                                                         <td  class="center">{{resource.file.date | datetime('yyyy-MM-dd HH:mm:ss')}}</td>
                                                         <td  class="center">{{resource.file.relativePath}}</td>

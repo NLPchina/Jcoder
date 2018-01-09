@@ -287,6 +287,10 @@ var resourceManager = new Vue({
             var formData = new FormData();
             var files = $('#id-input-file-3').prop("files");
             for(var i = 0;i < files.length;i++){
+                if((files[i].size/1024) > 2){
+                    JqdeBox.message(false, "无法上传大于2M的文件！");
+                    return false;
+                }
                 formData.append('file', files[i]);
             }
           　$.ajax({
