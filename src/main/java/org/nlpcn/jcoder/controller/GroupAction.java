@@ -250,7 +250,7 @@ public class GroupAction {
 			}
 			long start = System.currentTimeMillis();
 			LOG.info("to down " + fileInfo.getRelativePath());
-			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 120000);
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 1200000);
 			IOUtil.writeAndClose(post.getStream(), file);
 			LOG.info("down ok : {} use time : {} ", fileInfo.getRelativePath(), System.currentTimeMillis() - start);
 		}

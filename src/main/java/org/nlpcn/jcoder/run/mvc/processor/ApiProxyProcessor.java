@@ -1,19 +1,17 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
-import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
-import org.nutz.mvc.*;
+import org.nutz.mvc.ActionContext;
+import org.nutz.mvc.ActionInfo;
+import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.impl.processor.ViewProcessor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 代理类
@@ -34,16 +32,16 @@ public class ApiProxyProcessor extends ViewProcessor {
 
 		HttpServletRequest request = ac.getRequest();
 		HttpServletResponse response = ac.getResponse();
-		if (StaticValue.IS_LOCAL || request.getHeader(ProxyService.PROXY_HEADER) != null) { //head中包含则条过
+		if (StaticValue.IS_LOCAL || StringUtil.isNotBlank(request.getParameter(ProxyService.PROXY_HEADER)) || request.getHeader(ProxyService.PROXY_HEADER) != null) { //head中包含则条过
 			doNext(ac);
 			return;
 		}
 		String hostPort = StaticValue.space().host(ac.getRequest().getHeader("jcoder_group"), ac.getPath());
 
 		if (StringUtil.isNotBlank(hostPort)) {
-			if(StaticValue.getHostPort().equals(hostPort)){
+			if (StaticValue.getHostPort().equals(hostPort)) {
 				doNext(ac);
-			}else{
+			} else {
 				proxyService.service(request, response, hostPort);
 				response.getOutputStream().flush();
 				response.getOutputStream().close();

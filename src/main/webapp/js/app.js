@@ -100,7 +100,9 @@ var vmApp = new Vue({
                 if (urls.length > 1) {
                     window.param = _.chain(urls[1].split('&'))
                         .map(function (value) {
-                            return value.split('=');
+                            var p = value.split('=');
+                            p[1] = decodeURIComponent(p[1]) ;
+                            return p ;
                         }).object().value();
                 }
 
