@@ -87,13 +87,26 @@ public class MainAction {
 		}
 		result.add(ImmutableMap.of("name","IOC管理","submenus",submenus)) ;
 
-
-		if(isAdmin){
-			submenus = new JSONArray() ;
-			submenus.add(ImmutableMap.of("name","用户管理","url","user/list.html")) ;
-			submenus.add(ImmutableMap.of("name","Group管理","url","group/list.html")) ;
-			result.add(ImmutableMap.of("name","系统管理","submenus",submenus)) ;
+		//IOC管理
+		submenus = new JSONArray() ;
+		for (String groupName : allGroups) {
+			submenus.add(ImmutableMap.of("name",groupName,"url","ioc/index.html?name="+groupName)) ;
 		}
+		result.add(ImmutableMap.of("name","IOC管理","submenus",submenus)) ;
+
+		//Thread管理
+		submenus = new JSONArray() ;
+		for (String groupName : allGroups) {
+			submenus.add(ImmutableMap.of("name",groupName,"url","thread/index.html?name="+groupName)) ;
+		}
+		result.add(ImmutableMap.of("name","Thread管理","submenus",submenus)) ;
+
+
+		//系统管理
+		submenus = new JSONArray() ;
+		submenus.add(ImmutableMap.of("name","用户管理","url","user/list.html")) ;
+		submenus.add(ImmutableMap.of("name","Group管理","url","group/list.html")) ;
+		result.add(ImmutableMap.of("name","系统管理","submenus",submenus)) ;
 
 		return Restful.instance().obj(result) ;
 

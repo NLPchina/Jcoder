@@ -1,5 +1,7 @@
 package org.nlpcn.jcoder.domain;
 
+import org.nlpcn.jcoder.util.StaticValue;
+
 public class TaskInfo {
 
 	private Long id;
@@ -7,6 +9,8 @@ public class TaskInfo {
 	private String name;
 	
 	private String taskName ;
+
+	private String gourName ;
 
 	private String description;
 
@@ -20,6 +24,8 @@ public class TaskInfo {
 
 	private Integer status;
 
+	private String hostPort ;
+
 	/**
 	 * 标记状态 调度 活动 正在停止
 	 */
@@ -32,6 +38,7 @@ public class TaskInfo {
 		this.id = task.getId();
 		this.name = name;
 		this.taskName = task.getName() ;
+		this.groupName = task.getGroupName() ;
 		this.description = task.getDescription();
 		this.success = task.success();
 		this.error = task.error();
@@ -39,6 +46,7 @@ public class TaskInfo {
 		this.status = task.getStatus();
 		this.runStatus = task.getRunStatus();
 		this.startTime = startTime;
+		this.hostPort = StaticValue.getHostPort() ;
 	}
 
 	public long getStartTime() {
@@ -105,6 +113,14 @@ public class TaskInfo {
 		this.status = status;
 	}
 
+	public String getGourName() {
+		return gourName;
+	}
+
+	public void setGourName(String gourName) {
+		this.gourName = gourName;
+	}
+
 	public String getRunStatus() {
 		return runStatus;
 	}
@@ -120,5 +136,5 @@ public class TaskInfo {
 	public void setTaskName(String taskName) {
 		this.taskName = taskName;
 	}
-	
+
 }

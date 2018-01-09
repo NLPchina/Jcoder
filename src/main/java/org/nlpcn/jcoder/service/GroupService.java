@@ -167,11 +167,7 @@ public class GroupService {
 
 		String key = StaticValue.getHostPort() + "_" + name;
 
-		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
-		if (hostGroup != null) {
-			hostGroup.setWeight(-1);
-			sharedSpaceService.getHostGroupCache().put(key, hostGroup);
-		}
+		sharedSpaceService.getHostGroupCache().remove(key) ;
 
 
 		Files.deleteFile(new File(StaticValue.GROUP_FILE, name + ".cache"));

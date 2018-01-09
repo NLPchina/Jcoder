@@ -23,22 +23,15 @@ public class ApiModuleProcessor extends AbstractProcessor {
 
 	private Method method;
 	private Object moduleObj;
-	private ClassLoader loader;
-	private Ioc ioc;
 
 	@Override
 	public void init(NutConfig config, ActionInfo ai) throws Throwable {
 		Task task = TaskService.findTaskByCache(ai.getModuleType().getSimpleName());
-		JarService jarService = JarService.getOrCreate(task.getGroupName());
-		ioc = jarService.getIoc();
-		loader = jarService.getEngine().getClassLoader();
 		method = ai.getMethod();
 		moduleObj = new JavaRunner(task).compile().instance().getTask();
 	}
 
 	public void process(ActionContext ac) throws Throwable {
-		Thread.currentThread().setContextClassLoader(loader);
-		Mvcs.setIoc(ioc);
 		ac.setModule(moduleObj);
 		ac.setMethod(method);
 		doNext(ac);

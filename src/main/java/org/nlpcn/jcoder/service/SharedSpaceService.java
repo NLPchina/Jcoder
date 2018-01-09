@@ -255,7 +255,7 @@ public class SharedSpaceService {
 	/**
 	 * 增加一个mapping到
 	 */
-	public void addMapping(String groupName, String className, String methodName){
+	public void addMapping(String groupName, String className, String methodName) {
 
 		StringBuilder sb = new StringBuilder(MAPPING_PATH);
 
@@ -357,6 +357,14 @@ public class SharedSpaceService {
 		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
 
 			String hostPort = entry.getKey();
+
+			String hostPortGroupName = new String(entry.getValue().getData());
+
+			if (groupName != null && !hostPortGroupName.equals(groupName)) {
+				continue;
+			}else {
+				groupName = hostPortGroupName ;
+			}
 
 			HostGroup hostGroup = hostGroupCache.get(hostPort + "_" + groupName);
 
