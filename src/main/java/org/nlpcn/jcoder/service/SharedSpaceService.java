@@ -194,6 +194,10 @@ public class SharedSpaceService {
 	 */
 	protected Token getToken(String key) throws Exception {
 		Token token = tokenCache.get(key);
+		if(token==null){
+			return null ;
+		}
+
 		if (token.getExpirationTime().getTime() < System.currentTimeMillis()) {
 			tokenCache.remove(key) ;
 			return null ;
