@@ -15,12 +15,12 @@ vmApp.module = new Vue({
                     me.isLoading = false;
 
                     data = data.obj;
-                    var hosts = me.hosts;
+                    var hosts = me.hosts, sourceHost = parent.sourceHost;
                     _.each(data, function (ele) {
                         var current = ele.hostGroup ? ele.hostGroup.current : true;
                         hosts.push({
                             host: ele.hostPort,
-                            checked: current,
+                            checked: sourceHost == "master" ? current : sourceHost == ele.hostPort,
                             current: current,
                             weight: (ele.weight / ele.sumWeight * 100).toFixed(0),
                             success: ele.success,
