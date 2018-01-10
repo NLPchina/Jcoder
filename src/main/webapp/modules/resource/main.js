@@ -189,6 +189,7 @@ var resourceManager = new Vue({
   },*/
   methods:{
 	  resourceList:function(host){
+	      JqdeBox.loading();
 	      var $this = this;
           Jcoder.ajax('/admin/fileInfo/getFileTree', 'post',{
             hostPort: host,
