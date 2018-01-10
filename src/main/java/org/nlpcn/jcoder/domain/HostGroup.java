@@ -40,9 +40,6 @@ public class HostGroup implements Serializable{
 	}
 
 	public void setHostPort(String hostPort) {
-		if(hostPort==null){
-			System.out.println("aaaa");
-		}
 		this.hostPort = hostPort;
 	}
 }
