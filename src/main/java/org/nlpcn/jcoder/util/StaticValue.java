@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.util.TypeUtils;
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
+import org.nlpcn.jcoder.server.rpc.Rpcs;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -217,5 +218,13 @@ public class StaticValue {
 	 */
 	public static String getHostPort() {
 		return HOST_PORT;
+	}
+
+	/**
+	 * 获得当前groupname
+	 * @return
+	 */
+	public static String getCurrentGroup(){
+		return Rpcs.getContext().getGroupName() ;
 	}
 }

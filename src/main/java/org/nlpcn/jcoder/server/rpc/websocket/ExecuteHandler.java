@@ -1,7 +1,5 @@
 package org.nlpcn.jcoder.server.rpc.websocket;
 
-import java.util.Date;
-
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
@@ -19,14 +17,15 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
+
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
  * execute request
- * 
- * @author ansj
  *
+ * @author ansj
  */
 public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
@@ -74,10 +73,6 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
 	/**
 	 * 具体的执行一个task
-	 * 
-	 * @param ctx
-	 * @param request
-	 * @param threadName
 	 */
 	private void executeTask(ChannelHandlerContext ctx, RpcRequest request, String threadName) {
 
@@ -92,6 +87,9 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 			}
 
 			Task task = TaskService.findTaskByCache(request.getClassName());
+
+			Rpcs.getContext().setGroupName(task.getGroupName());
+
 
 			if (task == null) {
 				throw new ApiException(404, "not find api by name " + request.getClassName() + " in mapping");

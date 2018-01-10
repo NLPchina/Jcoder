@@ -20,6 +20,8 @@ public class RpcContext {
 
 	private Map<Object, Object> map = null;
 
+	private String groupName ;
+
 	private int type;
 
 	public RpcContext(ChannelHandlerContext ctx) {
@@ -70,6 +72,14 @@ public class RpcContext {
 
 	public void setType(int type) {
 		this.type = type;
+	}
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 	public String remoteAddress() {
