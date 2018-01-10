@@ -29,19 +29,26 @@ public class HostGroupWatcher implements Watcher {
 	public void process(WatchedEvent event) {
 		if (event.getType() == Event.EventType.NodeDataChanged) {
 			String key = event.getPath().substring(SharedSpaceService.HOST_GROUP_PATH.length()+1);
-			ZKMap<HostGroup> hostGroupCache = StaticValue.space().getHostGroupCache();
-			HostGroup hg = hostGroupCache.get(key);
-			if (hg != null && hg.getWeight() < 0) {
-				this.delete = true;
-				hostGroupCache.remove(key);
-			} else {
-				hostGroup = hg;
+			String hostPort = key.split("_")[0] ;
+			if(StaticValue.getHostPort().equals(hostPort)) {
+				ZKMap<HostGroup> hostGroupCache = StaticValue.space().getHostGroupCache();
+				HostGroup hg = hostGroupCache.get(key);
+				if (hg != null && hg.getWeight() < 0) {
+					this.delete = true;
+					hostGroupCache.remove(key);
+				} else {
+					hostGroup = hg;
+				}
 			}
 		} else if (event.getType() == Event.EventType.NodeDeleted) {
 			if (!delete) {
 				try {
-					LOG.info("I lost HostGroup so add it again " + event.getPath());
-					StaticValue.space().setData2ZKByEphemeral(event.getPath(), JSONObject.toJSONBytes(hostGroup), this);
+					String key = event.getPath().substring(SharedSpaceService.HOST_GROUP_PATH.length()+1);
+					String hostPort = key.split("_")[0] ;
+					if(StaticValue.getHostPort().equals(hostPort)) {
+						LOG.info("I lost HostGroup so add it again " + event.getPath());
+						StaticValue.space().setData2ZKByEphemeral(event.getPath(), JSONObject.toJSONBytes(hostGroup), this);
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
