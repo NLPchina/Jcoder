@@ -47,7 +47,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -592,7 +591,7 @@ public class SharedSpaceService {
 
 		for (Group group : groups) {
 
-			List<Different> diffs = joinCluster(group);
+			List<Different> diffs = joinCluster(group,true);
 
 			result.put(group.getName(), diffs);
 
@@ -604,7 +603,7 @@ public class SharedSpaceService {
 	/**
 	 * 加入刷新一个主机到集群中
 	 */
-	public List<Different> joinCluster(Group group) throws IOException {
+	public List<Different> joinCluster(Group group, boolean upMapping) throws IOException {
 		List<Different> diffs = new ArrayList<>();
 
 		String groupName = group.getName();
@@ -634,35 +633,37 @@ public class SharedSpaceService {
 			unLockAndDelete(lock);
 		}
 
+		if (upMapping) {
 
-		/**
-		 * 根据解决构建信息
-		 */
-		HostGroup hostGroup = new HostGroup();
-		hostGroup.setSsl(StaticValue.IS_SSL);
-		hostGroup.setCurrent(diffs.size() == 0);
-		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
-		try {
-			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
-		} catch (Exception e1) {
-			e1.printStackTrace();
-			LOG.error("add host group info err !!!!!", e1);
-		}
-
-		tasks.forEach(task -> {
+			/**
+			 * 根据解决构建信息
+			 */
+			HostGroup hostGroup = new HostGroup();
+			hostGroup.setSsl(StaticValue.IS_SSL);
+			hostGroup.setCurrent(diffs.size() == 0);
+			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
 			try {
-				new JavaRunner(task).compile();
-
-				Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
-
-				executeMethods.forEach(e -> {
-					addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-				});
-
-			} catch (Exception e) {
-				LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				LOG.error("add host group info err !!!!!", e1);
 			}
-		});
+
+			tasks.forEach(task -> {
+				try {
+					new JavaRunner(task).compile();
+
+					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+
+					executeMethods.forEach(e -> {
+						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+					});
+
+				} catch (Exception e) {
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
+				}
+			});
+		}
 		return diffs;
 	}
 
@@ -1057,7 +1058,6 @@ public class SharedSpaceService {
 	public PathChildrenCache getGroupCache() {
 		return groupCache;
 	}
-
 
 
 	/**

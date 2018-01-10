@@ -66,10 +66,6 @@ public class SiteSetup implements Setup {
 			System.exit(-1);
 		}
 
-		// task 其他定时任务的运行状况
-		new Thread(new CheckClusterJob()).start();
-		LOG.info("begin run task quene!");
-
 		// 运行日志打印到websocket任务
 		new Thread(new PrintConsoleJob()).start();
 
