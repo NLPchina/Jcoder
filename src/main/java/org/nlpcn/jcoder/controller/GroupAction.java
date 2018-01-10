@@ -215,7 +215,7 @@ public class GroupAction {
 
 	@At
 	public Restful share(@Param("hostPorts") String[] hostPorts, @Param("formHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
-		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName), 120000, ProxyService.MERGE_MESSAGE_CALLBACK);
+		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName), 1200000, ProxyService.MERGE_MESSAGE_CALLBACK);
 		return Restful.instance().msg(msg);
 	}
 

@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -14,7 +15,16 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.eclipse.jetty.util.StringUtil;
-import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.domain.CodeInfo;
+import org.nlpcn.jcoder.domain.Different;
+import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.GroupCache;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.HostGroupWatcher;
+import org.nlpcn.jcoder.domain.KeyValue;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
@@ -34,7 +44,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -124,9 +144,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 计数器，记录task成功失败个数
-	 *
-	 * @param id
-	 * @param success
 	 */
 	public void counter(Long id, boolean success) {
 		if (success) {
@@ -150,9 +167,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 获得一个task成功次数
-	 *
-	 * @param id
-	 * @return
 	 */
 	public long getSuccess(Long id) {
 		AtomicLong atomicLong = taskSuccess.get(id);
@@ -165,9 +179,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 获得一个task失败次数
-	 *
-	 * @param id
-	 * @return
 	 */
 	public long getError(Long id) {
 		AtomicLong atomicLong = taskErr.get(id);
@@ -180,21 +191,19 @@ public class SharedSpaceService {
 
 	/**
 	 * 获得一个token
-	 *
-	 * @param key
-	 * @return
 	 */
 	protected Token getToken(String key) throws Exception {
-		return tokenCache.get(key);
+		Token token = tokenCache.get(key);
+		if (token.getExpirationTime().getTime() < System.currentTimeMillis()) {
+			tokenCache.remove(key) ;
+			return null ;
+		}
+
+		return token;
 	}
 
 	/**
 	 * 递归查询所有子文件
-	 *
-	 * @param set
-	 * @param path
-	 * @return
-	 * @throws Exception
 	 */
 	public void walkAllDataNode(Set<String> set, String path) throws Exception {
 		try {
@@ -213,8 +222,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 注册一个token,token必须是刻一用路径描述的
-	 *
-	 * @param token
 	 */
 	protected void regToken(Token token) throws Exception {
 		if (token.getToken().contains("/")) {
@@ -225,9 +232,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 移除一个token
-	 *
-	 * @param key
-	 * @return
 	 */
 	protected Token removeToken(String key) throws Exception {
 		return tokenCache.remove(key);
@@ -275,8 +279,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 增加一个task到集群中，
-	 *
-	 * @param task
 	 */
 	public void addTask(Task task) throws Exception {
 		// /jcoder/task/group/className.task
@@ -285,8 +287,6 @@ public class SharedSpaceService {
 
 	/**
 	 * lock a path in /zookper/locak[/path]
-	 *
-	 * @param groupName
 	 */
 	public InterProcessMutex lockGroup(String groupName) {
 		InterProcessMutex lock = new InterProcessMutex(zkDao.getZk(), LOCK_PATH + "/" + groupName);
@@ -295,8 +295,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 解锁一个目录并尝试删除
-	 *
-	 * @param lock
 	 */
 	public void unLockAndDelete(InterProcessMutex lock) {
 		if (lock != null && lock.isAcquiredInThisProcess()) {
@@ -311,8 +309,6 @@ public class SharedSpaceService {
 	/**
 	 * 传入路径，在路径中寻找合适运行此方法的主机
 	 *
-	 * @param groupName
-	 * @param path
 	 * @return 保护http。。。地址的
 	 */
 	public String host(String groupName, String path) {
@@ -338,8 +334,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 传入一个地址，给出路由到的地址，如果返回空则为本机，未找到或其他情况也保留于本机
-	 *
-	 * @return
 	 */
 	public String host(String groupName, String className, String mehtodName) {
 
@@ -362,8 +356,8 @@ public class SharedSpaceService {
 
 			if (groupName != null && !hostPortGroupName.equals(groupName)) {
 				continue;
-			}else {
-				groupName = hostPortGroupName ;
+			} else {
+				groupName = hostPortGroupName;
 			}
 
 			HostGroup hostGroup = hostGroupCache.get(hostPort + "_" + groupName);
@@ -405,10 +399,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 将数据写入到zk中
-	 *
-	 * @param path
-	 * @param data
-	 * @throws Exception
 	 */
 	private void setData2ZK(String path, byte[] data) throws Exception {
 
@@ -443,10 +433,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 将临时数据写入到zk中
-	 *
-	 * @param path
-	 * @param data
-	 * @throws Exception
 	 */
 	public void setData2ZKByEphemeral(String path, byte[] data, Watcher watcher) throws Exception {
 
@@ -612,8 +598,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 关闭一个类且不抛出异常
-	 *
-	 * @param close
 	 */
 	private void closeWithoutException(Closeable close) {
 		try {
@@ -648,10 +632,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 加入刷新一个主机到集群中
-	 *
-	 * @param group
-	 * @return
-	 * @throws IOException
 	 */
 	public List<Different> joinCluster(Group group) throws IOException {
 		List<Different> diffs = new ArrayList<>();
@@ -717,9 +697,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 取得所有的在线主机
-	 *
-	 * @return
-	 * @throws Exception
 	 */
 	public List<String> getAllHosts() throws Exception {
 		return getZk().getChildren().forPath(HOST_PATH);
@@ -730,8 +707,6 @@ public class SharedSpaceService {
 	 *
 	 * @param groupName 组名称
 	 * @param list      组内的所有任务
-	 * @return
-	 * @throws IOException
 	 */
 	private List<Different> diffGroup(String groupName, List<Task> list, List<FileInfo> fileInfos) throws Exception {
 
@@ -822,11 +797,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
-	 *
-	 * @param groupName
-	 * @param taskNames
-	 * @param fileInfos
-	 * @throws Exception
 	 */
 	public void flushHostGroup(String groupName, Set<String> taskNames, List<FileInfo> fileInfos) throws Exception {
 
@@ -890,8 +860,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 比较两个task是否一致
-	 *
-	 * @param task
 	 */
 	private void diffTask(Task task, Different different, String groupName, String taskName) {
 		if (task != null) {
@@ -942,10 +910,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 如果这个group在集群中没有则，添加到集群
-	 *
-	 * @param groupName
-	 * @param list
-	 * @throws IOException
 	 */
 	private void addGroup2Cluster(String groupName, List<Task> list, List<FileInfo> fileInfos) throws IOException {
 
@@ -1062,8 +1026,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 将文件同步更新到集群中
-	 *
-	 * @param groupName
 	 */
 	public void upCluster(String groupName, String relativePath) throws Exception {
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
@@ -1086,9 +1048,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 随机的获取一台和主版本同步着的主机
-	 *
-	 * @param groupName
-	 * @return
 	 */
 	public List<String> getCurrentHostPort(String groupName) {
 		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k -> k.split("_")[0]).collect(Collectors.toList());
@@ -1099,7 +1058,6 @@ public class SharedSpaceService {
 	 * 从主机集群中获取随机一个同步版本的机器，如果机器不存在则返回null
 	 *
 	 * @param groupName 组名称
-	 * @return
 	 */
 	public String getRandomCurrentHostPort(String groupName) {
 		List<String> collect = getCurrentHostPort(groupName);
