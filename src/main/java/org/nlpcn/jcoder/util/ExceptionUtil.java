@@ -87,7 +87,7 @@ public class ExceptionUtil {
 	public static Throwable realException(Exception e) {
 		Throwable exception = e ;
 		Throwable temp = null ;
-		while((temp=e.getCause())!=null){
+		while((temp=exception.getCause())!=null){
 			exception = temp ;
 		}
 		return exception ;
