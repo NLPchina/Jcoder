@@ -47,6 +47,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -190,23 +191,6 @@ public class SharedSpaceService {
 	}
 
 	/**
-	 * 获得一个token
-	 */
-	protected Token getToken(String key) throws Exception {
-		Token token = tokenCache.get(key);
-		if(token==null){
-			return null ;
-		}
-
-		if (token.getExpirationTime().getTime() < System.currentTimeMillis()) {
-			tokenCache.remove(key) ;
-			return null ;
-		}
-
-		return token;
-	}
-
-	/**
 	 * 递归查询所有子文件
 	 */
 	public void walkAllDataNode(Set<String> set, String path) throws Exception {
@@ -222,23 +206,6 @@ public class SharedSpaceService {
 		} catch (Exception e) {
 			LOG.error("walk file err: " + path);
 		}
-	}
-
-	/**
-	 * 注册一个token,token必须是刻一用路径描述的
-	 */
-	protected void regToken(Token token) throws Exception {
-		if (token.getToken().contains("/")) {
-			throw new RuntimeException("token can not has / in name ");
-		}
-		tokenCache.put(token.getToken(), token);
-	}
-
-	/**
-	 * 移除一个token
-	 */
-	protected Token removeToken(String key) throws Exception {
-		return tokenCache.remove(key);
 	}
 
 
@@ -1090,6 +1057,8 @@ public class SharedSpaceService {
 	public PathChildrenCache getGroupCache() {
 		return groupCache;
 	}
+
+
 
 	/**
 	 * 重置master
