@@ -9,6 +9,7 @@ import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.http.*;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
 import org.slf4j.Logger;
@@ -366,7 +367,7 @@ public class ProxyService {
 	 */
 
 	private synchronized String getOrCreateToken() throws Exception {
-		if (myToken == null || StaticValue.space().getToken(myToken) == null) {
+		if (myToken == null || TokenService.getToken(myToken) == null) {
 			LOG.info("token timeout so create it ");
 			myToken = TokenService.regToken(User.CLUSTER_USER);
 		}

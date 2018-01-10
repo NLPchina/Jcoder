@@ -190,19 +190,6 @@ public class SharedSpaceService {
 	}
 
 	/**
-	 * 获得一个token
-	 */
-	protected Token getToken(String key) throws Exception {
-		Token token = tokenCache.get(key);
-		if (token.getExpirationTime().getTime() < System.currentTimeMillis()) {
-			tokenCache.remove(key) ;
-			return null ;
-		}
-
-		return token;
-	}
-
-	/**
 	 * 递归查询所有子文件
 	 */
 	public void walkAllDataNode(Set<String> set, String path) throws Exception {
@@ -218,23 +205,6 @@ public class SharedSpaceService {
 		} catch (Exception e) {
 			LOG.error("walk file err: " + path);
 		}
-	}
-
-	/**
-	 * 注册一个token,token必须是刻一用路径描述的
-	 */
-	protected void regToken(Token token) throws Exception {
-		if (token.getToken().contains("/")) {
-			throw new RuntimeException("token can not has / in name ");
-		}
-		tokenCache.put(token.getToken(), token);
-	}
-
-	/**
-	 * 移除一个token
-	 */
-	protected Token removeToken(String key) throws Exception {
-		return tokenCache.remove(key);
 	}
 
 
@@ -621,7 +591,7 @@ public class SharedSpaceService {
 
 		for (Group group : groups) {
 
-			List<Different> diffs = joinCluster(group);
+			List<Different> diffs = joinCluster(group,true);
 
 			result.put(group.getName(), diffs);
 
@@ -633,7 +603,7 @@ public class SharedSpaceService {
 	/**
 	 * 加入刷新一个主机到集群中
 	 */
-	public List<Different> joinCluster(Group group) throws IOException {
+	public List<Different> joinCluster(Group group, boolean upMapping) throws IOException {
 		List<Different> diffs = new ArrayList<>();
 
 		String groupName = group.getName();
@@ -663,35 +633,37 @@ public class SharedSpaceService {
 			unLockAndDelete(lock);
 		}
 
+		if (upMapping) {
 
-		/**
-		 * 根据解决构建信息
-		 */
-		HostGroup hostGroup = new HostGroup();
-		hostGroup.setSsl(StaticValue.IS_SSL);
-		hostGroup.setCurrent(diffs.size() == 0);
-		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
-		try {
-			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
-		} catch (Exception e1) {
-			e1.printStackTrace();
-			LOG.error("add host group info err !!!!!", e1);
-		}
-
-		tasks.forEach(task -> {
+			/**
+			 * 根据解决构建信息
+			 */
+			HostGroup hostGroup = new HostGroup();
+			hostGroup.setSsl(StaticValue.IS_SSL);
+			hostGroup.setCurrent(diffs.size() == 0);
+			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
 			try {
-				new JavaRunner(task).compile();
-
-				Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
-
-				executeMethods.forEach(e -> {
-					addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-				});
-
-			} catch (Exception e) {
-				LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
+			} catch (Exception e1) {
+				e1.printStackTrace();
+				LOG.error("add host group info err !!!!!", e1);
 			}
-		});
+
+			tasks.forEach(task -> {
+				try {
+					new JavaRunner(task).compile();
+
+					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+
+					executeMethods.forEach(e -> {
+						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+					});
+
+				} catch (Exception e) {
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
+				}
+			});
+		}
 		return diffs;
 	}
 
@@ -1086,6 +1058,7 @@ public class SharedSpaceService {
 	public PathChildrenCache getGroupCache() {
 		return groupCache;
 	}
+
 
 	/**
 	 * 重置master

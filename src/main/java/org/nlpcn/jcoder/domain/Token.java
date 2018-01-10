@@ -20,6 +20,8 @@ public class Token implements Serializable {
 
 	private User user;
 
+	private long expiration = 20*60*1000L ;
+
 	private Date expirationTime;
 
 	private Date createTime;
@@ -83,6 +85,14 @@ public class Token implements Serializable {
 			return true;
 		}
 		return authorizes.contains(className + "/" + methodName);
+	}
+
+	public long getExpiration() {
+		return expiration;
+	}
+
+	public void setExpiration(long expiration) {
+		this.expiration = expiration;
 	}
 
 	public boolean authorize(String authorize) {
