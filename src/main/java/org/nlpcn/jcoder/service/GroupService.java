@@ -167,7 +167,12 @@ public class GroupService {
 
 		String key = StaticValue.getHostPort() + "_" + name;
 
-		sharedSpaceService.getHostGroupCache().remove(key) ;
+		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
+
+		if(hostGroup!=null){
+			hostGroup.setWeight(-1); //理论上设置为-1就删除了
+			sharedSpaceService.getHostGroupCache().remove(key) ;
+		}
 
 
 		Files.deleteFile(new File(StaticValue.GROUP_FILE, name + ".cache"));

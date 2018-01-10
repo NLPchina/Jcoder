@@ -307,6 +307,7 @@ var groupHostList = new Vue({
 
 	flush: function(hostPort){
 		var $this = this;
+		JqdeBox.loading();
 		Jcoder.ajax("/admin/group/flush", 'post',{"hostPort":hostPort,"groupName":$this.groupName},null).then(function (data) {
 			JqdeBox.unloading();
 			if(data.ok){
@@ -324,6 +325,9 @@ var groupHostList = new Vue({
 			}else{
 				JqdeBox.message(false, data.message);
 			}
+		}).catch(function(req){
+			JqdeBox.unloading();
+			JqdeBox.message(false,req.responseText) ;
 		});
 	},
 
