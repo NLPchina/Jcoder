@@ -1,7 +1,9 @@
+import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -18,6 +20,7 @@ public class Bootstrap {
 	private static final String PREFIX = "jcoder_";
 
 	public static void main(String[] args) throws Exception {
+
 		if (args == null) {
 			args = new String[0];
 		}
@@ -111,7 +114,6 @@ public class Bootstrap {
 
 		makeFiles(jcoderHome, logPath);
 
-		context.setTempDirectory(new File(jcoderHome, "tmp"));
 		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
@@ -128,9 +130,9 @@ public class Bootstrap {
 
 		context.setExtraClasspath(new File(jcoderHome, "resource").getAbsolutePath());
 
-		if (location.toExternalForm().endsWith(".war")) { // 如果是war包
-			context.setDescriptor(location.toExternalForm() + "/WEB-INF/web.xml");
-			context.setWar(location.toExternalForm());
+		if (location.toExternalForm().endsWith(".jar")) { // 如果是jar包
+			context.setDescriptor(location.toExternalForm() + "!/webapp/WEB-INF/web.xml");
+			context.setWarResource(Resource.newResource(Bootstrap.class.getResource("webapp")));
 		} else {
 			context.setWar("src/main/webapp");
 		}

@@ -1,8 +1,10 @@
 package org.nlpcn.jcoder.controller;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.ImmutableMap;
+
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.Task;
@@ -20,16 +22,22 @@ import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.AdaptBy;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.IOUtils;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.FileVisitResult;
@@ -37,9 +45,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Created by Ansj on 19/12/2017.
@@ -63,10 +82,6 @@ public class FileInfoAction {
 
 	/**
 	 * 获取文件列表
-	 *
-	 * @param groupName
-	 * @return
-	 * @throws IOException
 	 */
 	@At
 	public Restful listFiles(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
@@ -127,10 +142,6 @@ public class FileInfoAction {
 
 	/**
 	 * 获取文件目录树
-	 *
-	 * @param groupName
-	 * @return
-	 * @throws IOException
 	 */
 	@At
 	public Restful getFileTree(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
@@ -146,7 +157,7 @@ public class FileInfoAction {
 			List<FileInfo> result = new ArrayList<>();
 
 			Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
-			Map<String,String> map = new HashMap<String,String>();
+			Map<String, String> map = new HashMap<String, String>();
 			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
 				// 在访问子目录前触发该方法
 				@Override
@@ -157,19 +168,19 @@ public class FileInfoAction {
 						return FileVisitResult.SKIP_SUBTREE;
 					}
 					JSONObject jsonObject = new JSONObject();
-					jsonObject.put("name",file.getName());
+					jsonObject.put("name", file.getName());
 					UUID uuid = UUID.randomUUID();
-					map.put(file.getName(),file.getName().equals(groupName)?"0":uuid.toString());
+					map.put(file.getName(), file.getName().equals(groupName) ? "0" : uuid.toString());
 					jsonObject.put("id", map.get(file.getName()));
-					jsonObject.put("open",true);
-					jsonObject.put("isParent",true);
-					if(!file.getName().equals(groupName)){
-						jsonObject.put("pId",map.get(file.getParentFile().getName()));
+					jsonObject.put("open", true);
+					jsonObject.put("isParent", true);
+					if (!file.getName().equals(groupName)) {
+						jsonObject.put("pId", map.get(file.getParentFile().getName()));
 					}
 					FileInfo fileInfo = new FileInfo(file);
 					JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
-					fi.put("date",fileInfo.lastModified());
-					jsonObject.put("file",fi);
+					fi.put("date", fileInfo.lastModified());
+					jsonObject.put("file", fi);
 					nodes.add(jsonObject);
 					return FileVisitResult.CONTINUE;
 				}
@@ -184,16 +195,16 @@ public class FileInfoAction {
 					try {
 						result.add(new FileInfo(file));
 						JSONObject jsonObject = new JSONObject();
-						jsonObject.put("name",file.getName());
+						jsonObject.put("name", file.getName());
 						UUID uuid = UUID.randomUUID();
-						map.put(file.getName(),uuid.toString());
+						map.put(file.getName(), uuid.toString());
 						jsonObject.put("id", uuid.toString());
-						jsonObject.put("open",true);
-						jsonObject.put("pId",map.get(file.getParentFile().getName()));
+						jsonObject.put("open", true);
+						jsonObject.put("pId", map.get(file.getParentFile().getName()));
 						FileInfo fileInfo = new FileInfo(file);
 						JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
-						fi.put("date",fileInfo.lastModified());
-						jsonObject.put("file",fi);
+						fi.put("date", fileInfo.lastModified());
+						jsonObject.put("file", fi);
 						nodes.add(jsonObject);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -216,9 +227,6 @@ public class FileInfoAction {
 
 	/**
 	 * 获得文件的正文
-	 *
-	 * @param hostPort
-	 * @param relativePath
 	 */
 	@At
 	@Ok("void")
@@ -303,8 +311,8 @@ public class FileInfoAction {
 							byte[] buffer = new byte[10240];
 							if (!f.isDirectory() && f.canRead()) {
 								try (FileInputStream fis = new FileInputStream(f)) {
-									BufferedInputStream bis = new BufferedInputStream(fis, 1024*10);
-									while ((len = bis.read(buffer, 0, 1024*10)) != -1) {
+									BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 10);
+									while ((len = bis.read(buffer, 0, 1024 * 10)) != -1) {
 										out.write(buffer, 0, len);
 									}
 								}
@@ -331,10 +339,6 @@ public class FileInfoAction {
 
 	/**
 	 * 删除一个文件或文件夹
-	 *
-	 * @param groupName
-	 * @param relativePath
-	 * @return
 	 */
 	@At
 	public Restful delete(@Param("groupName") String groupName, @Param("relativePath") String relativePath) {
@@ -352,54 +356,50 @@ public class FileInfoAction {
 
 	/**
 	 * 删除一个文件或文件夹
-	 *
-	 * @param groupName
-	 * @param relativePath
-	 * @return
 	 */
 	@At
-	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts,@Param("groupName") String groupName,
+	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts, @Param("groupName") String groupName,
 							  @Param("relativePath") String relativePath,
 							  @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
-			if(!first){
+			if (!first) {
 				if (relativePath.contains("..")) {
 					return Restful.instance(false, "删除路径不能包含`..`字符");
 				}
 				File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 				if (file.isDirectory()) {
-                    boolean flag = org.nutz.lang.Files.deleteDir(file);
-                    if (!flag) {
-                        System.gc();//回收资源
-                        org.nutz.lang.Files.deleteDir(file);
-                    }
-                } else {
-                    boolean flag = org.nutz.lang.Files.deleteFile(file);
-                    if (!flag) {
-                        System.gc();//回收资源
-                        file.delete();
-                    }
-                }
+					boolean flag = org.nutz.lang.Files.deleteDir(file);
+					if (!flag) {
+						System.gc();//回收资源
+						org.nutz.lang.Files.deleteDir(file);
+					}
+				} else {
+					boolean flag = org.nutz.lang.Files.deleteFile(file);
+					if (!flag) {
+						System.gc();//回收资源
+						file.delete();
+					}
+				}
 				return Restful.ok();
-			}else{
+			} else {
 				List<String> hosts = Arrays.asList(hostPorts);
 				Set<String> hostPortsArr = new HashSet<>(hosts);
 				Set<String> firstHost = new HashSet<String>();
-				if(hostPortsArr.contains(Constants.HOST_MASTER)){
+				if (hostPortsArr.contains(Constants.HOST_MASTER)) {
 					hostPortsArr.remove(Constants.HOST_MASTER);
 					ArrayList arrayList = new ArrayList(hosts);
 					arrayList.remove(Constants.HOST_MASTER);
 					firstHost.add(arrayList.get(0).toString());
 				}
 				String message = proxyService.post(hostPortsArr, "/admin/fileInfo/deleteFile",
-						ImmutableMap.of("groupName", groupName,"relativePath",relativePath,"first", false), 100000,
+						ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
-				if(firstHost != null && firstHost.size() > 0){
-					String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
+				if (firstHost != null && firstHost.size() > 0) {
+					String[] relativePaths = new String[]{relativePath.endsWith("/") ? relativePath.substring(0, (relativePath.length() - 1)) : relativePath};
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
-						ImmutableMap.of("groupName",groupName,"relativePaths",
-								relativePaths),100000);
+							ImmutableMap.of("groupName", groupName, "relativePaths",
+									relativePaths), 100000);
 				}
 				return Restful.instance().ok(true).msg(message);
 			}
@@ -443,8 +443,8 @@ public class FileInfoAction {
 
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
-	public Restful uploadFile(@Param("hostPorts") String[] hostPorts,@Param("group_name") String groupName,@Param("filePath") String filePath,
-							 @Param("file") TempFile[] file,@Param("fileNames") String[] fileNames,@Param(value = "first", df = "true") boolean first) throws IOException {
+	public Restful uploadFile(@Param("hostPorts") String[] hostPorts, @Param("group_name") String groupName, @Param("filePath") String filePath,
+							  @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) file.length;
 
 		if (fileNum <= 0) {
@@ -452,19 +452,19 @@ public class FileInfoAction {
 		}
 
 		try {
-			if(!first){
+			if (!first) {
 				File folder = null;
-				if(StringUtil.isNotBlank(filePath)){
+				if (StringUtil.isNotBlank(filePath)) {
 					folder = new File(StaticValue.GROUP_FILE, groupName + filePath);
-					if(!folder.exists())folder.mkdir();
+					if (!folder.exists()) folder.mkdir();
 				}
 				for (int i = 0; i < fileNames.length; i++) {
 					String fileName = fileNames[i];
 					try {
-						File to = new File(StaticValue.GROUP_FILE, groupName + filePath+"/" + fileName);
-						if(folder != null){
+						File to = new File(StaticValue.GROUP_FILE, groupName + filePath + "/" + fileName);
+						if (folder != null) {
 							String path = folder.getCanonicalPath();
-							to = new File(path+"/"+fileName);
+							to = new File(path + "/" + fileName);
 						}
 						file[i].write(to.getAbsolutePath());
 						LOG.info("write file to " + to.getAbsolutePath());
@@ -474,26 +474,26 @@ public class FileInfoAction {
 					}
 				}
 				JarService.remove(groupName);
-			}else{
+			} else {
 				List<String> hosts = Arrays.asList(hostPorts);
 				Set<String> hostPortsArr = new HashSet<>(hosts);
 				Set<String> firstHost = new HashSet<>();
-				if(hosts.contains(Constants.HOST_MASTER)){
+				if (hosts.contains(Constants.HOST_MASTER)) {
 					hostPortsArr.remove(Constants.HOST_MASTER);
 					ArrayList arrayList = new ArrayList(hosts);
 					arrayList.remove(Constants.HOST_MASTER);
 					firstHost.add(arrayList.get(0).toString());
 				}
-				File[] files = Arrays.stream(file).map(f -> f.getFile()).toArray(File[]::new) ;
-				String[] fns = Arrays.stream(file).map(f -> f.getSubmittedFileName()).toArray(String[]::new) ;
+				File[] files = Arrays.stream(file).map(f -> f.getFile()).toArray(File[]::new);
+				String[] fns = Arrays.stream(file).map(f -> f.getSubmittedFileName()).toArray(String[]::new);
 				proxyService.upload(hostPortsArr, "/admin/fileInfo/uploadFile",
-                        ImmutableMap.of("group_name",groupName,"file",files,"filePath",filePath,
-						"fileNames",fns,"first",false) , 100000);
+						ImmutableMap.of("group_name", groupName, "file", files, "filePath", filePath,
+								"fileNames", fns, "first", false), 100000);
 				//同步文件到Master
-                String[] relativePaths = Arrays.stream(file).map(f -> (filePath.endsWith("/")?filePath:filePath+"/")+f.getSubmittedFileName()).toArray(String[]::new) ;
+				String[] relativePaths = Arrays.stream(file).map(f -> (filePath.endsWith("/") ? filePath : filePath + "/") + f.getSubmittedFileName()).toArray(String[]::new);
 				proxyService.post(firstHost, "/admin/fileInfo/upCluster",
-						ImmutableMap.of("groupName",groupName,"relativePaths",
-								relativePaths),100000);
+						ImmutableMap.of("groupName", groupName, "relativePaths",
+								relativePaths), 100000);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -504,8 +504,6 @@ public class FileInfoAction {
 
 	/**
 	 * 文件复制，如果源无文件则删除目标文件,是拉的方式
-	 *
-	 * @param fromHostPort
 	 */
 	@At
 	public Restful copyFile(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("relativePaths") String[] relativePaths) throws Exception {
@@ -549,9 +547,6 @@ public class FileInfoAction {
 
 	/**
 	 * 下载开发者工具
-	 *
-	 * @throws URISyntaxException
-	 * @throws IOException
 	 */
 	@At
 	@Ok("void")
@@ -587,12 +582,12 @@ public class FileInfoAction {
 					if (jar.getParentFile().getAbsolutePath().startsWith(new File(StaticValue.GROUP_FILE, groupName + "/lib/target").getAbsolutePath())) {
 						continue;
 					}
-					String name = groupName + "/lib/" + jar.getName();
+					String name = "/lib/" + jar.getName();
 					if (sets.contains(name)) {
 						continue;
 					}
 					sets.add(name);
-					out.putNextEntry(new ZipEntry(groupName + "/lib/" + jar.getName()));
+					out.putNextEntry(new ZipEntry(name));
 					try (FileInputStream fis = new FileInputStream(jar)) {
 						while ((len = fis.read(buffer)) > 0) {
 							out.write(buffer, 0, len);
@@ -622,8 +617,11 @@ public class FileInfoAction {
 				}
 			}
 
-			out.putNextEntry(new ZipEntry("pom.xml"));
-			out.write(IOUtil.getContent(new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml"), "utf-8").getBytes("utf-8"));
+			File pomFile = new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml");
+			if (pomFile.exists()) {
+				out.putNextEntry(new ZipEntry("pom.xml"));
+				out.write(IOUtil.getContent(pomFile, "utf-8").getBytes("utf-8"));
+			}
 
 			File file = new File(StaticValue.GROUP_FILE, groupName + "/resources");
 			String basePath = file.getAbsolutePath();
