@@ -116,9 +116,7 @@ vmApp.module = new Vue({
     methods: {
         add: function (name) {
             var h = '/task/edit.html?group=' + this.groupName, hostGroup = _.findWhere(this.hosts, {selected: true});
-            if (!hostGroup.current) {
-                h += "&host=" + hostGroup.host;
-            }
+            h += "&host=" + (hostGroup.current ? "master" : hostGroup.host);
             if (name) {
                 // 如果是编辑
                 h += '&name=' + name;

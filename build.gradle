@@ -2,7 +2,6 @@ group 'nlpcn.org'
 version '5.0.0'
 
 apply plugin: 'java'
-apply plugin: 'war'
 apply plugin: 'idea'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -52,42 +51,34 @@ dependencies {
 
 
 	// web server
-	providedCompile 'org.eclipse.jetty:jetty-webapp:9.4.8.v20171121'
-	providedCompile 'org.eclipse.jetty:jetty-continuation:9.4.8.v20171121'
-	providedCompile 'org.eclipse.jetty.websocket:websocket-server:9.4.8.v20171121'
-	providedCompile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.4.8.v20171121'
+	compile 'org.eclipse.jetty:jetty-webapp:9.4.8.v20171121'
+	compile 'org.eclipse.jetty:jetty-continuation:9.4.8.v20171121'
+	compile 'org.eclipse.jetty.websocket:websocket-server:9.4.8.v20171121'
+	compile 'org.eclipse.jetty.websocket:javax-websocket-server-impl:9.4.8.v20171121'
 
 
 	testCompile 'junit:junit:4.12'
 
-	war{
+	jar{
 
 		def configFile = file('src/main/resources/jcoder.properties') ;
 
 		configFile.write("version="+version+"_"+new Date().format('yyyyMMddHHmm'));
 
-		def schemaJarFile = project.configurations.providedCompile
-
-		schemaJarFile.each{source ->
-			from zipTree(source)
-			exclude("**/*.SF")
-		}
-
-		from('build/classes/main/Bootstrap.class')
 		manifest {
 			attributes 'Implementation-Title': 'Jcoder Webserver', 'Implementation-Version': version,  'Main-Class':'Bootstrap'
 		}
 
-
-		classpath = classpath - sourceSets.main.output
-
-
-		from (jar) {
-			into 'WEB-INF/lib'
+		from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }{
+			exclude "META-INF/*.SF"
+			exclude "META-INF/LICENSE"
 		}
+
+		from('src/main/webapp') {
+			into ('webapp')
+		}
+
 	}
-
-
 
 	tasks.withType(JavaCompile) {
 		options.encoding = "UTF-8"

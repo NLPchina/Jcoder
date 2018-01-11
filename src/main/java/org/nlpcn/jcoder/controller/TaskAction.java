@@ -248,7 +248,7 @@ public class TaskAction {
             }
         }
 
-        return Restful.ok();
+        return Restful.ok().obj(task.getName());
     }
 
     @At

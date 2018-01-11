@@ -192,56 +192,20 @@ public class Testing {
 
 	/**
 	 * test local api by server
-	 * 
-	 * @param port default 8080
-	 * @param iocPath your ioc path
-	 * @param jcoderHome if you need resource , you need it
+	 *
 	 * @throws Exception
 	 */
-	public static void startServer(int port, String iocPath, String jcoderHome, String[] packages) throws Exception {
-		if (port <= 0) {
-			port = 8080;
+	public static void startServer(String[] args) throws Exception {
+		Class<?> bootstrap = Class.forName("Bootstrap");
+		Method main = bootstrap.getMethod("main", String[].class);
+		if(args==null){
+			args = new String[0] ;
 		}
-		if (StringUtil.isBlank(iocPath)) {
-			iocPath = IOC_PATH;
-		}
-
-		if (StringUtil.isBlank(jcoderHome)) {
-			jcoderHome = new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath();
-		}
-
-		System.setProperty(StaticValue.PREFIX + "home", jcoderHome);
-		System.setProperty(StaticValue.PREFIX + "port", String.valueOf(port));
-
-		Server server = new Server(port);
-
-		Ioc ioc = new NutIoc(new JsonLoader(iocPath));
-		StaticValue.setSystemIoc(ioc);
-
-		TestingFilter.init(ioc,packages);
-
-		ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-		context.addFilter(TestingFilter.class, "/api/*", EnumSet.of(DispatcherType.REQUEST));
-		server.setHandler(context);
-
-		server.start();
-
-		System.out.println("jcoder testing server start ok on http://127.0.0.1:" + port);
-
-		server.join();
-
+		main.invoke(null,args) ;
 	}
 
-	/**
-	 * test local api by server
-	 * 
-	 * @param port default 8080
-	 * @param iocPath your ioc path
-	 * @param jcoderHome if you need resource , you need it
-	 * @throws Exception
-	 */
-	public static void startServer(String iocPath, String[] packages) throws Exception {
-		startServer(8080, iocPath, null, packages);
+	public static void main(String[] args) throws Exception {
+		Testing.startServer(null);
 	}
 
 }
