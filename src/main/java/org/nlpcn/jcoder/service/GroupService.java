@@ -1,8 +1,14 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.domain.Different;
+import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.TaskHistory;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
@@ -14,7 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 
@@ -82,9 +93,6 @@ public class GroupService {
 
 	/**
 	 * 得到一个group下所有主机的信息
-	 *
-	 * @param groupName
-	 * @throws Exception
 	 */
 	public List<HostGroup> getGroupHostList(String groupName) throws Exception {
 
@@ -120,8 +128,6 @@ public class GroupService {
 
 	/**
 	 * 从集群把一个组彻底删除掉
-	 *
-	 * @param groupName
 	 */
 	public void deleteByCluster(String groupName) throws Exception {
 
@@ -169,9 +175,9 @@ public class GroupService {
 
 		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
 
-		if(hostGroup!=null){
+		if (hostGroup != null) {
 			hostGroup.setWeight(-1); //理论上设置为-1就删除了
-			sharedSpaceService.getHostGroupCache().remove(key) ;
+			sharedSpaceService.getHostGroupCache().remove(key);
 		}
 
 
@@ -189,26 +195,20 @@ public class GroupService {
 
 	/**
 	 * 刷新一个group重新加载到集群中
-	 *
-	 * @param groupName
 	 */
-	public List<Different> flush(String groupName) throws IOException {
+	public List<Different> flush(String groupName, boolean upMapping) throws IOException {
 		Group group = findGroupByName(groupName);
 		if (group == null) {
 			throw new RuntimeException("group not found " + groupName);
 		}
-		return flush(group);
+		return flush(group, upMapping);
 	}
 
 	/**
 	 * 刷新
-	 *
-	 * @param group
-	 * @return
-	 * @throws IOException
 	 */
-	public List<Different> flush(Group group) throws IOException {
-		return sharedSpaceService.joinCluster(group);
+	public List<Different> flush(Group group, boolean upMapping) throws IOException {
+		return sharedSpaceService.joinCluster(group, upMapping);
 	}
 
 }

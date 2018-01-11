@@ -1,9 +1,12 @@
 package org.nlpcn.jcoder.controller;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.ImmutableMap;
+
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
@@ -15,21 +18,39 @@ import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletResponse;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -151,9 +172,6 @@ public class GroupAction {
 
 	/**
 	 * 从集群中彻底删除一个group 要求group name必须没有任何一个机器使用中
-	 *
-	 * @param name
-	 * @return
 	 */
 	@At
 	public Restful deleteByCluster(@Param("name") String name) {
@@ -169,9 +187,6 @@ public class GroupAction {
 
 	/**
 	 * 删除group
-	 *
-	 * @param name
-	 * @return
 	 */
 	@At
 	public Restful delete(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
@@ -194,9 +209,6 @@ public class GroupAction {
 
 	/**
 	 * 删除group
-	 *
-	 * @param hostPort
-	 * @return
 	 */
 	@At
 	@Ok("void")
@@ -215,17 +227,13 @@ public class GroupAction {
 
 	@At
 	public Restful share(@Param("hostPorts") String[] hostPorts, @Param("formHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
-		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName), 120000, ProxyService.MERGE_MESSAGE_CALLBACK);
+		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName), 1200000, ProxyService.MERGE_MESSAGE_CALLBACK);
 		return Restful.instance().msg(msg);
 	}
 
 
 	/**
 	 * 克隆一个主机的group到当前主机上
-	 *
-	 * @param fromHostPort
-	 * @param groupName
-	 * @return
 	 */
 	@At
 	public synchronized Restful installGroup(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
@@ -276,7 +284,7 @@ public class GroupAction {
 		}
 
 		//刷新本地group,加入到集群中
-		groupService.flush(group);
+		groupService.flush(group, true);
 
 		return Restful.instance().msg("克隆成功");
 	}
@@ -284,17 +292,15 @@ public class GroupAction {
 	/**
 	 * 刷新一个group到集群中
 	 *
-	 * @param hostPort  需要刷新的主机
-	 * @param groupName
+	 * @param hostPort 需要刷新的主机
 	 * @return 不同
-	 * @throws Exception
 	 */
 	@At
-	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
+	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("upMapping") boolean upMapping) throws Exception {
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
-			return Restful.instance(groupService.flush(groupName));
+			return Restful.instance(groupService.flush(groupName, upMapping));
 		} else {
-			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName), 120000);
+			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping), 120000);
 			return JSONObject.parseObject(post.getContent(), Restful.class);
 		}
 
@@ -302,15 +308,9 @@ public class GroupAction {
 
 	/**
 	 * 修复不同
-	 *
-	 * @param fromHostPort
-	 * @param toHostPort
-	 * @param groupName
-	 * @param relativePath
-	 * @return
 	 */
 	@At
-	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, String relativePath) throws Exception {
+	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, @Param("relativePath[]") String[] relativePaths) throws Exception {
 
 		boolean toMaster = Constants.HOST_MASTER.equals(toHostPort);
 
@@ -330,58 +330,72 @@ public class GroupAction {
 			toHostPorts.add(toHostPort);
 		}
 
-		if (relativePath.startsWith("/")) {//更新文件的
-			StringBuilder sb = new StringBuilder();
-			String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
-			sb.append(post);
-			if (toMaster) {
-				Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePaths", relativePath), 120000);
-				sb.append("，" + post1.getContent());
-			}
-			return Restful.instance().msg(sb.toString());
+		List<String> message = new ArrayList<>();
 
-		} else {//更新task的
-			if (StringUtil.isBlank(fromHostPort)) {
-				fromHostPort = Constants.HOST_MASTER;
-			}
+		boolean flag = false;
 
-			if (StringUtil.isBlank(toHostPort)) {
-				toHostPort = Constants.HOST_MASTER;
-			}
-
-			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
-
-			Restful restful = Restful.instance(post);
-
-			if (restful.code() == 404) {
-				if (Constants.HOST_MASTER.equals(toHostPort)) {
-					StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath);
-				} else {
-
-					Map<String, Object> params = new HashMap<>();
-
-					params.put("diff", false);
-					params.put("force", true);
-					params.put("groupName", groupName);
-					params.put("name", relativePath);
-					params.put("user", "user");
-					params.put("time", System.currentTimeMillis());
-
-					post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), params, 1000);
+		for (String relativePath : relativePaths) {
+			if (relativePath.startsWith("/")) {//更新文件的
+				if (toHostPorts.size() > 0) {
+					String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_MESSAGE_CALLBACK);
+					message.add(post);
 				}
-				return Restful.instance(post);
+
+				if (toMaster) {
+					Response post1 = proxyService.post(fromHostPort, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePaths", relativePath), 120000);
+					message.add(post1.getContent());
+					flag = flag && Restful.instance(post1).isOk();
+				}
+
+			} else {//更新task的
+				if (StringUtil.isBlank(fromHostPort)) {
+					fromHostPort = Constants.HOST_MASTER;
+				}
+
+				if (StringUtil.isBlank(toHostPort)) {
+					toHostPort = Constants.HOST_MASTER;
+				}
+
+				Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
+
+				Restful restful = Restful.instance(post);
+
+				if (restful.code() == 404) {
+					if (Constants.HOST_MASTER.equals(toHostPort)) {
+						StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath);
+					} else {
+
+						Map<String, Object> params = new HashMap<>();
+
+						params.put("diff", false);
+						params.put("force", true);
+						params.put("groupName", groupName);
+						params.put("name", relativePath);
+						params.put("user", "user");
+						params.put("time", System.currentTimeMillis());
+
+						post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), params, 1000);
+					}
+					return Restful.instance(post);
+				}
+
+				JSONObject obj = restful.getObj();
+
+				if (obj == null) {
+					return restful;
+				}
+
+				post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 20000);
+
+				Restful instance = Restful.instance(post);
+
+				message.add(instance.getMessage());
+
+				flag = flag && instance.isOk();
 			}
-
-			JSONObject obj = restful.getObj();
-
-			if (obj == null) {
-				return restful;
-			}
-
-			post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 20000);
-
-			return Restful.instance(post);
 		}
+
+		return Restful.instance(flag, Joiner.on(",").join(message));
 	}
 
 }
