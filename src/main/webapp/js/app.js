@@ -123,6 +123,10 @@ var vmApp = new Vue({
                     .parents('li').addClass("active").addClass("open")
                     .siblings().find('.submenu').slideUp('fast');
 
+                if (vmApp.module && vmApp.module instanceof Vue) {
+                    vmApp.module.$destroy();
+                }
+
                 Tools.loadURL(urls[0], $('#content'), function () {
                 	$this.drawBreadCrumb();
                 }, function () {

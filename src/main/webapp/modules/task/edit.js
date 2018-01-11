@@ -15,12 +15,12 @@ vmApp.module = new Vue({
                     me.isLoading = false;
 
                     data = data.obj;
-                    var hosts = me.hosts, sourceHost = parent.sourceHost;
+                    var hosts = me.hosts, selectedHosts = parent.selectedHosts;
                     _.each(data, function (ele) {
                         var current = ele.hostGroup ? ele.hostGroup.current : true;
                         hosts.push({
                             host: ele.hostPort,
-                            checked: sourceHost == "master" ? current : sourceHost == ele.hostPort,
+                            checked: selectedHosts.length == 1 && selectedHosts[0] == "master" ? current : _.contains(selectedHosts, ele.hostPort),
                             current: current,
                             weight: (ele.weight / ele.sumWeight * 100).toFixed(0),
                             success: ele.success,
@@ -55,8 +55,9 @@ vmApp.module = new Vue({
     data: {
         hosts: [],
 
-        sourceHost: param.host || "master",
+        sourceHost: null,
         sourceHosts: [],
+        selectedHosts: null,
 
         task: {
             type: 1,
@@ -69,6 +70,9 @@ vmApp.module = new Vue({
 
     mounted: function () {
         var me = this;
+
+        //
+        me.sourceHost = (me.selectedHosts = param.host.split(","))[0];
 
         // 如果是编辑
         if (me.task.name = param.name) {
@@ -166,7 +170,7 @@ vmApp.module = new Vue({
                 Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify($.extend({}, task, {name: null})), oldName: task.name}).then(function (data) {
                     JqdeBox.unloading();
                     setTimeout(function () {
-                        location.hash = '/task/list.html?name=' + task.groupName;
+                        location.hash = "/task/edit.html?group=" + task.groupName + "&host=" + hosts.join(",") + "&name=" + data.obj;
                     }, 200);
                 }).catch(function (req) {
                     JqdeBox.unloading();
