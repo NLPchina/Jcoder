@@ -73,6 +73,12 @@ function treeNodeClick(treeId, treeNodes) {
                 JqdeBox.unloading();
                 if(data.ok){
                     resourceManager.editor.setValue(data.message);
+                    //v-show="currentNode.file.length/10240 > 1"
+                    /*if(resourceManager.currentNode.file.length*1024 > 1){
+                        $("#saveBtn").css('display','none');
+                    }else{
+                        $("#saveBtn").css('display','none');
+                    }*/
                     console.log(data);
                 }else{
                     JqdeBox.message(false, data.msg);
@@ -160,7 +166,8 @@ var resourceManager = new Vue({
     groupName:param.name,
     editor: '',
     isFile:false,
-    currentNode:null
+    currentNode:null,
+    filePath:[]
   },
   mounted:function(){
 	  var $this = this;
@@ -171,6 +178,15 @@ var resourceManager = new Vue({
          matchBrackets : true,
          theme : "monokai",
          showCursorWhenSelecting:true
+      });
+      // check all
+      var $table = $('#file-table');
+      $table.on('click', 'th input[type=checkbox]', function () {
+        var th_checked = this.checked;
+        $table.find('td input[type=checkbox]').each(function () {
+            this.checked = th_checked;
+        });
+        me.checkChanged();
       });
   },
   /*watch:{
@@ -239,11 +255,14 @@ var resourceManager = new Vue({
                 JqdeBox.message(false, "无法只删除Master主机的文件！");
                 return false;
             }
+            if(path == null || path == undefined){
+                path = $this.filePath;
+            }
             Jcoder.ajax('/admin/fileInfo/deleteFile', 'post',
                 {hostPort:importFile.checkedHosts,groupName:$this.groupName,relativePath:path},null).then(function (data) {
                 JqdeBox.unloading();
-                JqdeBox.message(data.ok, "文件删除成功！");
-                $this.resourceList('master',null);
+                JqdeBox.message(data.ok, data.message);
+                /*$this.resourceList('master',null);*/
             });
           }
         });
@@ -288,10 +307,10 @@ var resourceManager = new Vue({
             var formData = new FormData();
             var files = $('#id-input-file-3').prop("files");
             for(var i = 0;i < files.length;i++){
-                if((files[i].size/1024) > 2){
+                /*if((files[i].size/10240) > 1){
                     JqdeBox.message(false, "无法上传大于2M的文件！");
                     return false;
-                }
+                }*/
                 formData.append('file', files[i]);
             }
           　$.ajax({
@@ -346,6 +365,16 @@ var resourceManager = new Vue({
             });
           }
         });
+      },
+      // 选中改变
+      checkChanged: function () {
+        var idsTemp = [];
+        $('#file-table').find('td input[type=checkbox]').each(function () {
+            if (this.checked) {
+                idsTemp.push(this.value);
+            }
+        });
+        this.filePath = idsTemp;
       }
   }
 });

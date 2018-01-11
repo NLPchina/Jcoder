@@ -359,28 +359,30 @@ public class FileInfoAction {
 	 */
 	@At
 	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts,@Param("groupName") String groupName,
-							  @Param("relativePath") String relativePath,
+							  @Param("relativePath[]") String[] relativePath,
 							  @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
 			if(!first){
-				if (relativePath.contains("..")) {
-					return Restful.instance(false, "删除路径不能包含`..`字符");
+				for(int i = 0;i < relativePath.length;i++){
+					if (relativePath[i].contains("..")) {
+						return Restful.instance(false, "删除路径不能包含`..`字符");
+					}
+					File file = new File(StaticValue.GROUP_FILE, groupName + relativePath[i]);
+					if (file.isDirectory()) {
+						boolean flag = org.nutz.lang.Files.deleteDir(file);
+						if (!flag) {
+							System.gc();//回收资源
+							org.nutz.lang.Files.deleteDir(file);
+						}
+					} else {
+						boolean flag = org.nutz.lang.Files.deleteFile(file);
+						if (!flag) {
+							System.gc();//回收资源
+							file.delete();
+						}
+					}
 				}
-				File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
-				if (file.isDirectory()) {
-                    boolean flag = org.nutz.lang.Files.deleteDir(file);
-                    if (!flag) {
-                        System.gc();//回收资源
-                        org.nutz.lang.Files.deleteDir(file);
-                    }
-                } else {
-                    boolean flag = org.nutz.lang.Files.deleteFile(file);
-                    if (!flag) {
-                        System.gc();//回收资源
-                        file.delete();
-                    }
-                }
-				return Restful.ok();
+				return Restful.instance().ok(true).msg("删除成功！");
 			}else{
 				List<String> hosts = Arrays.asList(hostPorts);
 				Set<String> hostPortsArr = new HashSet<>(hosts);
@@ -396,16 +398,16 @@ public class FileInfoAction {
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
 				if(firstHost != null && firstHost.size() > 0){
-					String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
+					//String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
 						ImmutableMap.of("groupName",groupName,"relativePaths",
-								relativePaths),100000);
+								relativePath),100000);
 				}
 				return Restful.instance().ok(true).msg(message);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+			return Restful.instance().ok(false).msg("删除失败！" + e.getMessage());
 		}
 	}
 
