@@ -359,26 +359,27 @@ public class FileInfoAction {
 	 */
 	@At
 	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts,@Param("groupName") String groupName,
-							  @Param("relativePath[]") String[] relativePath,
+							  @Param("relativePath") String relativePath,
 							  @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
 			if(!first){
-				for(int i = 0;i < relativePath.length;i++){
-					if (relativePath[i].contains("..")) {
+				String[] paths = relativePath.split(",");
+				for(int i = 0;i < paths.length;i++){
+					if (paths[i].contains("..")) {
 						return Restful.instance(false, "删除路径不能包含`..`字符");
 					}
-					File file = new File(StaticValue.GROUP_FILE, groupName + relativePath[i]);
+					File file = new File(StaticValue.GROUP_FILE, groupName + paths[i]);
 					if (file.isDirectory()) {
 						boolean flag = org.nutz.lang.Files.deleteDir(file);
 						if (!flag) {
 							System.gc();//回收资源
-							org.nutz.lang.Files.deleteDir(file);
+							org.nutz.lang.Files.deleteDir(file.getAbsoluteFile());
 						}
 					} else {
 						boolean flag = org.nutz.lang.Files.deleteFile(file);
 						if (!flag) {
 							System.gc();//回收资源
-							file.delete();
+							org.nutz.lang.Files.deleteFile(file.getAbsoluteFile());
 						}
 					}
 				}
@@ -398,10 +399,15 @@ public class FileInfoAction {
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
 				if(firstHost != null && firstHost.size() > 0){
+					List<String> list = new ArrayList<String>();
+					String[] paths = relativePath.split(",");
+					for(int a = 0;a<paths.length;a++){
+						list.add(paths[a].endsWith("/")?paths[a].substring(0,(relativePath.length() -1)):paths[a]);
+					}
 					//String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
 						ImmutableMap.of("groupName",groupName,"relativePaths",
-								relativePath),100000);
+								list.toArray(new String[list.size()])),100000);
 				}
 				return Restful.instance().ok(true).msg(message);
 			}

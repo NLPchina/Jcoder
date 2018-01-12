@@ -73,13 +73,11 @@ function treeNodeClick(treeId, treeNodes) {
                 JqdeBox.unloading();
                 if(data.ok){
                     resourceManager.editor.setValue(data.message);
-                    //v-show="currentNode.file.length/10240 > 1"
-                    /*if(resourceManager.currentNode.file.length*1024 > 1){
-                        $("#saveBtn").css('display','none');
+                    if(resourceManager.currentNode.file.length.toFixed(2)/1024/1024 < 1){
+                        $("#saveBtn").css('display','block');
                     }else{
                         $("#saveBtn").css('display','none');
-                    }*/
-                    console.log(data);
+                    }
                 }else{
                     JqdeBox.message(false, data.msg);
                 }
@@ -111,7 +109,6 @@ function initResourceTree(resourceFiles){
 }
 
 function selectNode(nodeName){
-    debugger;
     var zTree = $.fn.zTree.getZTreeObj("treeDemo"),
     treeNode = zTree.getNodeByParam("name",nodeName);
     zTree.selectNode(treeNode,false,false);
@@ -148,8 +145,12 @@ function changeFileInfo(treeNode){
           },null).then(function (data) {
             JqdeBox.unloading();
             if(data.ok){
+                if(treeNode.file.length.toFixed(2)/1024/1024 < 1){
+                    $("#saveBtn").css('display','block');
+                }else{
+                    $("#saveBtn").css('display','none');
+                }
                 resourceManager.editor.setValue(data.message);
-                console.log(data);
             }else{
                 JqdeBox.message(false, data.msg);
             }
@@ -255,13 +256,14 @@ var resourceManager = new Vue({
                 JqdeBox.message(false, "无法只删除Master主机的文件！");
                 return false;
             }
-            if(path == null || path == undefined){
-                path = $this.filePath;
+            if($this.filePath != null && $this.filePath != undefined){
+                path = $this.filePath.join(",");
             }
             Jcoder.ajax('/admin/fileInfo/deleteFile', 'post',
                 {hostPort:importFile.checkedHosts,groupName:$this.groupName,relativePath:path},null).then(function (data) {
                 JqdeBox.unloading();
                 JqdeBox.message(data.ok, data.message);
+                selectNode($this.currentNode.file.name);
                 /*$this.resourceList('master',null);*/
             });
           }
