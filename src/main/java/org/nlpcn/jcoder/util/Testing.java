@@ -195,18 +195,17 @@ public class Testing {
 	 * @throws Exception
 	 */
 	public static void startServer(String[] args) throws Exception {
-		Class<?> bootstrap = Class.forName("Bootstrap");
-		Method main = bootstrap.getMethod("main", String[].class);
-		if (args == null) {
+
+		if (args == null || args.length == 0) {
 			args = new String[]{
-					"--home=jcoder_home"
+					"--home=home", "--testing=true"
 			};
 		}
+
+		Class<?> bootstrap = Class.forName("Bootstrap");
+		Method main = bootstrap.getMethod("main", String[].class);
 		main.invoke(null, new Object[]{args});
 	}
 
-	public static void main(String[] args) throws Exception {
-		Testing.startServer(null);
-	}
 
 }

@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -32,7 +33,7 @@ public class ApiProxyProcessor extends ViewProcessor {
 
 		HttpServletRequest request = ac.getRequest();
 		HttpServletResponse response = ac.getResponse();
-		if (StaticValue.IS_LOCAL || StringUtil.isNotBlank(request.getParameter(ProxyService.PROXY_HEADER)) || request.getHeader(ProxyService.PROXY_HEADER) != null) { //head中包含则条过
+		if (StaticValue.IS_LOCAL || StringUtil.isNotBlank(request.getParameter(Constants.PROXY_HEADER)) || request.getHeader(Constants.PROXY_HEADER) != null) { //head中包含则条过
 			doNext(ac);
 			return;
 		}

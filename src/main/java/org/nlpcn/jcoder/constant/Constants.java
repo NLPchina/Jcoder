@@ -22,4 +22,7 @@ public interface Constants {
      * 定时任务，group和task的分隔符
      */
     String GROUP_TASK_SPLIT = "_____SPLIT_____" ;
+
+
+    String PROXY_HEADER = "_proxy";
 }

@@ -49,11 +49,17 @@ public class StaticValue {
 	//是否是以SSL方式启动
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
 
+	//启动jcoderjar所在的文件，如果源码方式则为null
 	private static File JCODER_JAR_FILE = null ;
 
+	//是否是测试模式
+	public static final boolean TESTRING =  Boolean.parseBoolean(getValueOrCreate("testing", "false"));
 
 	private static boolean master = false;
+
 	private static SharedSpaceService sharedSpace;
+
+
 
 	static {
 		LOG.info("env in system.propertie: jcoder_home : " + HOME_FILE.getAbsolutePath());
@@ -69,6 +75,7 @@ public class StaticValue {
 			JCODER_JAR_FILE = new File(location.toExternalForm().substring(6));
 		}
 		LOG.info("startd by jcoder jar : "+JCODER_JAR_FILE);
+		LOG.info("env in system.propertie: testing : " + TESTRING);
 	}
 
 	private static Ioc systemIoc;

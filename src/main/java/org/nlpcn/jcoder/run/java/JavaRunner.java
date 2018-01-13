@@ -52,7 +52,9 @@ public class JavaRunner {
 	 */
 	public JavaRunner compile() {
 
-		if(StaticValue.tes)
+		if(StaticValue.TESTRING){
+
+		}
 
 		if (codeInfo.getClassz() != null) {
 			return this;
