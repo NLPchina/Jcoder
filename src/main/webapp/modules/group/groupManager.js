@@ -37,7 +37,10 @@ var groupManager = new Vue({
   	  				  }else{
   	  					JqdeBox.message(false, data.message);
   	  				  }
-                  });
+                  }).catch(function (req) {
+                      JqdeBox.unloading();
+	                  JqdeBox.message(false, eval("("+req.responseText+")").message);
+	              });
               }
           });
 	  },

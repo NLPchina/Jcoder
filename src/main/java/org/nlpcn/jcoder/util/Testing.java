@@ -37,9 +37,8 @@ import com.alibaba.fastjson.JSONObject;
 
 /**
  * Test your task
- * 
- * @author Ansj
  *
+ * @author Ansj
  */
 public class Testing {
 
@@ -49,7 +48,7 @@ public class Testing {
 
 	/**
 	 * instan task by ioc
-	 * 
+	 *
 	 * @param c
 	 * @return class c instance
 	 * @throws Exception
@@ -131,7 +130,7 @@ public class Testing {
 
 	/**
 	 * 释放关联类
-	 * 
+	 *
 	 * @param clas
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
@@ -150,7 +149,7 @@ public class Testing {
 
 	/**
 	 * 对比本地代码和线上代码的不同
-	 * 
+	 *
 	 * @param apiPath 本地代码路径
 	 * @param apiPath 线上api地址
 	 * @return
@@ -198,10 +197,12 @@ public class Testing {
 	public static void startServer(String[] args) throws Exception {
 		Class<?> bootstrap = Class.forName("Bootstrap");
 		Method main = bootstrap.getMethod("main", String[].class);
-		if(args==null){
-			args = new String[0] ;
+		if (args == null) {
+			args = new String[]{
+					"--home=jcoder_home"
+			};
 		}
-		main.invoke(null,args) ;
+		main.invoke(null, new Object[]{args});
 	}
 
 	public static void main(String[] args) throws Exception {

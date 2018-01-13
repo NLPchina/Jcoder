@@ -15,7 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.security.ProtectionDomain;
 import java.util.ResourceBundle;
 
 public class StaticValue {
@@ -47,6 +49,8 @@ public class StaticValue {
 	//是否是以SSL方式启动
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
 
+	private static File JCODER_JAR_FILE = null ;
+
 
 	private static boolean master = false;
 	private static SharedSpaceService sharedSpace;
@@ -60,6 +64,11 @@ public class StaticValue {
 		LOG.info("env in system.propertie: jcoder_group : " + GROUP_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: zookeeper : " + ZK);
 		LOG.info("env in system.propertie: ssl : " + getValueOrCreate("ssl", null));
+		URL location = StaticValue.class.getProtectionDomain().getCodeSource().getLocation();
+		if(location.toExternalForm().endsWith(".jar")){
+			JCODER_JAR_FILE = new File(location.toExternalForm().substring(6));
+		}
+		LOG.info("startd by jcoder jar : "+JCODER_JAR_FILE);
 	}
 
 	private static Ioc systemIoc;
@@ -226,5 +235,9 @@ public class StaticValue {
 	 */
 	public static String getCurrentGroup(){
 		return Rpcs.getContext().getGroupName() ;
+	}
+
+	public static File getJcoderJarFile() {
+		return JCODER_JAR_FILE;
 	}
 }

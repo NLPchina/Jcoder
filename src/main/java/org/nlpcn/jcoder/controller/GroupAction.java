@@ -41,14 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -124,6 +117,7 @@ public class GroupAction {
 	public Restful add(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
 		if (!first) {
+
 			File file = new File(StaticValue.GROUP_FILE, name);
 			file.mkdirs();
 			File ioc = new File(StaticValue.GROUP_FILE, name + "/resources");
@@ -133,16 +127,41 @@ public class GroupAction {
 
 			IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", "var ioc = {\n\t\n};");
 
-			IOUtil.Writer(new File(lib, "pom.xml").getAbsolutePath(), "utf-8",
-					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
-							+ "	xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-							+ "	<modelVersion>4.0.0</modelVersion>\n" + "	<groupId>org.nlpcn</groupId>\n" + "	<artifactId>jcoder</artifactId>\n" + "	<version>0.1</version>\n"
-							+ "	\n" + "	<dependencies>\n" + "	</dependencies>\n" + "\n" + "	<build>\n" + "		<sourceDirectory>src/main/java</sourceDirectory>\n"
-							+ "		<testSourceDirectory>src/test/java</testSourceDirectory>\n" + "		\n" + "		<plugins>\n" + "			<plugin>\n"
-							+ "				<artifactId>maven-compiler-plugin</artifactId>\n" + "				<version>3.3</version>\n" + "				<configuration>\n"
-							+ "					<source>1.8</source>\n" + "					<target>1.8</target>\n" + "					<encoding>UTF-8</encoding>\n"
-							+ "					<compilerArguments>\n" + "						<extdirs>lib</extdirs>\n" + "					</compilerArguments>\n"
-							+ "				</configuration>\n" + "			</plugin>\n" + "		</plugins>\n" + "	</build>\n" + "</project>\n" + "");
+			IOUtil.Writer(new File(file, "pom.xml").getAbsolutePath(), "utf-8",
+					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+							"\txsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
+							"\t<modelVersion>4.0.0</modelVersion>\n" +
+							"\t<groupId>org.nlpcn.jcoder</groupId>\n" +
+							"\t<artifactId>" + name + "</artifactId>\n" +
+							"\t<version>0.1</version>\n" +
+							"\t<dependencies>\n" +
+							StaticValue.getJcoderJarFile()!=null? //这里有个三目表达式
+							"\t\t<dependency>\n" +
+							"\t\t\t<groupId>org.nlpcn.jcoder</groupId>\n" +
+							"\t\t\t<artifactId>jcoder</artifactId>\n" +
+							"\t\t\t<scope>system</scope>\n" +
+							"\t\t\t<systemPath>${basedir}/../../../lib/"+StaticValue.getJcoderJarFile().getName()+"</systemPath>\n" +
+							"\t\t</dependency>\n":"\n" +
+							"\t</dependencies>\n" +
+							"\t<build>\n" +
+							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
+							"\t\t<testSourceDirectory>src/api</testSourceDirectory>\n" +
+							"\t\t<plugins>\n" +
+							"\t\t\t<plugin>\n" +
+							"\t\t\t\t<artifactId>maven-compiler-plugin</artifactId>\n" +
+							"\t\t\t\t<version>3.3</version>\n" +
+							"\t\t\t\t<configuration>\n" +
+							"\t\t\t\t\t<source>1.8</source>\n" +
+							"\t\t\t\t\t<target>1.8</target>\n" +
+							"\t\t\t\t\t<encoding>UTF-8</encoding>\n" +
+							"\t\t\t\t\t<compilerArguments>\n" +
+							"\t\t\t\t\t\t<extdirs>lib</extdirs>\n" +
+							"\t\t\t\t\t</compilerArguments>\n" +
+							"\t\t\t\t</configuration>\n" +
+							"\t\t\t</plugin>\n" +
+							"\t\t</plugins>\n" +
+							"\t</build>\n" +
+							"</project>\n");
 
 			Group group = new Group();
 			group.setName(name);
@@ -153,6 +172,13 @@ public class GroupAction {
 
 			return Restful.instance(true, "添加成功");
 		} else {
+
+			groupService.getAllGroupNames().stream().forEach(s -> {
+				if (s.equalsIgnoreCase(name)) {
+					throw new RuntimeException("组" + name + "已存在");
+				}
+			});
+
 
 			Set<String> hostPortsArr = new HashSet<>();
 
@@ -204,24 +230,6 @@ public class GroupAction {
 			String message = proxyService.post(hostPortsArr, "/admin/group/delete", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
 			return Restful.instance().msg(message);
 		}
-	}
-
-
-	/**
-	 * 删除group
-	 */
-	@At
-	@Ok("void")
-	public void downSDK(@Param("hostPort") String hostPort, @Param("groupName") String groupName, HttpServletResponse response) throws Exception {
-		Response rep = proxyService.post(hostPort, "/admin/fileInfo/downSDK", ImmutableMap.of("groupName", groupName), 1000000);
-		if (rep.getStatus() != 200) {
-			throw new ApiException(rep.getStatus(), rep.getContent());
-		}
-
-		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName, "utf-8") + ".zip");
-		response.setContentType("application/octet-stream");
-
-		IOUtil.writeAndClose(rep.getStream(), response.getOutputStream());
 	}
 
 

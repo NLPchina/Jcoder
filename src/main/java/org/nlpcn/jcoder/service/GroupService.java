@@ -173,17 +173,28 @@ public class GroupService {
 
 		String key = StaticValue.getHostPort() + "_" + name;
 
-		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
-
-		if (hostGroup != null) {
-			hostGroup.setWeight(-1); //理论上设置为-1就删除了
-			sharedSpaceService.getHostGroupCache().remove(key);
-		}
-
-
 		Files.deleteFile(new File(StaticValue.GROUP_FILE, name + ".cache"));
 
-		return Files.deleteDir(new File(StaticValue.GROUP_FILE, name));
+		File grouFile = new File(StaticValue.GROUP_FILE, name);
+
+		Files.deleteDir(grouFile);
+
+		System.gc();
+		try {
+			Thread.sleep(1000L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
+		if (hostGroup != null && !grouFile.exists()) {
+			hostGroup.setWeight(-1); //理论上设置为-1就删除了
+			sharedSpaceService.getHostGroupCache().put(key, hostGroup);
+			sharedSpaceService.getHostGroupCache().remove(key);
+			LOG.info("remove host_group in zk : " + hostGroup.getHostPort());
+		}
+
+		return !grouFile.exists();
 
 
 	}
