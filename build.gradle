@@ -31,6 +31,7 @@ dependencies {
 	compile 'org.apache.zookeeper:zookeeper:3.4.11'
 	compile 'org.apache.curator:curator-framework:2.12.0'
 	compile 'org.apache.curator:curator-recipes:2.12.0'
+	compile 'commons-io:commons-io:2.6'
 
 	//new version use log
 	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
@@ -40,6 +41,7 @@ dependencies {
 	compile 'org.apache.logging.log4j:log4j-api:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-core:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-web:2.10.0'
+
 
 	//javaee support
 	compile 'javax.servlet:javax.servlet-api:3.1.0'

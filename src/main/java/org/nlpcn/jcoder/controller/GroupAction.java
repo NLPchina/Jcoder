@@ -18,13 +18,7 @@ import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.util.ZKMap;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
@@ -135,13 +129,13 @@ public class GroupAction {
 							"\t<artifactId>" + name + "</artifactId>\n" +
 							"\t<version>0.1</version>\n" +
 							"\t<dependencies>\n" +
-							StaticValue.getJcoderJarFile()!=null? //这里有个三目表达式
+							StaticValue.getJcoderJarFile() != null ? //这里有个三目表达式
 							"\t\t<dependency>\n" +
-							"\t\t\t<groupId>org.nlpcn.jcoder</groupId>\n" +
-							"\t\t\t<artifactId>jcoder</artifactId>\n" +
-							"\t\t\t<scope>system</scope>\n" +
-							"\t\t\t<systemPath>${basedir}/../../../lib/"+StaticValue.getJcoderJarFile().getName()+"</systemPath>\n" +
-							"\t\t</dependency>\n":"\n" +
+									"\t\t\t<groupId>org.nlpcn.jcoder</groupId>\n" +
+									"\t\t\t<artifactId>jcoder</artifactId>\n" +
+									"\t\t\t<scope>system</scope>\n" +
+									"\t\t\t<systemPath>${basedir}/../../../lib/" + StaticValue.getJcoderJarFile().getName() + "</systemPath>\n" +
+									"\t\t</dependency>\n" : "\n" +
 							"\t</dependencies>\n" +
 							"\t<build>\n" +
 							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
@@ -168,7 +162,11 @@ public class GroupAction {
 
 			basicDao.save(group);
 
-			StaticValue.space().joinCluster();
+			StaticValue.space().joinCluster(group, true);
+
+			if (StaticValue.TESTRING) { //测试模式进行文件监听
+				GroupFileListener.regediter(name);
+			}
 
 			return Restful.instance(true, "添加成功");
 		} else {
@@ -219,6 +217,9 @@ public class GroupAction {
 
 		if (!first) {
 			boolean flag = groupService.deleteGroup(name);
+			if (StaticValue.TESTRING) { //测试模式进行文件监听
+				GroupFileListener.unRegediter(name);
+			}
 			if (flag) {
 				return Restful.instance(flag, "删除成功");
 			} else {
@@ -293,6 +294,10 @@ public class GroupAction {
 
 		//刷新本地group,加入到集群中
 		groupService.flush(group, true);
+
+		if (StaticValue.TESTRING) { //测试模式进行文件监听
+			GroupFileListener.regediter(groupName);
+		}
 
 		return Restful.instance().msg("克隆成功");
 	}

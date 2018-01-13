@@ -2,6 +2,8 @@ package org.nlpcn.jcoder.domain;
 
 import java.util.Date;
 
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -59,6 +61,8 @@ public class Task {
 	@Column("status")
 	private Integer status;
 
+	private String md5 ;
+
 	public Long getId() {
 		return id;
 	}
@@ -77,6 +81,7 @@ public class Task {
 
 	public void setCode(String code) {
 		this.name = JavaSourceUtil.findClassName(code);
+		this.md5 = MD5Util.md5(code) ;
 		this.code = code;
 	}
 
@@ -190,5 +195,9 @@ public class Task {
 
 	public void setGroupName(String groupName) {
 		this.groupName = groupName;
+	}
+
+	public String getMd5() {
+		return md5;
 	}
 }

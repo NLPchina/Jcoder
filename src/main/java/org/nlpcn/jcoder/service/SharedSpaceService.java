@@ -27,10 +27,7 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.ZKMap;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
@@ -581,7 +578,7 @@ public class SharedSpaceService {
 	/**
 	 * 加入集群,如果发生不同则记录到different中
 	 */
-	public Map<String, List<Different>> joinCluster() throws IOException {
+	private Map<String, List<Different>> joinCluster() throws IOException {
 
 		Map<String, List<Different>> result = new HashMap<>();
 
@@ -591,9 +588,14 @@ public class SharedSpaceService {
 
 		for (Group group : groups) {
 
-			List<Different> diffs = joinCluster(group,true);
+			List<Different> diffs = joinCluster(group, true);
 
 			result.put(group.getName(), diffs);
+
+			if (StaticValue.TESTRING) {
+				GroupFileListener.unRegediter(group.getName());
+				GroupFileListener.regediter(group.getName());
+			}
 
 		}
 
