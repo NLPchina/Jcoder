@@ -75,7 +75,7 @@ public class JcoderActionChain implements ActionChain {
 				String methodName = method.getName();
 				methodStr = String.format("%s.%s(%s.java:%d)", className, methodName, className, lineNumber);
 			} else {
-				methodStr = Lang.simpleMetodDesc(method);
+				methodStr = Lang.simpleMethodDesc(method);
 			}
 		}
 		return methodStr;

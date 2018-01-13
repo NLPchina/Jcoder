@@ -47,9 +47,14 @@ public class StaticValue {
 	//是否是以SSL方式启动
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
 
+	//是否是测试模式
+	public static final boolean TESTRING =  Boolean.parseBoolean(getValueOrCreate("testing", "false"));
 
 	private static boolean master = false;
+
 	private static SharedSpaceService sharedSpace;
+
+
 
 	static {
 		LOG.info("env in system.propertie: jcoder_home : " + HOME_FILE.getAbsolutePath());
@@ -60,6 +65,7 @@ public class StaticValue {
 		LOG.info("env in system.propertie: jcoder_group : " + GROUP_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: zookeeper : " + ZK);
 		LOG.info("env in system.propertie: ssl : " + getValueOrCreate("ssl", null));
+		LOG.info("env in system.propertie: testing : " + TESTRING);
 	}
 
 	private static Ioc systemIoc;

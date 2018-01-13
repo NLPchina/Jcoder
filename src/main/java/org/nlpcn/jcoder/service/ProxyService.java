@@ -1,35 +1,55 @@
 package org.nlpcn.jcoder.service;
 
 
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+
+import com.alibaba.fastjson.JSONObject;
+
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.http.*;
-import org.nutz.ioc.loader.annotation.Inject;
+import org.nutz.http.Header;
+import org.nutz.http.Http;
+import org.nutz.http.Request;
+import org.nutz.http.Response;
+import org.nutz.http.Sender;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Enumeration;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+
+import static org.nlpcn.jcoder.constant.Constants.*;
 
 @IocBean
 public class ProxyService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProxyService.class);
-
-	public static final String PROXY_HEADER = "PROXY_HEADER";
 
 	private String myToken = null;
 

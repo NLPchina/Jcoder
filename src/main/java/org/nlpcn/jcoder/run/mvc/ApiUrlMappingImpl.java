@@ -254,7 +254,7 @@ public class ApiUrlMappingImpl implements UrlMapping {
 			Method method = ai.getMethod();
 			String str;
 			if (null != method)
-				str = String.format("%-30s : %-10s", Lang.simpleMetodDesc(method), method.getReturnType().getSimpleName());
+				str = String.format("%-30s : %-10s", Lang.simpleMethodDesc(method), method.getReturnType().getSimpleName());
 			else
 				throw Lang.impossible();
 			log.debugf("%s >> %50s | @Ok(%-5s) @Fail(%-5s) | by %d Filters | (I:%s/O:%s)",

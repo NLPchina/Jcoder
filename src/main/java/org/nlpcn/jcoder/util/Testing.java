@@ -196,16 +196,19 @@ public class Testing {
 	 * @throws Exception
 	 */
 	public static void startServer(String[] args) throws Exception {
+
+		if(args==null || args.length==0){
+			args = new String[]{
+				"--home=home", "--testing=true"
+			} ;
+		}
+
 		Class<?> bootstrap = Class.forName("Bootstrap");
 		Method main = bootstrap.getMethod("main", String[].class);
 		if(args==null){
 			args = new String[0] ;
 		}
-		main.invoke(null,args) ;
-	}
-
-	public static void main(String[] args) throws Exception {
-		Testing.startServer(null);
+		main.invoke(null,new Object[]{args}) ;
 	}
 
 }
