@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nutz.ioc.annotation.InjectName;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -75,12 +74,12 @@ public abstract class ApiLoadings {
 		evalHttpAdaptor(ai, Mirror.getAnnotationDeep(method, AdaptBy.class));
 		evalActionFilters(ai, Mirror.getAnnotationDeep(method.getDeclaringClass(), Filters.class), Mirror.getAnnotationDeep(method, Filters.class));
 		evalActionChainMaker(ai, Mirror.getAnnotationDeep(method, Chain.class));
-		evalHttpMethod(ai, method, Mirror.getAnnotationDeep(method, Execute.class), Mirror.getAnnotationDeep(method, DefaultExecute.class));
+		evalHttpMethod(ai, method, Mirror.getAnnotationDeep(method, Execute.class));
 		ai.setMethod(method);
 		return ai;
 	}
 
-	public static void evalHttpMethod(ActionInfo ai, Method method, Execute execute, DefaultExecute de) {
+	public static void evalHttpMethod(ActionInfo ai, Method method, Execute execute) {
 		if (Mirror.getAnnotationDeep(method, GET.class) != null)
 			ai.getHttpMethods().add("GET");
 		if (Mirror.getAnnotationDeep(method, POST.class) != null)
@@ -92,11 +91,6 @@ public abstract class ApiLoadings {
 
 		if (execute != null) {
 			for (String m : execute.methods()) {
-				ai.getHttpMethods().add(m.toUpperCase());
-			}
-		}
-		if (de != null) {
-			for (String m : de.methods()) {
 				ai.getHttpMethods().add(m.toUpperCase());
 			}
 		}
@@ -163,7 +157,7 @@ public abstract class ApiLoadings {
 		ai.setInjectName(beanName);
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static void evalActionFilters(ActionInfo ai, Filters classFilters, Filters filters) {
 		List<ObjectInfo<? extends ActionFilter>> list = new ArrayList<ObjectInfo<? extends ActionFilter>>();
 		if (null != classFilters) {
@@ -180,7 +174,7 @@ public abstract class ApiLoadings {
 
 	}
 
-	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static void evalHttpAdaptor(ActionInfo ai, AdaptBy ab) {
 		if (null != ab) {
 			ai.setAdaptorInfo((ObjectInfo<? extends HttpAdaptor>) new ObjectInfo(ab.type(), ab.args()));

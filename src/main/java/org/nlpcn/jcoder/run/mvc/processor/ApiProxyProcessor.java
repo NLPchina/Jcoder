@@ -37,7 +37,7 @@ public class ApiProxyProcessor extends ViewProcessor {
 			doNext(ac);
 			return;
 		}
-		String hostPort = StaticValue.space().host(ac.getRequest().getHeader("jcoder_group"), ac.getPath());
+		String hostPort = proxyService.host(ac.getPath());
 
 		if (StringUtil.isNotBlank(hostPort)) {
 			if (StaticValue.getHostPort().equals(hostPort)) {

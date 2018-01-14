@@ -110,6 +110,10 @@ public class GroupAction {
 	@At
 	public Restful add(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
+		if (name.matches("[a-z0-9A-Z_]+")) {
+			return Restful.fail().msg("Group名称只能是英文字母或数字和_");
+		}
+
 		if (!first) {
 
 			File file = new File(StaticValue.GROUP_FILE, name);
@@ -408,7 +412,7 @@ public class GroupAction {
 			}
 		}
 
-		return Restful.instance(flag, Joiner.on(",").join(message));
+		return Restful.instance(flag, Joiner.on(",").useForNull("null").join(message));
 	}
 
 }

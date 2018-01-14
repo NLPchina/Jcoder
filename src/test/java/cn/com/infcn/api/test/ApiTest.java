@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.nlpcn.jcoder.domain.User;
-import org.nlpcn.jcoder.run.annotation.DefaultExecute;
+import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.Chain;
@@ -26,7 +26,7 @@ public class ApiTest {
 	 * @return
 	 * @throws Exception
 	 */
-	@DefaultExecute
+	@Execute
 	public Object test() throws Exception {
 		return "OK";
 	}

@@ -27,7 +27,7 @@ public class FilterHandler extends SimpleChannelInboundHandler<RpcRequest> {
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, RpcRequest req) throws Exception {
 
-		Task task = TaskService.findTaskByCache(req.getClassName());
+		Task task = TaskService.findTaskByCache(req.getGroupName(),req.getClassName());
 		if (task == null) {
 			Rpcs.getRep().write(Restful.instance(false, "not find task by " + req.getClassName(), null, 404));
 			return;

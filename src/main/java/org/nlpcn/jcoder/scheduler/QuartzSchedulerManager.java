@@ -140,7 +140,8 @@ class QuartzSchedulerManager {
 		Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.anyJobGroup());
 
 		for (JobKey jobKey : jobKeys) {
-			Task task = TaskService.findTaskByCache(jobKey.getName());
+			String[] names = jobKey.getName().split("@");
+			Task task = TaskService.findTaskByCache(names[0],names[1]);
 			task.setRunStatus("Schedulerd");
 			list.add(task);
 		}

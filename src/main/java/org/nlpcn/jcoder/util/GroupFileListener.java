@@ -4,8 +4,10 @@ import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.nlpcn.jcoder.domain.ApiDoc;
+import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.TaskService;
 import org.slf4j.Logger;
@@ -39,7 +41,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 		groupFileListener.init();
 
-		FileAlterationObserver observer = new FileAlterationObserver(new File(StaticValue.GROUP_FILE, groupName), null, null);
+		FileAlterationObserver observer = new FileAlterationObserver(new File(StaticValue.GROUP_FILE, groupName + "/src/api"), null, null);
 		observer.addListener(groupFileListener);
 		FileAlterationMonitor monitor = new FileAlterationMonitor(100, observer);
 		// 开始监控
@@ -59,7 +61,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 			List<File> allApi = new ArrayList<>();
 
-			Files.walkFileTree(new File(StaticValue.GROUP_FILE, groupName+"/src/api").toPath(), new SimpleFileVisitor<Path>() {
+			Files.walkFileTree(new File(StaticValue.GROUP_FILE, groupName + "/src/api").toPath(), new SimpleFileVisitor<Path>() {
 
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -73,7 +75,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			Map<String, Task> maps = new HashMap<>();
 
 			StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTaskByGroupNameCache(groupName).forEach(t -> {
-				if (t.getType() == 1) maps.put(t.getName(), t);
+				maps.put(t.getName(), t);
 			});
 
 
@@ -92,8 +94,12 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				try {
 					LOG.info("syn write file by task " + t.getName());
 					String pk = JavaSourceUtil.findPackage(t.getCode());
-					File file = new File(StaticValue.GROUP_FILE, groupName + "/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
+					File file = new File(StaticValue.GROUP_FILE, groupName + "/src/api/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
 
+					if (!file.getParentFile().exists()) {
+						file.getParentFile().mkdirs();
+
+					}
 					try (FileOutputStream fos = new FileOutputStream(file)) {
 						fos.write(t.getCode().getBytes("utf-8"));
 					}
@@ -136,7 +142,17 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			LOG.info("[新建]:" + file.getAbsolutePath());
 
 			try {
-				List<ApiDoc> sub = JavaDocUtil.parse(new StringReader("")).getSub();
+
+				String content = IOUtil.getContent(file.getCanonicalPath(), "utf-8");
+
+				List<ApiDoc> sub = null;
+				if (!StringUtil.isBlank(content)) {
+					ClassDoc parse = JavaDocUtil.parse(new StringReader(content));
+					if (parse != null) {
+						sub = parse.getSub();
+					}
+				}
+
 
 				if (sub == null || sub.size() == 0) {
 					LOG.error("...............................................................................................................................");
@@ -204,16 +220,24 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				return;
 			} else {
 
-				String fCode = IOUtil.getContent(file, "utf-8") ;
+				String fCode = IOUtil.getContent(file, "utf-8");
 
-				if(fCode.equals(task.getCode())){
-					return ;
+				if (fCode.equals(task.getCode())) {
+					return;
 				}
 
 				LOG.info("[修改]:" + file.getAbsolutePath());
 				task.setCode(fCode);
+
+
 				try {
-					StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
+					//try compile
+					new JavaRunner(task).compile();
+					try {
+						StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -233,6 +257,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			if (task != null) {
 				try {
 					StaticValue.getSystemIoc().get(TaskService.class, "taskService").delete(task);
+					StaticValue.getSystemIoc().get(TaskService.class, "taskService").delByDB(task);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -248,17 +273,8 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 
 	private Task getTask(String taskName) {
-		Task task = TaskService.findTaskByCache(taskName);
-
-		if (task == null) {
-			task = StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTask(groupName, taskName);
-		}
+		Task task = task = StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTask(groupName, taskName);
 		return task;
 	}
-
-	public void regedit(String groupName) {
-
-	}
-
 
 }

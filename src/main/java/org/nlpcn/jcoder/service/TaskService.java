@@ -44,13 +44,13 @@ public class TaskService {
 	 * @return
 	 * @throws Exception
 	 */
-    public List<Task> getTasksByGroupNameFromCluster(String groupName) throws Exception {
-        CuratorFramework zk = StaticValue.space().getZk();
-        String path = GROUP_PATH + "/" + groupName;
-        List<String> taskNames = zk.getChildren().forPath(path);
-        List<Task> tasks = new ArrayList<>(taskNames.size());
-        Task t;
-        for (String name : taskNames) {
+	public List<Task> getTasksByGroupNameFromCluster(String groupName) throws Exception {
+		CuratorFramework zk = StaticValue.space().getZk();
+		String path = GROUP_PATH + "/" + groupName;
+		List<String> taskNames = zk.getChildren().forPath(path);
+		List<Task> tasks = new ArrayList<>(taskNames.size());
+		Task t;
+		for (String name : taskNames) {
 			t = JSONObject.parseObject(zk.getData().forPath(path + "/" + name), Task.class);
 			if (t != null && StringUtil.isNotBlank(t.getCode())) {
 				tasks.add(t);
@@ -59,26 +59,26 @@ public class TaskService {
 		return tasks;
 	}
 
-    /**
-     * 删除ZK集群里的Task
-     *
-     * @param groupName 组名
-     * @param taskName  任务名
-     * @throws Exception
-     */
-    public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
-        String path = GROUP_PATH + "/" + groupName + "/" + taskName;
-        LOG.info("to delete task in zookeeper: {}", path);
-        if (!existsInCluster(groupName, taskName)) {
-            LOG.warn("task[{}] not found in zookeeper", path);
-        } else {
-            StaticValue.space().getZk().delete().forPath(path);
-        }
-    }
+	/**
+	 * 删除ZK集群里的Task
+	 *
+	 * @param groupName 组名
+	 * @param taskName  任务名
+	 * @throws Exception
+	 */
+	public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
+		String path = GROUP_PATH + "/" + groupName + "/" + taskName;
+		LOG.info("to delete task in zookeeper: {}", path);
+		if (!existsInCluster(groupName, taskName)) {
+			LOG.warn("task[{}] not found in zookeeper", path);
+		} else {
+			StaticValue.space().getZk().delete().forPath(path);
+		}
+	}
 
-    public boolean existsInCluster(String groupName, String taskName) throws Exception {
-        return StaticValue.space().getZk().checkExists().forPath(GROUP_PATH + "/" + groupName + "/" + taskName) != null;
-    }
+	public boolean existsInCluster(String groupName, String taskName) throws Exception {
+		return StaticValue.space().getZk().checkExists().forPath(GROUP_PATH + "/" + groupName + "/" + taskName) != null;
+	}
 
 	/**
 	 * 保存或者更新一个任务
@@ -157,53 +157,54 @@ public class TaskService {
 		synchronized (oldTask) {
 			synchronized (newTask) {
 				TASK_MAP_CACHE.remove(oldTask.getId());
-				TASK_MAP_CACHE.remove(oldTask.getName());
+				TASK_MAP_CACHE.remove(makeKey(oldTask));
 
 				TASK_MAP_CACHE.put(newTask.getId(), newTask);
-				TASK_MAP_CACHE.put(newTask.getName(), newTask);
+				TASK_MAP_CACHE.put(makeKey(newTask), newTask);
 
 				ThreadManager.flush(oldTask, newTask);
 			}
 		}
 	}
 
-    /**
-     * 删除一个任务
-     *
-     * @param task
-     * @throws Exception
-     */
-    public void delete(Task task) throws Exception {
-        task.setType(TaskType.RECYCLE.getValue());
-        task.setStatus(TaskStatus.STOP.getValue());
-        saveOrUpdate(task);
-    }
 
-    /**
-     * 彻底删除一个任务
-     *
-     * @param task
-     * @throws Exception
-     */
-    public void delByDB(Task task) {
-        // 删除任务历史
-        basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+	/**
+	 * 删除一个任务
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	public void delete(Task task) throws Exception {
+		task.setType(TaskType.RECYCLE.getValue());
+		task.setStatus(TaskStatus.STOP.getValue());
+		saveOrUpdate(task);
+	}
 
-        // 删除任务
-        basicDao.delById(task.getId(), Task.class);
-    }
+	/**
+	 * 彻底删除一个任务
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	public void delByDB(Task task) {
+		// 删除任务历史
+		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
 
-    public Task findTask(String groupName, String name) {
-        return basicDao.findByCondition(Task.class, Cnd.where("groupName", "=", groupName).and("name", "=", name));
-    }
+		// 删除任务
+		basicDao.delById(task.getId(), Task.class);
+	}
 
-    public List<Task> findTasksByGroupName(String groupName) {
-        if (groupName == null) {
-            return null;
-        }
+	public Task findTask(String groupName, String name) {
+		return basicDao.findByCondition(Task.class, Cnd.where("groupName", "=", groupName).and("name", "=", name));
+	}
 
-        return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
-    }
+	public List<Task> findTasksByGroupName(String groupName) {
+		if (groupName == null) {
+			return null;
+		}
+
+		return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
+	}
 
 	/**
 	 * 找到task根据groupName
@@ -223,15 +224,15 @@ public class TaskService {
 		return result;
 	}
 
-    /**
-     * 从数据库中init所有的task
-     *
-     * @param groupName
-     */
-    public void initTaskFromDB(String groupName) {
-        List<Task> search = findTasksByGroupName(groupName);
-        flushTaskMappingAndCache(search);
-    }
+	/**
+	 * 从数据库中init所有的task
+	 *
+	 * @param groupName
+	 */
+	public void initTaskFromDB(String groupName) {
+		List<Task> search = findTasksByGroupName(groupName);
+		flushTaskMappingAndCache(search);
+	}
 
 	/**
 	 * 刷新传入的tasks mapping and cache
@@ -242,8 +243,8 @@ public class TaskService {
 		for (Task task : tasks) {
 			try {
 				TASK_MAP_CACHE.put(task.getId(), task);
-				TASK_MAP_CACHE.put(task.getName(), task);
-				StaticValue.MAPPING.remove(task.getName());//删掉urlmapping重新加载
+				TASK_MAP_CACHE.put(makeKey(task), task);
+				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
 			} catch (Exception e) {
 				e.printStackTrace();
 				LOG.error(e.getMessage(), e);
@@ -255,8 +256,8 @@ public class TaskService {
 		return TASK_MAP_CACHE.get(id);
 	}
 
-	public static synchronized Task findTaskByCache(String name) {
-		return TASK_MAP_CACHE.get(name);
+	public static synchronized Task findTaskByCache(String groupName, String name) {
+		return TASK_MAP_CACHE.get(makeKey(groupName, name));
 	}
 
 
@@ -367,12 +368,12 @@ public class TaskService {
 	 * @return
 	 * @throws ExecutionException
 	 */
-	public static <T> T executeTask(String className, String methodName, Map<String, Object> params) throws ExecutionException {
-		Task task = findTaskByCache(className);
+	public static <T> T executeTask(String groupName, String className, String methodName, Map<String, Object> params) throws ExecutionException {
+		Task task = findTaskByCache(groupName, className);
 		if (task == null) {
 			if (TestingFilter.methods != null) {
 				LOG.info("use testing method to run ");
-				return executeTaskByTest(className, methodName, params);
+				return executeTaskByTest(groupName, className, methodName, params);
 			}
 			throw new ApiException(ApiException.NotFound, methodName + " not found");
 		}
@@ -386,7 +387,7 @@ public class TaskService {
 
 		Object[] args = map2Args(params, method.getMethod());
 
-		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName,className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
 
 
@@ -399,8 +400,8 @@ public class TaskService {
 	 * @return
 	 * @throws ApiException
 	 */
-	public static <T> T executeTaskByArgs(String className, String methodName, Object... params) throws ExecutionException {
-		Task task = findTaskByCache(className);
+	public static <T> T executeTaskByArgs(String groupName ,String className, String methodName, Object... params) throws ExecutionException {
+		Task task = findTaskByCache(groupName,className);
 		if (task == null) {
 			if (TestingFilter.methods != null) {
 				LOG.info("use testing method to run ");
@@ -418,7 +419,7 @@ public class TaskService {
 
 		Object[] args = array2Args(method.getMethod(), params);
 
-		return (T) StaticValue.MAPPING.getOrCreateByUrl(className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName,className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
 
 	private static <T> T executeTaskByArgsByTest(String className, String methodName, Object[] params) throws ApiException {
@@ -446,8 +447,8 @@ public class TaskService {
 	 * @return
 	 * @throws ApiException
 	 */
-	private static <T> T executeTaskByTest(String className, String methodName, Map<String, Object> params) throws ApiException {
-		KeyValue<Method, Object> kv = TestingFilter.methods.get(className + "/" + methodName);
+	private static <T> T executeTaskByTest(String groupName, String className, String methodName, Map<String, Object> params) throws ApiException {
+		KeyValue<Method, Object> kv = TestingFilter.methods.get(groupName + "/" + className + "/" + methodName);
 		if (kv == null) {
 			throw new ApiException(ApiException.NotFound, methodName + " not found");
 		}
@@ -511,4 +512,23 @@ public class TaskService {
 		return args;
 	}
 
+
+	/**
+	 * 构建task_cache 的key groupName_taskName
+	 *
+	 * @param task
+	 * @return
+	 */
+	private static String makeKey(Task task) {
+		return task.getGroupName() + "/" + task.getName();
+	}
+
+	/**
+	 * 构建task_cache 的key groupName_taskName
+	 *
+	 * @return
+	 */
+	private static String makeKey(String groupName, String taskName) {
+		return groupName + "/" + taskName;
+	}
 }

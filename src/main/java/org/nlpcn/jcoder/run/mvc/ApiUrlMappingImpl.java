@@ -6,6 +6,8 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.http.Http;
 import org.nutz.lang.Lang;
@@ -18,10 +20,7 @@ import org.nutz.mvc.impl.ActionInvoker;
 import org.nutz.mvc.impl.Loadings;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -148,39 +147,44 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	}
 
 	private ApiActionInvoker createInvoker(NutConfig config, String path) {
+
 		String[] split = path.split("/");
-		Task task = TaskService.findTaskByCache(split[2]);
 
-		if (task != null && task.getStatus() == 1 && task.getType() == 1) {
+		if (split.length < 5) {
+			throw new RuntimeException(path + " not match any class it must /api/[groupName]/[className]/[methodName]") ;
+		}
 
-			CodeInfo codeInfo = new JavaRunner(task).compile().instance().getTask().codeInfo();
+		Task task = TaskService.findTaskByCache(split[2], split[3]);
 
-			ApiActionChainMaker aacm = null;
+		try{
+			if (task != null && task.getStatus() == 1 && task.getType() == 1) {
 
-			if (config != null) {
-				aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[]{});
-			} else {
-				aacm = new ApiActionChainMaker();
-			}
+				CodeInfo codeInfo = new JavaRunner(task).compile().instance().getTask().codeInfo();
 
-			Class<?> module = codeInfo.getClassz();
+				ApiActionChainMaker aacm = null;
 
-			ExecuteMethod dm = codeInfo.getDefaultMethod();
-
-			for (ExecuteMethod method : codeInfo.getExecuteMethods()) {
-				// 增加到映射中
-				ActionInfo info = ApiLoadings.createInfo(method.getMethod());
-
-				info.setModuleType(module);
-
-				if (dm == method) {
-					info.setPaths(new String[]{"/api/" + task.getName() + "/" + method.getName(), "/api" + "/" + task.getName()});
+				if (config != null) {
+					aacm = Loadings.evalObj(config, ApiActionChainMaker.class, new String[]{});
 				} else {
-					info.setPaths(new String[]{"/api/" + task.getName() + "/" + method.getName()});
+					aacm = new ApiActionChainMaker();
 				}
 
-				this.add(aacm, info, config);
+				Class<?> module = codeInfo.getClassz();
+
+				for (ExecuteMethod method : codeInfo.getExecuteMethods()) {
+					// 增加到映射中
+					ActionInfo info = ApiLoadings.createInfo(method.getMethod());
+
+					info.setModuleType(module);
+
+					info.setPaths(new String[]{"/api/" + task.getGroupName() + "/" + task.getName() + "/" + method.getName()});
+
+					this.add(aacm, info, config);
+				}
 			}
+		}catch (Exception e){
+			e.printStackTrace();
+			throw new RuntimeException(ExceptionUtil.realException(e)) ;
 		}
 
 		return map.get(path);
@@ -189,13 +193,13 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	/**
 	 * 从映射表中删除一个api
 	 */
-	public void remove(String className) {
+	public void remove(String groupName, String className) {
 		Iterator<Entry<String, ApiActionInvoker>> iterator = map.entrySet().iterator();
 		String path;
-		Task task = TaskService.findTaskByCache(className) ;
+		Task task = TaskService.findTaskByCache(groupName, className);
 		synchronized (map) {
 			while (iterator.hasNext()) {
-				if ((path = iterator.next().getKey()).startsWith("/api/" + task.getName() + "/") || path.equals("/api/" + task.getName())) {
+				if ((path = iterator.next().getKey()).startsWith("/api/" + groupName + "/" + task.getName() + "/")) {
 					iterator.remove();
 					log.info("remove api " + path);
 				}
@@ -210,8 +214,8 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	 * @param methodName
 	 * @return
 	 */
-	public ApiActionInvoker getOrCreateByUrl(String className, String methodName) {
-		String path = "/api/" + className + "/" + methodName;
+	public ApiActionInvoker getOrCreateByUrl(String groupName, String className, String methodName) {
+		String path = "/api/" + groupName + "/" + className + "/" + methodName;
 		ApiActionInvoker apiActionInvoker = map.get(path);
 
 		if (apiActionInvoker == null) { // 调用http接口进行渲染填充map
@@ -268,4 +272,5 @@ public class ApiUrlMappingImpl implements UrlMapping {
 					ai.getOutputEncoding());
 		}
 	}
+
 }

@@ -17,9 +17,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * the code init info
- * 
- * @author ansj
  *
+ * @author ansj
  */
 public class CodeInfo {
 
@@ -43,8 +42,8 @@ public class CodeInfo {
 		return this.ioc != JarService.getOrCreate(groupName).getIoc();
 	}
 
-	public Ioc getIoc(){
-		return ioc ;
+	public Ioc getIoc() {
+		return ioc;
 	}
 
 	public boolean classLoaderChanged(String groupName) {
@@ -59,8 +58,8 @@ public class CodeInfo {
 		this.classLoader = classLoader;
 	}
 
-	public ClassLoader getClassLoader(){
-		return this.classLoader ;
+	public ClassLoader getClassLoader() {
+		return this.classLoader;
 	}
 
 	public Class<?> getClassz() {
@@ -83,15 +82,6 @@ public class CodeInfo {
 		return executeMethods.values();
 	}
 
-	public void setDefaultMethod(Method method, Set<String> methodTypeSet, boolean rpc, boolean restful) {
-		if (defaultMethod == null) {
-			this.defaultMethod = new ExecuteMethod(method, methodTypeSet, rpc, restful);
-		} else {
-			LOG.warn(classz.getName() + " has being more than one @DefaultExecute annotation method : " + defaultMethod.getName() + " so skip method : " + method.getName());
-		}
-		addMethod(defaultMethod);
-	}
-
 	public boolean isSingle() {
 		return single;
 	}
@@ -101,6 +91,9 @@ public class CodeInfo {
 	}
 
 	public void addMethod(ExecuteMethod method) {
+		if (defaultMethod == null) {
+			defaultMethod = method;
+		}
 		this.executeMethods.put(method.getName(), method);
 	}
 
@@ -122,7 +115,7 @@ public class CodeInfo {
 
 	/**
 	 * 通过方法名称获得方法
-	 * 
+	 *
 	 * @param methodName
 	 * @return
 	 */
@@ -132,9 +125,8 @@ public class CodeInfo {
 
 	/**
 	 * 执行方法的抽象类
-	 * 
-	 * @author Ansj
 	 *
+	 * @author Ansj
 	 */
 	public class ExecuteMethod {
 		private Method method;

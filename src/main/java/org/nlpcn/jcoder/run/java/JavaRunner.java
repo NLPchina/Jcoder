@@ -1,24 +1,16 @@
 package org.nlpcn.jcoder.run.java;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
-import java.util.Map.Entry;
-
-import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.service.JarService;
-import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
+import com.google.common.collect.Sets;
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.CodeRuntimeException;
-import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.run.annotation.Single;
+import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.util.ExceptionUtil;
+import org.nlpcn.jcoder.util.MapCount;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
@@ -26,7 +18,12 @@ import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Map.Entry;
 
 public class JavaRunner {
 
@@ -94,12 +91,9 @@ public class JavaRunner {
 					if (!Modifier.isPublic(method.getModifiers()) || method.isBridge() || method.getDeclaringClass() != clz) {
 						continue;
 					}
-					DefaultExecute dExecute = null;
 					Execute execute = null;
-					if ((dExecute = Mirror.getAnnotationDeep(method, DefaultExecute.class)) != null) {
-						codeInfo.setDefaultMethod(method, Sets.newHashSet(Arrays.asList(dExecute.methods())), dExecute.rpc(), dExecute.restful());
-						mc.add(method.getName());
-					} else if ((execute = Mirror.getAnnotationDeep(method, Execute.class)) != null) { // 先default
+
+					if ((execute = Mirror.getAnnotationDeep(method, Execute.class)) != null) { // 先default
 						codeInfo.addMethod(method, Sets.newHashSet(Arrays.asList(execute.methods())), execute.rpc(), execute.restful());
 						mc.add(method.getName());
 					}
@@ -293,9 +287,7 @@ public class JavaRunner {
 				continue;
 			}
 
-			if (Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
-				mc.add(method.getName());
-			} else if (Mirror.getAnnotationDeep(method, Execute.class) != null) { // 先default
+			if (Mirror.getAnnotationDeep(method, Execute.class) != null) { // 先default
 				mc.add(method.getName());
 			}
 		}
