@@ -241,6 +241,12 @@ public class DynamicEngine {
 	public void close() throws IOException {
 		if(this.classLoader!=null){
 			this.classLoader.close();
+			System.gc();
+			try {
+				Thread.sleep(300L);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }

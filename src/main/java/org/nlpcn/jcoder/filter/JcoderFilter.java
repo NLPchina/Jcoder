@@ -13,14 +13,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
 
@@ -53,7 +50,7 @@ public class JcoderFilter extends NutFilter {
 		if (path.startsWith("/api/")) {
 			_doFilter(chain, request, response);
 		} else {
-			if (StringUtil.isBlank(host) || "*".equals(host) || StaticValue.SELF_HOST.equals(request.getServerName()) ||host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
+			if (StringUtil.isBlank(host) || "*".equals(host) || StaticValue.SELF_HOST.equals(request.getServerName()) || host.equals(request.getServerName()) || request.getServletPath().startsWith("/apidoc")) {
 				super.doFilter(request, response, chain);
 			} else {
 				_doAuthoErr(request, response);
@@ -89,7 +86,12 @@ public class JcoderFilter extends NutFilter {
 					nextChain(request, response, chain);
 				}
 			}
-
+		} catch (Exception e) {
+			try {
+				new JsonView().render(request, response, Restful.instance(false, e.getMessage(), null, ApiException.ServerException));
+			} catch (Throwable e1) {
+				nextChain(request, response, chain);
+			}
 		} finally {
 			Mvcs.set(null, null, null);
 			Mvcs.ctx().removeReqCtx();

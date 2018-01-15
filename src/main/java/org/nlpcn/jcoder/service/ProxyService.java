@@ -1,35 +1,51 @@
 package org.nlpcn.jcoder.service;
 
 
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+
+import com.alibaba.fastjson.JSONObject;
+
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.constant.UserConstants;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.http.*;
-import org.nutz.ioc.loader.annotation.Inject;
+import org.nutz.http.Header;
+import org.nutz.http.Http;
+import org.nutz.http.Request;
+import org.nutz.http.Response;
+import org.nutz.http.Sender;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+
+import static org.nlpcn.jcoder.constant.Constants.*;
+import static org.nlpcn.jcoder.service.SharedSpaceService.*;
+import static org.nlpcn.jcoder.service.SharedSpaceService.HOST_GROUP_PATH;
 
 @IocBean
 public class ProxyService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ProxyService.class);
-
-	public static final String PROXY_HEADER = "PROXY_HEADER";
 
 	private String myToken = null;
 
@@ -388,5 +404,90 @@ public class ProxyService {
 		return Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(UserConstants.CLUSTER_TOKEN_HEAD, getOrCreateToken())))).setTimeout(timeout).setConnTimeout(timeout).send();
 	}
 
+
+	/**
+	 * 传入路径，在路径中寻找合适运行此方法的主机
+	 *
+	 * @return 保护http。。。地址的
+	 */
+	public String host(String path) {
+		String[] split = path.split("/");
+		if (split.length < 5) {
+			LOG.error(path + " not match any class it must /api/[groupName]/[className]/[methodName]");
+			return null;
+		}
+
+		String groupName = split[2];
+		String className = split[3];
+		String methodName = split[4];
+
+		return host(groupName, className, methodName);
+
+	}
+
+
+	/**
+	 * 传入一个地址，给出路由到的地址，如果返回空则为本机，未找到或其他情况也保留于本机
+	 */
+	public String host(String groupName, String className, String mehtodName) {
+
+		Map<String, ChildData> currentChildren = null;
+
+		currentChildren = StaticValue.space().getMappingCache().getCurrentChildren(MAPPING_PATH + "/" + groupName + "/" + className + "/" + mehtodName);
+
+		if (currentChildren == null || currentChildren.size() == 0) {
+			return null;
+		}
+
+		if (StaticValue.TESTRING) { //如果测试模式本地优先
+			if (currentChildren.containsKey(StaticValue.getHostPort())) {
+				LOG.info("run by testing model , so return self hostPort");
+				return null;
+			}
+		}
+
+		List<KeyValue<String, Integer>> hosts = new ArrayList<>();
+
+		int sum = 0;
+		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
+
+			String hostPort = entry.getKey();
+
+			HostGroup hostGroup = StaticValue.space().getHostGroupCache().get(hostPort + "_" + groupName);
+
+			if (hostGroup == null) {
+				LOG.warn(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " got null , so skip");
+				continue;
+			}
+
+			Integer weight = hostGroup.getWeight();
+			if (weight <= 0) {
+				LOG.info(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " weight less than zero , so skip");
+				continue;
+			}
+			sum += weight;
+			hosts.add(KeyValue.with((hostGroup.isSsl() ? "https://" : "http://") + hostPort, weight));
+		}
+
+
+		if (hosts.size() == 0) {
+			return null;
+		}
+
+		int random = new Random().nextInt(sum);
+
+		for (KeyValue<String, Integer> host : hosts) {
+			random -= host.getValue();
+			if (random < 0) {
+				LOG.info("{}/{}/{} proxy to {} ", groupName, className, mehtodName, host.getKey());
+				return host.getKey();
+			}
+		}
+
+		LOG.info("this log impossible print !");
+
+		return null;
+
+	}
 
 }

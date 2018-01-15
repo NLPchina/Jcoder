@@ -508,7 +508,7 @@ public class TaskAction {
             long success = 0;
             long error = 0;
             if (StringUtil.isNotBlank(name)) {
-                Task taskByCache = TaskService.findTaskByCache(name);
+                Task taskByCache = TaskService.findTaskByCache(groupName,name);
                 if (taskByCache != null) {
                     success = taskByCache.success();
                     error = taskByCache.error();
@@ -578,7 +578,7 @@ public class TaskAction {
         if (user != User.CLUSTER_USER) {
             return Restful.fail().code(ApiException.TokenNoPermissions).msg("your account not support this api");
         }
-        Task task = TaskService.findTaskByCache(taskName);
+        Task task = TaskService.findTaskByCache(groupName,taskName);
         if (task == null) {
             return Restful.fail().code(NotFound).msg(taskName + " not found ");
         }

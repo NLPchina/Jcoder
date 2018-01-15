@@ -22,6 +22,7 @@ import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Streams;
+import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.annotation.AdaptBy;
 import org.nutz.mvc.annotation.At;
 import org.nutz.mvc.annotation.By;
@@ -45,6 +46,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -415,16 +417,14 @@ public class FileInfoAction {
 						ImmutableMap.of("groupName", groupName, "relativePaths[]", relativePaths, "first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
-				if(firstHost != null && firstHost.size() > 0){
+				if (firstHost != null && firstHost.size() > 0) {
 					List<String> list = new ArrayList<String>();
-					//String[] paths = relativePath.split(",");
 					for(int a = 0;a<relativePaths.length;a++){
 						list.add(relativePaths[a].endsWith("/")?relativePaths[a].substring(0,(relativePaths[a].length() -1)):relativePaths[a]);
 					}
-					//String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
-						ImmutableMap.of("groupName",groupName,"relativePaths",
-								list.toArray(new String[list.size()])),100000);
+							ImmutableMap.of("groupName", groupName, "relativePaths",
+									list.toArray(new String[list.size()])), 100000);
 				}
 				return Restful.instance().ok(true).msg(message);
 			}
@@ -469,7 +469,7 @@ public class FileInfoAction {
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
 	public Restful uploadFile(@Param("hostPorts") String[] hostPorts, @Param("group_name") String groupName, @Param("filePath") String filePath,
-							  @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
+	                          @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) file.length;
 
 		if (fileNum <= 0) {
@@ -575,113 +575,79 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public void downSDK(@Param("groupName") String groupName, HttpServletResponse response) throws URISyntaxException, IOException {
+	public void downSDK(HttpServletResponse response) throws URISyntaxException, IOException {
 
-		List<File> jars = new ArrayList<>();
+		File jcoderJarFile = StaticValue.getJcoderJarFile();
 
-		JarService jarService = JarService.getOrCreate(groupName);
+		if (jcoderJarFile == null) {
+			throw new FileNotFoundException("can not down sdk by idea model");
+		}
 
-		jars.addAll(jarService.findSystemJars());
-
-		File jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib");
-
-
-		Collection<Task> taskList = StaticValue.systemDao.search(Task.class, Cnd.where("status", "=", 1));
-
-		byte[] buffer = new byte[10240];
-
-		int len = 0;
-
-		response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(groupName, "utf-8") + ".zip");
+		response.addHeader("Content-Disposition", "attachment;filename=jcoder_dev.zip");
 		response.setContentType("application/octet-stream");
 
 		try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
 			Set<String> sets = new HashSet<>();
+
 			// 写jar包
-			if (jarPath.exists() && jarPath.isDirectory()) {
-				for (File jar : jarPath.listFiles()) {
-					if (jar.isDirectory() || !jar.canRead() || !jar.getName().toLowerCase().endsWith(".jar")) {
-						continue;
-					}
-					// skip maven jar
-					if (jar.getParentFile().getAbsolutePath().startsWith(new File(StaticValue.GROUP_FILE, groupName + "/lib/target").getAbsolutePath())) {
-						continue;
-					}
-					String name = "/lib/" + jar.getName();
-					if (sets.contains(name)) {
-						continue;
-					}
-					sets.add(name);
-					out.putNextEntry(new ZipEntry(name));
-					try (FileInputStream fis = new FileInputStream(jar)) {
-						while ((len = fis.read(buffer)) > 0) {
-							out.write(buffer, 0, len);
-						}
-					}
+			String name = "lib/" + jcoderJarFile.getName();
+			sets.add(name);
+			out.putNextEntry(new ZipEntry(name));
+			try (FileInputStream fis = new FileInputStream(jcoderJarFile)) {
+				int len;
+				byte[] buffer = new byte[10240];
+				while ((len = fis.read(buffer)) > 0) {
+					out.write(buffer, 0, len);
 				}
 			}
-			out.putNextEntry(new ZipEntry("src/main/java/package-info.java"));
-			out.write(("/**\n" + " * if you need make some jar file write in src package\n" + " */").getBytes());
+
+			String mainCode = "package org.nlpcn.jcoder ;\n" +
+					"\n" +
+					"\n" +
+					"import org.nlpcn.jcoder.util.Testing;\n" +
+					"\n" +
+					"public class Main {\n" +
+					"\tprivate static String host = \"{IP}\";\n" +
+					"\tprivate static String zk = \"{ZK}\";\n" +
+					"\n" +
+					"\tpublic static void main(String[] args) throws Exception {\n" +
+					"\t\tTesting.startServer(new String[]{\n" +
+					"\t\t\t\t\"--zk=\" + zk,\n" +
+					"\t\t\t\t\"--host=\" + host,\n" +
+					"\t\t\t\t\"--home=home\"\n" +
+					"\t\t});\n" +
+					"\t}\n" +
+					"}\n";
+
+			mainCode = mainCode.replace("{IP}", StaticValue.getRemoteHost(Mvcs.getReq())).replace("{ZK}", StaticValue.ZK);
+
+			out.putNextEntry(new ZipEntry("src/main/java/org/nlpcn/jcoder/Main.java"));
+			out.write((mainCode).getBytes("utf-8"));
 
 			out.putNextEntry(new ZipEntry("src/test/java/package-info.java"));
 			out.write(("/**\n" + " * if you need make some jar file write in src package\n" + " */").getBytes());
 
-			out.putNextEntry(new ZipEntry("src/api/java/package-info.java"));
-			out.write(("/**\n" + " * if you need make some jar file write in src package\n" + " */").getBytes());
 
-			// 写task任务
-			for (Task task : taskList) {
-				try {
-					String code = task.getCode();
-					String path = JavaSourceUtil.findPackage(code);
-					String className = JavaSourceUtil.findClassName(code);
-
-					out.putNextEntry(new ZipEntry("src/api/java/" + path.replace(".", "/") + "/" + className + ".java"));
-					out.write(code.getBytes("utf-8"));
-				} catch (RuntimeException e) {
-				}
-			}
-
-			File pomFile = new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml");
-			if (pomFile.exists()) {
-				out.putNextEntry(new ZipEntry("pom.xml"));
-				out.write(IOUtil.getContent(pomFile, "utf-8").getBytes("utf-8"));
-			}
-
-			File file = new File(StaticValue.GROUP_FILE, groupName + "/resources");
-			String basePath = file.getAbsolutePath();
-			Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
-
-				@Override
-				public FileVisitResult visitFile(Path tempFile, BasicFileAttributes attrs) throws IOException {
-
-					File f = tempFile.toFile();
-
-					if (f.isDirectory() || !f.canRead() || f.isHidden()) {
-						return FileVisitResult.CONTINUE;
-					}
-
-					if (f.getParentFile().equals(file) && "pom.xml".equals(f.getName())) { // skip pom.xml
-						return FileVisitResult.CONTINUE;
-					}
-
-					String filePath = ("src/test/resources/" + f.getAbsolutePath().replace(basePath, "")).replace("\\", "/").replace("//", "/");
-
-					out.putNextEntry(new ZipEntry(filePath));
-
-					int len = 0;
-					byte[] buffer = new byte[10240];
-
-					try (FileInputStream fis = new FileInputStream(f)) {
-						while ((len = fis.read(buffer)) > 0) {
-							out.write(buffer, 0, len);
-						}
-					}
-
-					return FileVisitResult.CONTINUE;
-				}
-			});
-
+			String pom = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
+					"         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+					"         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
+					"    <modelVersion>4.0.0</modelVersion>\n" +
+					"    <groupId>torg.nlpcn.jcoder</groupId>\n" +
+					"    <artifactId>jcoder_dev</artifactId>\n" +
+					"    <version>1.0</version>\n" +
+					"    <dependencies>\n" +
+					"        <dependency>\n" +
+					"            <groupId>org.nlpcn.jcoder</groupId>\n" +
+					"            <artifactId>jcoder</artifactId>\n" +
+					"            <scope>system</scope>\n" +
+					"            <systemPath>${basedir}/lib/{JCODER_JAR_NAME}</systemPath>\n" +
+					"        </dependency>\n" +
+					"    </dependencies>\n" +
+					"</project>";
+			pom = pom.replace("{JCODER_JAR_NAME}", StaticValue.getJcoderJarFile().getName());
+			out.putNextEntry(new ZipEntry("pom.xml"));
+			out.write(pom.getBytes("utf-8"));
 		}
 	}
 

@@ -16,7 +16,7 @@ class TaskRunManager {
 
 	/**
 	 * 增加一个ｔａｓｋ到线程池中,并且运行
-	 * 
+	 *
 	 * @param taskJob
 	 * @return
 	 * @throws TaskException
@@ -43,7 +43,7 @@ class TaskRunManager {
 						remove.interrupt();
 					} catch (Exception e) {
 						e.printStackTrace();
-						LOG.error(e.getMessage(),e);
+						LOG.error(e.getMessage(), e);
 					}
 				} else {
 					THREAD_POOL.remove(key);
@@ -54,7 +54,7 @@ class TaskRunManager {
 					Thread.sleep(100L);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
-					LOG.error(e.getMessage(),e);
+					LOG.error(e.getMessage(), e);
 				}
 			}
 
@@ -66,7 +66,7 @@ class TaskRunManager {
 				Thread.sleep(1000L);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
-				LOG.error(e.getMessage(),e);
+				LOG.error(e.getMessage(), e);
 			}
 
 			if (remove.isOver()) {
@@ -82,7 +82,7 @@ class TaskRunManager {
 
 	/**
 	 * 得到当前的任务队列
-	 * 
+	 *
 	 * @return
 	 */
 	public static synchronized Set<Entry<String, TaskJob>> getTaskList() {
@@ -92,7 +92,7 @@ class TaskRunManager {
 
 	/**
 	 * 检查taskName是否存在.
-	 * 
+	 *
 	 * @param key
 	 * @return
 	 */
@@ -108,7 +108,7 @@ class TaskRunManager {
 
 	/**
 	 * 检查threadName是否存在.
-	 * 
+	 *
 	 * @param key
 	 * @return
 	 */
@@ -120,7 +120,8 @@ class TaskRunManager {
 		synchronized (THREAD_POOL) {
 			Set<String> keys = THREAD_POOL.keySet();
 			for (String key : keys) {
-				stopAll(key);
+				String[] split = key.split("@");
+				stopAll(split[0], split[1]);
 			}
 		}
 
@@ -128,12 +129,12 @@ class TaskRunManager {
 
 	/**
 	 * stop all task in thread
-	 * 
+	 *
 	 * @param taskName
 	 */
-	public static void stopAll(String taskName) {
+	public static void stopAll(String groupName, String taskName) {
 		Set<String> all = new HashSet<>(THREAD_POOL.keySet());
-		String pre = taskName + "@";
+		String pre = groupName + "@" + taskName + "@";
 		for (String key : all) {
 
 			try {
@@ -149,7 +150,7 @@ class TaskRunManager {
 
 	/**
 	 * remove key if it is over!
-	 * 
+	 *
 	 * @param key
 	 */
 	public static void removeIfOver(String key) {

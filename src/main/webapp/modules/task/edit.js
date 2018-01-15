@@ -169,6 +169,7 @@ vmApp.module = new Vue({
                 JqdeBox.loading();
                 Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify($.extend({}, task, {name: null})), oldName: task.name}).then(function (data) {
                     JqdeBox.unloading();
+                    JqdeBox.message(true, "修改任务 " + task.name + " 成功！");
                     setTimeout(function () {
                         location.hash = "/task/edit.html?group=" + task.groupName + "&host=" + hosts.join(",") + "&name=" + data.obj;
                     }, 200);

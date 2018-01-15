@@ -7,6 +7,7 @@ public class RpcRequest implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String messageId;
+	private String groupName ;
 	private String className;
 	private String methodName;
 	private String tokenStr ;
@@ -49,6 +50,14 @@ public class RpcRequest implements Serializable {
 
 	public String getTokenStr() {
 		return tokenStr;
+	}
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 	public void setTokenStr(String tokenStr) {

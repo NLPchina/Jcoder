@@ -170,33 +170,4 @@ public class ApiAction {
 		}
 	}
 
-	/**
-	 * 查看api的不同
-	 * 
-	 * @return
-	 * @throws UnsupportedEncodingException
-	 */
-	@At("/api_diff")
-	@Ok("json")
-	public Object diff(String name, String code) throws UnsupportedEncodingException {
-
-		Task task = TaskService.findTaskByCache(name);
-
-		if (task == null) {
-			return Restful.instance(false, "notFound");
-		}
-
-		code = code.replace("\r", "");
-		String tCode = task.getCode().replaceAll("\r", "");
-
-		if (code.trim().equals(tCode.trim())) {
-			return Restful.instance(true, "same");
-		}
-
-		Date updateTime = task.getUpdateTime();
-
-		return Restful.instance(false, "unSame", updateTime);
-
-	}
-
 }

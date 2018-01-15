@@ -80,13 +80,13 @@ public class ExecuteHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
 		try {
 
-			ApiActionInvoker invoker = StaticValue.MAPPING.getOrCreateByUrl(request.getClassName(), request.getMethodName());
+			ApiActionInvoker invoker = StaticValue.MAPPING.getOrCreateByUrl(request.getGroupName(),request.getClassName(), request.getMethodName());
 
 			if (invoker == null) {
 				throw new ApiException(404, "not find api in mapping");
 			}
 
-			Task task = TaskService.findTaskByCache(request.getClassName());
+			Task task = TaskService.findTaskByCache(request.getGroupName(),request.getClassName());
 
 			Rpcs.getContext().setGroupName(task.getGroupName());
 

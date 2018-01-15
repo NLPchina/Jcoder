@@ -1,9 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
@@ -14,23 +12,10 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.eclipse.jetty.util.StringUtil;
-import org.nlpcn.jcoder.domain.CodeInfo;
-import org.nlpcn.jcoder.domain.Different;
-import org.nlpcn.jcoder.domain.FileInfo;
-import org.nlpcn.jcoder.domain.Group;
-import org.nlpcn.jcoder.domain.GroupCache;
-import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.HostGroupWatcher;
-import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.ZKMap;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.nutz.dao.Cnd;
 import org.slf4j.Logger;
@@ -44,17 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -213,12 +188,14 @@ public class SharedSpaceService {
 	 */
 	public void removeMapping(String groupName, String className, String methodName, String hostPort) {
 		try {
-			if (StringUtil.isBlank(methodName)) {
-				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + hostPort);
-			} else {
-				zkDao.getZk().delete().forPath(MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort);
+			String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort ;
+			if(zkDao.getZk().checkExists().forPath(path)!=null) {
+				zkDao.getZk().delete().forPath(path);
+				LOG.info("remove mapping {}/{}/{}/{} ok", hostPort, groupName, className, methodName);
+			}else{
+				LOG.warn("remove mapping {}/{}/{}/{} but it not exists", hostPort, groupName, className, methodName);
 			}
-			LOG.error("remove mapping {}/{}/{}/{} ok", hostPort, groupName, className, methodName);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			LOG.error("remove err {}/{}/{}/{} message: {}", hostPort, groupName, className, methodName, e.getMessage());
@@ -235,11 +212,11 @@ public class SharedSpaceService {
 
 		String path = null;
 		try {
-			sb.append("/").append(className).append("/").append(methodName).append("/");
+			sb.append("/").append(groupName).append("/").append(className).append("/").append(methodName).append("/");
 			zkDao.getZk().createContainers(sb.toString());
 			sb.append(StaticValue.getHostPort());
 			path = sb.toString();
-			setData2ZKByEphemeral(path, groupName.getBytes("utf-8"), null);
+			setData2ZKByEphemeral(path, new byte[0], null);
 			LOG.info("add mapping: {} ok", path);
 		} catch (Exception e) {
 			LOG.error("Add mapping " + path + " err", e);
@@ -274,97 +251,6 @@ public class SharedSpaceService {
 				e.printStackTrace();
 			}
 		}
-	}
-
-	/**
-	 * 传入路径，在路径中寻找合适运行此方法的主机
-	 *
-	 * @return 保护http。。。地址的
-	 */
-	public String host(String groupName, String path) {
-		String[] split = path.split("/");
-		if (split.length < 3) {
-			return null;
-		}
-
-		String className = split[2];
-		String methodName = null;
-		if (split.length >= 4) {
-			methodName = split[3];
-		}
-
-		if (StringUtil.isBlank(className)) {
-			return null;
-		}
-
-		return host(groupName, className, methodName);
-
-	}
-
-
-	/**
-	 * 传入一个地址，给出路由到的地址，如果返回空则为本机，未找到或其他情况也保留于本机
-	 */
-	public String host(String groupName, String className, String mehtodName) {
-
-		Map<String, ChildData> currentChildren = null;
-
-		currentChildren = mappingCache.getCurrentChildren(MAPPING_PATH + "/" + className + "/" + mehtodName);
-
-		if (currentChildren == null || currentChildren.size() == 0) {
-			return null;
-		}
-
-		List<KeyValue<String, Integer>> hosts = new ArrayList<>();
-
-		int sum = 0;
-		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
-
-			String hostPort = entry.getKey();
-
-			String hostPortGroupName = new String(entry.getValue().getData());
-
-			if (groupName != null && !hostPortGroupName.equals(groupName)) {
-				continue;
-			} else {
-				groupName = hostPortGroupName;
-			}
-
-			HostGroup hostGroup = hostGroupCache.get(hostPort + "_" + groupName);
-
-			if (hostGroup == null) {
-				LOG.warn(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " got null , so skip");
-				continue;
-			}
-
-			Integer weight = hostGroup.getWeight();
-			if (weight <= 0) {
-				LOG.info(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " weight less than zero , so skip");
-				continue;
-			}
-			sum += weight;
-			hosts.add(KeyValue.with((hostGroup.isSsl() ? "https://" : "http://") + hostPort, weight));
-		}
-
-
-		if (hosts.size() == 0) {
-			return null;
-		}
-
-		int random = new Random().nextInt(sum);
-
-		for (KeyValue<String, Integer> host : hosts) {
-			random -= host.getValue();
-			if (random < 0) {
-				LOG.info("{}/{}/{} proxy to {} ", groupName, className, mehtodName, host.getKey());
-				return host.getKey();
-			}
-		}
-
-		LOG.info("this log impossible print !");
-
-		return null;
-
 	}
 
 	/**
@@ -581,7 +467,7 @@ public class SharedSpaceService {
 	/**
 	 * 加入集群,如果发生不同则记录到different中
 	 */
-	public Map<String, List<Different>> joinCluster() throws IOException {
+	private Map<String, List<Different>> joinCluster() throws IOException {
 
 		Map<String, List<Different>> result = new HashMap<>();
 
@@ -591,9 +477,14 @@ public class SharedSpaceService {
 
 		for (Group group : groups) {
 
-			List<Different> diffs = joinCluster(group,true);
+			List<Different> diffs = joinCluster(group, true);
 
 			result.put(group.getName(), diffs);
+
+			if (StaticValue.TESTRING) {
+				GroupFileListener.unRegediter(group.getName());
+				GroupFileListener.regediter(group.getName());
+			}
 
 		}
 
@@ -921,34 +812,51 @@ public class SharedSpaceService {
 			new File(StaticValue.GROUP_FILE, groupName).mkdirs();
 		}
 
-		Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
-		Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-			// 在访问子目录前触发该方法
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				File file = dir.toFile();
-				if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-					LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-					return FileVisitResult.SKIP_SUBTREE;
-				}
-				return FileVisitResult.CONTINUE;
+		Path[] paths = new Path[]{
+				new File(StaticValue.GROUP_FILE, groupName + "/resources").toPath(),
+				new File(StaticValue.GROUP_FILE, groupName + "/lib").toPath(),
+		};
+
+
+		File pom = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml");
+		if (pom.exists()) {
+			result.add(new FileInfo(pom));
+		}
+
+		for (Path path : paths) {
+			if(!path.toFile().exists()){
+				LOG.warn("file {} not exists ",path);
+				continue;
 			}
 
-			@Override
-			public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-				File file = path.toFile();
-				if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-					LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+				// 在访问子目录前触发该方法
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					File file = dir.toFile();
+					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+						return FileVisitResult.SKIP_SUBTREE;
+					}
 					return FileVisitResult.CONTINUE;
 				}
-				try {
-					result.add(new FileInfo(file));
-				} catch (Exception e) {
-					e.printStackTrace();
+
+				@Override
+				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+					File file = path.toFile();
+					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+						return FileVisitResult.CONTINUE;
+					}
+					try {
+						result.add(new FileInfo(file));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+					return FileVisitResult.CONTINUE;
 				}
-				return FileVisitResult.CONTINUE;
-			}
-		});
+			});
+		}
 
 
 		//先查缓存中是否存在用缓存做对比
@@ -970,7 +878,7 @@ public class SharedSpaceService {
 		}
 
 		//本group本身的插入zk中用来比较md5加快对比
-		FileInfo root = new FileInfo(path.toFile());
+		FileInfo root = new FileInfo(new File(StaticValue.GROUP_FILE, groupName));
 		root.setLength(result.stream().mapToLong(f -> f.getLength()).sum());
 
 		if (groupCache != null && nowTimeMd5.equals(groupCache.getTimeMD5())) {

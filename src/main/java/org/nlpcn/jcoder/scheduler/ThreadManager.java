@@ -5,6 +5,7 @@ import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -53,19 +54,26 @@ public class ThreadManager {
 	 * @param newTask
 	 */
 	public static void addApi(Task oldTask, Task newTask) {
-		StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
 
 		oldTask.codeInfo().getExecuteMethods().forEach(m -> {
 			StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
 		});
 
-		/**
-		 * 注册api到共享空间
-		 */
-		StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), null);
-		newTask.codeInfo().getExecuteMethods().forEach(m -> {
-			StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), m.getName());
-		});
+
+		try {
+			new JavaRunner(newTask).compile();
+			/**
+			 * 注册api到共享空间
+			 */
+			newTask.codeInfo().getExecuteMethods().forEach(m -> {
+				StaticValue.space().addMapping(newTask.getGroupName(), newTask.getName(), m.getName());
+			});
+
+		} catch (Exception e) {
+			LOG.error("compile {}/{} err ", newTask.getGroupName(), newTask.getName(), e);
+		}
+
+
 	}
 
 
@@ -111,18 +119,18 @@ public class ThreadManager {
 	 *
 	 * @throws TaskException
 	 */
-	private static synchronized void stopTask(String taskName) throws TaskException {
+	private static synchronized void stopTask(String groupName ,String taskName) throws TaskException {
 		try {
 			// 从任务中移除
 			try {
-				TaskRunManager.stopAll(taskName);
+				TaskRunManager.stopAll(groupName,taskName);
 			} catch (Exception e) {
 				LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
 
-			TaskRunManager.stopAll(taskName);
+			TaskRunManager.stopAll(groupName,taskName);
 
 
 		} catch (Exception e) {
@@ -141,11 +149,11 @@ public class ThreadManager {
 
 			if (oldTask.getType() == 2) {
 				LOG.info("to stop oldTask " + oldTask.getName() + " BEGIN! ");
-				stopTask(oldTask.getName());
+				stopTask(oldTask.getGroupName(),oldTask.getName());
 				LOG.info("to stop oldTask " + oldTask.getName() + " OK! ");
 			} else if (oldTask.getType() == 1) {
 				LOG.info("to remove Api oldTask " + oldTask.getName() + " BEGIN! ");
-				stopActionAndRemove(oldTask.getName());
+				stopActionAndRemove(oldTask.getGroupName(),oldTask.getName());
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
 
@@ -163,19 +171,19 @@ public class ThreadManager {
 
 	}
 
-	private static void stopActionAndRemove(String taskName) throws TaskException {
-		StaticValue.MAPPING.remove(taskName); // remove url from api mapping
+	private static void stopActionAndRemove(String groupName ,String taskName) throws TaskException {
+		StaticValue.MAPPING.remove(groupName,taskName); // remove url from api mapping
 		try {
 			// 从任务中移除
 			try {
-				ActionRunManager.stopAll(taskName);
+				ActionRunManager.stopAll(groupName,taskName);
 			} catch (Exception e) {
 				LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
 
-			ActionRunManager.stopAll(taskName);
+			ActionRunManager.stopAll(groupName,taskName);
 
 		} catch (Exception e) {
 			LOG.error(e.getMessage(), e);
@@ -249,7 +257,7 @@ public class ThreadManager {
 			TaskInfo taskInfo = null;
 			try {
 				String[] split = key.split("@");
-				Task task = TaskService.findTaskByCache(split[0]);
+				Task task = TaskService.findTaskByCache(split[0],split[1]);
 				if (task == null) {
 					task = new Task();
 				}

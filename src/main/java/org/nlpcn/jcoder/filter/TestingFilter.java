@@ -1,30 +1,11 @@
 package org.nlpcn.jcoder.filter;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.run.annotation.Single;
 import org.nlpcn.jcoder.run.mvc.processor.ApiAdaptorProcessor;
 import org.nlpcn.jcoder.run.mvc.processor.ApiCrossOriginProcessor;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
-import org.nlpcn.jcoder.service.JarService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.Ioc;
@@ -38,16 +19,27 @@ import org.nutz.resource.Scans;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class TestingFilter extends NutFilter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(TestingFilter.class);
 
 	public static Map<String, KeyValue<Method, Object>> methods = new HashMap<>();
 
-	public static Ioc ioc = null ;
+	public static Ioc ioc = null;
 
-	public static void init(Ioc ioc ,String... packages) throws IOException {
-		TestingFilter.ioc = ioc ;
+	public static void init(Ioc ioc, String... packages) throws IOException {
+		TestingFilter.ioc = ioc;
 		Map<String, KeyValue<Method, Object>> tempMethods = new HashMap<>();
 		for (String pk : packages) {
 			List<Class<?>> list = Scans.me().scanPackage(pk);
@@ -60,7 +52,7 @@ public class TestingFilter extends NutFilter {
 						continue;
 					}
 
-					if (Mirror.getAnnotationDeep(method, Execute.class) != null || Mirror.getAnnotationDeep(method, DefaultExecute.class) != null) {
+					if (Mirror.getAnnotationDeep(method, Execute.class) != null) {
 						if (obj == null && (single == null || single.value())) { //用懒加载方式
 							try {
 								obj = cla.newInstance();

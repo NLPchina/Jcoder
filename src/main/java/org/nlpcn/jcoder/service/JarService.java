@@ -61,6 +61,7 @@ public class JarService {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+
 			}).build(new CacheLoader<String, JarService>() {
 				@Override
 				public JarService load(String key) throws Exception {
@@ -101,7 +102,7 @@ public class JarService {
 	private JarService(String groupName) throws IOException {
 		this.groupName = groupName;
 		jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib").getCanonicalPath();
-		pomPath = new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml").getCanonicalPath();
+		pomPath = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml").getCanonicalPath();
 		iocPath = new File(StaticValue.GROUP_FILE, groupName + "/resources/ioc.js").getCanonicalPath();
 		engine = new DynamicEngine(groupName);
 		init();
@@ -320,7 +321,7 @@ public class JarService {
 
 		try {
 			ProcessBuilder pb = new ProcessBuilder(args);
-			pb.directory(new File(jarPath));
+			pb.directory(new File(StaticValue.GROUP_FILE, groupName));
 
 			pb.redirectErrorStream(true);
 
@@ -393,37 +394,37 @@ public class JarService {
 	 * @throws NoSuchAlgorithmException
 	 */
 	public void savePom(String groupName, String content) throws IOException, NoSuchAlgorithmException {
-		File pom = new File(StaticValue.GROUP_FILE, groupName + "/lib");
+		File pom = new File(StaticValue.GROUP_FILE, groupName);
 		IOUtil.Writer(new File(pom, "pom.xml").getAbsolutePath(), "utf-8", content);
 		flushMaven();
 	}
 
-	public void savePomInfo(String groupName, String code) throws Exception {
-		FileInfo fileInfo = new FileInfo();
-		fileInfo.setFile(new File(StaticValue.GROUP_FILE, groupName + "/lib/pom.xml"));
-		fileInfo.setMd5(code);
-		fileInfo.setDirectory(false);
-		fileInfo.setLength(code.getBytes("utf-8").length);
-		fileInfo.setName("pom.xml");
-		fileInfo.setRelativePath("lib/pom.xml");
+//	public void savePomInfo(String groupName, String code) throws Exception {
+//		FileInfo fileInfo = new FileInfo();
+//		fileInfo.setFile(new File(StaticValue.GROUP_FILE, groupName + "/pom.xml"));
+//		fileInfo.setMd5(code);
+//		fileInfo.setDirectory(false);
+//		fileInfo.setLength(code.getBytes("utf-8").length);
+//		fileInfo.setName("pom.xml");
+//		fileInfo.setRelativePath("/pom.xml");
+//
+//		StaticValue.space().getZk().setData().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/file/pom.xml", JSONObject.toJSONBytes(fileInfo));
+//	}
 
-		StaticValue.space().getZk().setData().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/file/lib/pom.xml", JSONObject.toJSONBytes(fileInfo));
-	}
-
-	/**
-	 * 获取pom文件内容
-	 *
-	 * @param groupName
-	 * @return
-	 * @throws Exception
-	 */
-	public String getPomInfo(String groupName) throws Exception {
-		SharedSpaceService space = StaticValue.space();
-		byte[] data2ZK = space.getData2ZK(space.GROUP_PATH + "/" + groupName + "/file/lib/pom.xml");
-		if (data2ZK == null) return "";
-		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-		return fileInfo.getMd5();
-	}
+//	/**
+//	 * 获取pom文件内容
+//	 *
+//	 * @param groupName
+//	 * @return
+//	 * @throws Exception
+//	 */
+//	public String getPomInfo(String groupName) throws Exception {
+//		SharedSpaceService space = StaticValue.space();
+//		byte[] data2ZK = space.getData2ZK(space.GROUP_PATH + "/" + groupName + "/file/pom.xml");
+//		if (data2ZK == null) return "";
+//		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
+//		return fileInfo.getMd5();
+//	}
 
 	/**
 	 * 得到启动时候加载的路径
@@ -463,33 +464,33 @@ public class JarService {
 
 	}
 
-	/**
-	 * 获得系统中的jar.就是WEB-INF/lib下面的.对于eclipse中.取得SystemLoad
-	 *
-	 * @return
-	 * @throws URISyntaxException
-	 */
-	public List<File> findSystemJars() throws URISyntaxException {
-
-		URLClassLoader classLoader = ((URLClassLoader) Thread.currentThread().getContextClassLoader());
-
-		URL[] urls = classLoader.getURLs();
-
-		if (urls.length == 0) {
-			classLoader = (URLClassLoader) classLoader.getParent();
-			urls = classLoader.getURLs();
-		}
-
-		List<File> systemFiles = new ArrayList<>();
-
-		for (URL url : urls) {
-			if (url.toString().toLowerCase().endsWith(".jar")) {
-				systemFiles.add(new File(url.toURI()));
-			}
-		}
-
-		return systemFiles;
-	}
+//	/**
+//	 * 获得系统中的jar.就是WEB-INF/lib下面的.对于eclipse中.取得SystemLoad
+//	 *
+//	 * @return
+//	 * @throws URISyntaxException
+//	 */
+//	public List<File> findSystemJars() throws URISyntaxException {
+//
+//		URLClassLoader classLoader = ((URLClassLoader) Thread.currentThread().getContextClassLoader());
+//
+//		URL[] urls = classLoader.getURLs();
+//
+//		if (urls.length == 0) {
+//			classLoader = (URLClassLoader) classLoader.getParent();
+//			urls = classLoader.getURLs();
+//		}
+//
+//		List<File> systemFiles = new ArrayList<>();
+//
+//		for (URL url : urls) {
+//			if (url.toString().toLowerCase().endsWith(".jar")) {
+//				systemFiles.add(new File(url.toURI()));
+//			}
+//		}
+//
+//		return systemFiles;
+//	}
 
 
 	public Ioc getIoc() {

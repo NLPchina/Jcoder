@@ -2,11 +2,11 @@ import org.junit.Test;
 
 public class BootstrapTestAnsj {
 
-//	private static String host = "192.168.31.227";
-//	private static String zk = "192.168.31.227:2181";
-	private static String zk = "192.168.3.137:2181";
+	private static String host = "192.168.31.227";
+	private static String zk = "192.168.31.227:2181";
+//	private static String zk = "192.168.3.137:2181";
 //	private static String zk = "192.168.3.66:2181";
-	private static String host = "192.168.3.66";
+//	private static String host = "192.168.3.66";
 
 //	private static String zk = "127.0.0.1:2181";
 //	private static String host = "127.0.0.1";
@@ -24,7 +24,7 @@ public class BootstrapTestAnsj {
 
 	@Test
 	public void test2() throws Exception {
-		int port = 9097;
+		int port = 9098;
 		Bootstrap.main(new String[]{
 				"--zk=" + zk,
 				"--host=" + host,
@@ -35,7 +35,7 @@ public class BootstrapTestAnsj {
 
 	@Test
 	public void test3() throws Exception {
-		int port = 9099;
+		int port = 9101;
 		Bootstrap.main(new String[]{
 				"--zk=" + zk,
 				"--host=" + host,

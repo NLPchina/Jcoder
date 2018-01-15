@@ -1,130 +1,129 @@
 <!DOCTYPE html>
-<html ng-app="apiApp" ng-controller="apiCtrl">
+<html>
 <head>
-	<title>Jcoder Api Doc</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<link href="vendor/bootstrap.min.css" rel="stylesheet" media="screen">
-	<link href="vendor/prettify.css" rel="stylesheet" media="screen">
-	<link href="vendor/style.css" rel="stylesheet" media="screen, print">
-	<script type="text/javascript" src="vendor/jquery.min.js"></script>
-	<script type="text/javascript" src="vendor/angular.min.js"></script>
-	<script type="text/javascript">
-	$(function(){
-		
-		// Content-Scroll on Navigation click.
-	    $('.sidenav1').find('a').on('click', function(e) {
-	        e.preventDefault();
-	        var id = $(this).attr('href');
-	        if ($(id).length > 0)
-	            $('html,body').animate({ scrollTop: parseInt($(id).offset().top) }, 400);
-	        window.location.hash = $(this).attr('href');
-	    });
-		
-	});
-	
-	</script>
-	<style>
-	
-	</style>
+    <title>Jcoder Api Doc</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <meta http-equiv="Cache" content="no-cache">
+    <meta name="description" content=""/>
+
+    <link href="../assets/css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+
+    <link href="vendor/prettify.css" rel="stylesheet" media="screen">
+    <link href="vendor/style.css" rel="stylesheet" media="screen, print">
+
+    <!--[if !IE]> -->
+    <script src="../assets/js/jquery-2.1.4.min.js"></script>
+    <!-- <![endif]-->
+
+    <!--[if IE]>
+    <script src="../assets/js/jquery-1.11.3.min.js"></script>
+    <![endif]-->
+
+    <script type="text/javascript">
+        if ('ontouchstart' in document.documentElement) document.write("<script src='../assets/js/jquery.mobile.custom.min.js'>" + "<" + "/script>");
+    </script>
+
+    <script type="text/javascript" src="../vendors/vue/dist/vue.js"></script>
 </head>
+
 <body>
-<div class="container-fluid">
-  <div class="row-fluid">
-    <div id="sidenav" class="span2">
-		<nav id="scrollingNav">
-		  <ul class="sidenav nav nav-list">
-	        <li class="{{x.isGroup?'nav-header':''}} {{x.isActive?'active':''}}" 
-	        	ng-repeat="x in nav_datas" ng-click="clickNav(x)">
-	        	<a href="{{x.href}}" class="{{x.status==false?'alert-error':''}}">{{x.name}}</a>
-	        </li>
-		  </ul>
-		</nav>
-	</div>
-	<div id="content">
-		<div id="project">
-		  <div class="pull-left">
-		    <h1>Jcoder Api Doc</h1>
-		  </div>
-		  <div class="clearfix"></div>
-		</div>
-		<div id="header">
-			<div id="api-_">
-				<h2 id="welcome-to-apidoc"></h2>
-			</div>
-		</div>
-		<div id="sections">
+<div class="container-fluid" id="vmApiDoc">
+    <div class="row-fluid">
+        <div id="sidenav" class="span2">
+            <nav id="scrollingNav">
+                <ul class="sidenav nav nav-pills">
+                    <li v-bind="{class:(x.isGroup?'nav-header ':'')+(x.isActive?'active':'')}" v-for="x in nav_apis" @click="clickNav(x)">
+                        <a :href="x.href" v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
 
-<section id="{{x.name}}" ng-repeat="x in datas">
-	<h1 class="{{x.status==false?'alert-error':''}}">{{x.name}}</h1>
-	<p>version: {{x.version}}</p>
-	<div id="{{x.name}}_{{y.name}}" ng-repeat="y in x.sub">
-		<article id="api-User-GetUser-0.3.0" data-group="User" data-name="GetUser" data-version="0.3.0">
-		    <div class="pull-left">
-		      <h1>{{y.name}}</h1>
-		    </div>
-		    <div class="clearfix"></div>
-		
-		      <p></p><p>{{y.content}}</p> <p></p>
-		
-			<span class="method {{m|lowercase}}" ng-repeat="m in y.methods">{{m}}</span>
-			
-		    <pre class="prettyprint prettyprinted"><code><span class="pln">{{atx}}/api/{{x.name}}/{{y.name}}</span></code></pre>
-		
-		      <h2 ng-show="y.sub.length>0">Parameter</h2>
-		      <table ng-show="y.sub.length>0">
-		        <thead>
-		          <tr>
-		            <th style="width: 30%">Field</th>
-		            <th style="width: 10%">Type</th>
-		            <th style="width: 70%">Description</th>
-		          </tr>
-		        </thead>
-		        <tbody>
-		          <tr ng-repeat="s in y.sub">
-		            <td class="code">{{s.name}}</td>
-		            <td>{{s.type}}</td>
-		            <td>{{s.content}}</td>
-		          </tr>
-		        </tbody>
-		      </table>
-		      
-		      <h2 ng-show="y.attr">Attribute</h2>
-		      <table ng-show="y.attr">
-		        <thead>
-		          <tr>
-		            <th style="width: 30%">Field</th>
-		            <th style="width: 70%">Value</th>
-		          </tr>
-		        </thead>
-		        <tbody>
-		          <tr ng-repeat="(key,value) in y.attr">
-		            <td class="code">{{key}}</td>
-		            <td>{{value}}</td>
-		          </tr>
-		        </tbody>
-		      </table>
-		      
-		        <h2 ng-show="y.retrunContent">Return</h2>
-		        <pre class="prettyprint language-json" data-type="json" ng-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
-		      
-		</article>
-	</div>
-</section>
+        <div id="content">
+            <div id="project">
+                <div class="pull-left">
+                    <h1>Jcoder Api Doc</h1>
+                </div>
+                <div class="clearfix"></div>
+            </div>
 
+            <div id="header">
+                <div id="api-_">
+                    <h2 id="welcome-to-apidoc"></h2>
+                </div>
+            </div>
+            <div id="sections">
+                <section :id="x.name" v-for="x in apis">
+                    <h1 v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</h1>
+                    <p>version: {{x.version}}</p>
+                    <div v-bind="{id:x.name+'_'+y.name}" v-for="y in x.sub">
+                        <article id="api-User-GetUser-0.3.0" data-group="User" data-name="GetUser" data-version="0.3.0">
+                            <div class="pull-left">
+                                <h1>{{y.name}}</h1>
+                            </div>
+                            <div class="clearfix"></div>
 
-		</div>
-		<div id="generator">
-			<div class="content">
-		        Generated with <a href="#">Jcoder Api Doc</a> 
-		    </div>
-		</div>
-	</div>
-  </div>
+                            <p></p>
+                            <p>{{y.content}}</p>
+                            <p></p>
+
+                            <span v-bind="{class:'method '+m.toLowerCase()}" v-for="m in y.methods">{{m}}</span>
+
+                            <pre class="prettyprint prettyprinted"><code><span class="pln">/api/{{x.name}}/{{y.name}}</span></code></pre>
+
+                            <h2 v-show="y.sub.length>0">Parameter</h2>
+                            <table v-show="y.sub.length>0">
+                                <thead>
+                                <tr>
+                                    <th style="width: 30%">Field</th>
+                                    <th style="width: 10%">Type</th>
+                                    <th style="width: 70%">Description</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr v-for="s in y.sub">
+                                    <td class="code">{{s.name}}</td>
+                                    <td>{{s.type}}</td>
+                                    <td>{{s.content}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+
+                            <h2 v-show="y.attr">Attribute</h2>
+                            <table v-show="y.attr">
+                                <thead>
+                                <tr>
+                                    <th style="width: 30%">Field</th>
+                                    <th style="width: 70%">Value</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr v-for="(key,value) in y.attr">
+                                    <td class="code">{{key}}</td>
+                                    <td>{{value}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <h2 v-show="y.retrunContent">Return</h2>
+                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
+                        </article>
+                    </div>
+                </section>
+            </div>
+            <div id="generator">
+                <div class="content">
+                    Generated with <a href="#">Jcoder Api Doc</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-
-
-
-<script type="text/javascript" src="vendor/main.js"></script>
-</body></html>
+<script type="text/javascript" src="main.js"></script>
+</body>
+</html>

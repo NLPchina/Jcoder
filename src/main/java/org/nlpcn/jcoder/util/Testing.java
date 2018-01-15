@@ -1,28 +1,8 @@
 package org.nlpcn.jcoder.util;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.DispatcherType;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.filter.TestingFilter;
-import org.nlpcn.jcoder.run.annotation.DefaultExecute;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nutz.http.Http;
 import org.nutz.ioc.Ioc;
@@ -33,13 +13,22 @@ import org.nutz.lang.Mirror;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSONObject;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.*;
 
 /**
  * Test your task
- * 
- * @author Ansj
  *
+ * @author Ansj
  */
 public class Testing {
 
@@ -49,7 +38,7 @@ public class Testing {
 
 	/**
 	 * instan task by ioc
-	 * 
+	 *
 	 * @param c
 	 * @return class c instance
 	 * @throws Exception
@@ -118,7 +107,7 @@ public class Testing {
 			}
 
 			for (Method method : mirror.getMethods()) {
-				if (method.getAnnotation(Execute.class) == null && method.getAnnotation(DefaultExecute.class) == null) {
+				if (method.getAnnotation(Execute.class) == null) {
 					continue;
 				}
 				String key = c.getSimpleName() + "/" + method.getName();
@@ -131,7 +120,7 @@ public class Testing {
 
 	/**
 	 * 释放关联类
-	 * 
+	 *
 	 * @param clas
 	 * @throws IllegalAccessException
 	 * @throws InstantiationException
@@ -140,7 +129,7 @@ public class Testing {
 		for (Class<?> c : clas) {
 			Mirror<?> mirror = Mirror.me(c);
 			for (Method method : mirror.getMethods()) {
-				if (method.getAnnotation(Execute.class) == null && method.getAnnotation(DefaultExecute.class) == null) {
+				if (method.getAnnotation(Execute.class) == null) {
 					continue;
 				}
 				TestingFilter.methods.remove(c.getSimpleName() + "/" + method.getName());
@@ -150,7 +139,7 @@ public class Testing {
 
 	/**
 	 * 对比本地代码和线上代码的不同
-	 * 
+	 *
 	 * @param apiPath 本地代码路径
 	 * @param apiPath 线上api地址
 	 * @return
@@ -196,16 +185,19 @@ public class Testing {
 	 * @throws Exception
 	 */
 	public static void startServer(String[] args) throws Exception {
+
+		if (args == null || args.length == 0) {
+			args = new String[]{
+					"--home=home"
+			};
+		}
+		args = Arrays.copyOf(args, args.length + 1);
+		args[args.length - 1] = "--testing=true";
+
 		Class<?> bootstrap = Class.forName("Bootstrap");
 		Method main = bootstrap.getMethod("main", String[].class);
-		if(args==null){
-			args = new String[0] ;
-		}
-		main.invoke(null,args) ;
+		main.invoke(null, new Object[]{args});
 	}
 
-	public static void main(String[] args) throws Exception {
-		Testing.startServer(null);
-	}
 
 }

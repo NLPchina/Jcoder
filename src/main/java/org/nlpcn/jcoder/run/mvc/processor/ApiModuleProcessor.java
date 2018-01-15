@@ -24,7 +24,9 @@ public class ApiModuleProcessor extends AbstractProcessor {
 
 	@Override
 	public void init(NutConfig config, ActionInfo ai) throws Throwable {
-		Task task = TaskService.findTaskByCache(ai.getModuleType().getSimpleName());
+		String path = ai.getPaths()[0];
+		String[] split = path.split("/");
+		Task task = TaskService.findTaskByCache(split[2],split[3]);
 		method = ai.getMethod();
 		moduleObj = new JavaRunner(task).compile().instance().getTask();
 		groupName = task.getGroupName();

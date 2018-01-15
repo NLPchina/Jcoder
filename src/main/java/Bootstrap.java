@@ -58,6 +58,8 @@ public class Bootstrap {
 						putEnv(PREFIX + "token", dim[1]);
 					} else if (dim[0].equals("--zk")) {
 						putEnv(PREFIX + "zk", dim[1]);
+					}else if (dim[0].equals("--testing")) {
+						putEnv(PREFIX + "testing", dim[1]);
 					}
 				}
 			} else if (!arg.startsWith("-f")) {
