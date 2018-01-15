@@ -75,7 +75,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					if (file.endsWith(".java")) {
+					if (file.toFile().getName().endsWith(".java")) {
 						allApi.add(file.toFile());
 					}
 					return FileVisitResult.CONTINUE;
@@ -93,7 +93,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				String taskName = taskName(file);
 				Task task = getTask(taskName);
 				if (task != null) {
-					maps.remove(task);
+					maps.remove(task.getName());
 					this.onFileChange(file);
 				} else {
 					this.onFileCreate(file);
@@ -288,7 +288,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 
 	private Task getTask(String taskName) {
-		Task task = task = StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTask(groupName, taskName);
+		Task task = StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTask(groupName, taskName);
 		return task;
 	}
 

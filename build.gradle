@@ -33,6 +33,7 @@ dependencies {
 	compile 'org.apache.curator:curator-recipes:2.12.0'
 	compile 'commons-io:commons-io:2.6'
 	compile 'org.apache.maven:maven-model:3.5.2'
+	compile 'commons-codec:commons-codec:1.11'
 
 	//new version use log
 	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
