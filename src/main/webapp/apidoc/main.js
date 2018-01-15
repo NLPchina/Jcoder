@@ -39,6 +39,11 @@ new Vue({
             }
             location.hash = href;
         });
+
+        //
+        $('#sections').on('click', 'input[name="checkTest"]', function () {
+            $(this).closest("article").find("div[name='testBlock']").toggleClass("hidden");
+        });
     },
 
     methods: {
