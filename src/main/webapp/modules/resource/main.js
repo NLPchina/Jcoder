@@ -187,7 +187,7 @@ var resourceManager = new Vue({
         $table.find('td input[type=checkbox]').each(function () {
             this.checked = th_checked;
         });
-        me.checkChanged();
+        $this.checkChanged();
       });
   },
   /*watch:{
@@ -205,7 +205,7 @@ var resourceManager = new Vue({
       }
   },*/
   methods:{
-	  resourceList:function(host){
+	  resourceList:function(host,nodeName){
 	      JqdeBox.loading();
 	      var $this = this;
           Jcoder.ajax('/admin/fileInfo/getFileTree', 'post',{
@@ -216,6 +216,7 @@ var resourceManager = new Vue({
             if(data.ok){
                 //Vue.nextTick(function(){
                     initResourceTree(data.obj);
+                    if(nodeName != null && nodeName != undefined)selectNode(nodeName);
                     console.log(data.obj);
                 //});
             }else{
@@ -256,15 +257,32 @@ var resourceManager = new Vue({
                 JqdeBox.message(false, "无法只删除Master主机的文件！");
                 return false;
             }
-            if($this.filePath != null && $this.filePath != undefined){
-                path = $this.filePath.join(",");
+            if($this.filePath != null && $this.filePath != undefined && $this.filePath.length > 0){
+                path = $this.filePath;
+            }else{
+                var arr = new Array();
+                arr.push(path);
+                path = arr;
             }
             Jcoder.ajax('/admin/fileInfo/deleteFile', 'post',
-                {hostPort:importFile.checkedHosts,groupName:$this.groupName,relativePath:path},null).then(function (data) {
+                {hostPort:importFile.checkedHosts,groupName:$this.groupName,"relativePaths[]":path},null).then(function (data) {
                 JqdeBox.unloading();
                 JqdeBox.message(data.ok, data.message);
-                selectNode($this.currentNode.file.name);
-                /*$this.resourceList('master',null);*/
+                for(var i = 0;i < path.length;i++){
+                    $this.resources.splice($.inArray(path[i],$this.resources),1);
+                }
+                $('#file-table').find('td input[type=checkbox]').each(function () {
+                     this.checked = false;
+                 });
+                _.each($this.hosts, function (host) {
+                   if(host.selected){
+                     var fileName = $this.currentNode.file.name;
+                     $this.resourceList(host.host,fileName);
+                     //importFile.checkedHosts.push(host.host);
+                     //selectNode(fileName);
+                     return true;
+                   }
+                 });
             });
           }
         });

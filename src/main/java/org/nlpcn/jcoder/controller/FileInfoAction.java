@@ -359,31 +359,48 @@ public class FileInfoAction {
 	 */
 	@At
 	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts,@Param("groupName") String groupName,
-							  @Param("relativePath") String relativePath,
+							  @Param("relativePaths[]") String[] relativePaths,
 							  @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
 			if(!first){
-				String[] paths = relativePath.split(",");
-				for(int i = 0;i < paths.length;i++){
-					if (paths[i].contains("..")) {
+				//String[] paths = relativePath.split(",");
+				StringBuilder sb = new StringBuilder();
+				for(int i = 0;i < relativePaths.length;i++){
+					if (relativePaths[i].contains("..")) {
 						return Restful.instance(false, "删除路径不能包含`..`字符");
 					}
-					File file = new File(StaticValue.GROUP_FILE, groupName + paths[i]);
+					if(relativePaths[i].endsWith(".jar") && relativePaths[i].contains("lib") && !relativePaths[i].contains("target")){
+						JarService jarService = JarService.getOrCreate(groupName) ;
+						File file = new File(StaticValue.GROUP_FILE, groupName + relativePaths[i]);
+						jarService.removeJar(file);
+						continue;
+					}
+					File file = new File(StaticValue.GROUP_FILE, groupName + relativePaths[i]);
 					if (file.isDirectory()) {
 						boolean flag = org.nutz.lang.Files.deleteDir(file);
 						if (!flag) {
 							System.gc();//回收资源
 							org.nutz.lang.Files.deleteDir(file.getAbsoluteFile());
 						}
+						if(file.exists()){
+							sb.append("文件夹："+file.getName()+"删除成功！//n");
+						}else{
+							sb.append("文件夹："+file.getName()+"删除失败！//n");
+						}
 					} else {
 						boolean flag = org.nutz.lang.Files.deleteFile(file);
 						if (!flag) {
 							System.gc();//回收资源
-							org.nutz.lang.Files.deleteFile(file.getAbsoluteFile());
+							file.delete();
+						}
+						if(file.exists()){
+							sb.append("文件："+file.getName()+"删除成功！//n");
+						}else{
+							sb.append("文件："+file.getName()+"删除失败！//n");
 						}
 					}
 				}
-				return Restful.instance().ok(true).msg("删除成功！");
+				return Restful.instance().ok(true).msg(sb.toString());
 			}else{
 				List<String> hosts = Arrays.asList(hostPorts);
 				Set<String> hostPortsArr = new HashSet<>(hosts);
@@ -395,14 +412,14 @@ public class FileInfoAction {
 					firstHost.add(arrayList.get(0).toString());
 				}
 				String message = proxyService.post(hostPortsArr, "/admin/fileInfo/deleteFile",
-						ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "first", false), 100000,
+						ImmutableMap.of("groupName", groupName, "relativePaths[]", relativePaths, "first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
 				if(firstHost != null && firstHost.size() > 0){
 					List<String> list = new ArrayList<String>();
-					String[] paths = relativePath.split(",");
-					for(int a = 0;a<paths.length;a++){
-						list.add(paths[a].endsWith("/")?paths[a].substring(0,(relativePath.length() -1)):paths[a]);
+					//String[] paths = relativePath.split(",");
+					for(int a = 0;a<relativePaths.length;a++){
+						list.add(relativePaths[a].endsWith("/")?relativePaths[a].substring(0,(relativePaths[a].length() -1)):relativePaths[a]);
 					}
 					//String[] relativePaths = new String[]{relativePath.endsWith("/")?relativePath.substring(0,(relativePath.length() -1)):relativePath};
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",

@@ -445,11 +445,12 @@ public class JarService {
 			try {
 				synchronized (this) {
 					for (int i = 0; i < 10 && file.exists(); i++) {
+						this.release();
+						System.gc();
+						Thread.sleep(300L);
 						LOG.info(i + " to delete file: " + file.getAbsolutePath());
 						file.delete();
-						Thread.sleep(300L);
 					}
-					CACHE.invalidate(groupName);
 				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
