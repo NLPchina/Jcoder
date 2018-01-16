@@ -96,7 +96,12 @@ public class JarService {
 
 	private JarService(String groupName) throws IOException {
 		this.groupName = groupName;
+
 		jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib").getCanonicalPath();
+		if (!new File(jarPath).exists()) {
+			new File(jarPath).mkdirs();
+			LOG.warn("lib path not exists so create it");
+		}
 		pomPath = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml").getCanonicalPath();
 		iocPath = new File(StaticValue.GROUP_FILE, groupName + "/resources/ioc.js").getCanonicalPath();
 		engine = new DynamicEngine(groupName);
