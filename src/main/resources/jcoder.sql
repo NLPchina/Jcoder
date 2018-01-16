@@ -30,7 +30,7 @@ CREATE TABLE `task` (
   `status` int(11) NOT NULL,
   `create_user` varchar(45) DEFAULT NULL,
   `update_user` varchar(45) DEFAULT NULL,
-  UNIQUE KEY `task_name_UNIQUE` (`name`)
+  UNIQUE KEY `group_task_name_UNIQUE` (`name`,`group_name`)
 ) ;
 
 

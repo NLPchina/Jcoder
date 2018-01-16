@@ -5,7 +5,6 @@ import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.nlpcn.jcoder.domain.ApiDoc;
 import org.nlpcn.jcoder.domain.ClassDoc;
-import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
@@ -17,9 +16,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -33,8 +39,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 	/**
 	 * 注册一个监听事件
-	 *
-	 * @param groupName
 	 */
 	public static void regediter(String groupName) {
 		GroupFileListener groupFileListener = new GroupFileListener(groupName);
@@ -61,11 +65,17 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 			List<File> allApi = new ArrayList<>();
 
-			Files.walkFileTree(new File(StaticValue.GROUP_FILE, groupName + "/src/api").toPath(), new SimpleFileVisitor<Path>() {
+			File srcFile = new File(StaticValue.GROUP_FILE, groupName + "/src/api");
+
+			if (!srcFile.exists()) {
+				srcFile.mkdirs();
+			}
+
+			Files.walkFileTree(srcFile.toPath(), new SimpleFileVisitor<Path>() {
 
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					if (file.endsWith(".java")) {
+					if (file.toFile().getName().endsWith(".java")) {
 						allApi.add(file.toFile());
 					}
 					return FileVisitResult.CONTINUE;
@@ -83,7 +93,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				String taskName = taskName(file);
 				Task task = getTask(taskName);
 				if (task != null) {
-					maps.remove(task);
+					maps.remove(task.getName());
 					this.onFileChange(file);
 				} else {
 					this.onFileCreate(file);
@@ -92,17 +102,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 			maps.values().forEach(t -> {
 				try {
-					LOG.info("syn write file by task " + t.getName());
-					String pk = JavaSourceUtil.findPackage(t.getCode());
-					File file = new File(StaticValue.GROUP_FILE, groupName + "/src/api/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
-
-					if (!file.getParentFile().exists()) {
-						file.getParentFile().mkdirs();
-
-					}
-					try (FileOutputStream fos = new FileOutputStream(file)) {
-						fos.write(t.getCode().getBytes("utf-8"));
-					}
+					writeTask2Src(t);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -114,10 +114,22 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		}
 	}
 
+	public static void writeTask2Src(Task t) throws IOException {
+		LOG.info("syn write file by task " + t.getName());
+		String pk = JavaSourceUtil.findPackage(t.getCode());
+		File file = new File(StaticValue.GROUP_FILE, t.getGroupName() + "/src/api/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
+
+		if (!file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
+
+		}
+		try (FileOutputStream fos = new FileOutputStream(file)) {
+			fos.write(t.getCode().getBytes("utf-8"));
+		}
+	}
+
 	/**
 	 * 注销一个监听事件
-	 *
-	 * @param groupName
 	 */
 	public static void unRegediter(String groupName) {
 		FileAlterationMonitor remove = MAP.remove(groupName);
@@ -141,9 +153,9 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		if (file.getName().endsWith(".java")) {
 			LOG.info("[新建]:" + file.getAbsolutePath());
 
-			try {
+			String content = IOUtil.getContent(file, "utf-8");
 
-				String content = IOUtil.getContent(file.getCanonicalPath(), "utf-8");
+			try {
 
 				List<ApiDoc> sub = null;
 				if (!StringUtil.isBlank(content)) {
@@ -175,6 +187,9 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			Task task = getTask(taskName(file));
 
 			if (task != null) {
+				if (task.getCode().equals(content)) {
+					return;
+				}
 				try {
 					LOG.error("...............................................................................................................................");
 					LOG.error("...............................................................................................................................");
@@ -273,7 +288,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 
 	private Task getTask(String taskName) {
-		Task task = task = StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTask(groupName, taskName);
+		Task task = StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTask(groupName, taskName);
 		return task;
 	}
 

@@ -1,7 +1,10 @@
 package org.nlpcn.jcoder.util;
 
 import org.nutz.http.Header;
+import org.nutz.http.Http;
 import org.nutz.http.Response;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
@@ -12,6 +15,8 @@ import java.io.*;
  * @author ansj
  */
 public class IOUtil {
+
+	private static final Logger LOG = LoggerFactory.getLogger(IOUtil.class);
 
 	public static final String UTF8 = "utf-8";
 	public static final String GBK = "gbk";
@@ -189,26 +194,65 @@ public class IOUtil {
 	 * @param os
 	 */
 	public static void writeAndClose(InputStream is, OutputStream os) throws IOException {
-		byte[] bytes = new byte[10240];
-		int len = 0;
-		while ((len = is.read(bytes)) != -1) {
-			os.write(bytes, 0, len);
+		try {
+			byte[] bytes = new byte[10240];
+			int len = 0;
+			while ((len = is.read(bytes)) != -1) {
+				os.write(bytes, 0, len);
+			}
+		} finally {
+			close(os);
+			close(is);
 		}
-		close(os);
-		close(is);
+	}
+
+	public static void downFile(String url, File file) throws Exception {
+
+		LOG.info("to down {}", url);
+
+		Response response = Http.get(url);
+
+		if (response.getStatus() != 200) {
+			throw new Exception("down " + url + " err code: " + response.getStatus());
+		}
+
+		java.text.DecimalFormat df = new java.text.DecimalFormat("#.00");
+		try (InputStream is = response.getStream(); FileOutputStream os = new FileOutputStream(file)) {
+			byte[] bytes = new byte[10240];
+			int len;
+			long start = System.currentTimeMillis();
+			long end = start;
+			int sum = 0;
+			while ((len = is.read(bytes)) != -1) {
+				os.write(bytes, 0, len);
+				end = System.currentTimeMillis();
+				sum += len;
+				if (end-start>1000) {
+					LOG.info("down {} speed {}k/s", url, df.format((sum / (double) ((end - start + 1)))));
+					start = end;
+					sum = 0;
+				}
+			}
+
+			LOG.info("down {} speed {}k/s", url, df.format((sum / (double) ((end - start + 1)))));
+
+			LOG.info("down {} ok write to {} ok", url, file.getCanonicalFile());
+
+		}
 	}
 
 
 	/**
 	 * 将结果和输出流对接
+	 *
 	 * @param response
 	 * @param response
 	 */
 	public static void writeAndClose(Response post, HttpServletResponse response) throws IOException {
 		Header header = post.getHeader();
-		header.keys().forEach(k -> response.addHeader(k,header.get(k)));
+		header.keys().forEach(k -> response.addHeader(k, header.get(k)));
 		response.setStatus(post.getStatus());
-		IOUtil.writeAndClose(post.getStream(),response.getOutputStream());
+		IOUtil.writeAndClose(post.getStream(), response.getOutputStream());
 	}
 
 

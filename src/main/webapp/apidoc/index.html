@@ -4,18 +4,26 @@
     <title>Jcoder Api Doc</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <meta http-equiv="Expires" content="0">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Cache-control" content="no-cache">
-    <meta http-equiv="Cache" content="no-cache">
+    <meta http-equiv="Expires" content="0"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Cache-control" content="no-cache"/>
+    <meta http-equiv="Cache" content="no-cache"/>
     <meta name="description" content=""/>
 
+    <link href="../assets/css/ace.min.css" rel="stylesheet" class="ace-main-stylesheet"/>
     <link href="../assets/css/bootstrap.min.css" rel="stylesheet" media="screen"/>
+    <link href="../assets/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet"/>
 
-    <link href="vendor/prettify.css" rel="stylesheet" media="screen">
-    <link href="vendor/style.css" rel="stylesheet" media="screen, print">
+    <link href="vendor/prettify.css" rel="stylesheet" media="screen"/>
+    <link href="vendor/style.css" rel="stylesheet" media="screen, print"/>
+
+    <style>
+        input[type=checkbox].ace.ace-switch.ace-switch-5 + .lbl::before {
+            content: "YES\a0\a0\a0\a0\a0\a0\a0\a0\a0NO";
+        }
+    </style>
 
     <!--[if !IE]> -->
     <script src="../assets/js/jquery-2.1.4.min.js"></script>
@@ -37,7 +45,7 @@
     <div class="row-fluid">
         <div id="sidenav" class="span2">
             <nav id="scrollingNav">
-                <ul class="sidenav nav nav-pills">
+                <ul class="sidenav nav nav-pills" style="display:none;" v-show="!!nav_apis">
                     <li v-bind="{class:(x.isGroup?'nav-header ':'')+(x.isActive?'active':'')}" v-for="x in nav_apis" @click="clickNav(x)">
                         <a :href="x.href" v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</a>
                     </li>
@@ -58,18 +66,28 @@
                     <h2 id="welcome-to-apidoc"></h2>
                 </div>
             </div>
-            <div id="sections">
+            <div id="sections" style="display:none;" v-show="!!apis">
                 <section :id="x.name" v-for="x in apis">
                     <h1 v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</h1>
                     <p>version: {{x.version}}</p>
                     <div v-bind="{id:x.name+'_'+y.name}" v-for="y in x.sub">
-                        <article id="api-User-GetUser-0.3.0" data-group="User" data-name="GetUser" data-version="0.3.0">
+                        <article data-group="User" data-name="GetUser" data-version="0.3.0">
                             <div class="pull-left">
-                                <h1>{{y.name}}</h1>
+                                <h1 style="margin-bottom:0">{{y.name}}</h1>
                             </div>
-                            <div class="clearfix"></div>
+                            <div class="widget-toolbar pull-right">
+                                <label>
+                                    <small>
+                                        <b>测试：</b>
+                                    </small>
+                                    <input class="ace ace-switch ace-switch-5" type="checkbox" name="checkTest"/>
+                                    <span class="lbl middle"></span>
+                                </label>
+                            </div>
 
-                            <p></p>
+                            <div class="clearfix" style="border-bottom:1px dotted #E2E2E2;"></div>
+
+                            <br/>
                             <p>{{y.content}}</p>
                             <p></p>
 
@@ -77,19 +95,21 @@
 
                             <pre class="prettyprint prettyprinted"><code><span class="pln">/api/{{x.name}}/{{y.name}}</span></code></pre>
 
-                            <h2 v-show="y.sub.length>0">Parameter</h2>
+                            <h2 v-show="y.sub.length>0">请求参数</h2>
                             <table v-show="y.sub.length>0">
                                 <thead>
                                 <tr>
-                                    <th style="width: 30%">Field</th>
-                                    <th style="width: 10%">Type</th>
-                                    <th style="width: 70%">Description</th>
+                                    <th width="15%">名称</th>
+                                    <th width="15%">类型</th>
+                                    <th width="7.5%">必填</th>
+                                    <th>描述</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <tr v-for="s in y.sub">
                                     <td class="code">{{s.name}}</td>
                                     <td>{{s.type}}</td>
+                                    <td>否</td>
                                     <td>{{s.content}}</td>
                                 </tr>
                                 </tbody>
@@ -110,8 +130,106 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            <h2 v-show="y.retrunContent">Return</h2>
-                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent"><code>{{y.retrunContent}}</code></pre>
+                            <h2 v-show="y.retrunContent">返回值</h2>
+                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent">
+                                <code>{{y.retrunContent}}</code>
+                            </pre>
+
+                            <div class="widget-box widget-color-blue hidden" name="testBlock">
+                                <div class="widget-header">
+                                    <h6 class="widget-title">
+                                        <i class="ace-icon fa fa-gavel"></i>
+                                        {{x.name}} - {{y.name}} 测试
+                                    </h6>
+
+                                    <div class="widget-toolbar">
+                                        <a href="#" data-action="reload">
+                                            <span class="badge badge-success" style="margin-bottom:5px;">
+                                                <i class="ace-icon glyphicon glyphicon-play bigger-130"></i>
+                                                发送
+                                            </span>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="widget-body">
+                                    <div class="widget-main">
+                                        <div>
+                                            <div class="input-group">
+                                                <span class="input-group-addon">
+                                                URL
+                                                </span>
+                                                <input class="form-control" type="text"/>
+                                            </div>
+                                        </div>
+
+                                        <hr/>
+
+                                        <div>
+                                            <h2>请求头</h2>
+                                            <table>
+                                                <thead>
+                                                <tr>
+                                                    <th width="14.4%">名称</th>
+                                                    <th>值</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                <tr>
+                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
+                                                        <input class="form-control" type="text"/>
+                                                    </td>
+                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
+                                                        <input class="form-control" type="text"/>
+                                                    </td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <hr/>
+
+                                        <div>
+                                            <h2>请求参数</h2>
+                                            <table>
+                                                <thead>
+                                                <tr>
+                                                    <th width="14.4%">名称</th>
+                                                    <th>值</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                <tr>
+                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
+                                                        <input class="form-control" type="text"/>
+                                                    </td>
+                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
+                                                        <input class="form-control" type="text"/>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
+                                                        <input class="form-control" type="text"/>
+                                                    </td>
+                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
+                                                        <input class="form-control" type="file"/>
+                                                    </td>
+                                                </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        <hr/>
+
+                                        <div>
+                                            <h2>返回值</h2>
+                                            <pre class="prettyprint language-json" data-type="json" style="max-height:450px;">
+                                                <code></code>
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </article>
                     </div>
                 </section>

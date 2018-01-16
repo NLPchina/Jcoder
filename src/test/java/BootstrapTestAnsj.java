@@ -18,7 +18,8 @@ public class BootstrapTestAnsj {
 				"--zk=" + zk,
 				"--host=" + host,
 				"--home=jcoder_home_" + port,
-				"--port=" + port
+				"--port=" + port,
+				"--testing=true"
 		});
 	}
 

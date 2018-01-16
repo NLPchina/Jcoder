@@ -104,11 +104,9 @@ public class CodeInfo {
 	public ExecuteMethod getDefaultMethod() {
 		if (defaultMethod == null) {
 			if (executeMethods.size() == 0) {
-				throw new CodeRuntimeException(classz.getName() + " not have any @Execute or @DefaultExecute annotation you must set one ");
+				throw new CodeRuntimeException(classz.getName() + " not have any @Execute annotation you must set one ");
 			}
 			defaultMethod = executeMethods.entrySet().iterator().next().getValue();
-			LOG.warn(defaultMethod.getMethod().getDeclaringClass().getName() + " none @DefaultExecute annotation method : so set the firest method to DefaultExecute function:"
-					+ defaultMethod.getName());
 		}
 		return defaultMethod;
 	}

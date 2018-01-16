@@ -524,21 +524,21 @@ public class SharedSpaceService {
 			unLockAndDelete(lock);
 		}
 
-		if (upMapping) {
+		/**
+		 * 根据解决构建信息
+		 */
+		HostGroup hostGroup = new HostGroup();
+		hostGroup.setSsl(StaticValue.IS_SSL);
+		hostGroup.setCurrent(diffs.size() == 0);
+		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+		try {
+			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
+		} catch (Exception e1) {
+			e1.printStackTrace();
+			LOG.error("add host group info err !!!!!", e1);
+		}
 
-			/**
-			 * 根据解决构建信息
-			 */
-			HostGroup hostGroup = new HostGroup();
-			hostGroup.setSsl(StaticValue.IS_SSL);
-			hostGroup.setCurrent(diffs.size() == 0);
-			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
-			try {
-				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
-			} catch (Exception e1) {
-				e1.printStackTrace();
-				LOG.error("add host group info err !!!!!", e1);
-			}
+		if (upMapping) {
 
 			tasks.forEach(task -> {
 				try {

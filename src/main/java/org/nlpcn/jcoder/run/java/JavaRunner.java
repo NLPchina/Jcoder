@@ -100,7 +100,7 @@ public class JavaRunner {
 				}
 
 				if (mc.size() == 0) {
-					throw new CodeRuntimeException("you must set a Execute or DefaultExecute annotation for execute");
+					throw new CodeRuntimeException("you must set a @Execute annotation for execute");
 				}
 
 				StringBuilder sb = null;
@@ -293,7 +293,7 @@ public class JavaRunner {
 		}
 
 		if (mc.size() == 0) {
-			throw new CodeRuntimeException("you must set a Execute or DefaultExecute annotation for execute");
+			throw new CodeRuntimeException("you must set a Execute annotation for execute");
 		}
 
 		StringBuilder sb = null;

@@ -110,7 +110,7 @@ public class GroupAction {
 	@At
 	public Restful add(@Param("hostPorts") String[] hostPorts, @Param("name") String name, @Param(value = "first", df = "true") boolean first) throws Exception {
 
-		if (name.matches("[a-z0-9A-Z_]+")) {
+		if (!name.matches("[a-z0-9A-Z_\\.]+")) {
 			return Restful.fail().msg("Group名称只能是英文字母或数字和_");
 		}
 
@@ -132,14 +132,14 @@ public class GroupAction {
 							"\t<groupId>org.nlpcn.jcoder</groupId>\n" +
 							"\t<artifactId>" + name + "</artifactId>\n" +
 							"\t<version>0.1</version>\n" +
-							"\t<dependencies>\n" +
-							StaticValue.getJcoderJarFile() != null ? //这里有个三目表达式
+							"\t<dependencies>\n" +(
+							StaticValue.getJcoderJarFile()!=null? //这里有个三目表达式
 							"\t\t<dependency>\n" +
 									"\t\t\t<groupId>org.nlpcn.jcoder</groupId>\n" +
 									"\t\t\t<artifactId>jcoder</artifactId>\n" +
 									"\t\t\t<scope>system</scope>\n" +
 									"\t\t\t<systemPath>${basedir}/../../../lib/" + StaticValue.getJcoderJarFile().getName() + "</systemPath>\n" +
-									"\t\t</dependency>\n" : "\n" +
+									"\t\t</dependency>\n" : "\n") +
 							"\t</dependencies>\n" +
 							"\t<build>\n" +
 							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
