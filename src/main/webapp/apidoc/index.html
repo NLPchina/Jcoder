@@ -47,7 +47,7 @@
     <div class="row-fluid">
         <div id="sidenav" class="span2">
             <nav id="scrollingNav">
-                <ul class="sidenav nav nav-pills hidden" v-show="!!nav_apis">
+                <ul class="sidenav nav nav-pills" style="display:none;" v-show="!!nav_apis">
                     <li v-bind="{class:(x.isGroup?'nav-header ':'')+(x.isActive?'active':'')}" v-for="x in nav_apis" @click="clickNav(x)">
                         <a :href="x.href" v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</a>
                     </li>
@@ -68,7 +68,7 @@
                     <h2 id="welcome-to-apidoc"></h2>
                 </div>
             </div>
-            <div id="sections" class="hidden" v-show="!!apis">
+            <div id="sections" style="display:none;" v-show="!!apis">
                 <section :id="x.name" v-for="x in apis">
                     <h1 v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</h1>
                     <p>version: {{x.version}}</p>

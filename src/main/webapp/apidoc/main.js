@@ -27,6 +27,7 @@ new Vue({
                         }),
                         response: {status: null, text: null}
                     };
+                    ele2.retrunContent = me.getJSONText(ele2.retrunContent);
                     return {
                         name: ele2.name,
                         status: ele2.status,
@@ -68,7 +69,7 @@ new Vue({
         },
 
         submit: function (currentTarget, testObj) {
-            var headers = {}, $form = $(currentTarget), res = testObj.response;
+            var me = this, headers = {}, $form = $(currentTarget), res = testObj.response;
             $.each(testObj.headers, function (i, ele) {
                 if ($.trim(ele.name)) {
                     headers[$.trim(ele.name)] = $.trim(ele.value);
@@ -85,14 +86,24 @@ new Vue({
                 success: function (responseText, statusText, xhr, $form) {
                     $form.removeClass("position-relative").find("div:last").addClass("hidden");
                     res.status = xhr.status;
-                    res.text = responseText;
+                    res.text = me.getJSONText(responseText);
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     $form.removeClass("position-relative").find("div:last").addClass("hidden");
                     res.status = jqXHR.status;
-                    res.text = jqXHR.responseText;
+                    res.text = me.getJSONText(jqXHR.responseText);
                 }
             });
+        },
+
+        getJSONText: function (text) {
+            var jsonText;
+            try {
+                jsonText = JSON.stringify(JSON.parse(text), null, 4);
+            } catch (e) {
+                jsonText = text;
+            }
+            return jsonText;
         }
     }
 });
