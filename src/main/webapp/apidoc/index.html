@@ -37,6 +37,8 @@
         if ('ontouchstart' in document.documentElement) document.write("<script type='text/javascript' src='../assets/js/jquery.mobile.custom.min.js'>" + "<" + "/script>");
     </script>
 
+    <script type="text/javascript" src="../assets/js/bootstrap.min.js"></script>
+
     <script type="text/javascript" src="vendor/jquery.form.min.js"></script>
 
     <script type="text/javascript" src="../vendors/vue/dist/vue.js"></script>
@@ -196,8 +198,8 @@
                                                 </thead>
                                                 <tbody>
                                                 <tr v-for="param in y.test.params">
-                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="text" :value="param.name"/>
+                                                    <td style="vertical-align: middle;">
+                                                        {{param.name}}
                                                     </td>
                                                     <td style="padding:1px;vertical-align: middle;text-align:center;">
                                                         <input v-if="param.type.toLowerCase()=='file'" class="form-control" type="file" style="padding-left:0;" :placeholder="param.content" :name="param.name"/>
