@@ -113,7 +113,10 @@
                                                             <td  class="center">{{(resource.file.length/1024).toFixed(2)}}k</td>
                                                             <td  class="center">{{resource.file.directory?"文件夹":"文件"}}</td>
                                                             <td  class="center">{{resource.file.date | datetime('yyyy-MM-dd HH:mm:ss')}}</td>
-                                                            <td  class="center">{{resource.file.relativePath}}</td>
+                                                            <td :title="resource.file.relativePath" class="center">
+                                                                <div style="width: 150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display: block;">
+                                                                    {{ _.escape(resource.file.relativePath) }}</div>
+                                                            </td>
                                                             <td  class="center">
                                                                 <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
                                                                     <div class="editbutton" style="display:inline;">

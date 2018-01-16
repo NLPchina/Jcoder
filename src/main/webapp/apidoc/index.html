@@ -26,16 +26,18 @@
     </style>
 
     <!--[if !IE]> -->
-    <script src="../assets/js/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-2.1.4.min.js"></script>
     <!-- <![endif]-->
 
     <!--[if IE]>
-    <script src="../assets/js/jquery-1.11.3.min.js"></script>
+    <script type="text/javascript" src="../assets/js/jquery-1.11.3.min.js"></script>
     <![endif]-->
 
     <script type="text/javascript">
-        if ('ontouchstart' in document.documentElement) document.write("<script src='../assets/js/jquery.mobile.custom.min.js'>" + "<" + "/script>");
+        if ('ontouchstart' in document.documentElement) document.write("<script type='text/javascript' src='../assets/js/jquery.mobile.custom.min.js'>" + "<" + "/script>");
     </script>
+
+    <script type="text/javascript" src="vendor/jquery.form.min.js"></script>
 
     <script type="text/javascript" src="../vendors/vue/dist/vue.js"></script>
 </head>
@@ -80,7 +82,7 @@
                                     <small>
                                         <b>测试：</b>
                                     </small>
-                                    <input class="ace ace-switch ace-switch-5" type="checkbox" name="checkTest"/>
+                                    <input class="ace ace-switch ace-switch-5" type="checkbox" v-model="y.test.testing"/>
                                     <span class="lbl middle"></span>
                                 </label>
                             </div>
@@ -93,10 +95,10 @@
 
                             <span v-bind="{class:'method '+m.toLowerCase()}" v-for="m in y.methods">{{m}}</span>
 
-                            <pre class="prettyprint prettyprinted"><code><span class="pln">/api/{{x.name}}/{{y.name}}</span></code></pre>
+                            <pre class="prettyprint prettyprinted"><code><span class="pln">{{baseUri}}/api/{{x.name}}/{{y.name}}</span></code></pre>
 
-                            <h2 v-show="y.sub.length>0">请求参数</h2>
-                            <table v-show="y.sub.length>0">
+                            <h2 v-show="y.sub&&y.sub.length>0">请求参数</h2>
+                            <table v-show="y.sub&&y.sub.length>0">
                                 <thead>
                                 <tr>
                                     <th width="15%">名称</th>
@@ -131,40 +133,26 @@
                                 </tbody>
                             </table>
                             <h2 v-show="y.retrunContent">返回值</h2>
-                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent">
-                                <code>{{y.retrunContent}}</code>
-                            </pre>
+                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent" style="max-height:400px;"><code>{{y.retrunContent}}</code></pre>
 
-                            <div class="widget-box widget-color-blue hidden" name="testBlock">
+                            <form class="widget-box widget-color-blue" method="post" v-show="y.test.testing" @submit.prevent="submit($event.currentTarget,y.test)" :action="baseUri+'/api/'+x.name+'/'+y.name">
                                 <div class="widget-header">
                                     <h6 class="widget-title">
                                         <i class="ace-icon fa fa-gavel"></i>
-                                        {{x.name}} - {{y.name}} 测试
+                                        测试接口：{{baseUri}}/api/{{x.name}}/{{y.name}}
                                     </h6>
 
                                     <div class="widget-toolbar">
-                                        <a href="#" data-action="reload">
-                                            <span class="badge badge-success" style="margin-bottom:5px;">
-                                                <i class="ace-icon glyphicon glyphicon-play bigger-130"></i>
-                                                发送
-                                            </span>
-                                        </a>
+                                        <button class="btn btn-sm btn-success btn-white btn-round">
+                                            <i class="ace-icon fa fa-globe bigger-125"></i>
+                                            发送
+                                            <i class="ace-icon fa fa-arrow-right icon-on-right bigger-125"></i>
+                                        </button>
                                     </div>
                                 </div>
 
                                 <div class="widget-body">
                                     <div class="widget-main">
-                                        <div>
-                                            <div class="input-group">
-                                                <span class="input-group-addon">
-                                                URL
-                                                </span>
-                                                <input class="form-control" type="text"/>
-                                            </div>
-                                        </div>
-
-                                        <hr/>
-
                                         <div>
                                             <h2>请求头</h2>
                                             <table>
@@ -172,15 +160,23 @@
                                                 <tr>
                                                     <th width="14.4%">名称</th>
                                                     <th>值</th>
+                                                    <th width="3%"></th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                <tr>
+                                                <tr v-for="head,index in y.test.headers">
                                                     <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="text"/>
+                                                        <input class="form-control" type="text" v-model="head.name" @input="changeHeader(y.test.headers, index)"/>
                                                     </td>
                                                     <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="text"/>
+                                                        <input class="form-control" type="text" v-model="head.value" @input="changeHeader(y.test.headers, index)"/>
+                                                    </td>
+                                                    <td style="vertical-align: middle;text-align:center;">
+                                                        <div class="hidden-sm hidden-xs action-buttons" v-if="index<y.test.headers.length-1">
+                                                            <a class="red" href="javascript:void(0);" @click="deleteHeader(y.test.headers, index)">
+                                                                <i class="ace-icon fa fa-trash-o bigger-130"></i>
+                                                            </a>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                                 </tbody>
@@ -199,20 +195,13 @@
                                                 </tr>
                                                 </thead>
                                                 <tbody>
-                                                <tr>
+                                                <tr v-for="param in y.test.params">
                                                     <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="text"/>
+                                                        <input class="form-control" type="text" :value="param.name"/>
                                                     </td>
                                                     <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="text"/>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="text"/>
-                                                    </td>
-                                                    <td style="padding:1px;vertical-align: middle;text-align:center;">
-                                                        <input class="form-control" type="file"/>
+                                                        <input v-if="param.type.toLowerCase()=='file'" class="form-control" type="file" style="padding-left:0;" :placeholder="param.content" :name="param.name"/>
+                                                        <input v-else class="form-control" type="text" :placeholder="param.content" :name="param.name"/>
                                                     </td>
                                                 </tr>
                                                 </tbody>
@@ -222,14 +211,29 @@
                                         <hr/>
 
                                         <div>
-                                            <h2>返回值</h2>
-                                            <pre class="prettyprint language-json" data-type="json" style="max-height:450px;">
-                                                <code></code>
-                                            </pre>
+                                            <h2>返回值
+                                                <small v-if="y.test.response.status!=null">
+                                                    <strong v-if="y.test.response.status==200" class="green">
+                                                        (
+                                                        <i class="ace-icon glyphicon glyphicon-ok green bigger-130"></i>
+                                                        {{y.test.response.status}}
+                                                        )
+                                                    </strong>
+                                                    <strong v-else class="red">
+                                                        (
+                                                        <i class="ace-icon fa fa-exclamation-triangle red bigger-130"></i>
+                                                        {{y.test.response.status}}
+                                                        )
+                                                    </strong>
+                                                </small>
+                                            </h2>
+                                            <pre class="prettyprint language-json" data-type="json" style="max-height:400px;"><code v-if="y.test.response.status!=200" class="red">{{y.test.response.text}}</code><code v-else>{{y.test.response.text}}</code></pre>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+
+                                <div class="widget-box-overlay hidden"><i class="ace-icon loading-icon fa fa-spinner fa-spin fa-2x white"></i></div>
+                            </form>
                         </article>
                     </div>
                 </section>
