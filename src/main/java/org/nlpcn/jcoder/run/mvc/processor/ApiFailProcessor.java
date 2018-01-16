@@ -2,6 +2,7 @@ package org.nlpcn.jcoder.run.mvc.processor;
 
 import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
+import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.log.Log;
@@ -45,11 +46,17 @@ public class ApiFailProcessor extends ViewProcessor {
 				message = "null is sex , sex is null";
 			}
 
-			view.render(ac.getRequest(), ac.getResponse(), Restful.instance(false, message).code(500));
+			int status = 500;
+
+			if (cause instanceof ApiException) {
+				status = ((ApiException) cause).getStatus();
+			}
+
+			view.render(ac.getRequest(), ac.getResponse(), Restful.instance(false, message).code(status));
 		}
 
 		String header = ac.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD);
-		if(StringUtil.isNotBlank(header)){
+		if (StringUtil.isNotBlank(header)) {
 			//如果存在。说明是集群调用需要清除session
 			ac.getRequest().getSession().invalidate();
 		}

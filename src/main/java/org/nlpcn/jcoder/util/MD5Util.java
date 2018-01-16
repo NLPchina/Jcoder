@@ -18,12 +18,10 @@ public class MD5Util {
 	 * @param file
 	 * @return
 	 */
-	public synchronized static String getMd5ByFile(File file) {
-
+	public static String md5(File file) {
 		if (file.isDirectory()) {
 			return MD5Util.md5(file.getName());
 		}
-
 		String value = "ERROR";
 
 		try (FileInputStream in = new FileInputStream(file)) {
@@ -35,7 +33,31 @@ public class MD5Util {
 	}
 
 
+	/**
+	 * 对一个字符串进行md5
+	 * @param content
+	 * @return
+	 */
 	public static String md5(String content) {
 		return DigestUtils.md5Hex(content);
+	}
+
+	public static String sha1(File file) {
+		if (file.isDirectory()) {
+			return MD5Util.sha1(file.getName());
+		}
+		String value = "ERROR";
+
+		try (FileInputStream in = new FileInputStream(file)) {
+			value = DigestUtils.sha1Hex(in);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return value;
+	}
+
+
+	public static String sha1(String content) {
+		return DigestUtils.sha1Hex(content);
 	}
 }

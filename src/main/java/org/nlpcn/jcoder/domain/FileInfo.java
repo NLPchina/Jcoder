@@ -67,7 +67,7 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 			if ("/resources/ioc.js".equals(this.relativePath) || "/pom.xml".equals(this.relativePath)) {
 				md5 = IOUtil.getContent(file, IOUtil.UTF8);
 			} else {
-				md5 = MD5Util.getMd5ByFile(file);
+				md5 = MD5Util.md5(file);
 			}
 		}
 		return md5;

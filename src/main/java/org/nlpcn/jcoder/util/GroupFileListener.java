@@ -3,11 +3,13 @@ package org.nlpcn.jcoder.util;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
+import org.h2.store.FileLister;
 import org.nlpcn.jcoder.domain.ApiDoc;
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +28,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * 监听文件和文件夹变化
@@ -35,26 +39,49 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupFileListener.class);
 
-	private static final ConcurrentHashMap<String, FileAlterationMonitor> MAP = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<String, Object[]> MAP = new ConcurrentHashMap<>();
 
 	/**
 	 * 注册一个监听事件
 	 */
 	public static void regediter(String groupName) {
 		GroupFileListener groupFileListener = new GroupFileListener(groupName);
-
 		groupFileListener.init();
+		FileAlterationMonitor src = createMonitor(groupFileListener.srcFile, groupFileListener);
 
-		FileAlterationObserver observer = new FileAlterationObserver(new File(StaticValue.GROUP_FILE, groupName + "/src/api"), null, null);
+		FileListener ioc = new FileListener(groupFileListener.iocFile, (v) -> {
+			JarService.getOrCreate(groupName).flushIOC();
+			return null;
+		});
+		ioc.start();
+
+		FileListener pom = new FileListener(groupFileListener.pomFile, (v) -> {
+			JarService.getOrCreate(groupName).release();
+			JarService.getOrCreate(groupName);
+			return null;
+		});
+		pom.start();
+
+		MAP.put(groupName, new Object[]{src, pom, ioc});
+	}
+
+	/**
+	 * 创建监控
+	 *
+	 * @param file
+	 * @param groupFileListener
+	 * @return
+	 */
+	private static FileAlterationMonitor createMonitor(File file, GroupFileListener groupFileListener) {
+		FileAlterationObserver observer = new FileAlterationObserver(file, null, null);
 		observer.addListener(groupFileListener);
 		FileAlterationMonitor monitor = new FileAlterationMonitor(100, observer);
-		// 开始监控
-		MAP.put(groupName, monitor);
 		try {
 			monitor.start();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return monitor;
 	}
 
 	/**
@@ -132,20 +159,41 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 	 * 注销一个监听事件
 	 */
 	public static void unRegediter(String groupName) {
-		FileAlterationMonitor remove = MAP.remove(groupName);
+		Object[] remove = MAP.remove(groupName);
 		if (remove != null) {
-			try {
-				remove.stop();
-			} catch (Exception e) {
-				e.printStackTrace();
+			for (Object o : remove) {
+				if (o instanceof FileAlterationMonitor) {
+					try {
+						((FileAlterationMonitor) o).stop();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (o instanceof FileListener) {
+					try {
+						((Thread) o).interrupt();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
 			}
+
 		}
 	}
 
 	private String groupName;
 
+	private File srcFile;
+	private File pomFile;
+	private File iocFile;
+
 	public GroupFileListener(String groupName) {
 		this.groupName = groupName;
+		JarService js = JarService.getOrCreate(groupName);
+		srcFile = new File(StaticValue.GROUP_FILE, groupName + "/src/api");
+		pomFile = new File(js.getPomPath());
+		iocFile = new File(js.getIocPath());
 	}
 
 	@Override
@@ -292,4 +340,54 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		return task;
 	}
 
+	private static class FileListener extends Thread {
+
+		private long preStatus = 0;
+
+		private File file = null;
+
+		boolean flag = true;
+
+		private Function<Void, Void> callBack;
+
+		public FileListener(File file, Function<Void, Void> callBack) {
+			if (file.isDirectory()) {
+				throw new RuntimeException("it only listener file");
+			}
+			this.file = file;
+			this.callBack = callBack;
+			if (file.exists()) {
+				preStatus = getStatus();
+			}
+		}
+
+		@Override
+		public void run() {
+			while (flag) {
+				if (preStatus != getStatus()) {
+					preStatus = getStatus();
+					callBack.apply(null);
+				}
+				try {
+					Thread.sleep(100L);
+				} catch (InterruptedException e) {
+					return;
+				}
+			}
+		}
+
+		@Override
+		public void interrupt() {
+			flag = false;
+			super.interrupt();
+		}
+
+		public long getStatus() {
+			if (file.exists()) {
+				return file.lastModified() ;
+			} else {
+				return 0;
+			}
+		}
+	}
 }

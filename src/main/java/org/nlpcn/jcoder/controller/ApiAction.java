@@ -1,7 +1,7 @@
 package org.nlpcn.jcoder.controller;
 
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
+import java.security.MessageDigest;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -15,9 +15,7 @@ import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.ExceptionUtil;
-import org.nlpcn.jcoder.util.JavaDocUtil;
-import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.*;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
@@ -33,6 +31,9 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Sets;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 @IocBean
 public class ApiAction {
 
@@ -45,7 +46,7 @@ public class ApiAction {
 
 	/**
 	 * api
-	 * 
+	 *
 	 * @return api info
 	 */
 	@At("/apidoc/info")
@@ -100,74 +101,46 @@ public class ApiAction {
 
 	}
 
-	/**
-	 * 执行测试用户的api
-	 * 
-	 * @param jsonTask
-	 * @return
-	 */
-	@At("/run_api")
-	@Ok("raw")
-	public Object runApi(@Param("json") String jsonTask) {
+	@At("/jar/org/nlpcn/jcoder/?/?/*")
+	@Ok("void")
+	public void maven(HttpServletRequest req, HttpServletResponse rep) throws ApiException, IOException {
 
-		String taskName = null;
-		try {
+		String path = req.getServletPath();
 
-			JSONObject json = JSONObject.parseObject(jsonTask);
+		if (!StaticValue.getJcoderJarFile().exists()) {
+			throw new ApiException(404, path + " not found ");
+		}
 
-			String code = json.getString("task.code");
-			String codeType = json.getString("task.codeType");
+		String[] split = path.split("/");
+		String libName = split[split.length - 1];
+		if (StringUtil.isBlank(libName)) {
+			throw new ApiException(404, "path error " + req.getServletPath());
+		}
 
-			Task task = new Task();
-			task.setCode(code);
-			task.setType(2);
+		String pom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+				+ "		  <modelVersion>4.0.0</modelVersion>\n" + "		  <groupId>org.nlpcn.jcoder.jar</groupId>\n" + "		  <artifactId>jcoder.jar</artifactId>\n"
+				+ "		  <version>1.0</version>\n" + "\n" + "\n" + "</project>";
 
-			taskName = task.getName() + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
-
-			if (ThreadManager.checkActionExists(taskName)) {
-				LOG.warn(taskName + " has beening run! pleast stop it first!");
-			} else {
-				LOG.info(taskName + " publish ok ! will be run !");
-				ThreadManager.add2ActionTask(taskName, Thread.currentThread());
-				LOG.info(taskName + " result : " + new JavaRunner(task).compile().instance().execute());
+		if (libName.endsWith(".pom")) {
+			rep.getOutputStream().write(pom.getBytes("utf-8"));
+		} else if (libName.endsWith(".pom.sha1")) {
+			rep.getOutputStream().write(MD5Util.sha1(pom).getBytes());
+		} else if (libName.endsWith(".jar")) {
+			Mvcs.getResp().setContentType("application/octet-stream");
+			try (FileInputStream is = new FileInputStream(StaticValue.getJcoderJarFile());
+			     OutputStream os = rep.getOutputStream()) {
+				IOUtil.writeAndClose(is, os);
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new ApiException(404, e.getMessage());
 			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-			LOG.error(taskName + " " + ExceptionUtil.printStackTraceWithOutLine(e));
-
-			return Restful.instance().msg(e.getMessage());
-		} finally {
-			if (taskName != null)
-				ThreadManager.removeActionIfOver(taskName);
-		}
-
-		return Restful.instance().msg("code run over!");
-	}
-
-	/**
-	 * 停止一个api任务
-	 * 
-	 * @param jsonTask
-	 * @return
-	 */
-	@At("/stop_api")
-	@Ok("raw")
-	public Object stopApi(@Param("json") String jsonTask) {
-
-		String taskName = null;
-		try {
-			JSONObject json = JSONObject.parseObject(jsonTask);
-			taskName = JavaSourceUtil.findClassName(json.getString("task.code")) + "@" + "0@" + Mvcs.getReq().getRemoteAddr();
-			LOG.info(taskName + " will be to stop ! ");
-			ThreadManager.stop(taskName);
-			LOG.info(taskName + " stoped ! ");
-			return Restful.ok();
-		} catch (Exception e) {
-			e.printStackTrace();
-			LOG.error(taskName + " err " + ExceptionUtil.printStackTraceWithOutLine(e));
-			return Restful.fail();
+		} else if (libName.endsWith(".jar.sha1")) {
+			rep.getOutputStream().write(MD5Util.sha1(StaticValue.getJcoderJarFile()).getBytes());
+		} else {
+			throw new ApiException(404, "the end of " + libName + " err");
 		}
 	}
+
+
 
 }

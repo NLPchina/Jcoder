@@ -18,6 +18,7 @@ import java.io.File;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 import java.util.ResourceBundle;
 
 public class StaticValue {
@@ -50,15 +51,14 @@ public class StaticValue {
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
 
 	//启动jcoderjar所在的文件，如果源码方式则为null
-	private static File JCODER_JAR_FILE = null ;
+	private static File JCODER_JAR_FILE = null;
 
 	//是否是测试模式
-	public static final boolean TESTRING =  Boolean.parseBoolean(getValueOrCreate("testing", "false"));
+	public static final boolean TESTRING = Boolean.parseBoolean(getValueOrCreate("testing", "false"));
 
 	private static boolean master = false;
 
 	private static SharedSpaceService sharedSpace;
-
 
 
 	static {
@@ -71,10 +71,25 @@ public class StaticValue {
 		LOG.info("env in system.propertie: zookeeper : " + ZK);
 		LOG.info("env in system.propertie: ssl : " + getValueOrCreate("ssl", null));
 		URL location = StaticValue.class.getProtectionDomain().getCodeSource().getLocation();
-		if(location.toExternalForm().endsWith(".jar")){
+		if (location.toExternalForm().endsWith(".jar")) {
 			JCODER_JAR_FILE = new File(location.toExternalForm().substring(6));
+		} else { //如果源码方式启动去编译目录找jar
+			File dir = new File( "build/libs");
+
+			if (dir.exists() && dir.isDirectory()) {
+				File[] files = dir.listFiles();
+				Arrays.sort(files, (f1, f2) -> -f1.getName().compareTo(f2.getName())); //找到版本最大的
+				for (File file : files) {
+					if (file.getName().startsWith("jcoder") && file.getName().endsWith(".jar")) {
+						LOG.warn("find system jar path is : " + file.getName());
+						JCODER_JAR_FILE = file;
+						break;
+					}
+				}
+			}
+
 		}
-		LOG.info("startd by jcoder jar : "+JCODER_JAR_FILE);
+		LOG.info("startd by jcoder jar : " + JCODER_JAR_FILE);
 		LOG.info("env in system.propertie: testing : " + TESTRING);
 	}
 
@@ -238,10 +253,11 @@ public class StaticValue {
 
 	/**
 	 * 获得当前groupname
+	 *
 	 * @return
 	 */
-	public static String getCurrentGroup(){
-		return Rpcs.getContext().getGroupName() ;
+	public static String getCurrentGroup() {
+		return Rpcs.getContext().getGroupName();
 	}
 
 	public static File getJcoderJarFile() {
