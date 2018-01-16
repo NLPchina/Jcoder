@@ -40,6 +40,9 @@ new Vue({
             me.apis = data;
         });
 
+        // Bootstrap Scrollspy
+        $(window).scrollspy({target: '#scrollingNav', offset: 25});
+
         // Content-Scroll on Navigation click.
         $('#scrollingNav').find('>.sidenav').on('click', 'a', function (e) {
             e.preventDefault();
