@@ -268,21 +268,23 @@ var resourceManager = new Vue({
                 {hostPort:importFile.checkedHosts,groupName:$this.groupName,"relativePaths[]":path},null).then(function (data) {
                 JqdeBox.unloading();
                 JqdeBox.message(data.ok, data.message);
-                for(var i = 0;i < path.length;i++){
-                    $this.resources.splice($.inArray(path[i],$this.resources),1);
+                if(data.ok){
+                    var msg = data.message.substring(data.message.indexOf(":") , data.message.length).split(',');
+                    debugger;
+                    for(var i = 0;i < path.length;i++){
+                        if(msg[i].indexOf("成功") > -1)$this.resources.splice($.inArray(path[i],$this.resources),1);
+                    }
+                    $('#file-table').find('td input[type=checkbox]').each(function () {
+                         this.checked = false;
+                     });
+                    _.each($this.hosts, function (host) {
+                       if(host.selected){
+                         var fileName = $this.currentNode.file.name;
+                         $this.resourceList(host.host,fileName);
+                         return true;
+                       }
+                    });
                 }
-                $('#file-table').find('td input[type=checkbox]').each(function () {
-                     this.checked = false;
-                 });
-                _.each($this.hosts, function (host) {
-                   if(host.selected){
-                     var fileName = $this.currentNode.file.name;
-                     $this.resourceList(host.host,fileName);
-                     //importFile.checkedHosts.push(host.host);
-                     //selectNode(fileName);
-                     return true;
-                   }
-                 });
             });
           }
         });

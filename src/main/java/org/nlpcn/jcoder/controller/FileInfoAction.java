@@ -375,8 +375,16 @@ public class FileInfoAction {
 						JarService jarService = JarService.getOrCreate(groupName) ;
 						File file = new File(StaticValue.GROUP_FILE, groupName + relativePaths[i]);
 						jarService.removeJar(file);
+						if(file.exists()){
+							sb.append("文件："+file.getName()+"删除失败！,");
+						}else{
+							sb.append("文件："+file.getName()+"删除成功！,");
+						}
 						continue;
-					}
+					}else if(relativePaths[i].contains("target")){
+					    sb.append("文件："+relativePaths[i].substring(relativePaths[i].lastIndexOf("/"),relativePaths[i].length())+"不能删除！,");
+					    continue;
+                    }
 					File file = new File(StaticValue.GROUP_FILE, groupName + relativePaths[i]);
 					if (file.isDirectory()) {
 						boolean flag = org.nutz.lang.Files.deleteDir(file);
@@ -385,9 +393,9 @@ public class FileInfoAction {
 							org.nutz.lang.Files.deleteDir(file.getAbsoluteFile());
 						}
 						if(file.exists()){
-							sb.append("文件夹："+file.getName()+"删除成功！//n");
+							sb.append("文件夹："+file.getName()+"删除失败！,");
 						}else{
-							sb.append("文件夹："+file.getName()+"删除失败！//n");
+							sb.append("文件夹："+file.getName()+"删除成功！,");
 						}
 					} else {
 						boolean flag = org.nutz.lang.Files.deleteFile(file);
@@ -396,9 +404,9 @@ public class FileInfoAction {
 							file.delete();
 						}
 						if(file.exists()){
-							sb.append("文件："+file.getName()+"删除成功！//n");
+							sb.append("文件："+file.getName()+"删除失败！,");
 						}else{
-							sb.append("文件："+file.getName()+"删除失败！//n");
+							sb.append("文件："+file.getName()+"删除成功！,");
 						}
 					}
 				}
