@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 @IocBean
 public class JarService {
@@ -76,12 +77,21 @@ public class JarService {
 			});
 
 	public static JarService getOrCreate(String groupName) {
-		try {
-			return CACHE.get(groupName);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
+		JarService jarService = CACHE.getIfPresent(groupName);
+		if (jarService == null) {
+			try {
+				jarService = CACHE.get(groupName);
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+			try {
+				StaticValue.getSystemIoc().get(TaskService.class, "taskService").initTaskFromDB(groupName);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
 		}
+		return jarService;
 	}
 
 	public static void remove(String groupName) {

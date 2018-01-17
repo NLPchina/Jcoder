@@ -7,9 +7,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
-import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
-import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
@@ -17,7 +15,6 @@ import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
-import org.nutz.dao.Cnd;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -46,10 +43,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -98,35 +93,50 @@ public class FileInfoAction {
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
 			List<FileInfo> result = new ArrayList<>();
 
-			Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
+			Path[] paths = new Path[]{
+					new File(StaticValue.GROUP_FILE, groupName + "/resources").toPath(),
+					new File(StaticValue.GROUP_FILE, groupName + "/lib").toPath(),
+			};
 
-			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-				// 在访问子目录前触发该方法
-				@Override
-				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-					File file = dir.toFile();
-					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-						return FileVisitResult.SKIP_SUBTREE;
-					}
-					return FileVisitResult.CONTINUE;
+			File pom = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml");
+			if (pom.exists()) {
+				result.add(new FileInfo(pom));
+			}
+
+			for (Path path : paths) {
+				if (!path.toFile().exists()) {
+					LOG.warn("file {} not exists ", path);
+					continue;
 				}
 
-				@Override
-				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-					File file = path.toFile();
-					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+				Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+					// 在访问子目录前触发该方法
+					@Override
+					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+						File file = dir.toFile();
+						if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+							LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+							return FileVisitResult.SKIP_SUBTREE;
+						}
 						return FileVisitResult.CONTINUE;
 					}
-					try {
-						result.add(new FileInfo(file));
-					} catch (Exception e) {
-						e.printStackTrace();
+
+					@Override
+					public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
+						File file = path.toFile();
+						if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
+							LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
+							return FileVisitResult.CONTINUE;
+						}
+						try {
+							result.add(new FileInfo(file));
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						return FileVisitResult.CONTINUE;
 					}
-					return FileVisitResult.CONTINUE;
-				}
-			});
+				});
+			}
 
 			return Restful.instance().obj(result);
 		} else {
@@ -360,31 +370,31 @@ public class FileInfoAction {
 	 * 删除一个文件或文件夹
 	 */
 	@At
-	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts,@Param("groupName") String groupName,
+	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts, @Param("groupName") String groupName,
 							  @Param("relativePaths[]") String[] relativePaths,
 							  @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
-			if(!first){
+			if (!first) {
 				//String[] paths = relativePath.split(",");
 				StringBuilder sb = new StringBuilder();
-				for(int i = 0;i < relativePaths.length;i++){
+				for (int i = 0; i < relativePaths.length; i++) {
 					if (relativePaths[i].contains("..")) {
 						return Restful.instance(false, "删除路径不能包含`..`字符");
 					}
-					if(relativePaths[i].endsWith(".jar") && relativePaths[i].contains("lib") && !relativePaths[i].contains("target")){
-						JarService jarService = JarService.getOrCreate(groupName) ;
+					if (relativePaths[i].endsWith(".jar") && relativePaths[i].contains("lib") && !relativePaths[i].contains("target")) {
+						JarService jarService = JarService.getOrCreate(groupName);
 						File file = new File(StaticValue.GROUP_FILE, groupName + relativePaths[i]);
 						jarService.removeJar(file);
-						if(file.exists()){
-							sb.append("文件："+file.getName()+"删除失败！,");
-						}else{
-							sb.append("文件："+file.getName()+"删除成功！,");
+						if (file.exists()) {
+							sb.append("文件：" + file.getName() + "删除失败！,");
+						} else {
+							sb.append("文件：" + file.getName() + "删除成功！,");
 						}
 						continue;
-					}else if(relativePaths[i].contains("target")){
-					    sb.append("文件："+relativePaths[i].substring(relativePaths[i].lastIndexOf("/"),relativePaths[i].length())+"不能删除！,");
-					    continue;
-                    }
+					} else if (relativePaths[i].contains("target")) {
+						sb.append("文件：" + relativePaths[i].substring(relativePaths[i].lastIndexOf("/"), relativePaths[i].length()) + "不能删除！,");
+						continue;
+					}
 					File file = new File(StaticValue.GROUP_FILE, groupName + relativePaths[i]);
 					if (file.isDirectory()) {
 						boolean flag = org.nutz.lang.Files.deleteDir(file);
@@ -392,10 +402,10 @@ public class FileInfoAction {
 							System.gc();//回收资源
 							org.nutz.lang.Files.deleteDir(file.getAbsoluteFile());
 						}
-						if(file.exists()){
-							sb.append("文件夹："+file.getName()+"删除失败！,");
-						}else{
-							sb.append("文件夹："+file.getName()+"删除成功！,");
+						if (file.exists()) {
+							sb.append("文件夹：" + file.getName() + "删除失败！,");
+						} else {
+							sb.append("文件夹：" + file.getName() + "删除成功！,");
 						}
 					} else {
 						boolean flag = org.nutz.lang.Files.deleteFile(file);
@@ -403,15 +413,15 @@ public class FileInfoAction {
 							System.gc();//回收资源
 							file.delete();
 						}
-						if(file.exists()){
-							sb.append("文件："+file.getName()+"删除失败！,");
-						}else{
-							sb.append("文件："+file.getName()+"删除成功！,");
+						if (file.exists()) {
+							sb.append("文件：" + file.getName() + "删除失败！,");
+						} else {
+							sb.append("文件：" + file.getName() + "删除成功！,");
 						}
 					}
 				}
 				return Restful.instance().ok(true).msg(sb.toString());
-			}else{
+			} else {
 				List<String> hosts = Arrays.asList(hostPorts);
 				Set<String> hostPortsArr = new HashSet<>(hosts);
 				Set<String> firstHost = new HashSet<String>();
@@ -427,8 +437,8 @@ public class FileInfoAction {
 				//删除master数据节点
 				if (firstHost != null && firstHost.size() > 0) {
 					List<String> list = new ArrayList<String>();
-					for(int a = 0;a<relativePaths.length;a++){
-						list.add(relativePaths[a].endsWith("/")?relativePaths[a].substring(0,(relativePaths[a].length() -1)):relativePaths[a]);
+					for (int a = 0; a < relativePaths.length; a++) {
+						list.add(relativePaths[a].endsWith("/") ? relativePaths[a].substring(0, (relativePaths[a].length() - 1)) : relativePaths[a]);
 					}
 					proxyService.post(firstHost, "/admin/fileInfo/upCluster",
 							ImmutableMap.of("groupName", groupName, "relativePaths",
@@ -477,7 +487,7 @@ public class FileInfoAction {
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
 	public Restful uploadFile(@Param("hostPorts") String[] hostPorts, @Param("group_name") String groupName, @Param("filePath") String filePath,
-	                          @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
+							  @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) file.length;
 
 		if (fileNum <= 0) {
