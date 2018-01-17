@@ -1,6 +1,8 @@
 package org.nlpcn.jcoder.util;
 
+import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.github.javaparser.ParseException;
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc.ParamDoc;
@@ -24,47 +27,59 @@ import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 
 /**
  * 根据java文件解析
- * 
- * @author ansj
  *
+ * @author ansj
  */
 public class JavaDocUtil {
 
-	public static ClassDoc parse(Reader reader) throws Exception {
-
-		CompilationUnit cu = JavaParser.parse(reader, true);
-
-		List<TypeDeclaration> types = cu.getTypes();
-
-		if (types.size() == 0 || !(types.get(0) instanceof ClassOrInterfaceDeclaration)) {
-			return null;
+	public static CompilationUnit compile(String code) throws ParseException {
+		try(Reader reader = new StringReader(StringUtil.trim(code))){
+			return JavaParser.parse(reader, false);
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ParseException(e.getMessage());
 		}
+	}
 
-		ClassOrInterfaceDeclaration cla = (ClassOrInterfaceDeclaration) types.get(0);
+	public static ClassDoc parse(String code) throws Exception {
+		try(Reader reader = new StringReader(StringUtil.trim(code))){
+			CompilationUnit cu = JavaParser.parse(reader, true);
 
-		ClassDoc cd = new ClassDoc(cla.getName());
+			List<TypeDeclaration> types = cu.getTypes();
 
-		if (cla.getComment() != null)
-			parseContent(cd, cla.getComment().getContent());
-
-		for (Node node : cla.getChildrenNodes()) {
-
-			if (node instanceof SingleMemberAnnotationExpr) {
-
-				SingleMemberAnnotationExpr sma = (SingleMemberAnnotationExpr) node;
-
-				if (sma.getName().getName().equals("Single")) {
-					if ("false".equals(sma.getMemberValue().toString())) {
-						cd.setSingle(false);
-					}
-				}
-
-			} else if (node instanceof MethodDeclaration) {
-				explainMethod(cd, (MethodDeclaration) node);
+			if (types.size() == 0 || !(types.get(0) instanceof ClassOrInterfaceDeclaration)) {
+				return null;
 			}
-		}
 
-		return cd;
+			ClassOrInterfaceDeclaration cla = (ClassOrInterfaceDeclaration) types.get(0);
+
+			ClassDoc cd = new ClassDoc(cla.getName());
+
+			if (cla.getComment() != null)
+				parseContent(cd, cla.getComment().getContent());
+
+			for (Node node : cla.getChildrenNodes()) {
+
+				if (node instanceof SingleMemberAnnotationExpr) {
+
+					SingleMemberAnnotationExpr sma = (SingleMemberAnnotationExpr) node;
+
+					if (sma.getName().getName().equals("Single")) {
+						if ("false".equals(sma.getMemberValue().toString())) {
+							cd.setSingle(false);
+						}
+					}
+
+				} else if (node instanceof MethodDeclaration) {
+					explainMethod(cd, (MethodDeclaration) node);
+				}
+			}
+
+			return cd;
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new ParseException(e.getMessage());
+		}
 
 	}
 
@@ -157,7 +172,7 @@ public class JavaDocUtil {
 
 	/**
 	 * 解析class上面的注释
-	 * 
+	 *
 	 * @param cd
 	 * @param content
 	 */
@@ -177,7 +192,7 @@ public class JavaDocUtil {
 
 	/**
 	 * 解析方法上面的注释
-	 * 
+	 *
 	 * @param md
 	 * @param content
 	 * @return

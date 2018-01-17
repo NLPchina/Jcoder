@@ -1,5 +1,8 @@
 package org.nlpcn.jcoder.util;
 
+import com.github.javaparser.ParseException;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
@@ -7,6 +10,7 @@ import org.h2.store.FileLister;
 import org.nlpcn.jcoder.domain.ApiDoc;
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.JarService;
@@ -112,7 +116,12 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			Map<String, Task> maps = new HashMap<>();
 
 			StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTaskByGroupNameCache(groupName).forEach(t -> {
-				maps.put(t.getName(), t);
+				try {
+					maps.put(t.getName(), t);
+				} catch (Exception e) {
+					e.printStackTrace();
+					LOG.error("init err {}",t.getCode());
+				}
 			});
 
 
@@ -130,7 +139,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			maps.values().forEach(t -> {
 				try {
 					writeTask2Src(t);
-				} catch (IOException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 
@@ -141,9 +150,9 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		}
 	}
 
-	public static void writeTask2Src(Task t) throws IOException {
+	public static void writeTask2Src(Task t) throws IOException, CodeException {
 		LOG.info("syn write file by task " + t.getName());
-		String pk = JavaSourceUtil.findPackage(t.getCode());
+		String pk = new JavaSourceUtil(t.getCode()).getPackage();
 		File file = new File(StaticValue.GROUP_FILE, t.getGroupName() + "/src/api/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
 
 		if (!file.getParentFile().exists()) {
@@ -199,76 +208,72 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 	@Override
 	public void onFileCreate(File file) {
 		if (file.getName().endsWith(".java")) {
-			LOG.info("[新建]:" + file.getAbsolutePath());
-
-			String content = IOUtil.getContent(file, "utf-8");
-
 			try {
-
-				List<ApiDoc> sub = null;
-				if (!StringUtil.isBlank(content)) {
-					ClassDoc parse = JavaDocUtil.parse(new StringReader(content));
-					if (parse != null) {
-						sub = parse.getSub();
-					}
-				}
-
-
-				if (sub == null || sub.size() == 0) {
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error(file.getCanonicalPath() + "  not found any api  ...................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					return;
-				}
-			} catch (Exception e) {
+				createTask(file);
+			} catch (CodeException e) {
 				e.printStackTrace();
 			}
+		}
+	}
 
-			Task task = getTask(taskName(file));
+	private synchronized void createTask(File file) throws CodeException {
+		LOG.info("[新建]:" + file.getAbsolutePath());
 
-			if (task != null) {
-				if (task.getCode().equals(content)) {
-					return;
-				}
-				try {
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error(task.getName() + "  已经存在你重名了........task name all ready in ...................................................................");
-					LOG.error("==========" + JavaSourceUtil.findPackage(task.getCode()));
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-					LOG.error("...............................................................................................................................");
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			} else {
-				task = new Task();
-				task.setCode(IOUtil.getContent(file, "utf-8"));
-				task.setCreateUser("admin");
-				task.setType(1);
-				task.setStatus(1);
-				task.setCreateTime(new Date());
-				task.setUpdateTime(new Date());
-				task.setGroupName(groupName);
-				task.setDescription("file create");
-				try {
-					StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+		String content = IOUtil.getContent(file, "utf-8");
+
+		JavaSourceUtil javaSourceUtil = new JavaSourceUtil(content);
+
+		String className = javaSourceUtil.getClassName();
+
+		String fileName = taskName(file);
+
+		if (!fileName.equals(className)) {
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("path:{} className:{} not equals fileName:{}...................................................................", file.getAbsoluteFile(), className, fileName);
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			return;
+		}
+
+		Task task = getTask(className);
+
+		if (task != null) {
+			if (task.getCode().equals(content)) {
+				return;
+			}
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error(task.getName() + "  已经存在你重名了........task name all ready in ...................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+			LOG.error("...............................................................................................................................");
+
+		} else {
+			task = new Task();
+			task.setCode(content);
+			task.setCreateUser("admin");
+			task.setType(1);
+			task.setStatus(1);
+			task.setCreateTime(new Date());
+			task.setUpdateTime(new Date());
+			task.setGroupName(groupName);
+			task.setDescription("file create");
+			try {
+				StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}
@@ -282,21 +287,34 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				onFileCreate(file);
 				return;
 			} else {
-
-				String fCode = IOUtil.getContent(file, "utf-8");
-
-				if (fCode.equals(task.getCode())) {
-					return;
-				}
-
-				LOG.info("[修改]:" + file.getAbsolutePath());
-				task.setCode(fCode);
-
-
 				try {
-					//try compile
-					new JavaRunner(task).compile();
 					try {
+						String fCode = IOUtil.getContent(file, "utf-8");
+
+						if (fCode.equals(task.getCode())) {
+							return;
+						}
+
+						LOG.info("[修改]:" + file.getAbsolutePath());
+						task.setCode(fCode);
+
+						String fileName = taskName(file);
+
+						if (!fileName.equals(task.getName())) {
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("path:{} className:{} not equals fileName:{}...................................................................", file.getAbsoluteFile(), task.getName(), fileName);
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							LOG.error("...............................................................................................................................");
+							return;
+						}
+
 						StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -384,7 +402,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 		public long getStatus() {
 			if (file.exists()) {
-				return file.lastModified() ;
+				return file.lastModified();
 			} else {
 				return 0;
 			}

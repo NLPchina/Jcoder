@@ -1,13 +1,18 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.github.javaparser.ParseException;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.TypeDeclaration;
 import org.apache.curator.framework.CuratorFramework;
 import org.nlpcn.jcoder.constant.TaskStatus;
 import org.nlpcn.jcoder.constant.TaskType;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.filter.TestingFilter;
+import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -19,7 +24,10 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.StringReader;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,6 +98,11 @@ public class TaskService {
 		// 历史库版本保存
 		boolean isModify = checkTaskModify(task);
 
+		String message = null;
+		if ((validate(task)) != null) {
+			throw new CodeException(message);
+		}
+
 		if (isModify) {
 			String version = generateVersion(task);
 			task.setVersion(version);
@@ -109,6 +122,44 @@ public class TaskService {
 
 		return isModify;
 	}
+
+	/**
+	 * 验证一个taskcode是否正确
+	 *
+	 * @param task
+	 * @return
+	 */
+	public String validate(Task task) throws ParseException {
+
+		String code = task.getCode();
+		String name = null;
+		String pk = null;
+
+		CompilationUnit compile = JavaDocUtil.compile(code);
+
+		pk = compile.getPackage().getPackageName();
+		if (StringUtil.isBlank(pk)) {
+			return ("package can not empty ");
+		}
+
+		List<TypeDeclaration> types = compile.getTypes();
+
+		for (TypeDeclaration type : types) {
+			if (type.getModifiers()== Modifier.PUBLIC){
+				if(name!=null){
+					return "class not have more than one public class " ;
+				}
+				name = type.getName() ;
+			}
+		}
+
+		if(name==null){
+			return "not find className " ;
+		}
+
+		return null;
+	}
+
 
 	/**
 	 * 判断task代码是否修改过
@@ -387,7 +438,7 @@ public class TaskService {
 
 		Object[] args = map2Args(params, method.getMethod());
 
-		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName,className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName, className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
 
 
@@ -400,8 +451,8 @@ public class TaskService {
 	 * @return
 	 * @throws ApiException
 	 */
-	public static <T> T executeTaskByArgs(String groupName ,String className, String methodName, Object... params) throws ExecutionException {
-		Task task = findTaskByCache(groupName,className);
+	public static <T> T executeTaskByArgs(String groupName, String className, String methodName, Object... params) throws ExecutionException {
+		Task task = findTaskByCache(groupName, className);
 		if (task == null) {
 			if (TestingFilter.methods != null) {
 				LOG.info("use testing method to run ");
@@ -419,7 +470,7 @@ public class TaskService {
 
 		Object[] args = array2Args(method.getMethod(), params);
 
-		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName,className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
+		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName, className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
 
 	private static <T> T executeTaskByArgsByTest(String className, String methodName, Object[] params) throws ApiException {

@@ -14,6 +14,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
+import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
@@ -478,7 +479,6 @@ public class SharedSpaceService {
 		for (Group group : groups) {
 
 			List<Different> diffs = joinCluster(group, true);
-
 			result.put(group.getName(), diffs);
 
 			if (StaticValue.TESTRING) {
@@ -551,7 +551,7 @@ public class SharedSpaceService {
 					});
 
 				} catch (Exception e) {
-					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getCode(), e);
 				}
 			});
 		}

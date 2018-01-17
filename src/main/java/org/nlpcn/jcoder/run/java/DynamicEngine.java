@@ -218,7 +218,7 @@ public class DynamicEngine {
 	}
 
 	public <T> T javaCodeToObject(String content) throws IllegalAccessException, InstantiationException, IOException, CodeException {
-		String className = JavaSourceUtil.findFullName(content);
+		String className = new JavaSourceUtil(content).getFullName();
 		if (StringUtil.isBlank(className)) {
 			throw new ClassFormatError("can find class name ,please define it ! use javaCodeToObject(String fullClassName, String javaCode)");
 		}
@@ -226,7 +226,7 @@ public class DynamicEngine {
 	}
 
 	public Class<?> javaCodeToClass(String content) throws IOException, CodeException {
-		String className = JavaSourceUtil.findFullName(content);
+		String className = new JavaSourceUtil(content).getFullName();
 		if (StringUtil.isBlank(className)) {
 			throw new ClassFormatError("can find class name ,please define it ! use javaCodeToObject(String fullClassName, String javaCode)");
 		}

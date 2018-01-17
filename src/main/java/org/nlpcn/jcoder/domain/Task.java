@@ -2,6 +2,8 @@ package org.nlpcn.jcoder.domain;
 
 import java.util.Date;
 
+import org.nlpcn.jcoder.run.CodeException;
+import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -49,8 +51,10 @@ public class Task {
 	private String version;
 
 	private String runStatus;
-	
+
 	private CodeInfo codeInfo = new CodeInfo();
+
+	private JavaSourceUtil sourceUtil;
 
 	// <option value=1>Api</option>
 	// <option value=2>Cron</option>
@@ -61,7 +65,7 @@ public class Task {
 	@Column("status")
 	private Integer status;
 
-	private String md5 ;
+	private String md5;
 
 	public Long getId() {
 		return id;
@@ -71,7 +75,10 @@ public class Task {
 		this.id = id;
 	}
 
-	public String getName() {
+	public synchronized String getName(){
+		if(name==null){
+			new JavaRunner(this).compile() ;
+		}
 		return name;
 	}
 
@@ -80,8 +87,7 @@ public class Task {
 	}
 
 	public void setCode(String code) {
-		this.name = JavaSourceUtil.findClassName(code);
-		this.md5 = MD5Util.md5(code) ;
+		this.md5 = MD5Util.md5(code);
 		this.code = code;
 	}
 
@@ -160,17 +166,17 @@ public class Task {
 	public long success() {
 		return StaticValue.space().getSuccess(this.getId());
 	}
-	
+
 	public long error() {
 		return StaticValue.space().getError(this.getId());
 	}
 
 	public void updateError() {
-		StaticValue.space().counter(this.getId(),false);
+		StaticValue.space().counter(this.getId(), false);
 	}
 
 	public void updateSuccess() {
-		StaticValue.space().counter(this.getId(),true);
+		StaticValue.space().counter(this.getId(), true);
 	}
 
 	public String getVersion() {
@@ -186,7 +192,7 @@ public class Task {
 	}
 
 	public void setName(String name) {
-		this.name = name ;
+		this.name = name;
 	}
 
 	public String getGroupName() {
@@ -199,5 +205,13 @@ public class Task {
 
 	public String getMd5() {
 		return md5;
+	}
+
+	public JavaSourceUtil sourceUtil() {
+		return sourceUtil;
+	}
+
+	public void setSourceUtil(JavaSourceUtil sourceUtil) {
+		this.sourceUtil = sourceUtil;
 	}
 }

@@ -70,7 +70,7 @@ public class ApiAction {
 				LOG.error(e1.getMessage(), e1);
 			}
 			try {
-				cd = JavaDocUtil.parse(new StringReader(t.getCode()));
+				cd = JavaDocUtil.parse(t.getCode());
 				cd.getSub().stream().forEach(method -> {
 					ExecuteMethod executeMethod = t.codeInfo().getExecuteMethod(method.getName());
 					MethodDoc md = (MethodDoc) method;
@@ -140,7 +140,6 @@ public class ApiAction {
 			throw new ApiException(404, "the end of " + libName + " err");
 		}
 	}
-
 
 
 }
