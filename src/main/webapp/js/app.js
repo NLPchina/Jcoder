@@ -115,9 +115,9 @@ var vmApp = new Vue({
 
                 var obj = null;
                 if(urls.length > 1){
-                    obj = $('#nav li:has(a[href="#' + href.replace('/modules','')+'?'+urls[1] + '"])');
+                    obj = $('#nav li:has(a[href="#' + decodeURIComponent(href.replace('/modules',''))+'?'+decodeURIComponent(urls[1]) + '"])');
                 }else{
-                    obj = $('#nav li:has(a[href="#' + href.replace('/modules','') + '"])');
+                    obj = $('#nav li:has(a[href="#' + decodeURIComponent(href.replace('/modules','')) + '"])');
                 }
                 obj.addClass("active")
                     .parents('li').addClass("active").addClass("open")
