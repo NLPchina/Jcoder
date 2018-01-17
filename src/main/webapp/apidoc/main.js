@@ -2,6 +2,7 @@ new Vue({
     el: '#vmApiDoc',
 
     data: {
+        isLoading: true,
         apis: null,
         nav_apis: null,
         baseUri: location.protocol + "//" + location.host
@@ -38,6 +39,9 @@ new Vue({
                 }));
             }));
             me.apis = data;
+        }).always(function () {
+            $("body #loader").remove();
+            me.isLoading = false;
 
             //
             me.updateScrollspy();
