@@ -1,17 +1,14 @@
 package org.nlpcn.jcoder.domain;
 
-import java.util.Date;
-
-import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
+import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
+
+import java.util.Date;
 
 @Table("task")
 public class Task {
@@ -75,9 +72,24 @@ public class Task {
 		this.id = id;
 	}
 
-	public synchronized String getName(){
-		if(name==null){
-			new JavaRunner(this).compile() ;
+	public String getName() {
+		if (name == null) {
+			if (this.sourceUtil != null) {
+				this.name = sourceUtil.getClassName();
+			} else {
+				synchronized (this) {
+					if (this.sourceUtil == null) {
+						try {
+							new JavaRunner(this).compile();
+							if (this.sourceUtil != null) {
+								this.name = sourceUtil.getClassName();
+							}
+						} catch (Throwable e) {
+							this.name = JavaSourceUtil.findClassName(this.code);
+						}
+					}
+				}
+			}
 		}
 		return name;
 	}

@@ -18,6 +18,8 @@ import java.util.regex.Pattern;
 
 public class JavaSourceUtil {
 
+	private static final Pattern PAT = Pattern.compile("public\\s+?class\\s+?.*?");
+
 	private String className = null;
 
 	private String pack = null;
@@ -77,5 +79,36 @@ public class JavaSourceUtil {
 	 */
 	public String getClassName() {
 		return className;
+	}
+
+
+	/**
+	 * 根据一个类返回类名称
+	 *
+	 * @param sourceCode
+	 * @return 类名称
+	 * @throws IOException
+	 */
+	public static String findClassName(String sourceCode) {
+
+		try (BufferedReader br = new BufferedReader(new StringReader(sourceCode))) {
+			String temp = null;
+
+			while ((temp = br.readLine()) != null) {
+				if (StringUtil.isBlank(temp)) {
+					continue;
+				}
+				Matcher matcher = PAT.matcher(temp);
+
+				if (matcher.find()) {
+					temp = temp.split("[\\s+?;{]")[2];
+					return temp;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 }

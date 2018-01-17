@@ -1,10 +1,12 @@
 package org.nlpcn.jcoder.service;
 
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
+
+import com.alibaba.fastjson.JSONObject;
+
 import org.nlpcn.jcoder.domain.GroupCache;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
@@ -22,7 +24,11 @@ import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
@@ -31,7 +37,12 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @IocBean
 public class JarService {
@@ -116,7 +127,7 @@ public class JarService {
 		try {
 			flushMaven();
 			flushClassLoader();
-		} catch (IOException e) {
+		} catch (Throwable e) {
 			e.printStackTrace();
 		}
 	}
@@ -153,11 +164,6 @@ public class JarService {
 
 	/**
 	 * 保存ioc文件
-	 *
-	 * @param code
-	 * @return
-	 * @throws IOException
-	 * @throws NoSuchAlgorithmException
 	 */
 	public void saveIoc(String groupName, String code) throws IOException, NoSuchAlgorithmException {
 		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resources");
@@ -192,8 +198,9 @@ public class JarService {
 					try {
 						Thread.currentThread().setContextClassLoader(engine.getClassLoader());
 						ioc.get(Lang.loadClass(entry.getValue().get("type").toString()), entry.getKey());
-					} catch (ClassNotFoundException e) {
-						throw Lang.wrapThrow(e);
+					} catch (Throwable e) {
+						e.printStackTrace();
+						LOG.error("ioc lazy err for classLoader: {}", entry);
 					} finally {
 						Thread.currentThread().setContextClassLoader(contextClassLoader);
 					}
@@ -202,8 +209,6 @@ public class JarService {
 
 	/**
 	 * 得到maven路径
-	 *
-	 * @return
 	 */
 	private String getMavenPath() {
 		String mavenPath = null;
@@ -229,9 +234,6 @@ public class JarService {
 
 	/**
 	 * copyjar包到当前目录中
-	 *
-	 * @return
-	 * @throws IOException
 	 */
 	private String copy() throws IOException {
 		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
@@ -243,9 +245,6 @@ public class JarService {
 
 	/**
 	 * 删除jiar包
-	 *
-	 * @return
-	 * @throws IOException
 	 */
 	private void clean() throws IOException {
 		String tempPom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
@@ -274,9 +273,6 @@ public class JarService {
 
 	/**
 	 * 刷新jar包
-	 *
-	 * @return
-	 * @throws IOException
 	 */
 	private synchronized void flushMaven() throws IOException {
 		//判断文件是否发生改变
@@ -318,8 +314,6 @@ public class JarService {
 
 	/**
 	 * 获得当前group pom的md5
-	 *
-	 * @return
 	 */
 	public String getPomMd5() {
 		File file = new File(pomPath);
@@ -367,9 +361,6 @@ public class JarService {
 
 	/**
 	 * 查找所有的jar
-	 *
-	 * @return
-	 * @throws IOException
 	 */
 	public List<File> findJars() throws IOException {
 		List<File> findAllJar = new ArrayList<>();
@@ -404,11 +395,6 @@ public class JarService {
 
 	/**
 	 * 保存pom文件
-	 *
-	 * @param content
-	 * @return
-	 * @throws IOException
-	 * @throws NoSuchAlgorithmException
 	 */
 	public void savePom(String groupName, String content) throws IOException, NoSuchAlgorithmException {
 		File pom = new File(StaticValue.GROUP_FILE, groupName);
@@ -418,8 +404,6 @@ public class JarService {
 
 	/**
 	 * 得到启动时候加载的路径
-	 *
-	 * @return
 	 */
 	public HashSet<String> getLibPathSet() {
 		return new HashSet<>(libPaths);
@@ -427,9 +411,6 @@ public class JarService {
 
 	/**
 	 * 删除一个jar包.只能删除非maven得jar包
-	 *
-	 * @param file
-	 * @return
 	 */
 	public boolean removeJar(File file) {
 		if (file.getParentFile().getAbsolutePath().equals(new File(jarPath).getAbsolutePath()) && file.getPath().toLowerCase().endsWith(".jar")) {

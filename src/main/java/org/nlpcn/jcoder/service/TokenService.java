@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import static org.nlpcn.jcoder.util.StaticValue.space;
 
@@ -24,11 +23,8 @@ public class TokenService {
 
 	/**
 	 * 获得一个token
-	 * @param key
-	 * @return
-	 * @throws Exception
 	 */
-	public static Token getToken(String key) throws Exception {
+	public static Token getToken(String key) {
 		ZKMap<Token> tokenCache = space().getTokenCache();
 
 		Token token = tokenCache.get(key);
@@ -55,7 +51,7 @@ public class TokenService {
 	/**
 	 * regeidt a token by user
 	 */
-	public static String regToken(User user) throws Exception {
+	public static String regToken(User user) {
 		return regToken(user, UUID.randomUUID().toString());
 	}
 
@@ -64,7 +60,7 @@ public class TokenService {
 	 *
 	 * @param key ,用户自定义自己的token，用户自己保持不重复
 	 */
-	public static String regToken(User user, String key) throws Exception {
+	public static String regToken(User user, String key) {
 		LOG.info(user.getName() + " to create a key");
 		Token token = new Token();
 		token.setToken(key);
@@ -78,7 +74,7 @@ public class TokenService {
 	/**
 	 * login out by token
 	 */
-	public static Token removeToken(String key) throws Exception {
+	public static Token removeToken(String key) {
 		Token token = space().getTokenCache().remove(key);
 		LOG.info(token + " to removed ");
 		return token;
