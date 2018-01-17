@@ -46,11 +46,6 @@ public class DynamicEngine {
 		// if class load change , to flush all task
 		this.classLoader = classLoader ;
 		this.buildClassPath() ;
-		synchronized (StaticValue.MAPPING) {
-			TaskService taskService = StaticValue.getSystemIoc().get(TaskService.class, "taskService");
-			taskService.initTaskFromDB(groupName);
-		}
-
 	}
 
 

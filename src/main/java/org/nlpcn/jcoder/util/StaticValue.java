@@ -1,8 +1,7 @@
 package org.nlpcn.jcoder.util;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.util.TypeUtils;
+
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
 import org.nlpcn.jcoder.server.rpc.Rpcs;
 import org.nlpcn.jcoder.service.JarService;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.ResourceBundle;
 
@@ -74,7 +72,7 @@ public class StaticValue {
 		if (location.toExternalForm().endsWith(".jar")) {
 			JCODER_JAR_FILE = new File(location.toExternalForm().substring(6));
 		} else { //如果源码方式启动去编译目录找jar
-			File dir = new File( "build/libs");
+			File dir = new File("build/libs");
 
 			if (dir.exists() && dir.isDirectory()) {
 				File[] files = dir.listFiles();
@@ -127,11 +125,28 @@ public class StaticValue {
 
 	/**
 	 * 從ｉｏｃ容器中獲取ｂｅａｎ
-	 *
-	 * @param name
-	 * @return
 	 */
 	public static <T> T getBean(String groupName, Class<T> t, String name) {
+		T object = null;
+		try {
+			object = JarService.getOrCreate(groupName).getIoc().get(t, name);
+		} catch (IocException e) {
+			LOG.error(e.getMessage());
+		}
+		if (object == null) {
+			object = getSystemIoc().get(t, name);
+		}
+		return object;
+	}
+
+	/**
+	 * 從ｉｏｃ容器中獲取ｂｅａｎ,group为当前线程中获取。就是RPCS
+	 */
+	public static <T> T getBean(Class<T> t, String name) {
+		String groupName = getCurrentGroup();
+		if (StringUtil.isBlank(groupName)) {
+			throw new RuntimeException("not find groupName in currentGroup");
+		}
 		T object = null;
 		try {
 			object = JarService.getOrCreate(groupName).getIoc().get(t, name);
@@ -148,12 +163,16 @@ public class StaticValue {
 		StaticValue.systemIoc = ioc;
 	}
 
+	/**
+	 * 获得当前线程组的ioc
+	 */
+	public static Ioc getUserIoc() {
+		return JarService.getOrCreate(getCurrentGroup()).getIoc();
+	}
+
 
 	/**
 	 * 从配置文件查找
-	 *
-	 * @param key
-	 * @return
 	 */
 	public static String getResource(String key) {
 		ResourceBundle bundle = ResourceBundle.getBundle("jcoder");
@@ -166,9 +185,6 @@ public class StaticValue {
 
 	/**
 	 * md5 code
-	 *
-	 * @param password
-	 * @return
 	 */
 	public static String passwordEncoding(String password) throws NoSuchAlgorithmException {
 		return MD5Util.md5(MD5Util.md5(password + "jcoder"));
@@ -176,9 +192,6 @@ public class StaticValue {
 
 	/**
 	 * 获取用户ip
-	 *
-	 * @param request
-	 * @return
 	 */
 	public static String getRemoteHost(javax.servlet.http.HttpServletRequest request) {
 
@@ -201,8 +214,6 @@ public class StaticValue {
 
 	/**
 	 * 获得host如果host为* 则返回127.0.0.1
-	 *
-	 * @return
 	 */
 	public static String getHost() {
 		if ("*".equals(HOST)) {
@@ -213,8 +224,6 @@ public class StaticValue {
 
 	/**
 	 * 获得用户配置的host
-	 *
-	 * @return
 	 */
 	public static String getConfigHost() {
 		return HOST;
@@ -234,8 +243,6 @@ public class StaticValue {
 
 	/**
 	 * 获得以zookeeper为内存的存储空间
-	 *
-	 * @return
 	 */
 	public static SharedSpaceService space() {
 		return sharedSpace;
@@ -244,8 +251,6 @@ public class StaticValue {
 
 	/**
 	 * 获得主机和ip名称 case 127.0.0.1:9095
-	 *
-	 * @return
 	 */
 	public static String getHostPort() {
 		return HOST_PORT;
@@ -253,11 +258,13 @@ public class StaticValue {
 
 	/**
 	 * 获得当前groupname
-	 *
-	 * @return
 	 */
 	public static String getCurrentGroup() {
 		return Rpcs.getContext().getGroupName();
+	}
+
+	public static File getCurrentResourceFile() {
+		return new File(GROUP_FILE, getCurrentGroup() + "resources");
 	}
 
 	public static File getJcoderJarFile() {

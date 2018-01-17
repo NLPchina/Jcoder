@@ -296,7 +296,7 @@ public class TaskService {
 				TASK_MAP_CACHE.put(task.getId(), task);
 				TASK_MAP_CACHE.put(makeKey(task), task);
 				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				e.printStackTrace();
 				LOG.error(e.getMessage(), e);
 			}
@@ -408,6 +408,19 @@ public class TaskService {
 				}
 			}
 		}
+	}
+
+	/**
+	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
+	 *
+	 * @param className
+	 * @param methodName
+	 * @param params
+	 * @return
+	 * @throws ExecutionException
+	 */
+	public static <T> T executeTask(String className, String methodName, Map<String, Object> params) throws ExecutionException {
+		return executeTask(StaticValue.getCurrentGroup(),className,methodName,params);
 	}
 
 	/**
