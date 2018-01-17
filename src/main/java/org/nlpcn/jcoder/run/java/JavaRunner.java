@@ -42,7 +42,7 @@ public class JavaRunner {
 
 	/**
 	 * compile to class if , class in task , it nothing to do!
-	 * 
+	 *
 	 * @return
 	 * @throws CodeException
 	 */
@@ -57,17 +57,28 @@ public class JavaRunner {
 
 				String code = task.getCode();
 
+				JavaSourceUtil sourceUtil = new JavaSourceUtil(code);
+
+				task.setSourceUtil(sourceUtil);
+
+				task.setName(sourceUtil.getClassName());
+
 				JarService jarService = JarService.getOrCreate(task.getGroupName());
 
 				DynamicEngine de = jarService.getEngine();
 
 				codeInfo.setioc(jarService.getIoc());
 
-				String pack = JavaSourceUtil.findPackage(code);
+				JavaSourceUtil javaSourceUtil = new JavaSourceUtil(code);
 
-				String className = JavaSourceUtil.findClassName(code);
+				String pack = javaSourceUtil.getPackage();
+				String className = javaSourceUtil.getClassName();
 
 				LOG.info("to compile " + pack + "." + className);
+
+				if (StringUtil.isBlank(pack)) {
+					throw new CodeException("package 不能为空");
+				}
 
 				if (className == null) {
 					throw new CodeException("not find className");
@@ -133,7 +144,7 @@ public class JavaRunner {
 
 	/**
 	 * instance and inject objcet if object is created , it nothing to do !
-	 * 
+	 *
 	 * @return
 	 */
 	public JavaRunner instance() {
@@ -184,9 +195,9 @@ public class JavaRunner {
 					if (field.getType().equals(org.apache.log4j.Logger.class)) {
 						LOG.warn("org.apache.log4j.Logger Deprecated please use org.slf4j.Logger by LoggerFactory");
 						mirror.setValue(objInstance, field, org.apache.log4j.Logger.getLogger(codeInfo.getClassz()));
-					} else if(field.getType().equals(org.slf4j.Logger.class)){
+					} else if (field.getType().equals(org.slf4j.Logger.class)) {
 						mirror.setValue(objInstance, field, LoggerFactory.getLogger(codeInfo.getClassz()));
-					}else {
+					} else {
 						mirror.setValue(objInstance, field, codeInfo.getIoc().get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
 					}
 					field.setAccessible(false);
@@ -199,7 +210,7 @@ public class JavaRunner {
 		} catch (InstantiationException | IllegalAccessException e) {
 			e.printStackTrace();
 			throw new CodeRuntimeException(e);
-		}finally {
+		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 			Mvcs.setIoc(contextIoc);
 		}
@@ -216,9 +227,8 @@ public class JavaRunner {
 
 	/**
 	 * execte task defaultExecute if not found , it execute excutemehtod ， if not found it throw Exception
-	 * 
+	 *
 	 * @return
-	 * 
 	 * @throws CodeException
 	 */
 	public Object execute() {
@@ -227,9 +237,8 @@ public class JavaRunner {
 
 	/**
 	 * execte task defaultExecute if not found , it execute excutemehtod ， if not found it throw Exception
-	 * 
+	 *
 	 * @return
-	 * 
 	 * @throws CodeException
 	 */
 	public Object execute(Method method, Object[] args) {
@@ -252,7 +261,7 @@ public class JavaRunner {
 			LOG.error("Execute ERR  " + task.getName() + "/" + method.getName() + " useTime " + (System.currentTimeMillis() - start) + " erred : " + ExceptionUtil.printStackTraceWithOutLine(e));
 			e.printStackTrace();
 			throw new CodeRuntimeException(ExceptionUtil.realException(e));
-		}finally {
+		} finally {
 			Thread.currentThread().setContextClassLoader(contextClassLoader);
 			Mvcs.setIoc(contextIoc);
 		}
@@ -260,7 +269,7 @@ public class JavaRunner {
 
 	/**
 	 * to compile it and validate some function
-	 * 
+	 *
 	 * @return it always return true
 	 * @throws CodeException
 	 * @throws IOException
@@ -270,9 +279,11 @@ public class JavaRunner {
 
 		DynamicEngine de = JarService.getOrCreate(task.getGroupName()).getEngine();
 
-		String pack = JavaSourceUtil.findPackage(code);
+		JavaSourceUtil javaSourceUtil = new JavaSourceUtil(code);
 
-		String className = JavaSourceUtil.findClassName(code);
+		String pack = javaSourceUtil.getPackage();
+
+		String className = javaSourceUtil.getClassName();
 
 		if (className == null) {
 			throw new CodeException("not find className");
@@ -314,6 +325,6 @@ public class JavaRunner {
 		return true;
 
 	}
-	
-	
+
+
 }

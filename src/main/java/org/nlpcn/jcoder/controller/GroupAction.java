@@ -132,14 +132,22 @@ public class GroupAction {
 							"\t<groupId>org.nlpcn.jcoder</groupId>\n" +
 							"\t<artifactId>" + name + "</artifactId>\n" +
 							"\t<version>0.1</version>\n" +
-							"\t<dependencies>\n" +(
-							StaticValue.getJcoderJarFile()!=null? //这里有个三目表达式
+							"\n" +
+							"\t<repositories>\n" +
+							"\t\t<repository>\n" +
+							"\t\t\t<id>jcoder</id>\n" +
+							"\t\t\t<url>" + (StaticValue.IS_SSL ? "https" : "http") + "://" + StaticValue.getHostPort() + "/jar/</url>\n" +
+							"\t\t</repository>\n" +
+							"\t</repositories>\n" +
+							"\n" +
+							"\t<dependencies>\n" +
 							"\t\t<dependency>\n" +
-									"\t\t\t<groupId>org.nlpcn.jcoder</groupId>\n" +
-									"\t\t\t<artifactId>jcoder</artifactId>\n" +
-									"\t\t\t<scope>system</scope>\n" +
-									"\t\t\t<systemPath>${basedir}/../../../lib/" + StaticValue.getJcoderJarFile().getName() + "</systemPath>\n" +
-									"\t\t</dependency>\n" : "\n") +
+							"\t\t\t<groupId>org.nlpcn</groupId>\n" +
+							"\t\t\t<artifactId>jcoder</artifactId>\n" +
+							"\t\t\t<version>5.0</version>\n" +
+							"\t\t\t<scope>runtime</scope>\n" +
+							"\t\t</dependency>\n" +
+							"\n" +
 							"\t</dependencies>\n" +
 							"\t<build>\n" +
 							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +

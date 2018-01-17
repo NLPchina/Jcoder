@@ -5,7 +5,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
-import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.GroupCache;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
@@ -23,11 +22,7 @@ import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URISyntaxException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
@@ -101,7 +96,12 @@ public class JarService {
 
 	private JarService(String groupName) throws IOException {
 		this.groupName = groupName;
+
 		jarPath = new File(StaticValue.GROUP_FILE, groupName + "/lib").getCanonicalPath();
+		if (!new File(jarPath).exists()) {
+			new File(jarPath).mkdirs();
+			LOG.warn("lib path not exists so create it");
+		}
 		pomPath = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml").getCanonicalPath();
 		iocPath = new File(StaticValue.GROUP_FILE, groupName + "/resources/ioc.js").getCanonicalPath();
 		engine = new DynamicEngine(groupName);
@@ -165,7 +165,7 @@ public class JarService {
 		flushIOC();
 	}
 
-	private synchronized void flushIOC() {
+	public synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 
 		JsonLoader loader = null;
@@ -205,7 +205,7 @@ public class JarService {
 	 *
 	 * @return
 	 */
-	public String getMavenPath() {
+	private String getMavenPath() {
 		String mavenPath = null;
 
 		if (StringUtil.isBlank(mavenPath)) {
@@ -233,11 +233,11 @@ public class JarService {
 	 * @return
 	 * @throws IOException
 	 */
-	public String copy() throws IOException {
+	private String copy() throws IOException {
 		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			return execute("cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies");
+			return execute(new File(StaticValue.GROUP_FILE, groupName), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DincludeScope=compile", "-DoutputDirectory=lib/target/dependency");
 		} else {
-			return execute(getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies");
+			return execute(new File(StaticValue.GROUP_FILE, groupName), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DincludeScope=compile", "-DoutputDirectory=lib/target/dependency");
 		}
 	}
 
@@ -247,12 +247,29 @@ public class JarService {
 	 * @return
 	 * @throws IOException
 	 */
-	public String clean() throws IOException {
-		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			return execute("cmd", "/c", getMavenPath(), "clean");
-		} else {
-			return execute(getMavenPath(), "clean");
+	private void clean() throws IOException {
+		String tempPom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+				"         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
+				"    <modelVersion>4.0.0</modelVersion>\n" +
+				"    <groupId>org.nlpcn.jcoder</groupId>\n" +
+				"    <artifactId>InfcnNlp</artifactId>\n" +
+				"    <version>0.1</version>\n" +
+				"</project>";
+
+		File tempFile = new File(jarPath + "/pom.xml");
+
+		try (FileOutputStream fos = new FileOutputStream(new File(jarPath + "/pom.xml"))) {
+			fos.write(tempPom.getBytes("utf-8"));
+			fos.flush();
 		}
+
+		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+			execute(new File(jarPath), "cmd", "/c", getMavenPath(), "clean");
+		} else {
+			execute(new File(jarPath), getMavenPath(), "clean");
+		}
+
+		org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
 	}
 
 	/**
@@ -261,7 +278,7 @@ public class JarService {
 	 * @return
 	 * @throws IOException
 	 */
-	public synchronized void flushMaven() throws IOException {
+	private synchronized void flushMaven() throws IOException {
 		//判断文件是否发生改变
 
 		File pomFile = new File(pomPath);
@@ -309,11 +326,11 @@ public class JarService {
 		if (!file.exists()) {
 			return null;
 		}
-		String localMd5 = MD5Util.getMd5ByFile(file);
+		String localMd5 = MD5Util.md5(file);
 		return localMd5;
 	}
 
-	private String execute(String... args) throws IOException {
+	private String execute(File baseDir, String... args) throws IOException {
 
 		LOG.info("exec : " + Arrays.toString(args));
 
@@ -321,7 +338,7 @@ public class JarService {
 
 		try {
 			ProcessBuilder pb = new ProcessBuilder(args);
-			pb.directory(new File(StaticValue.GROUP_FILE, groupName));
+			pb.directory(baseDir);
 
 			pb.redirectErrorStream(true);
 
@@ -399,33 +416,6 @@ public class JarService {
 		flushMaven();
 	}
 
-//	public void savePomInfo(String groupName, String code) throws Exception {
-//		FileInfo fileInfo = new FileInfo();
-//		fileInfo.setFile(new File(StaticValue.GROUP_FILE, groupName + "/pom.xml"));
-//		fileInfo.setMd5(code);
-//		fileInfo.setDirectory(false);
-//		fileInfo.setLength(code.getBytes("utf-8").length);
-//		fileInfo.setName("pom.xml");
-//		fileInfo.setRelativePath("/pom.xml");
-//
-//		StaticValue.space().getZk().setData().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/file/pom.xml", JSONObject.toJSONBytes(fileInfo));
-//	}
-
-//	/**
-//	 * 获取pom文件内容
-//	 *
-//	 * @param groupName
-//	 * @return
-//	 * @throws Exception
-//	 */
-//	public String getPomInfo(String groupName) throws Exception {
-//		SharedSpaceService space = StaticValue.space();
-//		byte[] data2ZK = space.getData2ZK(space.GROUP_PATH + "/" + groupName + "/file/pom.xml");
-//		if (data2ZK == null) return "";
-//		FileInfo fileInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-//		return fileInfo.getMd5();
-//	}
-
 	/**
 	 * 得到启动时候加载的路径
 	 *
@@ -464,34 +454,6 @@ public class JarService {
 
 	}
 
-//	/**
-//	 * 获得系统中的jar.就是WEB-INF/lib下面的.对于eclipse中.取得SystemLoad
-//	 *
-//	 * @return
-//	 * @throws URISyntaxException
-//	 */
-//	public List<File> findSystemJars() throws URISyntaxException {
-//
-//		URLClassLoader classLoader = ((URLClassLoader) Thread.currentThread().getContextClassLoader());
-//
-//		URL[] urls = classLoader.getURLs();
-//
-//		if (urls.length == 0) {
-//			classLoader = (URLClassLoader) classLoader.getParent();
-//			urls = classLoader.getURLs();
-//		}
-//
-//		List<File> systemFiles = new ArrayList<>();
-//
-//		for (URL url : urls) {
-//			if (url.toString().toLowerCase().endsWith(".jar")) {
-//				systemFiles.add(new File(url.toURI()));
-//			}
-//		}
-//
-//		return systemFiles;
-//	}
-
 
 	public Ioc getIoc() {
 		return ioc;
@@ -516,7 +478,7 @@ public class JarService {
 	/**
 	 * 释放和关闭当前jarservice。在操作。ioc和jar 之后。都需要调用此方式使之生效
 	 */
-	public void release() {
+	public synchronized void release() {
 		CACHE.invalidate(groupName);
 	}
 }

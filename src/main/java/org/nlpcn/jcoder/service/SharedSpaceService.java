@@ -14,6 +14,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
+import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
@@ -188,11 +189,11 @@ public class SharedSpaceService {
 	 */
 	public void removeMapping(String groupName, String className, String methodName, String hostPort) {
 		try {
-			String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort ;
-			if(zkDao.getZk().checkExists().forPath(path)!=null) {
+			String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort;
+			if (zkDao.getZk().checkExists().forPath(path) != null) {
 				zkDao.getZk().delete().forPath(path);
 				LOG.info("remove mapping {}/{}/{}/{} ok", hostPort, groupName, className, methodName);
-			}else{
+			} else {
 				LOG.warn("remove mapping {}/{}/{}/{} but it not exists", hostPort, groupName, className, methodName);
 			}
 
@@ -478,7 +479,6 @@ public class SharedSpaceService {
 		for (Group group : groups) {
 
 			List<Different> diffs = joinCluster(group, true);
-
 			result.put(group.getName(), diffs);
 
 			if (StaticValue.TESTRING) {
@@ -551,7 +551,7 @@ public class SharedSpaceService {
 					});
 
 				} catch (Exception e) {
-					LOG.error("compile {}/{} err ", task.getGroupName(), task.getName(), e);
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getCode(), e);
 				}
 			});
 		}
@@ -649,8 +649,17 @@ public class SharedSpaceService {
 			diffs.add(different);
 		}
 
+		boolean fileDiff = false;
+
 		for (Different diff : diffs) {
+			if (diff.getType() == 1) {
+				fileDiff = true;
+			}
 			LOG.info(diff.toString());
+		}
+
+		if (!fileDiff) { //发现文件无不同。那么更新根目录md5
+			setData2ZK(GROUP_PATH + "/" + groupName + "/file", JSONObject.toJSONBytes(fileInfos.get(fileInfos.size() - 1)));
 		}
 
 		return diffs;
@@ -824,8 +833,8 @@ public class SharedSpaceService {
 		}
 
 		for (Path path : paths) {
-			if(!path.toFile().exists()){
-				LOG.warn("file {} not exists ",path);
+			if (!path.toFile().exists()) {
+				LOG.warn("file {} not exists ", path);
 				continue;
 			}
 
