@@ -44,7 +44,7 @@
     <script type="text/javascript" src="../vendors/vue/dist/vue.js"></script>
 </head>
 
-<body>
+<body data-spy="scroll" data-target="#scrollingNav" data-offset="25">
 <div class="container-fluid" id="vmApiDoc">
     <div class="row-fluid">
         <div id="sidenav" class="span2">
@@ -84,7 +84,7 @@
                                     <small>
                                         <b>测试：</b>
                                     </small>
-                                    <input class="ace ace-switch ace-switch-5" type="checkbox" v-model="y.test.testing"/>
+                                    <input class="ace ace-switch ace-switch-5" type="checkbox" v-model="y.test.testing" @change="updateScrollspy()"/>
                                     <span class="lbl middle"></span>
                                 </label>
                             </div>

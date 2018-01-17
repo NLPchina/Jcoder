@@ -38,10 +38,10 @@ new Vue({
                 }));
             }));
             me.apis = data;
-        });
 
-        // Bootstrap Scrollspy
-        $(window).scrollspy({target: '#scrollingNav', offset: 25});
+            //
+            me.updateScrollspy();
+        });
 
         // Content-Scroll on Navigation click.
         $('#scrollingNav').find('>.sidenav').on('click', 'a', function (e) {
@@ -64,11 +64,13 @@ new Vue({
         changeHeader: function (headers, index) {
             if (headers.length - 1 === index) {
                 headers.push({name: null, value: null});
+                this.updateScrollspy();
             }
         },
 
         deleteHeader: function (headers, index) {
             headers.splice(index, 1);
+            this.updateScrollspy();
         },
 
         submit: function (currentTarget, testObj) {
@@ -90,11 +92,13 @@ new Vue({
                     $form.removeClass("position-relative").find("div:last").addClass("hidden");
                     res.status = xhr.status;
                     res.text = me.getJSONText(responseText);
+                    me.updateScrollspy();
                 },
                 error: function (jqXHR, textStatus, errorThrown) {
                     $form.removeClass("position-relative").find("div:last").addClass("hidden");
                     res.status = jqXHR.status;
                     res.text = me.getJSONText(jqXHR.responseText);
+                    me.updateScrollspy();
                 }
             });
         },
@@ -107,6 +111,14 @@ new Vue({
                 jsonText = text;
             }
             return jsonText;
+        },
+
+        updateScrollspy: function () {
+            Vue.nextTick(function () {
+                $("[data-spy='scroll']").each(function () {
+                    $(this).scrollspy('refresh');
+                });
+            });
         }
     }
 });
