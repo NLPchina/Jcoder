@@ -156,6 +156,7 @@ public class GroupAction {
 							"\t<build>\n" +
 							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
 							"\t\t<testSourceDirectory>src/api</testSourceDirectory>\n" +
+							"\t\t<testSourceDirectory>src/test</testSourceDirectory>\n" +
 							"\t\t<plugins>\n" +
 							"\t\t\t<plugin>\n" +
 							"\t\t\t\t<artifactId>maven-compiler-plugin</artifactId>\n" +
@@ -341,6 +342,14 @@ public class GroupAction {
 	@At
 	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, @Param("relativePath[]") String[] relativePaths) throws Exception {
 
+		if (StringUtil.isBlank(fromHostPort)) {
+			fromHostPort = Constants.HOST_MASTER;
+		}
+
+		if (StringUtil.isBlank(toHostPort)) {
+			toHostPort = Constants.HOST_MASTER;
+		}
+
 		boolean toMaster = Constants.HOST_MASTER.equals(toHostPort);
 
 		Set<String> toHostPorts = new HashSet<>();
@@ -382,34 +391,31 @@ public class GroupAction {
 				}
 
 			} else {//更新task的
-				if (StringUtil.isBlank(fromHostPort)) {
-					fromHostPort = Constants.HOST_MASTER;
-				}
 
-				if (StringUtil.isBlank(toHostPort)) {
-					toHostPort = Constants.HOST_MASTER;
-				}
-
-				if (Constants.HOST_MASTER.equals(toHostPort)) {
-					Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
-					Restful restful = Restful.instance(post);
-
-					if (restful.code() == ApiException.NotFound) {
-						taskService.deleteTaskFromCluster(groupName, relativePath);
-					} else if (restful.code() == ApiException.OK && restful.getObj() != null && restful.getObj() instanceof Task) {
-						StaticValue.space().addTask(restful.getObj());
-					} else {
-						message.add(restful.getMessage());
-						flag = false;
-					}
-
-				} else {
+				if (toHostPorts.size() > 0) {
 					String result = proxyService.post(toHostPorts, Api.TASK_SYN.getPath(), ImmutableMap.of("fromHost", fromHostPort, "groupName", groupName, "taskName", relativePath), 10000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
 					if (StringUtil.isNotBlank(result)) {
 						flag = false;
 						message.add(result);
 					}
 				}
+
+				if (toMaster) {
+					Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
+					Restful restful = Restful.instance(post);
+
+					if (restful.code() == ApiException.NotFound) {
+						taskService.deleteTaskFromCluster(groupName, relativePath);
+					} else if (restful.code() == ApiException.OK && restful.getObj() != null) {
+						StaticValue.space().addTask(JSONObject.toJavaObject(restful.getObj(),Task.class));
+					} else {
+						message.add(restful.getMessage());
+						flag = false;
+					}
+
+				}
+
+
 			}
 		}
 

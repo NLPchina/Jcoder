@@ -555,7 +555,6 @@ public class FileInfoAction {
 			out.putNextEntry(new ZipEntry("src/test/java/package-info.java"));
 			out.write(("/**\n" + " * if you need make some jar file write in src package\n" + " */").getBytes());
 
-
 			String pom = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
 					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" +
 					"         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
