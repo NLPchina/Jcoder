@@ -18,13 +18,7 @@ import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.GroupFileListener;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.util.ZKMap;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
@@ -367,13 +361,18 @@ public class GroupAction {
 
 		List<String> message = new ArrayList<>();
 
-		boolean flag = false;
+		boolean flag = true;
 
 		for (String relativePath : relativePaths) {
 			if (relativePath.startsWith("/")) {//更新文件的
 				if (toHostPorts.size() > 0) {
-					String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_MESSAGE_CALLBACK);
-					message.add(post);
+					String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+					flag = flag && StringUtil.isBlank(post);
+					if (StringUtil.isNotBlank(post)) {
+						message.add(post);
+					} else {
+						message.add("添加成功");
+					}
 				}
 
 				if (toMaster) {
@@ -391,45 +390,26 @@ public class GroupAction {
 					toHostPort = Constants.HOST_MASTER;
 				}
 
-				Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
+				if (Constants.HOST_MASTER.equals(toHostPort)) {
+					Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
+					Restful restful = Restful.instance(post);
 
-				Restful restful = Restful.instance(post);
-
-				if (restful.code() == 404) {
-					if (Constants.HOST_MASTER.equals(toHostPort)) {
-						String path = SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath;
-						if (StaticValue.space().getZk().checkExists().forPath(path) != null) {
-							StaticValue.space().getZk().delete().deletingChildrenIfNeeded().forPath(path);
-						}
+					if (restful.code() == ApiException.NotFound) {
+						taskService.deleteTaskFromCluster(groupName, relativePath);
+					} else if (restful.code() == ApiException.OK && restful.getObj() != null && restful.getObj() instanceof Task) {
+						StaticValue.space().addTask(restful.getObj());
 					} else {
-
-						Map<String, Object> params = new HashMap<>();
-
-						params.put("diff", false);
-						params.put("force", true);
-						params.put("groupName", groupName);
-						params.put("name", relativePath);
-						params.put("user", "user");
-						params.put("time", System.currentTimeMillis());
-
-						post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), params, 1000);
+						message.add(restful.getMessage());
+						flag = false;
 					}
-					return Restful.instance(post);
+
+				} else {
+					String result = proxyService.post(toHostPorts, Api.TASK_SYN.getPath(), ImmutableMap.of("fromHost", fromHostPort, "groupName", groupName, "taskName", relativePath), 10000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+					if (StringUtil.isNotBlank(result)) {
+						flag = false;
+						message.add(result);
+					}
 				}
-
-				JSONObject obj = restful.getObj();
-
-				if (obj == null) {
-					return restful;
-				}
-
-				post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 20000);
-
-				Restful instance = Restful.instance(post);
-
-				message.add(instance.getMessage());
-
-				flag = flag && instance.isOk();
 			}
 		}
 

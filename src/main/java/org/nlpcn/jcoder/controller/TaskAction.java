@@ -598,4 +598,39 @@ public class TaskAction {
 
 		return Restful.ok();
 	}
+
+
+	/**
+	 * 同步task到本机，只进行可抽取验证，只要有类名称和package名称就存储，这个存储包括删除
+	 *
+	 * @return
+	 */
+	@At
+	public Restful __syn__(@Param("fromHost") String fromHost, @Param("groupName") String groupName, @Param("taskName") String taskName) throws Exception {
+		User user = (User) Mvcs.getHttpSession(false).getAttribute(UserConstants.USER);
+		if (user != User.CLUSTER_USER) {
+			return Restful.fail().code(ApiException.TokenNoPermissions).msg("your account not support this api");
+		}
+
+		Restful restful = task(groupName, taskName, fromHost);
+
+		if (restful.code() == 404) { //删除
+			return __delete__(false, true, groupName, taskName, user.getName(), new Date());
+		} else if (restful.code() == 200 && restful.getObj() != null) {
+			Task remote = restful.getObj();
+			//从本机查一下要是有。本机走update，没有走save
+			Task local = taskService.findTask(groupName, taskName);
+			String oldName = null;
+			if (local != null) {
+				oldName = local.getName();
+				remote.setId(local.getId());
+			} else {
+				remote.setId(null);
+			}
+			return __save__(remote, oldName);
+		} else {
+			return restful;
+		}
+
+	}
 }

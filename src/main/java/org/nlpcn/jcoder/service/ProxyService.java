@@ -71,9 +71,14 @@ public class ProxyService {
 	public static Function<Map<String, String>, String> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, String> result) -> {
 		StringBuilder sb = new StringBuilder();
 		for (Map.Entry<String, String> entry : result.entrySet()) {
-			boolean flag = JSONObject.parseObject(entry.getValue()).getBoolean("ok");
-			if (!flag) {
-				sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + ", ");
+			try {
+				boolean flag = JSONObject.parseObject(entry.getValue()).getBoolean("ok");
+				if (!flag) {
+					sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + ", ");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				sb.append(entry.getKey() + ":" + e.getMessage());
 			}
 		}
 		return sb.toString();

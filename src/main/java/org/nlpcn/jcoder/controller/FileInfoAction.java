@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
@@ -467,12 +468,12 @@ public class FileInfoAction {
 
 			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
-			if (post.getStatus() == 404) { //没找到，那么就删除本地
+			if (post.getStatus() == ApiException.NotFound) { //没找到，那么就删除本地
 				org.nutz.lang.Files.deleteFile(file);
 				LOG.info("delete file {} -> {} ", groupName, relativePath);
-			} else if(post.getStatus()==304){
+			} else if(post.getStatus()==ApiException.NotModified){
 				file.mkdirs() ;
-			}else if (post.getStatus() == 200) {
+			}else if (post.getStatus() == ApiException.OK) {
 				if(!file.getParentFile().exists()){
 					file.getParentFile().mkdirs() ;
 				}
