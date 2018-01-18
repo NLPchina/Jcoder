@@ -12,29 +12,40 @@ new Vue({
         var me = this;
 
         $.getJSON("/apidoc/info").done(function (data) {
+            var groupName = null, isGreen = true, isRed = false;
             me.nav_apis = Array.prototype.concat($.map(data, function (ele) {
-                return Array.prototype.concat({
+                if (isGreen) isGreen &= ele.status;
+                if (!isRed) isRed |= ele.status;
+                var group = {};
+                if (groupName === null || groupName != ele.group) {
+                    group = {
+                        name: groupName = ele.group,
+                        cls: isGreen ? "" : (isRed ? "alert-danger" : "alert-warning"),
+                        href: "#" + groupName,
+                        isGroup: true
+                    };
+                    isGreen = true;
+                    isRed = false;
+                }
+                return Array.prototype.concat(group, {
                     name: ele.name,
-                    status: ele.status,
-                    isGroup: true,
-                    isActive: false,
-                    href: "#" + ele.name
+                    cls: ele.status ? "" : "alert-danger",
+                    href: "#" + groupName + "_" + ele.name,
+                    isApi: true
                 }, $.map(ele.sub || [], function (ele2) {
                     ele2.test = {
                         testing: false,
                         headers: [{name: null, value: null}],
                         params: $.map(ele2.sub || [], function (ele) {
-                            return {name: ele.name, type: ele.type, content: ele.content}
+                            return {name: ele.name, type: ele.type, content: ele.content, required: ele.required};
                         }),
                         response: {status: null, text: null}
                     };
-                    ele2.retrunContent = me.getJSONText(ele2.retrunContent);
+                    ele2.returnContent = me.getJSONText(ele2.returnContent);
                     return {
                         name: ele2.name,
-                        status: ele2.status,
-                        isGroup: false,
-                        isActive: false,
-                        href: "#" + ele.name + "_" + ele2.name
+                        cls: ele.status ? "" : "alert-danger",
+                        href: "#" + groupName + "_" + ele.name + "_" + ele2.name
                     };
                 }));
             }));
@@ -52,19 +63,14 @@ new Vue({
             e.preventDefault();
 
             var href = $(this).attr('href');
-            if ($(href).length > 0) {
-                $('html,body').animate({scrollTop: parseInt($(href).offset().top)}, 400);
+            if ($(href).length < 1) {
+                href = $("a[href^='" + href + "']:not(a[href='" + href + "']):first").attr('href');
             }
             location.hash = href;
         });
     },
 
     methods: {
-        clickNav: function (x) {
-            $(this.nav_apis).attr("isActive", false);
-            x.isActive = true;
-        },
-
         changeHeader: function (headers, index) {
             if (headers.length - 1 === index) {
                 headers.push({name: null, value: null});

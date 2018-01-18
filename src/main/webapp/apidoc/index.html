@@ -50,8 +50,16 @@
         <div id="sidenav" class="span2">
             <nav id="scrollingNav">
                 <ul class="sidenav nav nav-pills">
-                    <li v-bind="{class:(x.isGroup?'nav-header ':'')+(x.isActive?'active':'')}" v-for="x in nav_apis" @click="clickNav(x)">
-                        <a :href="x.href" v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</a>
+                    <li v-bind="{class:x.isGroup?'nav-fixed nav-header':(x.isApi?'nav-header':'')}" v-for="x in nav_apis">
+                        <a :href="x.href" :class="x.cls">
+                            <template v-if="x.isGroup">
+                                <i class="menu-icon fa fa-laptop"></i>
+                                <span class="menu-text"> {{x.name}} </span>
+                            </template>
+                            <template v-else>
+                                {{x.name}}
+                            </template>
+                        </a>
                     </li>
                 </ul>
             </nav>
@@ -71,10 +79,11 @@
                 </div>
             </div>
             <div id="sections">
-                <section :id="x.name" v-for="x in apis">
-                    <h1 v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</h1>
-                    <p>version: {{x.version}}</p>
-                    <div v-bind="{id:x.name+'_'+y.name}" v-for="y in x.sub">
+                <section :id="x.group+'_'+x.name" v-for="x in apis">
+                    <h1 :class="x.status==false?'alert-danger':''">
+                        {{x.name}} - {{x.group}}
+                    </h1>
+                    <div :id="x.group+'_'+x.name+'_'+y.name" v-for="y in x.sub">
                         <article data-group="User" data-name="GetUser" data-version="0.3.0">
                             <div class="pull-left">
                                 <h1 style="margin-bottom:0">{{y.name}}</h1>
@@ -82,7 +91,7 @@
                             <div class="widget-toolbar pull-right">
                                 <label>
                                     <small>
-                                        <b>测试：</b>
+                                        <b>测试: </b>
                                     </small>
                                     <input class="ace ace-switch ace-switch-5" type="checkbox" v-model="y.test.testing" @change="updateScrollspy()"/>
                                     <span class="lbl middle"></span>
@@ -97,7 +106,7 @@
 
                             <span v-bind="{class:'method '+m.toLowerCase()}" v-for="m in y.methods">{{m}}</span>
 
-                            <pre class="prettyprint prettyprinted"><code><span class="pln">{{baseUri}}/api/{{x.name}}/{{y.name}}</span></code></pre>
+                            <pre class="prettyprint prettyprinted"><code><span class="pln">{{baseUri}}/api/{{x.group}}/{{x.name}}/{{y.name}}</span></code></pre>
 
                             <h2 v-show="y.sub&&y.sub.length>0">请求参数</h2>
                             <table v-show="y.sub&&y.sub.length>0">
@@ -113,7 +122,7 @@
                                 <tr v-for="s in y.sub">
                                     <td class="code">{{s.name}}</td>
                                     <td>{{s.type}}</td>
-                                    <td>否</td>
+                                    <td>{{s.required?'是':'否'}}</td>
                                     <td>{{s.content}}</td>
                                 </tr>
                                 </tbody>
@@ -134,14 +143,14 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            <h2 v-show="y.retrunContent">返回值</h2>
-                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent" style="max-height:400px;"><code>{{y.retrunContent}}</code></pre>
+                            <h2 v-show="y.returnContent">返回值</h2>
+                            <pre class="prettyprint language-json" data-type="json" v-show="y.returnContent" style="max-height:400px;"><code>{{y.returnContent}}</code></pre>
 
-                            <form class="widget-box widget-color-blue" method="post" v-show="y.test.testing" @submit.prevent="submit($event.currentTarget,y.test)" :action="baseUri+'/api/'+x.name+'/'+y.name">
+                            <form class="widget-box widget-color-blue" method="post" v-show="y.test.testing" @submit.prevent="submit($event.currentTarget,y.test)" :action="baseUri+'/api/'+x.group+'/'+x.name+'/'+y.name">
                                 <div class="widget-header">
                                     <h6 class="widget-title">
                                         <i class="ace-icon fa fa-gavel"></i>
-                                        测试接口：{{baseUri}}/api/{{x.name}}/{{y.name}}
+                                        测试接口: {{baseUri}}/api/{{x.group}}/{{x.name}}/{{y.name}}
                                     </h6>
 
                                     <div class="widget-toolbar">

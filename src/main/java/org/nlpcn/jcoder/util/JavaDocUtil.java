@@ -166,6 +166,7 @@ public class JavaDocUtil {
 
 			pd.setContent(content);
 
+			// TODO: 是否必填
 		}
 
 	}
@@ -214,7 +215,7 @@ public class JavaDocUtil {
 				}
 
 			} else if (string.startsWith("@return")) {
-				md.setRetrunContent(string.replaceFirst("@return", ""));
+				md.setReturnContent(string.replaceFirst("@return", ""));
 			} else {
 				Matcher matcher = Pattern.compile("\\s+").matcher(string);
 				if (matcher.find()) {

@@ -91,6 +91,7 @@ public class ApiAction {
 				e.printStackTrace();
 				cd = new ClassDoc(t.getName());
 			}
+			cd.setGroup(t.getGroupName());
 			cd.setStatus(compile);
 			cd.setVersion(t.getVersion());
 			cd.setDescription(t.getDescription());

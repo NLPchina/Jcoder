@@ -17,6 +17,8 @@ public class ClassDoc extends ApiDoc {
 		super(name);
 	}
 
+	private String group;
+
 	private boolean single = true;
 
 	private boolean status = true;
@@ -24,6 +26,14 @@ public class ClassDoc extends ApiDoc {
 	private String version ;
 
 	private String description;
+
+	public String getGroup() {
+		return group;
+	}
+
+	public void setGroup(String group) {
+		this.group = group;
+	}
 
 	public boolean isSingle() {
 		return single;
@@ -64,7 +74,7 @@ public class ClassDoc extends ApiDoc {
 
 		private boolean defaultExecute;
 
-		private String retrunContent;
+		private String returnContent;
 
 		private Set<String> methods = new HashSet<>();
 		
@@ -76,12 +86,12 @@ public class ClassDoc extends ApiDoc {
 			this.defaultExecute = defaultExecute;
 		}
 
-		public String getRetrunContent() {
-			return retrunContent;
+		public String getReturnContent() {
+			return returnContent;
 		}
 
-		public void setRetrunContent(String retrunContent) {
-			this.retrunContent = retrunContent;
+		public void setReturnContent(String returnContent) {
+			this.returnContent = returnContent;
 		}
 
 		public Set<String> getMethods() {
@@ -101,6 +111,8 @@ public class ClassDoc extends ApiDoc {
 			private String fieldName;
 
 			private String type;
+
+            private boolean required;
 
 			public ParamDoc(String name) {
 				super(name);
@@ -122,7 +134,15 @@ public class ClassDoc extends ApiDoc {
 				this.type = type;
 			}
 
-			@Override
+            public boolean isRequired() {
+                return required;
+            }
+
+            public void setRequired(boolean required) {
+                this.required = required;
+            }
+
+            @Override
 			public ApiDoc createSubDoc(String name) {
 				return null;
 			}
