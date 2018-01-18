@@ -55,6 +55,10 @@ new Vue({
             me.isLoading = false;
 
             //
+            Vue.nextTick(function () {
+                var $href = $(location.hash);
+                if ($href.length > 0) $('html,body').animate({scrollTop: parseInt($href.offset().top)}, 0);
+            });
             me.updateScrollspy();
         });
 
@@ -66,6 +70,7 @@ new Vue({
             if ($(href).length < 1) {
                 href = $("a[href^='" + href + "']:not(a[href='" + href + "']):first").attr('href');
             }
+            if ($(href).length > 0) $('html,body').animate({scrollTop: parseInt($(href).offset().top)}, 400);
             location.hash = href;
         });
     },

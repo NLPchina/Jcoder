@@ -122,7 +122,20 @@ public class JavaDocUtil {
 
 		List<Parameter> parameters = method.getParameters();
 
-		for (Parameter param : parameters) {
+        for (Parameter param : parameters) {
+            // 对某些类型的参数做处理
+            String type = param.getType().toString();
+            switch (type) {
+                case "HttpServletRequest":
+                case "HttpServletResponse":
+                    continue;
+                case "TempFile":
+                    type = "File";
+                    break;
+                default:
+                    break;
+            }
+
 			List<AnnotationExpr> ans = param.getAnnotations();
 			String name = null;
 			String fieldName = null;
@@ -156,7 +169,7 @@ public class JavaDocUtil {
 
 			pd.setFieldName(fieldName);
 
-			pd.setType(param.getType().toString());
+			pd.setType(type);
 
 			String content = paramMap.get(fieldName);
 
@@ -167,6 +180,7 @@ public class JavaDocUtil {
 			pd.setContent(content);
 
 			// TODO: 是否必填
+
 		}
 
 	}
