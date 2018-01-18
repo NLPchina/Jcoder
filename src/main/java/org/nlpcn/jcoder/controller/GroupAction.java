@@ -420,7 +420,7 @@ public class GroupAction {
 			}
 		}
 
-		return Restful.instance(flag, Joiner.on(",").useForNull("null").join(message));
+		return Restful.instance(flag, Joiner.on(",").skipNulls().join(message));
 	}
 
 }

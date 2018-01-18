@@ -8,13 +8,11 @@ import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.service.FileInfoService;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.*;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -43,14 +41,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -77,6 +68,9 @@ public class FileInfoAction {
 	@Inject
 	private GroupService groupService;
 
+	@Inject
+	private FileInfoService fileInfoService;
+
 	/**
 	 * 获取文件列表
 	 */
@@ -91,53 +85,7 @@ public class FileInfoAction {
 		}
 
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
-			List<FileInfo> result = new ArrayList<>();
-
-			Path[] paths = new Path[]{
-					new File(StaticValue.GROUP_FILE, groupName + "/resources").toPath(),
-					new File(StaticValue.GROUP_FILE, groupName + "/lib").toPath(),
-			};
-
-			File pom = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml");
-			if (pom.exists()) {
-				result.add(new FileInfo(pom));
-			}
-
-			for (Path path : paths) {
-				if (!path.toFile().exists()) {
-					LOG.warn("file {} not exists ", path);
-					continue;
-				}
-
-				Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-					// 在访问子目录前触发该方法
-					@Override
-					public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-						File file = dir.toFile();
-						if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-							LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-							return FileVisitResult.SKIP_SUBTREE;
-						}
-						return FileVisitResult.CONTINUE;
-					}
-
-					@Override
-					public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-						File file = path.toFile();
-						if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-							LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-							return FileVisitResult.CONTINUE;
-						}
-						try {
-							result.add(new FileInfo(file));
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						return FileVisitResult.CONTINUE;
-					}
-				});
-			}
-
+			List<FileInfo> result = fileInfoService.listFileInfosByGroup(groupName);
 			return Restful.instance().obj(result);
 		} else {
 			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 10000);
@@ -157,7 +105,9 @@ public class FileInfoAction {
 	 */
 	@At
 	public Restful getFileTree(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
+
 		JSONArray nodes = new JSONArray();
+
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
 			if (hostPort == null) {
@@ -166,64 +116,28 @@ public class FileInfoAction {
 		}
 
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
-			List<FileInfo> result = new ArrayList<>();
 
-			Path path = new File(StaticValue.GROUP_FILE, groupName).toPath();
-			Map<String, String> map = new HashMap<String, String>();
-			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-				// 在访问子目录前触发该方法
-				@Override
-				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-					File file = dir.toFile();
-					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-						return FileVisitResult.SKIP_SUBTREE;
-					}
-					JSONObject jsonObject = new JSONObject();
-					jsonObject.put("name", file.getName());
-					UUID uuid = UUID.randomUUID();
-					map.put(file.getName(), file.getName().equals(groupName) ? "0" : uuid.toString());
-					jsonObject.put("id", map.get(file.getName()));
-					jsonObject.put("open", true);
+			List<FileInfo> result = FileInfoService.listFileInfosByGroup(groupName);
+			result.sort(Comparator.comparingInt(t -> (t.isDirectory()?-100000000:0)+t.getRelativePath().length())); //进行一次排序， 先浏览父目录
+
+			FileInfo root = result.get(0) ;
+
+			for (int i = 0; i < result.size(); i++) {
+				FileInfo fileInfo = result.get(i) ;
+				JSONObject jsonObject = new JSONObject();
+				jsonObject.put("name", fileInfo.getName());
+				jsonObject.put("id", i==0?"0":MD5Util.md5(fileInfo.file().getAbsolutePath()));
+				jsonObject.put("open", true);
+				jsonObject.put("pId", fileInfo.file().getParentFile().equals(root.file())?"0":MD5Util.md5(fileInfo.file().getParentFile().getAbsolutePath()));
+				JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo)) ;
+				fi.put("date", fileInfo.lastModified());
+				jsonObject.put("file", fi);
+				if (fileInfo.isDirectory()) {
 					jsonObject.put("isParent", true);
-					if (!file.getName().equals(groupName)) {
-						jsonObject.put("pId", map.get(file.getParentFile().getName()));
-					}
-					FileInfo fileInfo = new FileInfo(file);
-					JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
-					fi.put("date", fileInfo.lastModified());
-					jsonObject.put("file", fi);
-					nodes.add(jsonObject);
-					return FileVisitResult.CONTINUE;
 				}
+				nodes.add(jsonObject);
+			}
 
-				@Override
-				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-					File file = path.toFile();
-					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-						return FileVisitResult.CONTINUE;
-					}
-					try {
-						result.add(new FileInfo(file));
-						JSONObject jsonObject = new JSONObject();
-						jsonObject.put("name", file.getName());
-						UUID uuid = UUID.randomUUID();
-						map.put(file.getName(), uuid.toString());
-						jsonObject.put("id", uuid.toString());
-						jsonObject.put("open", true);
-						jsonObject.put("pId", map.get(file.getParentFile().getName()));
-						FileInfo fileInfo = new FileInfo(file);
-						JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
-						fi.put("date", fileInfo.lastModified());
-						jsonObject.put("file", fi);
-						nodes.add(jsonObject);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-					return FileVisitResult.CONTINUE;
-				}
-			});
 			return Restful.instance().obj(nodes);
 		} else {
 			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("groupName", groupName), 10000);
@@ -250,24 +164,10 @@ public class FileInfoAction {
 			}
 		}
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
-			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
-			if (!file.exists()) {
-				return Restful.fail().msg("文件不存在");//obj是空
-			}
-
-			if (file.isDirectory()) {
-				return Restful.fail().msg(relativePath + " 是目录");
-			}
-
-			byte[] bytes = new byte[maxSize];
-
-			try (FileInputStream fis = new FileInputStream(file)) {
-				int len = fis.read(bytes);
-				String content = "";
-				if (len > 0) {
-					content = new String(bytes, 0, len);
-				}
-				return Restful.ok().msg(content).obj(new FileInfo(file));
+			try {
+				return Restful.ok().msg(fileInfoService.getContent(groupName, relativePath, maxSize)).obj(new File(StaticValue.GROUP_FILE, groupName + relativePath));
+			} catch (FileNotFoundException e) {
+				return Restful.fail().msg(e.getMessage());
 			}
 		} else {
 			Response post = proxyService.post(hostPort, "/admin/fileInfo/fileContent", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "maxSize", maxSize), 10000);
@@ -276,6 +176,7 @@ public class FileInfoAction {
 		}
 
 	}
+
 
 	/**
 	 * 获得一个文件的输出流
@@ -371,8 +272,8 @@ public class FileInfoAction {
 	 */
 	@At
 	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts, @Param("groupName") String groupName,
-							  @Param("relativePaths[]") String[] relativePaths,
-							  @Param(value = "first", df = "true") boolean first) throws Exception {
+	                          @Param("relativePaths[]") String[] relativePaths,
+	                          @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
 			if (!first) {
 				//String[] paths = relativePath.split(",");
@@ -487,7 +388,7 @@ public class FileInfoAction {
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
 	public Restful uploadFile(@Param("hostPorts") String[] hostPorts, @Param("group_name") String groupName, @Param("filePath") String filePath,
-							  @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
+	                          @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) file.length;
 
 		if (fileNum <= 0) {

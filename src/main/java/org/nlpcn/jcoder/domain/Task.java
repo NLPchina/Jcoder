@@ -2,6 +2,7 @@ package org.nlpcn.jcoder.domain;
 
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
+import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
@@ -86,6 +87,9 @@ public class Task {
 							}
 						} catch (Throwable e) {
 							this.name = JavaSourceUtil.findClassName(this.code);
+							if(name==null){
+								name = MD5Util.md5(this.code);
+							}
 						}
 					}
 				}

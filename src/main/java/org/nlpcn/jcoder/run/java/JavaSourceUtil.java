@@ -55,7 +55,6 @@ public class JavaSourceUtil {
 				throw new CodeException("not find className ");
 			}
 		} catch (Throwable e) {
-			e.printStackTrace();
 			throw new CodeException(e.getMessage());
 		}
 
