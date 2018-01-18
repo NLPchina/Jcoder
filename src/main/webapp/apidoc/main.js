@@ -12,20 +12,20 @@ new Vue({
         var me = this;
 
         $.getJSON("/apidoc/info").done(function (data) {
-            var groupName = null, isGreen = true, isRed = false;
+            var groupName = null, isGreen = true, isWarning = false;
             me.nav_apis = Array.prototype.concat($.map(data, function (ele) {
                 if (isGreen) isGreen &= ele.status;
-                if (!isRed) isRed |= ele.status;
+                if (!isWarning) isWarning |= ele.status;
                 var group = {};
                 if (groupName === null || groupName != ele.group) {
                     group = {
                         name: groupName = ele.group,
-                        cls: isGreen ? "" : (isRed ? "alert-danger" : "alert-warning"),
+                        cls: isGreen ? "" : (isWarning ? "alert-warning" : "alert-danger"),
                         href: "#" + groupName,
                         isGroup: true
                     };
                     isGreen = true;
-                    isRed = false;
+                    isWarning = false;
                 }
                 return Array.prototype.concat(group, {
                     name: ele.name,
