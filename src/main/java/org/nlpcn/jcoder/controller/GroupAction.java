@@ -18,7 +18,13 @@ import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.GroupFileListener;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
@@ -34,10 +40,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.net.URLEncoder;
-import java.util.*;
-
-import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -387,7 +397,10 @@ public class GroupAction {
 
 				if (restful.code() == 404) {
 					if (Constants.HOST_MASTER.equals(toHostPort)) {
-						StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath);
+						String path = SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath;
+						if (StaticValue.space().getZk().checkExists().forPath(path) != null) {
+							StaticValue.space().getZk().delete().deletingChildrenIfNeeded().forPath(path);
+						}
 					} else {
 
 						Map<String, Object> params = new HashMap<>();
