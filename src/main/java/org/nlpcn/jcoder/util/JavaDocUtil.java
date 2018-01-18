@@ -3,10 +3,7 @@ package org.nlpcn.jcoder.util;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,9 +82,7 @@ public class JavaDocUtil {
 
 	private static void explainMethod(ClassDoc cd, MethodDeclaration node) {
 
-		MethodDeclaration method = (MethodDeclaration) node;
-
-		List<AnnotationExpr> annotations = method.getAnnotations();
+        List<AnnotationExpr> annotations = node.getAnnotations();
 
 		boolean flag = false;
 
@@ -109,18 +104,18 @@ public class JavaDocUtil {
 			return;
 		}
 
-		MethodDoc md = (MethodDoc) cd.createSubDoc(method.getName());
+		MethodDoc md = (MethodDoc) cd.createSubDoc(node.getName());
 
 		md.setDefaultExecute(defaultExecute);
 
 		Map<String, String> paramMap = null;
-		if (method.getComment() != null) {
-			paramMap = parseContent(md, method.getComment().getContent());
+		if (node.getComment() != null) {
+			paramMap = parseContent(md, node.getComment().getContent());
 		} else {
 			paramMap = new HashMap<>();
 		}
 
-		List<Parameter> parameters = method.getParameters();
+		List<Parameter> parameters = node.getParameters();
 
         for (Parameter param : parameters) {
             // 对某些类型的参数做处理
@@ -138,7 +133,7 @@ public class JavaDocUtil {
 
 			List<AnnotationExpr> ans = param.getAnnotations();
 			String name = null;
-			String fieldName = null;
+			String fieldName;
 			for (AnnotationExpr annotationExpr : ans) {
 				if (annotationExpr.getName().getName().equals("Param")) {
 					annotationExpr.getChildrenNodes().remove(0);
@@ -147,11 +142,11 @@ public class JavaDocUtil {
 
 						if (str.contains("=")) {
 							if (str.startsWith("value")) {
-								name = str.toString().replaceFirst("value", "").replaceFirst("=", "").replace("\"", "").trim();
+								name = str.replaceFirst("value", "").replaceFirst("=", "").replace("\"", "").trim();
 								break;
 							}
 						} else {
-							name = str.toString().replace("\"", "").trim();
+							name = str.replace("\"", "").trim();
 						}
 
 					}
@@ -179,8 +174,34 @@ public class JavaDocUtil {
 
 			pd.setContent(content);
 
-			// TODO: 是否必填
-
+			// 是否必填
+            if (StringUtil.isNotBlank(content)) {
+                int i = content.lastIndexOf('|');
+                if (-1 < i) {
+                    switch (StringUtil.trim(content.substring(i + 1))) {
+                        case "*":
+                        case "y":
+                        case "Y":
+                        case "yes":
+                        case "YES":
+                        case "是":
+                        case "必填":
+                            pd.setRequired(true);
+                        case "n":
+                        case "N":
+                        case "no":
+                        case "NO":
+                        case "否":
+                        case "不":
+                        case "不是":
+                        case "不必填":
+                            pd.setContent(content.substring(0, i));
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
 		}
 
 	}
