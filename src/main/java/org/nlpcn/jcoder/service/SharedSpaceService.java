@@ -628,7 +628,7 @@ public class SharedSpaceService {
 				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				FileInfo cInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-				if (!cInfo.getRelativePath().equals(lInfo.getRelativePath())) {
+				if (cInfo==null || !cInfo.getRelativePath().equals(lInfo.getRelativePath())) {
 					different.addMessage("文件内容不一致");
 				}
 
