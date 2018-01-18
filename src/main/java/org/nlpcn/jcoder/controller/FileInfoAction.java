@@ -29,11 +29,7 @@ import org.nutz.mvc.upload.UploadAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.FileVisitResult;
@@ -118,18 +114,18 @@ public class FileInfoAction {
 		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
 
 			List<FileInfo> result = FileInfoService.listFileInfosByGroup(groupName);
-			result.sort(Comparator.comparingInt(t -> (t.isDirectory()?-100000000:0)+t.getRelativePath().length())); //进行一次排序， 先浏览父目录
+			result.sort(Comparator.comparingInt(t -> (t.isDirectory() ? -100000000 : 0) + t.getRelativePath().length())); //进行一次排序， 先浏览父目录
 
-			FileInfo root = result.get(0) ;
+			FileInfo root = result.get(0);
 
 			for (int i = 0; i < result.size(); i++) {
-				FileInfo fileInfo = result.get(i) ;
+				FileInfo fileInfo = result.get(i);
 				JSONObject jsonObject = new JSONObject();
 				jsonObject.put("name", fileInfo.getName());
-				jsonObject.put("id", i==0?"0":MD5Util.md5(fileInfo.file().getAbsolutePath()));
+				jsonObject.put("id", i == 0 ? "0" : MD5Util.md5(fileInfo.file().getAbsolutePath()));
 				jsonObject.put("open", true);
-				jsonObject.put("pId", fileInfo.file().getParentFile().equals(root.file())?"0":MD5Util.md5(fileInfo.file().getParentFile().getAbsolutePath()));
-				JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo)) ;
+				jsonObject.put("pId", fileInfo.file().getParentFile().equals(root.file()) ? "0" : MD5Util.md5(fileInfo.file().getParentFile().getAbsolutePath()));
+				JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
 				fi.put("date", fileInfo.lastModified());
 				jsonObject.put("file", fi);
 				if (fileInfo.isDirectory()) {
@@ -185,7 +181,7 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, HttpServletResponse response) throws Throwable {
+	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "zip", df = "true") boolean zip, HttpServletResponse response) throws Throwable {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
@@ -212,6 +208,13 @@ public class FileInfoAction {
 			response.setContentType("application/octet-stream");
 
 			if (file.isDirectory()) {
+
+				if(!zip){ //如果不是压缩，则抛出304 状态码
+					response.setStatus(ApiException.NotModified);
+					response.getWriter().write(Restful.fail().msg(relativePath+" is directory").code(ApiException.NotModified).toJsonString());
+					return;
+				}
+
 				response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "utf-8") + ".zip");
 				try (ZipOutputStream out = new ZipOutputStream(response.getOutputStream())) {
 					Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
@@ -460,14 +463,19 @@ public class FileInfoAction {
 
 			long start = System.currentTimeMillis();
 
-			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath), 120000);
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath , "zip",false), 120000);
 
 			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
 			if (post.getStatus() == 404) { //没找到，那么就删除本地
 				org.nutz.lang.Files.deleteFile(file);
 				LOG.info("delete file {} -> {} ", groupName, relativePath);
-			} else if (post.getStatus() == 200) {
+			} else if(post.getStatus()==304){
+				file.mkdirs() ;
+			}else if (post.getStatus() == 200) {
+				if(!file.getParentFile().exists()){
+					file.getParentFile().mkdirs() ;
+				}
 				IOUtil.writeAndClose(post.getStream(), file);
 				LOG.info("down ok : {} use time : {} ", relativePath, System.currentTimeMillis() - start);
 			} else {
