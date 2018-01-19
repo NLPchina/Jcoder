@@ -23,6 +23,15 @@
         input[type=checkbox].ace.ace-switch.ace-switch-5 + .lbl::before {
             content: "YES\a0\a0\a0\a0\a0\a0\a0\a0\a0NO";
         }
+        .anchor {
+            float: left;
+            padding-right: 5px;
+            margin-left: -21px;
+            visibility: hidden;
+        }
+        h1:hover .anchor {
+            visibility: visible;
+        }
     </style>
 
     <!--[if !IE]> -->
@@ -50,8 +59,16 @@
         <div id="sidenav" class="span2">
             <nav id="scrollingNav">
                 <ul class="sidenav nav nav-pills">
-                    <li v-bind="{class:(x.isGroup?'nav-header ':'')+(x.isActive?'active':'')}" v-for="x in nav_apis" @click="clickNav(x)">
-                        <a :href="x.href" v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</a>
+                    <li v-bind="{class:x.isGroup?'nav-fixed nav-header':(x.isApi?'nav-header':'')}" v-for="x in nav_apis">
+                        <a :href="x.href" :class="x.cls">
+                            <template v-if="x.isGroup">
+                                <i class="menu-icon fa fa-laptop"></i>
+                                <span class="menu-text"> {{x.name}} </span>
+                            </template>
+                            <template v-else>
+                                {{x.name}}
+                            </template>
+                        </a>
                     </li>
                 </ul>
             </nav>
@@ -71,25 +88,31 @@
                 </div>
             </div>
             <div id="sections">
-                <section :id="x.name" v-for="x in apis">
-                    <h1 v-bind="{class:x.status==false?'alert-danger':''}">{{x.name}}</h1>
-                    <p>version: {{x.version}}</p>
-                    <div v-bind="{id:x.name+'_'+y.name}" v-for="y in x.sub">
+                <section :id="x.group+'_'+x.name" v-for="x in apis">
+                    <h1 :class="x.status==false?'alert-danger':''">
+                        <a :href="'#'+x.group+'_'+x.name" class="anchor"><img src="data:image/png;base64,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"/></a>
+                        {{x.name}} - {{x.group}}
+                    </h1>
+                    <div :id="x.group+'_'+x.name+'_'+y.name" v-for="y in x.sub">
                         <article data-group="User" data-name="GetUser" data-version="0.3.0">
-                            <div class="pull-left">
-                                <h1 style="margin-bottom:0">{{y.name}}</h1>
-                            </div>
-                            <div class="widget-toolbar pull-right">
-                                <label>
-                                    <small>
-                                        <b>测试：</b>
-                                    </small>
-                                    <input class="ace ace-switch ace-switch-5" type="checkbox" v-model="y.test.testing" @change="updateScrollspy()"/>
-                                    <span class="lbl middle"></span>
-                                </label>
-                            </div>
-
-                            <div class="clearfix" style="border-bottom:1px dotted #E2E2E2;"></div>
+                            <h1>
+                                <div class="pull-left">
+                                    <h1 style="margin-bottom:0;padding-top:7px;">
+                                        <a :href="'#'+x.group+'_'+x.name+'_'+y.name" class="anchor"><img src="data:image/png;base64,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"/></a>
+                                        {{y.name}}
+                                    </h1>
+                                </div>
+                                <div class="widget-toolbar pull-right">
+                                    <label>
+                                        <small>
+                                            <b>测试: </b>
+                                        </small>
+                                        <input class="ace ace-switch ace-switch-5" type="checkbox" v-model="y.test.testing" @change="updateScrollspy()"/>
+                                        <span class="lbl middle"></span>
+                                    </label>
+                                </div>
+                                <div class="clearfix" style="border-bottom:1px dotted #E2E2E2;"></div>
+                            </h1>
 
                             <br/>
                             <p>{{y.content}}</p>
@@ -97,7 +120,7 @@
 
                             <span v-bind="{class:'method '+m.toLowerCase()}" v-for="m in y.methods">{{m}}</span>
 
-                            <pre class="prettyprint prettyprinted"><code><span class="pln">{{baseUri}}/api/{{x.name}}/{{y.name}}</span></code></pre>
+                            <pre class="prettyprint prettyprinted"><code><span class="pln">{{baseUri}}/api/{{x.group}}/{{x.name}}/{{y.name}}</span></code></pre>
 
                             <h2 v-show="y.sub&&y.sub.length>0">请求参数</h2>
                             <table v-show="y.sub&&y.sub.length>0">
@@ -113,7 +136,7 @@
                                 <tr v-for="s in y.sub">
                                     <td class="code">{{s.name}}</td>
                                     <td>{{s.type}}</td>
-                                    <td>否</td>
+                                    <td>{{s.required?'是':'否'}}</td>
                                     <td>{{s.content}}</td>
                                 </tr>
                                 </tbody>
@@ -134,14 +157,14 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            <h2 v-show="y.retrunContent">返回值</h2>
-                            <pre class="prettyprint language-json" data-type="json" v-show="y.retrunContent" style="max-height:400px;"><code>{{y.retrunContent}}</code></pre>
+                            <h2 v-show="y.returnContent">返回值</h2>
+                            <pre class="prettyprint language-json" data-type="json" v-show="y.returnContent" style="max-height:400px;"><code>{{y.returnContent}}</code></pre>
 
-                            <form class="widget-box widget-color-blue" method="post" v-show="y.test.testing" @submit.prevent="submit($event.currentTarget,y.test)" :action="baseUri+'/api/'+x.name+'/'+y.name">
+                            <form class="widget-box widget-color-blue" method="post" v-show="y.test.testing" @submit.prevent="submit($event.currentTarget,y.test)" :action="baseUri+'/api/'+x.group+'/'+x.name+'/'+y.name">
                                 <div class="widget-header">
                                     <h6 class="widget-title">
                                         <i class="ace-icon fa fa-gavel"></i>
-                                        测试接口：{{baseUri}}/api/{{x.name}}/{{y.name}}
+                                        测试接口: {{baseUri}}/api/{{x.group}}/{{x.name}}/{{y.name}}
                                     </h6>
 
                                     <div class="widget-toolbar">

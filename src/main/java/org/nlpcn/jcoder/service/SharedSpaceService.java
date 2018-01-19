@@ -19,6 +19,7 @@ import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.nutz.dao.Cnd;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,6 @@ public class SharedSpaceService {
 	private static final Map<Long, AtomicLong> taskErr = new HashMap<>();
 
 	private ZookeeperDao zkDao;
-
 
 	/**
 	 * 选举
@@ -171,12 +171,10 @@ public class SharedSpaceService {
 	public void walkAllDataNode(Set<String> set, String path) throws Exception {
 		try {
 			List<String> children = zkDao.getZk().getChildren().forPath(path);
-
-			if (children == null || children.size() == 0) {
-				set.add(path);
-			}
 			for (String child : children) {
-				walkAllDataNode(set, path + "/" + child);
+				String cPath = path + "/" + child ;
+				set.add(cPath);
+				walkAllDataNode(set, cPath);
 			}
 		} catch (Exception e) {
 			LOG.error("walk file err: " + path);
@@ -501,16 +499,16 @@ public class SharedSpaceService {
 
 		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupName", "=", group.getName()));
 
-		List<FileInfo> fileInfos = listFileInfosByGroup(groupName);
+		List<FileInfo> fileInfos = FileInfoService.listFileInfosByGroup(groupName);
 
 		//增加或查找不同
 		InterProcessMutex lock = lockGroup(groupName);
 		try {
 			lock.acquire();
-			JarService jarService = JarService.getOrCreate(groupName);
-			if (jarService != null) {
-				jarService.release();
-			}
+//			JarService jarService = JarService.getOrCreate(groupName);
+//			if (jarService != null) {
+//				jarService.release();//TODO:???每次释放group代价有点大，不需要方式组
+//			}
 			//判断group是否存在。如果不存在。则进行安全添加
 			if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
 				addGroup2Cluster(groupName, tasks, fileInfos);
@@ -630,7 +628,7 @@ public class SharedSpaceService {
 				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				FileInfo cInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-				if (!cInfo.equals(lInfo)) {
+				if (cInfo==null || !cInfo.getRelativePath().equals(lInfo.getRelativePath())) {
 					different.addMessage("文件内容不一致");
 				}
 
@@ -812,107 +810,6 @@ public class SharedSpaceService {
 	}
 
 
-	private List<FileInfo> listFileInfosByGroup(String groupName) throws IOException {
-
-		final List<FileInfo> result = new ArrayList<>();
-
-		if (!new File(StaticValue.GROUP_FILE, groupName).exists()) {
-			LOG.warn(groupName + " not folder not exists so create it");
-			new File(StaticValue.GROUP_FILE, groupName).mkdirs();
-		}
-
-		Path[] paths = new Path[]{
-				new File(StaticValue.GROUP_FILE, groupName + "/resources").toPath(),
-				new File(StaticValue.GROUP_FILE, groupName + "/lib").toPath(),
-		};
-
-
-		File pom = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml");
-		if (pom.exists()) {
-			result.add(new FileInfo(pom));
-		}
-
-		for (Path path : paths) {
-			if (!path.toFile().exists()) {
-				LOG.warn("file {} not exists ", path);
-				continue;
-			}
-
-			Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-				// 在访问子目录前触发该方法
-				@Override
-				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-					File file = dir.toFile();
-					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-						return FileVisitResult.SKIP_SUBTREE;
-					}
-					return FileVisitResult.CONTINUE;
-				}
-
-				@Override
-				public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-					File file = path.toFile();
-					if (!file.canRead() || file.isHidden() || file.getName().charAt(0) == '.') {
-						LOG.warn(path.toString() + " is hidden or can not read or start whth '.' so skip it ");
-						return FileVisitResult.CONTINUE;
-					}
-					try {
-						result.add(new FileInfo(file));
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-					return FileVisitResult.CONTINUE;
-				}
-			});
-		}
-
-
-		//先查缓存中是否存在用缓存做对比
-		List<Long> collect = result.stream().map(fi -> fi.lastModified().getTime()).sorted().collect(Collectors.toList());
-		String nowTimeMd5 = MD5Util.md5(collect.toString()); //当前文件的修改时间md5
-
-		GroupCache groupCache = null;
-
-		try {
-			File cacheFile = new File(StaticValue.GROUP_FILE, groupName + ".cache");
-			if (cacheFile.exists()) {
-				String content = IOUtil.getContent(cacheFile, "utf-8");
-				if (org.nlpcn.jcoder.util.StringUtil.isNotBlank(content)) {
-					groupCache = JSONObject.parseObject(content, GroupCache.class);
-				}
-			}
-		} catch (Exception e) {
-			LOG.warn(groupName + " cache read err so create new ");
-		}
-
-		//本group本身的插入zk中用来比较md5加快对比
-		FileInfo root = new FileInfo(new File(StaticValue.GROUP_FILE, groupName));
-		root.setLength(result.stream().mapToLong(f -> f.getLength()).sum());
-
-		if (groupCache != null && nowTimeMd5.equals(groupCache.getTimeMD5())) {
-			LOG.info(groupName + " time md5 same so add it");
-			root.setMd5(groupCache.getGroupMD5());
-		} else {
-			LOG.info("to computer md5 in gourp: " + groupName);
-			List<String> ts = result.stream().map(fi -> fi.getRelativePath() + fi.getMd5()).sorted().collect(Collectors.toList());
-
-			groupCache = new GroupCache();
-			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
-			groupCache.setTimeMD5(nowTimeMd5);
-			groupCache.setPomMD5(JarService.getOrCreate(groupName).getPomMd5());
-			root.setMd5(groupCache.getGroupMD5());
-
-			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, JSONObject.toJSONString(groupCache));
-		}
-
-
-		result.add(root);
-
-		return result;
-	}
-
-
 	/**
 	 * 将文件同步更新到集群中
 	 */
@@ -920,7 +817,7 @@ public class SharedSpaceService {
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 		if (file.exists()) {
 			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file)));
-			LOG.info("up file to {} -> {}", groupName, relativePath);
+			LOG.info("up file: {} to {} -> {}",file.getAbsoluteFile(), groupName, relativePath);
 		} else {
 			zkDao.getZk().delete().deletingChildrenIfNeeded().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
 			LOG.info("delete file to {} -> {}", groupName, relativePath);

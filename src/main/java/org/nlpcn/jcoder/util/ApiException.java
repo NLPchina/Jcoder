@@ -19,6 +19,10 @@ public class ApiException extends ExecutionException {
 	 */
 	public static final int Unauthorized = 401;
 	/**
+	 * 未修改
+	 */
+	public static final int NotModified = 304 ;
+	/**
 	 * 不允许
 	 */
 	public static final int Forbidden = 403;

@@ -34,10 +34,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.net.URLEncoder;
-import java.util.*;
-
-import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -152,6 +156,7 @@ public class GroupAction {
 							"\t<build>\n" +
 							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
 							"\t\t<testSourceDirectory>src/api</testSourceDirectory>\n" +
+							"\t\t<testSourceDirectory>src/test</testSourceDirectory>\n" +
 							"\t\t<plugins>\n" +
 							"\t\t\t<plugin>\n" +
 							"\t\t\t\t<artifactId>maven-compiler-plugin</artifactId>\n" +
@@ -337,6 +342,14 @@ public class GroupAction {
 	@At
 	public Restful fixDiff(String fromHostPort, String toHostPort, String groupName, @Param("relativePath[]") String[] relativePaths) throws Exception {
 
+		if (StringUtil.isBlank(fromHostPort)) {
+			fromHostPort = Constants.HOST_MASTER;
+		}
+
+		if (StringUtil.isBlank(toHostPort)) {
+			toHostPort = Constants.HOST_MASTER;
+		}
+
 		boolean toMaster = Constants.HOST_MASTER.equals(toHostPort);
 
 		Set<String> toHostPorts = new HashSet<>();
@@ -357,13 +370,18 @@ public class GroupAction {
 
 		List<String> message = new ArrayList<>();
 
-		boolean flag = false;
+		boolean flag = true;
 
 		for (String relativePath : relativePaths) {
 			if (relativePath.startsWith("/")) {//更新文件的
 				if (toHostPorts.size() > 0) {
-					String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_MESSAGE_CALLBACK);
-					message.add(post);
+					String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+					flag = flag && StringUtil.isBlank(post);
+					if (StringUtil.isNotBlank(post)) {
+						message.add(post);
+					} else {
+						message.add("添加成功");
+					}
 				}
 
 				if (toMaster) {
@@ -373,54 +391,35 @@ public class GroupAction {
 				}
 
 			} else {//更新task的
-				if (StringUtil.isBlank(fromHostPort)) {
-					fromHostPort = Constants.HOST_MASTER;
-				}
 
-				if (StringUtil.isBlank(toHostPort)) {
-					toHostPort = Constants.HOST_MASTER;
-				}
-
-				Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
-
-				Restful restful = Restful.instance(post);
-
-				if (restful.code() == 404) {
-					if (Constants.HOST_MASTER.equals(toHostPort)) {
-						StaticValue.space().getZk().delete().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName + "/" + relativePath);
-					} else {
-
-						Map<String, Object> params = new HashMap<>();
-
-						params.put("diff", false);
-						params.put("force", true);
-						params.put("groupName", groupName);
-						params.put("name", relativePath);
-						params.put("user", "user");
-						params.put("time", System.currentTimeMillis());
-
-						post = proxyService.post(toHostPort, Api.TASK_DELETE.getPath(), params, 1000);
+				if (toHostPorts.size() > 0) {
+					String result = proxyService.post(toHostPorts, Api.TASK_SYN.getPath(), ImmutableMap.of("fromHost", fromHostPort, "groupName", groupName, "taskName", relativePath), 10000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+					if (StringUtil.isNotBlank(result)) {
+						flag = false;
+						message.add(result);
 					}
-					return Restful.instance(post);
 				}
 
-				JSONObject obj = restful.getObj();
+				if (toMaster) {
+					Response post = proxyService.post(StaticValue.getHostPort(), "/admin/task/task", ImmutableMap.of("groupName", groupName, "name", relativePath, "sourceHost", fromHostPort), 100000);
+					Restful restful = Restful.instance(post);
 
-				if (obj == null) {
-					return restful;
+					if (restful.code() == ApiException.NotFound) {
+						taskService.deleteTaskFromCluster(groupName, relativePath);
+					} else if (restful.code() == ApiException.OK && restful.getObj() != null) {
+						StaticValue.space().addTask(JSONObject.toJavaObject(restful.getObj(),Task.class));
+					} else {
+						message.add(restful.getMessage());
+						flag = false;
+					}
+
 				}
 
-				post = proxyService.post(StaticValue.getHostPort(), "/admin/task/save", ImmutableMap.of("hosts[]", toHostPort, "task", obj.toJSONString()), 20000);
 
-				Restful instance = Restful.instance(post);
-
-				message.add(instance.getMessage());
-
-				flag = flag && instance.isOk();
 			}
 		}
 
-		return Restful.instance(flag, Joiner.on(",").useForNull("null").join(message));
+		return Restful.instance(flag, Joiner.on(",").skipNulls().join(message));
 	}
 
 }

@@ -102,6 +102,16 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				srcFile.mkdirs();
 			}
 
+			File srcMainFile = new File(StaticValue.GROUP_FILE, groupName + "/src/main");
+			if (!srcMainFile.exists()) {
+				srcMainFile.mkdirs();
+			}
+
+			File srcTestFile = new File(StaticValue.GROUP_FILE, groupName + "/src/test");
+			if (!srcTestFile.exists()) {
+				srcTestFile.mkdirs();
+			}
+
 			Files.walkFileTree(srcFile.toPath(), new SimpleFileVisitor<Path>() {
 
 				@Override

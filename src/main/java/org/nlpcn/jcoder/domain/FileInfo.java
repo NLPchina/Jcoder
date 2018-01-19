@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import org.nlpcn.jcoder.service.FileInfoService;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -35,14 +36,21 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 
 	private long length;
 
-	public FileInfo() {
+	private String groupName;
+
+	private FileInfo() {
 	}
 
 	public FileInfo(File file) {
 		this.file = file;
 		this.directory = file.isDirectory();
 		this.name = file.getName();
-		this.relativePath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/").replaceFirst("/.*?/", "/");
+		String groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/");
+		this.groupName = groupPath.split("/")[1];
+		this.relativePath = groupPath.substring(groupName.length() + 1);
+		if(this.relativePath.endsWith("/")){
+			this.relativePath = this.relativePath.substring(0,this.relativePath.length()-1) ;
+		}
 		this.length = file.length();
 	}
 
@@ -64,11 +72,7 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 
 	public synchronized String getMd5() {
 		if (this.md5 == null) {
-			if ("/resources/ioc.js".equals(this.relativePath) || "/pom.xml".equals(this.relativePath)) {
-				md5 = IOUtil.getContent(file, IOUtil.UTF8);
-			} else {
-				md5 = MD5Util.md5(file);
-			}
+			md5 = FileInfoService.computerMD5(this);
 		}
 		return md5;
 	}
@@ -101,21 +105,16 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		this.length = length;
 	}
 
-	@Override
-	public int hashCode() {
-		return Objects.hashCode(this.name, this.directory, this.length, this.md5);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (!(obj instanceof FileInfo)) {
-			return false;
-		}
-		return this.relativePath.equals(((FileInfo) obj).relativePath) && this.getMd5().equals(((FileInfo) obj).getMd5());
-	}
-
 	public Date lastModified() {
 		return new Date(file.lastModified());
+	}
+
+	public String getGroupName() {
+		return groupName;
+	}
+
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
 	}
 
 	@Override
@@ -123,12 +122,20 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		return (this.file.getAbsolutePath().compareTo(ji.file.getAbsolutePath()));
 	}
 
-
-	public static void main(String[] args) {
-
-		List list = Lists.newArrayList(new FileInfo(new File("log"))) ;
-
-
-		System.out.println(Json.toJson(list));
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		FileInfo fileInfo = (FileInfo) o;
+		if (this.length != fileInfo.length) return false;
+		if (this.groupName != null ? this.name.equals(fileInfo.groupName) : fileInfo.groupName == null) return false;
+		if (this.file.lastModified() != fileInfo.file.lastModified()) return false;
+		return relativePath != null ? relativePath.equals(fileInfo.relativePath) : fileInfo.relativePath == null;
 	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(groupName, relativePath, file.lastModified(), length);
+	}
+
 }

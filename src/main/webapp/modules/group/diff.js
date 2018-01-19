@@ -24,7 +24,6 @@ var diffMergely = new Vue({
         //获取文件内容 /admin/fileInfo/fileContent {hostPort, groupName, relativePath, maxSize}
     },
     mounted: function() {
-
     	this.hostList() ;
 
 		this.listFiles(true) ;
@@ -67,12 +66,12 @@ var diffMergely = new Vue({
 				if(flag){
 					$this.lFiles = files ;
 					if(!files||files.length==0){
-						$this.lFilePath = "" ;
+					//TODO:去掉了没发现大问题先这么招 $this.lFilePath = "" ;
 					}
 				}else{
 					$this.rFiles = files ;
 					if(!files||files.length==0){
-                        $this.rFilePath = "" ;
+                     //TODO:去掉了没发现大问题先这么招   $this.rFilePath = "" ;
                     }
 				}
 				$this.setContent(flag) ;

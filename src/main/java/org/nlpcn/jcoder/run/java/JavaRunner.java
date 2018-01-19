@@ -134,7 +134,7 @@ public class JavaRunner {
 				codeInfo.setClassz(clz);
 
 			} catch (IOException | CodeException e) {
-				e.printStackTrace();
+				LOG.debug("code compile err ",e);
 				throw new CodeRuntimeException(e);
 			}
 		}
