@@ -1,11 +1,9 @@
 package org.nlpcn.jcoder.controller;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import com.alibaba.fastjson.JSON;
 import com.google.common.collect.ImmutableMap;
+
+import com.alibaba.fastjson.JSONObject;
+
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.scheduler.TaskException;
@@ -17,11 +15,18 @@ import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSONObject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -29,38 +34,57 @@ import com.alibaba.fastjson.JSONObject;
 @Ok("json")
 public class ThreadAction {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ThreadAction.class) ;
+	private static final Logger LOG = LoggerFactory.getLogger(ThreadAction.class);
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
 	@Inject
-	private ProxyService proxyService ;
+	private ProxyService proxyService;
 
 	/**
 	 * 通过api的方式获得线程
-	 *
-	 * @return
-	 * @throws TaskException
 	 */
 	@At
-	public Restful list(@Param("hostPorts[]") String[] hostPorts ,@Param("groupName") String groupName ,@Param(value = "first" , df = "true") boolean first) throws Exception {
+	public Restful list(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String groupName, @Param(value = "first", df = "true") boolean first) throws Exception {
 
-		if(first) {
+		if (first) {
 			if (hostPorts == null || hostPorts.length == 0 || StringUtil.isBlank(hostPorts[0])) {
 				hostPorts = StaticValue.space().getAllHosts().toArray(new String[0]);
 			}
 
+			Map<String, String> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "first", false), 100000);
 
-			Map<String, String> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "first", false), 10000);
+			// 线程任务
+			List<Object> threads = new ArrayList<>();
+
+			// 获得计划任务
+			List<Object> schedulers = new ArrayList<>();
+
+			// 获得执行中的action
+			List<Object> actions = new ArrayList<>();
 
 			for (Map.Entry<String, String> entry : post.entrySet()) {
-
-				JSONObject jsonObject = JSONObject.parseObject(entry.getValue());
-
+				JSONObject ref = JSONObject.parseObject(entry.getValue());
+				if (!ref.getBoolean("ok")) {
+					LOG.error(entry.toString());
+					continue;
+				}
+				JSONObject jsonObject = ref.getJSONObject("obj");
+				threads.addAll(jsonObject.getJSONArray("threads"));
+				schedulers.addAll(jsonObject.getJSONArray("schedulers"));
+				actions.addAll(jsonObject.getJSONArray("actions"));
 			}
 
+			JSONObject json = new JSONObject();
 
-		}else {
+			json.put("threads", threads);
+			json.put("schedulers", schedulers);
+			json.put("actions", actions);
+
+			return Restful.ok().obj(json);
+
+
+		} else {
 
 			// 线程任务
 			List<TaskInfo> threads = ThreadManager.getAllThread();
@@ -72,9 +96,9 @@ public class ThreadAction {
 			List<TaskInfo> actions = ThreadManager.getAllAction();
 
 			if (StringUtil.isNotBlank(groupName)) {
-				threads = threads.stream().filter(t -> t.getGourName().equals(groupName)).collect(Collectors.toList());
-				schedulers = schedulers.stream().filter(t -> t.getGourName().equals(groupName)).collect(Collectors.toList());
-				actions = actions.stream().filter(t -> t.getGourName().equals(groupName)).collect(Collectors.toList());
+				threads = threads.stream().filter(t -> t.getGroupName().equals(groupName)).collect(Collectors.toList());
+				schedulers = schedulers.stream().filter(t -> t.getGroupName().equals(groupName)).collect(Collectors.toList());
+				actions = actions.stream().filter(t -> t.getGroupName().equals(groupName)).collect(Collectors.toList());
 			}
 
 			JSONObject json = new JSONObject();
@@ -85,15 +109,12 @@ public class ThreadAction {
 
 			return Restful.ok().obj(json);
 		}
-		return null;
 	}
 
 	/**
 	 * 停止一个运行的action
 	 *
 	 * 停止一个运行的action，或者task
-	 * 
-	 * @throws Exception
 	 */
 	@At
 	public void stop(String key) throws Exception {
@@ -102,11 +123,11 @@ public class ThreadAction {
 				ThreadManager.stop(key);
 			} catch (TaskException e) {
 				e.printStackTrace();
-				LOG.error("stop action err",e);
+				LOG.error("stop action err", e);
 			}
 		} catch (Exception e) {
-			LOG.error("author err",e);
-			throw e ;
+			LOG.error("author err", e);
+			throw e;
 		}
 	}
 }

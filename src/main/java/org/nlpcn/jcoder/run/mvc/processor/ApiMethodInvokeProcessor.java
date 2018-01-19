@@ -59,7 +59,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		}
 
 		try {
-			threadName = module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@"
+			threadName = module.getGroupName()+"@"+module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@"
 					+ al.getAndIncrement();
 			ThreadManager.add2ActionTask(threadName, Thread.currentThread());
 			Object result = executeByCache(module, method, args);
