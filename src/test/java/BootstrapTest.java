@@ -3,7 +3,8 @@ public class BootstrapTest {
 		Bootstrap.main(new String[]{
 				"--zk=192.168.3.137:2181",
 				"--host=192.168.3.119",
-				"--home=jcoder_home"
+				"--home=jcoder_home",
+				"--testing=true"
 		});
 	}
 }

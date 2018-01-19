@@ -1,69 +1,36 @@
+function fetchThreadData(page){
+	$('#currentPage').val(page);
+	threadManager.ids=[];
+	threadManager.threadList();
+};
+/*function fetchSchedulerData(page){
+	$('#currentPage').val(page);
+	userModule.ids=[];
+	userModule.fetchData();
+};*/
 var threadManager = new Vue({
   el: '#threadManager',
   data: {
-    threads: []
+    threads: [],
+    schedulers:[],
+    actions:[],
+    groupName:param.name
   },
   mounted:function(){
 	  this.threadList();
+	  htmlPage("threadPageInfo",1 ,0,'fetchThreadData', 10);
+	  htmlPage("schedulersPageInfo",1 ,0,'fetchSchedulerData', 10);
   },
   methods:{
 	  threadList:function(){
 		  var $this = this;
-		  Jcoder.ajax('/admin/thread/list', 'post',null,null).then(function (data) {
+		  Jcoder.ajax('/admin/thread/list', 'post',{groupName:$this.groupName},null).then(function (data) {
               JqdeBox.unloading();
               if(data.ok){
 				$this.threads = data.obj.threads;
+                $this.schedulers = data.obj.schedulers;
+                $this.actions = data.obj.actions;
 				return false;
-			  }
-          });
-	  },
-	  add:function(userInfo){
-		  var $this = this;
-		  var vUrl = '/admin/user/add';
-		  $this.item = {};
-		  var vT = '添加用户';
-		  var msg = '添加成功！';
-		  if(userInfo != undefined){
-			  vT = '编辑用户';
-			  $this.item = userInfo;
-			  vUrl = '/admin/user/modify';
-			  msg = '修改成功！';
-		  }
-		  JqdeBox.dialog({
-              title: vT,
-              url: 'modules/user/userAddOrEdit.html',
-              init: function () {
-            	  userAddOrEdit.item = userInfo;
-            	  if(userAddOrEdit.item == undefined)userAddOrEdit.item = {};
-            	  $('#userAddOrEdit').css('display','block');
-	  	          $("#userType option").each(function (){
-	  	        	  if(userAddOrEdit.item.type == $(this).attr('value'))$(this).attr("selected", "selected");
-	  	          });
-              },
-              confirm: function () {
-            	  userAddOrEdit.item.type = $("#userType").val();
-            	  var param = userAddOrEdit.item;
-            	  Jcoder.ajax(vUrl, 'post',param,null).then(function (data) {
-                      JqdeBox.unloading();
-                      if(data.ok){
-  	  					$this.userList();
-  	  					JqdeBox.message(true, msg);
-  	  				  }else{
-  	  					JqdeBox.message(false, data.message);
-  	  				  }
-                  });
-              }
-          });
-	  },
-	  del:function(item){
-		  var $this = this;
-		  Jcoder.ajax('/admin/user/del', 'post',item,null).then(function (data) {
-              JqdeBox.unloading();
-              if(data.ok){
-				$this.userList();
-				JqdeBox.message(true, '删除成功！');
-			  }else{
-				JqdeBox.message(false, data.message);
 			  }
           });
 	  }
