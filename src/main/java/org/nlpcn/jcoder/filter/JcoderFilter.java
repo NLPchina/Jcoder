@@ -1,5 +1,15 @@
 package org.nlpcn.jcoder.filter;
 
+import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
+import org.nlpcn.jcoder.run.mvc.view.JsonView;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nutz.mvc.Mvcs;
+import org.nutz.mvc.NutFilter;
+import org.nutz.mvc.config.FilterNutConfig;
+
 import java.io.IOException;
 
 import javax.servlet.FilterChain;
@@ -10,23 +20,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.service.JarService;
-import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
-import org.nlpcn.jcoder.run.java.DynamicEngine;
-import org.nlpcn.jcoder.run.mvc.ApiActionHandler;
-import org.nlpcn.jcoder.run.mvc.view.JsonView;
-import org.nlpcn.jcoder.service.ProxyService;
-import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.NutFilter;
-
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
 public class JcoderFilter extends NutFilter {
+
+	private static final String JCODER_NAME = "jcoder";
 
 	private ApiActionHandler apiHandler;
 
@@ -36,7 +32,8 @@ public class JcoderFilter extends NutFilter {
 
 	public void init(FilterConfig conf) throws ServletException {
 		super.init(conf);
-		apiHandler = new ApiActionHandler(conf);
+		FilterNutConfig config = new FilterNutConfig(conf);
+		apiHandler = new ApiActionHandler(config);
 		host = StaticValue.getConfigHost();
 	}
 
@@ -78,7 +75,9 @@ public class JcoderFilter extends NutFilter {
 	private void _doFilter(final FilterChain chain, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 		Mvcs.setServletContext(sc);
 		try {
-			Mvcs.set(this.selfName, request, response);
+			Mvcs.set(Thread.currentThread().getName(), request, response);
+			Mvcs.setIoc(Mvcs.ctx().iocs.get(this.selfName));
+			Mvcs.setAtMap(Mvcs.ctx().atMaps.get(this.selfName));
 			if (!apiHandler.handle(request, response)) {
 				try {
 					new JsonView().render(request, response, Restful.instance(false, "api not found ! may be it not actived!", null, ApiException.NotFound));

@@ -48,7 +48,7 @@ public class ApiProxyProcessor extends ViewProcessor {
 				response.getOutputStream().close();
 			}
 		} else {
-			log.warn("not found any host in proxy so do next by self");
+			log.debug("not found any host in proxy so do next by self");
 			doNext(ac);
 		}
 
