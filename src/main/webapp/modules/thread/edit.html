@@ -1,0 +1,170 @@
+<style type="text/css">
+    .CodeMirror {
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+        overflow: no-display;
+        font-size: 18px;
+        height: 500px;
+    }
+</style>
+
+<div class="row" id="vmTaskEditModule">
+    <div>
+        <host-component :hosts.sync="hosts" :group-name="groupName" @change="change"/>
+    </div>
+    <div class="widget-box">
+        <div class="widget-header">
+            <h4 class="widget-title lighter smaller">
+                <i class="ace-icon fa fa-pencil-square-o blue"></i>
+                Resource
+            </h4>
+        </div>
+
+        <div class="widget-body">
+            <div class="widget-main">
+                <div class="row">
+                    <div class="box-content">
+                        <div class="form-group has-success col-md-1">
+                            <div class="controls">
+                                <label class="control-label" for="inputWarning1">Type</label>
+                                <select id="task_type" name="task.type" class="form-control">
+                                    <option value="1">API</option>
+                                    <option value="2" selected="">Cron</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group has-success col-md-1">
+                            <div class="controls">
+                                <label class="control-label" for="inputWarning1">status</label> <select id="task.status" name="task.status" class="form-control">
+                                <option value="0">Stop</option>
+                                <option value="1" selected="">Active</option>
+                            </select>
+                            </div>
+                        </div>
+                        <div class="form-group has-warning col-md-3">
+                            <label class="control-label" for="inputWarning1">Description</label> <input type="text" class="form-control" name="task.description" value="git每周统计">
+                        </div>
+
+                        <div class="form-group has-error col-md-2" id="zhixing" style="display: block;">
+                            <label class="control-label" for="inputError1">CronExpression</label> <input type="text" class="form-control" name="task.scheduleStr" value="0 1 0 * * ?">
+                        </div>
+
+                        <div class="form-group has-error col-md-1" id="">
+                            <label class="control-label">versions</label>
+                            <select class="form-control" id="change_version">
+
+                            </select>
+                        </div>
+
+
+                        <div class="form-group has-error col-md-1">
+                            <label class="control-label" for="inputWarning1">Different</label>
+                            <a id="diff_task" class="btn btn-info" href="#"><i class="glyphicon glyphicon-zoom-in icon-white"></i>Diff</a>
+                        </div>
+
+
+                        <div class="form-group has-error col-md-1">
+                            <label class="control-label" for="inputWarning1">Save</label>
+                            <a id="submit_task" class="btn btn-danger" href="#"><i class="glyphicon glyphicon-save icon-white"></i>Save</a>
+                        </div>
+                        <br>
+                        <div id="fileContent" class="widget-main" >
+                            <textarea id="fileInfoDlg" style="width: 100%;" ></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /.widget-main  padding: 1em;-->
+        </div><!-- /.widget-body -->
+    </div>
+    <!--<form class="form-horizontal">
+        <div class="col-sm-12">
+            <div class="form-group col-sm-4">
+                <label class="col-sm-3 control-label no-padding-right">类型</label>
+                <div class="col-sm-9">
+                    <select class="col-sm-12" v-model="task.type">
+                        <option value="1">接口</option>
+                        <option value="2">定时任务</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4">
+                <label class="col-sm-4 control-label no-padding-right">状态</label>
+                <div class="col-sm-8">
+                    <select class="col-sm-12" v-model="task.status">
+                        <option value="0">停用</option>
+                        <option value="1">激活</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4">
+                <label class="col-sm-3 control-label no-padding-right" v-if="!!task.name">版本</label>
+                <label class="col-sm-3 control-label no-padding-right" style="visibility:hidden;" v-else>&nbsp;</label>
+                <div class="col-sm-9">
+                    <select v-if="!!task.name" class="col-sm-12" v-model="sourceHost" @change="loadTask()">
+                        <option v-for="item in sourceHosts" :value="item">{{item}}</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4" style="margin-bottom:0">
+                <label class="col-sm-3 control-label no-padding-right">描述</label>
+                <div class="col-sm-9">
+                    <input type="text" placeholder="任务描述" class="col-sm-12" v-model="task.description"/>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4" style="margin-bottom:0">
+                <div v-if="task.type==2">
+                    <label class="col-sm-4 control-label no-padding-right">Cron表达式</label>
+                    <div class="col-sm-8">
+                        <input type="text" placeholder="cron表达式" class="col-sm-12" v-model="task.scheduleStr"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group col-sm-4" style="margin-bottom:0;text-align:right;">
+                <div class="col-md-12">
+                    <button class="btn btn-success" type="button" style="border:none;" @click="save()">
+                        <i class="ace-icon fa fa-check bigger-110"></i>
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-group col-sm-12" style="padding: 1em;">
+            <textarea id="code" style="width:100%;"></textarea>
+        </div>
+    </form>-->
+</div>
+
+<!--<script type="text/x-template" id="host-component">
+    <div class="alert alert-block alert-success" style="padding:8px;">
+        <i v-if="isLoading" class="ace-icon fa fa-spinner fa-spin orange bigger-140"></i>
+        <label v-else v-for="item in hosts"
+               v-bind="{class:'infobox infobox-small infobox-dark '+(item.current?'infobox-green':''),style:'cursor:pointer;margin:2px;width:228px;'+(!item.current?'background-color:#E08374;border-color:#E08374;':'')}">
+            <div class="infobox-progress">
+                <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">
+                    <span class="percent">{{item.weight}}</span>%
+                </div>
+            </div>
+            <div class="infobox-data">
+                <div class="infobox-content" style="width:173px;max-width:173px;">
+                    {{item.host}}
+                    <label class="pull-right">
+                        <input class="ace ace-checkbox-2" type="checkbox" v-model="item.checked">
+                        <span class="lbl"></span>
+                    </label>
+                </div>
+                <div class="infobox-content" style="width:173px;max-width:173px;">
+                    <span class="green" style="width:72px;display:inline-block;"><i class="ace-icon fa fa-check"></i> {{item.success}}</span>
+                    &nbsp;&nbsp;
+                    <span class="red"><i class="ace-icon fa fa-bolt"></i> {{item.error}}</span>
+                </div>
+            </div>
+        </label>
+    </div>
+</script>-->
+<script src="modules/task/edit.js"/>
