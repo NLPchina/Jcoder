@@ -57,12 +57,6 @@ public class JavaRunner {
 
 				String code = task.getCode();
 
-				JavaSourceUtil sourceUtil = new JavaSourceUtil(code);
-
-				task.setSourceUtil(sourceUtil);
-
-				task.setName(sourceUtil.getClassName());
-
 				JarService jarService = JarService.getOrCreate(task.getGroupName());
 
 				DynamicEngine de = jarService.getEngine();
@@ -73,6 +67,10 @@ public class JavaRunner {
 
 				String pack = javaSourceUtil.getPackage();
 				String className = javaSourceUtil.getClassName();
+
+if("MssCounterApi".equals(className)){
+	System.out.println("aaaa");
+}
 
 				LOG.info("to compile " + pack + "." + className);
 

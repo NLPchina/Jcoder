@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -12,26 +13,37 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.domain.CodeInfo;
+import org.nlpcn.jcoder.domain.Different;
+import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.HostGroupWatcher;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
-import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.GroupFileListener;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
-import org.nutz.dao.Cnd;
-import org.nutz.ioc.loader.annotation.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -172,7 +184,7 @@ public class SharedSpaceService {
 		try {
 			List<String> children = zkDao.getZk().getChildren().forPath(path);
 			for (String child : children) {
-				String cPath = path + "/" + child ;
+				String cPath = path + "/" + child;
 				set.add(cPath);
 				walkAllDataNode(set, cPath);
 			}
@@ -493,22 +505,25 @@ public class SharedSpaceService {
 	 * 加入刷新一个主机到集群中
 	 */
 	public List<Different> joinCluster(Group group, boolean upMapping) throws IOException {
+
+		LOG.info("join cluster by groupName: {} upMapping: {}", group.getName(), upMapping);
+
 		List<Different> diffs = new ArrayList<>();
 
 		String groupName = group.getName();
 
-		List<Task> tasks = StaticValue.systemDao.search(Task.class, Cnd.where("groupName", "=", group.getName()));
+		JarService.getOrCreate(groupName);//查找之前先初始化一下
 
+		//查找出这个组所有的task
+		List<Task> tasks = TaskService.findAllTasksByCache().stream().filter(t -> groupName.equals(t.getGroupName())).collect(Collectors.toList());
+
+		//查找出这个组所有的文件
 		List<FileInfo> fileInfos = FileInfoService.listFileInfosByGroup(groupName);
 
 		//增加或查找不同
 		InterProcessMutex lock = lockGroup(groupName);
 		try {
 			lock.acquire();
-//			JarService jarService = JarService.getOrCreate(groupName);
-//			if (jarService != null) {
-//				jarService.release();//TODO:???每次释放group代价有点大，不需要方式组
-//			}
 			//判断group是否存在。如果不存在。则进行安全添加
 			if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
 				addGroup2Cluster(groupName, tasks, fileInfos);
@@ -537,6 +552,12 @@ public class SharedSpaceService {
 		}
 
 		if (upMapping) {
+
+			tasks.stream().forEach(t -> {
+				if (t.getName() == null) {
+					System.out.println(t);
+				}
+			});
 
 			tasks.forEach(task -> {
 				try {
@@ -628,7 +649,7 @@ public class SharedSpaceService {
 				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
 				FileInfo cInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-				if (cInfo==null || !cInfo.getRelativePath().equals(lInfo.getRelativePath())) {
+				if (cInfo == null || !cInfo.getRelativePath().equals(lInfo.getRelativePath())) {
 					different.addMessage("文件内容不一致");
 				}
 
@@ -817,7 +838,7 @@ public class SharedSpaceService {
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 		if (file.exists()) {
 			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file)));
-			LOG.info("up file: {} to {} -> {}",file.getAbsoluteFile(), groupName, relativePath);
+			LOG.info("up file: {} to {} -> {}", file.getAbsoluteFile(), groupName, relativePath);
 		} else {
 			zkDao.getZk().delete().deletingChildrenIfNeeded().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
 			LOG.info("delete file to {} -> {}", groupName, relativePath);

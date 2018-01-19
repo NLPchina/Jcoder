@@ -1,11 +1,13 @@
 package org.nlpcn.jcoder.server;
 
 import java.io.File;
+import java.net.URL;
 import java.sql.SQLException;
 
 import org.h2.tools.Server;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.mvc.NutConfig;
 import org.slf4j.Logger;
@@ -15,9 +17,9 @@ import com.alibaba.druid.pool.DruidDataSource;
 
 /**
  * h2数据库
- * 
+ *
  * @author ansj
- * 
+ *
  */
 public class H2Server {
 	private static final Logger LOG = LoggerFactory.getLogger(H2Server.class);
@@ -36,6 +38,15 @@ public class H2Server {
 
 			boolean dbIsActive = new File(h2db + ".h2.db").isFile();
 
+			String content = null ;
+			if(!dbIsActive){
+				content = IOUtil.getContent(H2Server.class.getResourceAsStream("/jcoder.sql"), IOUtil.UTF8);
+				if(StringUtil.isBlank(content)){
+					LOG.error("not found sql file ");
+					System.exit(-1);
+				}
+			}
+
 			DruidDataSource dds = new DruidDataSource();
 			dds.setDriverClassName("org.h2.Driver");
 			dds.setUrl("jdbc:h2:" + h2db);
@@ -53,7 +64,6 @@ public class H2Server {
 			server = Server.createPgServer(new String[] { "-baseDir", h2db}).start();
 			if (!dbIsActive) {
 				LOG.warn("the database is not create , use db script to create it!");
-				String content = IOUtil.getContent(H2Server.class.getResourceAsStream("/jcoder.sql"), IOUtil.UTF8);
 				basicDao.executeSql(content);
 			} else {
 				LOG.info("the database is active good luck for use it !");

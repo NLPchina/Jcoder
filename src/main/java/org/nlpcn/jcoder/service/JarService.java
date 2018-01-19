@@ -43,7 +43,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 @IocBean
 public class JarService {
@@ -76,10 +79,15 @@ public class JarService {
 				}
 			});
 
+	private static final ConcurrentHashMap<String, Lock> LOCK_CONCURRENT_HASH_MAP = new ConcurrentHashMap<>();
+
 	public static JarService getOrCreate(String groupName) {
 		JarService jarService = CACHE.getIfPresent(groupName);
 		if (jarService == null) {
+
+			Lock lock = LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock());
 			try {
+				lock.lock();
 				jarService = CACHE.get(groupName);
 			} catch (ExecutionException e) {
 				e.printStackTrace();
@@ -88,6 +96,9 @@ public class JarService {
 				StaticValue.getSystemIoc().get(TaskService.class, "taskService").initTaskFromDB(groupName);
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				LOCK_CONCURRENT_HASH_MAP.remove(groupName) ;
+				lock.unlock();
 			}
 
 		}

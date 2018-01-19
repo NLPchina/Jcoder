@@ -1,18 +1,20 @@
 package org.nlpcn.jcoder.domain;
 
-import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
-import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 
 @Table("task")
 public class Task {
+
+	private static final Logger LOG = LoggerFactory.getLogger(Task.class);
 
 	@Id
 	private Long id;
@@ -74,27 +76,6 @@ public class Task {
 	}
 
 	public String getName() {
-		if (name == null) {
-			if (this.sourceUtil != null) {
-				this.name = sourceUtil.getClassName();
-			} else {
-				synchronized (this) {
-					if (this.sourceUtil == null) {
-						try {
-							new JavaRunner(this).compile();
-							if (this.sourceUtil != null) {
-								this.name = sourceUtil.getClassName();
-							}
-						} catch (Throwable e) {
-							this.name = JavaSourceUtil.findClassName(this.code);
-							if(name==null){
-								name = MD5Util.md5(this.code);
-							}
-						}
-					}
-				}
-			}
-		}
 		return name;
 	}
 
@@ -103,7 +84,26 @@ public class Task {
 	}
 
 	public void setCode(String code) {
+		if (code == null) {
+			this.md5 = "EMTPY";
+			this.name = md5;
+			return;
+		}
 		this.md5 = MD5Util.md5(code);
+		try {//抽取名字
+			this.sourceUtil = new JavaSourceUtil(code);
+			if (name == null) {
+				if (this.sourceUtil != null) {
+					this.name = sourceUtil.getClassName();
+				}
+			}
+		} catch (Throwable e) {
+			LOG.warn("not compile task Name: {}", e.getMessage());
+			this.name = JavaSourceUtil.findClassName(this.code);
+			if (name == null) {
+				name = MD5Util.md5(this.code);
+			}
+		}
 		this.code = code;
 	}
 
@@ -227,7 +227,4 @@ public class Task {
 		return sourceUtil;
 	}
 
-	public void setSourceUtil(JavaSourceUtil sourceUtil) {
-		this.sourceUtil = sourceUtil;
-	}
 }

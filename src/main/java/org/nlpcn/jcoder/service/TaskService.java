@@ -4,17 +4,25 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.nlpcn.jcoder.constant.TaskStatus;
 import org.nlpcn.jcoder.constant.TaskType;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
-import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.domain.KeyValue;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.TaskHistory;
+import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.filter.TestingFilter;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.JavaDocUtil;
+import org.nlpcn.jcoder.util.MapCount;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
@@ -24,14 +32,17 @@ import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 
@@ -49,8 +60,6 @@ public class TaskService {
 	 * 根据分组名称获取所有Task
 	 *
 	 * @param groupName 组名
-	 * @return
-	 * @throws Exception
 	 */
 	public List<Task> getTasksByGroupNameFromCluster(String groupName) throws Exception {
 		CuratorFramework zk = StaticValue.space().getZk();
@@ -72,7 +81,6 @@ public class TaskService {
 	 *
 	 * @param groupName 组名
 	 * @param taskName  任务名
-	 * @throws Exception
 	 */
 	public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
 		String path = GROUP_PATH + "/" + groupName + "/" + taskName;
@@ -90,9 +98,6 @@ public class TaskService {
 
 	/**
 	 * 保存或者更新一个任务
-	 *
-	 * @param task
-	 * @throws Exception
 	 */
 	public boolean saveOrUpdate(Task task) throws Exception {
 		// 历史库版本保存
@@ -125,9 +130,6 @@ public class TaskService {
 
 	/**
 	 * 验证一个taskcode是否正确
-	 *
-	 * @param task
-	 * @return
 	 */
 	public String validate(Task task) throws ParseException {
 
@@ -145,16 +147,16 @@ public class TaskService {
 		List<TypeDeclaration> types = compile.getTypes();
 
 		for (TypeDeclaration type : types) {
-			if (type.getModifiers()== Modifier.PUBLIC){
-				if(name!=null){
-					return "class not have more than one public class " ;
+			if (type.getModifiers() == Modifier.PUBLIC) {
+				if (name != null) {
+					return "class not have more than one public class ";
 				}
-				name = type.getName() ;
+				name = type.getName();
 			}
 		}
 
-		if(name==null){
-			return "not find className " ;
+		if (name == null) {
+			return "not find className ";
 		}
 
 		return null;
@@ -163,9 +165,6 @@ public class TaskService {
 
 	/**
 	 * 判断task代码是否修改过
-	 *
-	 * @param task
-	 * @return
 	 */
 	private boolean checkTaskModify(Task task) {
 		Long id = task.getId();
@@ -184,8 +183,6 @@ public class TaskService {
 
 	/**
 	 * 刷新某个task
-	 *
-	 * @throws Exception
 	 */
 	public void flush(Long id) throws Exception {
 
@@ -221,9 +218,6 @@ public class TaskService {
 
 	/**
 	 * 删除一个任务
-	 *
-	 * @param task
-	 * @throws Exception
 	 */
 	public void delete(Task task) throws Exception {
 		task.setType(TaskType.RECYCLE.getValue());
@@ -233,9 +227,6 @@ public class TaskService {
 
 	/**
 	 * 彻底删除一个任务
-	 *
-	 * @param task
-	 * @throws Exception
 	 */
 	public void delByDB(Task task) {
 		// 删除任务历史
@@ -259,9 +250,6 @@ public class TaskService {
 
 	/**
 	 * 找到task根据groupName
-	 *
-	 * @param groupName
-	 * @return
 	 */
 	public LinkedHashSet<Task> findTaskByGroupNameCache(String groupName) {
 		Collection<Task> values = TASK_MAP_CACHE.values();
@@ -277,8 +265,6 @@ public class TaskService {
 
 	/**
 	 * 从数据库中init所有的task
-	 *
-	 * @param groupName
 	 */
 	public void initTaskFromDB(String groupName) {
 		List<Task> search = findTasksByGroupName(groupName);
@@ -287,8 +273,6 @@ public class TaskService {
 
 	/**
 	 * 刷新传入的tasks mapping and cache
-	 *
-	 * @param tasks
 	 */
 	private void flushTaskMappingAndCache(List<Task> tasks) {
 		for (Task task : tasks) {
@@ -328,9 +312,6 @@ public class TaskService {
 
 	/**
 	 * 根据类型查找task集合
-	 *
-	 * @param type
-	 * @return
 	 */
 	public static synchronized Collection<Task> findTaskList(Integer type) {
 		Collection<Task> values = TASK_MAP_CACHE.values();
@@ -345,6 +326,14 @@ public class TaskService {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * 查找出缓存中的所有task
+	 * @return
+	 */
+	public static List<Task> findAllTasksByCache() {
+		return TASK_MAP_CACHE.entrySet().stream().filter(e -> e.getKey() instanceof Long).map(e -> e.getValue()).collect(Collectors.toList());
 	}
 
 	/**
@@ -376,8 +365,6 @@ public class TaskService {
 
 	/**
 	 * 检查所有的task
-	 *
-	 * @throws Exception
 	 */
 	public void checkAllTask() throws Exception {
 		// 获得当前运行的任务
@@ -412,25 +399,13 @@ public class TaskService {
 
 	/**
 	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
-	 *
-	 * @param className
-	 * @param methodName
-	 * @param params
-	 * @return
-	 * @throws ExecutionException
 	 */
 	public static <T> T executeTask(String className, String methodName, Map<String, Object> params) throws ExecutionException {
-		return executeTask(StaticValue.getCurrentGroup(),className,methodName,params);
+		return executeTask(StaticValue.getCurrentGroup(), className, methodName, params);
 	}
 
 	/**
 	 * 内部执行一个task 绕过请求，request为用户请求地址，只限于内部api使用
-	 *
-	 * @param className
-	 * @param methodName
-	 * @param params
-	 * @return
-	 * @throws ExecutionException
 	 */
 	public static <T> T executeTask(String groupName, String className, String methodName, Map<String, Object> params) throws ExecutionException {
 		Task task = findTaskByCache(groupName, className);
@@ -457,12 +432,6 @@ public class TaskService {
 
 	/**
 	 * 通过test方式执行内部调用
-	 *
-	 * @param className
-	 * @param methodName
-	 * @param params
-	 * @return
-	 * @throws ApiException
 	 */
 	public static <T> T executeTaskByArgs(String groupName, String className, String methodName, Object... params) throws ExecutionException {
 		Task task = findTaskByCache(groupName, className);
@@ -504,12 +473,6 @@ public class TaskService {
 
 	/**
 	 * 通过test方式执行内部调用
-	 *
-	 * @param className
-	 * @param methodName
-	 * @param params
-	 * @return
-	 * @throws ApiException
 	 */
 	private static <T> T executeTaskByTest(String groupName, String className, String methodName, Map<String, Object> params) throws ApiException {
 		KeyValue<Method, Object> kv = TestingFilter.methods.get(groupName + "/" + className + "/" + methodName);
@@ -528,10 +491,6 @@ public class TaskService {
 
 	/**
 	 * 将map转换为参数
-	 *
-	 * @param params
-	 * @param method
-	 * @return
 	 */
 	private static Object[] map2Args(Map<String, Object> params, Method method) {
 		Parameter[] parameters = method.getParameters();
@@ -556,10 +515,6 @@ public class TaskService {
 
 	/**
 	 * 将对象数组转换为参数
-	 *
-	 * @param method
-	 * @param params
-	 * @return
 	 */
 	private static Object[] array2Args(Method method, Object... params) {
 		Parameter[] parameters = method.getParameters();
@@ -579,9 +534,6 @@ public class TaskService {
 
 	/**
 	 * 构建task_cache 的key groupName_taskName
-	 *
-	 * @param task
-	 * @return
 	 */
 	private static String makeKey(Task task) {
 		return task.getGroupName() + "/" + task.getName();
@@ -589,8 +541,6 @@ public class TaskService {
 
 	/**
 	 * 构建task_cache 的key groupName_taskName
-	 *
-	 * @return
 	 */
 	private static String makeKey(String groupName, String taskName) {
 		return groupName + "/" + taskName;

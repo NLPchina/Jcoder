@@ -16,9 +16,15 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.DateUtils;
+import org.nlpcn.jcoder.util.GroupFileListener;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
@@ -37,10 +43,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @IocBean
@@ -120,6 +124,12 @@ public class GroupAction {
 
 		if (!first) {
 
+			Group groupByName = groupService.findGroupByName(name);
+
+			if (groupByName != null) {
+				return Restful.fail().msg(name + " 已存在");
+			}
+
 			File file = new File(StaticValue.GROUP_FILE, name);
 			file.mkdirs();
 			File ioc = new File(StaticValue.GROUP_FILE, name + "/resources");
@@ -127,52 +137,50 @@ public class GroupAction {
 			File lib = new File(StaticValue.GROUP_FILE, name + "/lib");
 			lib.mkdir();
 
-			IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", "var ioc = {\n\t\n};");
+			if (!ioc.exists()) {
+				IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", "var ioc = {\n\t\n};");
+			}
 
-			IOUtil.Writer(new File(file, "pom.xml").getAbsolutePath(), "utf-8",
-					"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-							"\txsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
-							"\t<modelVersion>4.0.0</modelVersion>\n" +
-							"\t<groupId>org.nlpcn.jcoder</groupId>\n" +
-							"\t<artifactId>" + name + "</artifactId>\n" +
-							"\t<version>0.1</version>\n" +
-							"\n" +
-							"\t<repositories>\n" +
-							"\t\t<repository>\n" +
-							"\t\t\t<id>jcoder</id>\n" +
-							"\t\t\t<url>" + (StaticValue.IS_SSL ? "https" : "http") + "://" + StaticValue.getHostPort() + "/jar/</url>\n" +
-							"\t\t</repository>\n" +
-							"\t</repositories>\n" +
-							"\n" +
-							"\t<dependencies>\n" +
-							"\t\t<dependency>\n" +
-							"\t\t\t<groupId>org.nlpcn</groupId>\n" +
-							"\t\t\t<artifactId>jcoder</artifactId>\n" +
-							"\t\t\t<version>5.0</version>\n" +
-							"\t\t\t<scope>runtime</scope>\n" +
-							"\t\t</dependency>\n" +
-							"\n" +
-							"\t</dependencies>\n" +
-							"\t<build>\n" +
-							"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
-							"\t\t<testSourceDirectory>src/api</testSourceDirectory>\n" +
-							"\t\t<testSourceDirectory>src/test</testSourceDirectory>\n" +
-							"\t\t<plugins>\n" +
-							"\t\t\t<plugin>\n" +
-							"\t\t\t\t<artifactId>maven-compiler-plugin</artifactId>\n" +
-							"\t\t\t\t<version>3.3</version>\n" +
-							"\t\t\t\t<configuration>\n" +
-							"\t\t\t\t\t<source>1.8</source>\n" +
-							"\t\t\t\t\t<target>1.8</target>\n" +
-							"\t\t\t\t\t<encoding>UTF-8</encoding>\n" +
-							"\t\t\t\t\t<compilerArguments>\n" +
-							"\t\t\t\t\t\t<extdirs>lib</extdirs>\n" +
-							"\t\t\t\t\t</compilerArguments>\n" +
-							"\t\t\t\t</configuration>\n" +
-							"\t\t\t</plugin>\n" +
-							"\t\t</plugins>\n" +
-							"\t</build>\n" +
-							"</project>\n");
+			if (!new File(file, "pom.xml").exists()) {
+				IOUtil.Writer(new File(file, "pom.xml").getAbsolutePath(), "utf-8",
+						"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+								"\txsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
+								"\t<modelVersion>4.0.0</modelVersion>\n" +
+								"\t<groupId>org.nlpcn.jcoder</groupId>\n" +
+								"\t<artifactId>" + name + "</artifactId>\n" +
+								"\t<version>0.1</version>\n" +
+								"\n" +
+								"\t<dependencies>\n" +
+								"\t\t<dependency>\n" +
+								"\t\t\t<groupId>org.nlpcn</groupId>\n" +
+								"\t\t\t<artifactId>jcoder</artifactId>\n" +
+								"\t\t\t<version>0.1</version>\n"+
+								"\t\t\t<systemPath>" + StaticValue.getJcoderJarFile().getCanonicalPath() + "</systemPath>\n" +
+								"\t\t\t<scope>system</scope>\n" +
+								"\t\t</dependency>" +
+								"\n" +
+								"\t</dependencies>\n" +
+								"\t<build>\n" +
+								"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
+								"\t\t<testSourceDirectory>src/api</testSourceDirectory>\n" +
+								"\t\t<testSourceDirectory>src/test</testSourceDirectory>\n" +
+								"\t\t<plugins>\n" +
+								"\t\t\t<plugin>\n" +
+								"\t\t\t\t<artifactId>maven-compiler-plugin</artifactId>\n" +
+								"\t\t\t\t<version>3.3</version>\n" +
+								"\t\t\t\t<configuration>\n" +
+								"\t\t\t\t\t<source>1.8</source>\n" +
+								"\t\t\t\t\t<target>1.8</target>\n" +
+								"\t\t\t\t\t<encoding>UTF-8</encoding>\n" +
+								"\t\t\t\t\t<compilerArguments>\n" +
+								"\t\t\t\t\t\t<extdirs>lib</extdirs>\n" +
+								"\t\t\t\t\t</compilerArguments>\n" +
+								"\t\t\t\t</configuration>\n" +
+								"\t\t\t</plugin>\n" +
+								"\t\t</plugins>\n" +
+								"\t</build>\n" +
+								"</project>\n");
+			}
 
 			Group group = new Group();
 			group.setName(name);
@@ -187,13 +195,6 @@ public class GroupAction {
 
 			return Restful.instance(true, "添加成功");
 		} else {
-
-			groupService.getAllGroupNames().stream().forEach(s -> {
-				if (s.equalsIgnoreCase(name)) {
-					throw new RuntimeException("组" + name + "已存在");
-				}
-			});
-
 
 			Set<String> hostPortsArr = new HashSet<>();
 
@@ -407,7 +408,7 @@ public class GroupAction {
 					if (restful.code() == ApiException.NotFound) {
 						taskService.deleteTaskFromCluster(groupName, relativePath);
 					} else if (restful.code() == ApiException.OK && restful.getObj() != null) {
-						StaticValue.space().addTask(JSONObject.toJavaObject(restful.getObj(),Task.class));
+						StaticValue.space().addTask(JSONObject.toJavaObject(restful.getObj(), Task.class));
 					} else {
 						message.add(restful.getMessage());
 						flag = false;
