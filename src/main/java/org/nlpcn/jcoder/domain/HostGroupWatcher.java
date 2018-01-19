@@ -47,6 +47,7 @@ public class HostGroupWatcher implements Watcher {
 					String hostPort = key.split("_")[0];
 					if (StaticValue.getHostPort().equals(hostPort)) {
 						LOG.info("I lost HostGroup so add it again " + event.getPath());
+						System.out.println(StaticValue.space());
 						StaticValue.space().setData2ZKByEphemeral(event.getPath(), JSONObject.toJSONBytes(hostGroup), this);
 					}
 				} catch (Exception e) {

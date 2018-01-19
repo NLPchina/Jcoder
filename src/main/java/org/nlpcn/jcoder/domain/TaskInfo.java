@@ -10,8 +10,6 @@ public class TaskInfo {
 	
 	private String taskName ;
 
-	private String gourName ;
-
 	private String description;
 
 	private long success;
@@ -38,7 +36,6 @@ public class TaskInfo {
 		this.id = task.getId();
 		this.name = name;
 		this.taskName = task.getName() ;
-		this.groupName = task.getGroupName() ;
 		this.description = task.getDescription();
 		this.success = task.success();
 		this.error = task.error();
@@ -113,14 +110,6 @@ public class TaskInfo {
 		this.status = status;
 	}
 
-	public String getGourName() {
-		return gourName;
-	}
-
-	public void setGourName(String gourName) {
-		this.gourName = gourName;
-	}
-
 	public String getRunStatus() {
 		return runStatus;
 	}
@@ -137,4 +126,11 @@ public class TaskInfo {
 		this.taskName = taskName;
 	}
 
+	public String getHostPort() {
+		return hostPort;
+	}
+
+	public void setHostPort(String hostPort) {
+		this.hostPort = hostPort;
+	}
 }
