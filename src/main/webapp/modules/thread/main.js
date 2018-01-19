@@ -20,6 +20,7 @@ var threadManager = new Vue({
 	  this.threadList();
 	  htmlPage("threadPageInfo",1 ,0,'fetchThreadData', 10);
 	  htmlPage("schedulersPageInfo",1 ,0,'fetchSchedulerData', 10);
+	  htmlPage("actionsPageInfo",1 ,0,'fetchSchedulerData', 10);
   },
   methods:{
 	  threadList:function(){
@@ -30,9 +31,13 @@ var threadManager = new Vue({
 				$this.threads = data.obj.threads;
                 $this.schedulers = data.obj.schedulers;
                 $this.actions = data.obj.actions;
+                console.log(data.obj.actions);
 				return false;
 			  }
           });
+	  },
+	  gotoTaskInfo:function(item){
+
 	  }
   }
 });
