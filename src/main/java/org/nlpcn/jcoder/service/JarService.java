@@ -258,9 +258,9 @@ public class JarService {
 	 */
 	private String copy() throws IOException {
 		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			return execute(new File(StaticValue.GROUP_FILE, groupName), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DincludeScope=compile", "-DoutputDirectory=lib/target/dependency");
+			return execute(new File(StaticValue.GROUP_FILE, groupName), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=lib/target/dependency");
 		} else {
-			return execute(new File(StaticValue.GROUP_FILE, groupName), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DincludeScope=compile", "-DoutputDirectory=lib/target/dependency");
+			return execute(new File(StaticValue.GROUP_FILE, groupName), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=lib/target/dependency");
 		}
 	}
 

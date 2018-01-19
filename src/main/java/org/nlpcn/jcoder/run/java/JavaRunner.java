@@ -68,10 +68,6 @@ public class JavaRunner {
 				String pack = javaSourceUtil.getPackage();
 				String className = javaSourceUtil.getClassName();
 
-if("MssCounterApi".equals(className)){
-	System.out.println("aaaa");
-}
-
 				LOG.info("to compile " + pack + "." + className);
 
 				if (StringUtil.isBlank(pack)) {
