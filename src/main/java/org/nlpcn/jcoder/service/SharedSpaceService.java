@@ -436,7 +436,8 @@ public class SharedSpaceService {
 						if (StaticValue.isMaster()) { //如果是master检查定时任务
 //TODO							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
 						}
-//TODO						CheckClusterJob.changeGroup(groupName);
+//						CheckClusterJob.changeGroup(groupName);
+
 						break;
 				}
 			}
@@ -739,14 +740,12 @@ public class SharedSpaceService {
 			hostGroup.setCurrent(diffs.size() == 0);
 			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
 			try {
-				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), null); //new HostGroupWatcher(hostGroup) 应该已经有一个监听不用再加了
 			} catch (Exception e1) {
 				e1.printStackTrace();
 				LOG.error("add host group info err !!!!!", e1);
 			}
 		}
-
-
 	}
 
 	/**

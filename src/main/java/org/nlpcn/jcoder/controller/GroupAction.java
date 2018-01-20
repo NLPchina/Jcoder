@@ -163,7 +163,6 @@ public class GroupAction {
 								"\t<build>\n" +
 								"\t\t<sourceDirectory>src/main</sourceDirectory>\n" +
 								"\t\t<testSourceDirectory>src/api</testSourceDirectory>\n" +
-								"\t\t<testSourceDirectory>src/test</testSourceDirectory>\n" +
 								"\t\t<plugins>\n" +
 								"\t\t\t<plugin>\n" +
 								"\t\t\t\t<artifactId>maven-compiler-plugin</artifactId>\n" +
@@ -253,8 +252,16 @@ public class GroupAction {
 
 
 	@At
-	public Restful share(@Param("hostPorts") String[] hostPorts, @Param("formHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
-		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName), 1200000, ProxyService.MERGE_MESSAGE_CALLBACK);
+	public Restful share(@Param("hostPorts") String[] hostPorts, @Param("formHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("toGroupName") String toGroupName) throws Exception {
+		if (StringUtil.isBlank(toGroupName)) {
+			toGroupName = groupName;
+		}
+
+		if(hostPorts==null || hostPorts.length==0 || StringUtil.isBlank(hostPorts[0])){
+			return Restful.fail().msg("必须选择一个目标主机");
+		}
+
+		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "toGroupName", toGroupName.trim()), 1200000, ProxyService.MERGE_MESSAGE_CALLBACK);
 		return Restful.instance().msg(msg);
 	}
 
@@ -263,11 +270,11 @@ public class GroupAction {
 	 * 克隆一个主机的group到当前主机上
 	 */
 	@At
-	public synchronized Restful installGroup(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName) throws Exception {
+	public synchronized Restful installGroup(@Param("fromHostPort") String fromHostPort, @Param("groupName") String groupName, @Param("toGroupName") String toGroupName) throws Exception {
 		//判断当前group是否存在
-		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", groupName));
+		Group group = basicDao.findByCondition(Group.class, Cnd.where("name", "=", toGroupName));
 		if (group != null) {
-			return Restful.instance(false, groupName + " 已存在！");
+			return Restful.instance(false, toGroupName + " 已存在！");
 		}
 
 		//获取远程主机的所有files
@@ -275,7 +282,7 @@ public class GroupAction {
 
 		JSONArray jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
 
-		File groupFile = new File(StaticValue.GROUP_FILE, groupName);
+		File groupFile = new File(StaticValue.GROUP_FILE, toGroupName);
 
 		for (Object o : jarry) {
 			FileInfo fileInfo = JSONObject.toJavaObject((JSON) o, FileInfo.class);
@@ -303,7 +310,7 @@ public class GroupAction {
 
 		//获取远程主机的所有tasks,本地创建group
 		group = new Group();
-		group.setName(groupName);
+		group.setName(toGroupName);
 		group.setDescription("create at " + DateUtils.formatDate(new Date(), DateUtils.SDF_FORMAT) + " from " + fromHostPort);
 		group.setCreateTime(new Date());
 		basicDao.save(group);
@@ -313,14 +320,15 @@ public class GroupAction {
 			Task task = JSONObject.toJavaObject((JSON) o, Task.class);
 			task.setGroupName(group.getName());
 			basicDao.save(task);
-			LOG.info("install task ", task.getName());
+			taskService.flush(task.getId());
+			LOG.info("install task {}", task.getName());
 		}
 
 		//刷新本地group,加入到集群中
 		groupService.flush(group, true);
 
 		if (StaticValue.TESTRING) { //测试模式进行文件监听
-			GroupFileListener.regediter(groupName);
+			GroupFileListener.regediter(toGroupName);
 		}
 
 		return Restful.instance().msg("克隆成功");

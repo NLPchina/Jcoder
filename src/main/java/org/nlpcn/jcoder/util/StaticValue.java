@@ -263,6 +263,9 @@ public class StaticValue {
 		return Rpcs.getContext().getGroupName();
 	}
 
+
+
+
 	public static File getCurrentResourceFile() {
 		return new File(GROUP_FILE, getCurrentGroup() + "resources");
 	}

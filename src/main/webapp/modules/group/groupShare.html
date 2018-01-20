@@ -1,4 +1,5 @@
 <div id="groupShare" class="tabbable">
+
 	<ul class="nav nav-tabs" id="myTab">
         <li class="active">
             <a data-toggle="tab" href="#home">
@@ -9,6 +10,14 @@
     </ul>
 	<div class="tab-content" style="height:350px;">
         <div id="home" class="tab-pane fade in active">
+            <div class="row">
+                <div class="form-group">
+                    <label class="col-sm-2 control-label no-padding-right" for="form-field-1" style="margin-top:10px;margin-left:10px;"> 组名称</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="form-field-1"  v-model="toGroupName" class="form-control"  />
+                    </div>
+                </div>
+            </div>
             <div class="row">
                 <div class="col-xs-12" id="share-div">
                     <div class="form-group" style="margin-top:10px;margin-left:10px;">
@@ -28,8 +37,8 @@ var groupShare = new Vue({
   el: '#groupShare',
   data: {
     hosts: [], //可以转发的主机
-    toHosts:[] //迁移到的主机
-
+    toHosts:[], //迁移到的主机
+    toGroupName:param.name //重命名的groupName
   },
   mounted:function(){
   	this.hostList() ;
@@ -40,15 +49,7 @@ var groupShare = new Vue({
 		Jcoder.ajax('/admin/group/hostList', 'post',null,null).then(function (data) {
 			JqdeBox.unloading();
 			if(data.ok){
-			    for(var j=0; j<data.obj.length ; j++){
-			      var flag = true ;
-                  for(var i =0 ;i<groupHostList.items.length ;i++){
-                    flag = flag && groupHostList.items[i].hostPort!=data.obj[j];
-                  }
-                  if(flag){
-                    $this.hosts.push(data.obj[j]);
-                  }
-                }
+			    $this.hosts = data.obj ;
 		    }
 		});
 	},

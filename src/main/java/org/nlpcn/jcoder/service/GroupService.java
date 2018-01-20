@@ -179,11 +179,18 @@ public class GroupService {
 
 		Files.deleteDir(grouFile);
 
-		System.gc();
-		try {
-			Thread.sleep(1000L);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		/**
+		 * 尝试循环删除
+		 */
+		for (int i = 0; i < 10 && grouFile.exists(); i++) {
+			Files.deleteDir(grouFile);
+			System.gc();
+			LOG.info("delete group:{} times:{}", name, i + 1);
+			try {
+				Thread.sleep(1000L);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e) ;
+			}
 		}
 
 		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
@@ -193,6 +200,8 @@ public class GroupService {
 			sharedSpaceService.getHostGroupCache().remove(key);
 			LOG.info("remove host_group in zk : " + hostGroup.getHostPort());
 		}
+
+
 
 		return !grouFile.exists();
 

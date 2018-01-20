@@ -73,8 +73,6 @@ public class SiteSetup implements Setup {
 			System.exit(-1);
 		}
 
-		// 运行日志打印到websocket任务
-		new Thread(new PrintConsoleJob()).start();
 
 		// 启动rpc服务,默认是当前端口+1 ;
 		LOG.info("begin start rpc server! on port " + StaticValue.RPCPORT);

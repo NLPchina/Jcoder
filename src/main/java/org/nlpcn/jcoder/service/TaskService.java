@@ -229,11 +229,16 @@ public class TaskService {
 	 * 彻底删除一个任务
 	 */
 	public void delByDB(Task task) {
+
 		// 删除任务历史
 		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
 
 		// 删除任务
 		basicDao.delById(task.getId(), Task.class);
+
+		//删除缓存中的
+		TASK_MAP_CACHE.remove(task.getId());
+		TASK_MAP_CACHE.remove(makeKey(task));
 	}
 
 	public Task findTask(String groupName, String name) {

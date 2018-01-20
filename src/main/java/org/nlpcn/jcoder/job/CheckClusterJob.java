@@ -47,10 +47,10 @@
 //						long start = System.currentTimeMillis();
 //						Group group = StaticValue.getSystemIoc().get(GroupService.class, "groupService").findGroupByName(groupName);
 //						if (group != null) {
-//							StaticValue.getSystemIoc().get(GroupService.class, "groupService").flush(groupName);
+//							StaticValue.getSystemIoc().get(GroupService.class, "groupService").flush(groupName, false);
 //						}
 //						GROUP_TIME.remove(groupName);
-//						LOG.info("{} to flush ok use time: {}" + (System.currentTimeMillis() - start));
+//						LOG.info("{} to flush ok use time: {}", groupName, (System.currentTimeMillis() - start));
 //					}
 //				}
 //
