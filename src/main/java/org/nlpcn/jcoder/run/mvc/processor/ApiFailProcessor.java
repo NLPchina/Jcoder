@@ -1,8 +1,10 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.log.Log;
@@ -19,7 +21,7 @@ public class ApiFailProcessor extends ViewProcessor {
 
 	@Override
 	public void init(NutConfig config, ActionInfo ai) throws Throwable {
-		view = new JsonView(500, null);
+		view = new JsonView(ApiException.ServerException, null);
 	}
 
 	public void process(ActionContext ac) throws Throwable {
@@ -27,36 +29,32 @@ public class ApiFailProcessor extends ViewProcessor {
 			String uri = Mvcs.getRequestPath(ac.getRequest());
 			log.warn(String.format("Error@%s :", uri), ac.getError());
 		}
-		if (ac.getRequest().getParameter("_debug") != null) {
-			view.render(ac.getRequest(), ac.getResponse(), ac.getError());
+
+		int status = ApiException.ServerException ;
+
+		Throwable error = ac.getError();
+
+		if(error instanceof ApiException){
+			status = ((ApiException) error).getStatus() ;
+		}
+
+		if (ac.getRequest().getHeader(Constants.DEBUG) != null) {
+			view.render(ac.getRequest(), ac.getResponse(), Restful.fail().obj(ac.getError()).code(status));
 		} else {
 
-			Throwable cause = ac.getError();
-			Throwable temp = cause;
-
-			while ((temp = temp.getCause()) != null) {
-				cause = temp;
-			}
+			Throwable cause = ExceptionUtil.realException(ac.getError());
 
 			cause.printStackTrace();
 
 			String message = cause.getMessage();
-
 			if (message == null) {
 				message = "null is sex , sex is null";
-			}
-
-			int status = 500;
-
-			if (cause instanceof ApiException) {
-				status = ((ApiException) cause).getStatus();
 			}
 
 			view.render(ac.getRequest(), ac.getResponse(), Restful.instance(false, message).code(status));
 		}
 
-		String header = ac.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD);
-		if (StringUtil.isNotBlank(header)) {
+		if (StringUtil.isNotBlank(ac.getRequest().getHeader(UserConstants.CLUSTER_TOKEN_HEAD))) {
 			//如果存在。说明是集群调用需要清除session
 			ac.getRequest().getSession().invalidate();
 		}

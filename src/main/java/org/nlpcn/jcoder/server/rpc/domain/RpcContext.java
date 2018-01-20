@@ -22,6 +22,11 @@ public class RpcContext {
 
 	private String groupName ;
 
+	/**
+	 * 單位是納秒
+	 */
+	private long took ;
+
 	private int type;
 
 	public RpcContext(ChannelHandlerContext ctx) {
@@ -76,6 +81,14 @@ public class RpcContext {
 
 	public String getGroupName() {
 		return groupName;
+	}
+
+	public long getTook() {
+		return took;
+	}
+
+	public void setTook(long took) {
+		this.took = took;
 	}
 
 	public void setGroupName(String groupName) {

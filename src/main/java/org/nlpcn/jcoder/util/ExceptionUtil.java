@@ -84,7 +84,7 @@ public class ExceptionUtil {
 		return interrupt;
 	}
 
-	public static Throwable realException(Exception e) {
+	public static Throwable realException(Throwable e) {
 		Throwable exception = e ;
 		Throwable temp = null ;
 		while((temp=exception.getCause())!=null){

@@ -13,6 +13,11 @@ public interface Constants {
     String HOST_MASTER = "master";
 
     /**
+     * 请求接口参数是否是debug
+     */
+    String DEBUG = "_debug" ;
+
+    /**
      * master主机任务ID
      */
     long MASTER_TASK_ID = 0L;

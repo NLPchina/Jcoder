@@ -3,8 +3,10 @@ package org.nlpcn.jcoder.run.mvc.view;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
+import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.View;
 
 import com.alibaba.fastjson.JSONObject;
@@ -39,7 +41,11 @@ public class JsonView implements View {
 		}
 		
 		if (obj instanceof Restful) {
-			resp.setStatus(((Restful) obj).code());
+			Restful restful = (Restful) obj;
+			if(Mvcs.getResp()!=null && Mvcs.getReq().getHeader(Constants.DEBUG)!=null){
+				restful.debug() ;
+			}
+			resp.setStatus(restful.code());
 		}else {
 			resp.setStatus(httpStatus);
 		}

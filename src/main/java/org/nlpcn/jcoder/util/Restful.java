@@ -2,7 +2,10 @@ package org.nlpcn.jcoder.util;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import org.nlpcn.jcoder.constant.Constants;
+import org.nlpcn.jcoder.server.rpc.Rpcs;
 import org.nutz.http.Response;
+import org.nutz.mvc.Mvcs;
 
 public class Restful {
 
@@ -19,6 +22,21 @@ public class Restful {
 	private String message;
 
 	private Object obj;
+
+	/**
+	 * server ipPort
+	 */
+	private String server;
+
+	/**
+	 * use time
+	 */
+	private Long took;
+
+	/**
+	 * 执行的版本
+	 */
+	private String version;
 
 	private int code = ApiException.OK;
 
@@ -136,18 +154,62 @@ public class Restful {
 		return this;
 	}
 
+	/**
+	 * debug 方式打印更多的信息
+	 *
+	 * @return
+	 */
+	public Restful debug() {
+
+		if (StringUtil.isBlank(this.server)) {
+			this.server = StaticValue.getHostPort();
+		}
+
+		if (StringUtil.isNotBlank(version)) {
+			this.version = StaticValue.VERSION;
+		}
+
+		this.took = System.currentTimeMillis() - Rpcs.getContext().getTook();
+
+		return this;
+	}
+
 	public String toJsonString() {
 		return JSON.toJSONString(this);
 	}
 
 	/**
 	 * nutz response 转换为 restful对象
-	 * @param post
+	 *
 	 * @return
 	 */
 	public static Restful instance(Response response) {
 		Restful restful = JSONObject.parseObject(response.getContent(), Restful.class);
 		restful.setCode(response.getStatus());
-		return restful ;
+		return restful;
+	}
+
+	public String getServer() {
+		return server;
+	}
+
+	public void setServer(String server) {
+		this.server = server;
+	}
+
+	public Long getTook() {
+		return took;
+	}
+
+	public void setTook(Long took) {
+		this.took = took;
+	}
+
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
 	}
 }
