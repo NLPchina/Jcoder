@@ -25,6 +25,7 @@ import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.GroupFileListener;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.slf4j.Logger;
@@ -390,6 +391,12 @@ public class SharedSpaceService {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 		}
 
+
+		/**
+		 * 缓存主机
+		 */
+		hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
+
 		joinCluster();
 
 		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
@@ -414,10 +421,6 @@ public class SharedSpaceService {
 		 */
 		tokenCache = new ZKMap(zkDao.getZk(), TOKEN_PATH, Token.class).start();
 
-		/**
-		 * 缓存主机
-		 */
-		hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
 
 		/**
 		 * 监听各个group
@@ -426,18 +429,38 @@ public class SharedSpaceService {
 
 		groupCache.getListenable().addListener((client, event) -> {
 			if (event.getData() != null) {
-				String path = event.getData().getPath();
-				String groupName = path.substring(GROUP_PATH.length() + 1).split("/")[0];
 				switch (event.getType()) {
 					case CHILD_ADDED:
 					case CHILD_UPDATED:
 					case CHILD_REMOVED:
-					default:
-						if (StaticValue.isMaster()) { //如果是master检查定时任务
-//TODO							MasterGroupListenerJob.addQueue(new Handler(groupName, path, event.getType()));
-						}
-//						CheckClusterJob.changeGroup(groupName);
+						String path = event.getData().getPath().substring(GROUP_PATH.length() + 1);
+						String[] split = path.split("/");
+						String groupName = split[0];
 
+						//如果本机没有group则忽略
+						if (StaticValue.getSystemIoc().get(GroupService.class, "groupService").findGroupByName(groupName) == null) {
+							return;
+						}
+
+						if (split.length < 3) {
+							return;
+						}
+
+						Set<String> taskNames = null;
+						Set<String> relativePaths = null;
+
+						if ("file".equals(split[1])) {
+							path = path.substring(groupName.length() + 5);
+							if (StringUtil.isNotBlank(path) && path != "/") {
+								relativePaths = new HashSet<>();
+								relativePaths.add(path);
+							}
+						} else {
+							taskNames = new HashSet<>();
+							taskNames.add(split[2]);
+						}
+
+						different(groupName, taskNames, relativePaths,false);
 						break;
 				}
 			}
@@ -530,7 +553,7 @@ public class SharedSpaceService {
 				addGroup2Cluster(groupName, tasks, fileInfos);
 				diffs = Collections.emptyList();
 			} else {
-				diffs = diffGroup(groupName, tasks, fileInfos);
+				diffs = diffGroup(groupName, tasks, (ArrayList<FileInfo>) fileInfos);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -538,28 +561,7 @@ public class SharedSpaceService {
 			unLockAndDelete(lock);
 		}
 
-		/**
-		 * 根据解决构建信息
-		 */
-		HostGroup hostGroup = new HostGroup();
-		hostGroup.setSsl(StaticValue.IS_SSL);
-		hostGroup.setCurrent(diffs.size() == 0);
-		hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
-		try {
-			setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), new HostGroupWatcher(hostGroup));
-		} catch (Exception e1) {
-			e1.printStackTrace();
-			LOG.error("add host group info err !!!!!", e1);
-		}
-
 		if (upMapping) {
-
-			tasks.stream().forEach(t -> {
-				if (t.getName() == null) {
-					System.out.println(t);
-				}
-			});
-
 			tasks.forEach(task -> {
 				try {
 					new JavaRunner(task).compile();
@@ -591,83 +593,34 @@ public class SharedSpaceService {
 	 * @param groupName 组名称
 	 * @param list      组内的所有任务
 	 */
-	private List<Different> diffGroup(String groupName, List<Task> list, List<FileInfo> fileInfos) throws Exception {
-
-		final List<Different> diffs = new ArrayList<>();
+	private List<Different> diffGroup(String groupName, List<Task> list, ArrayList<FileInfo> fileInfos) throws Exception {
 
 		String path = GROUP_PATH + "/" + groupName;
 
 		List<String> paths = zkDao.getZk().getChildren().forPath(path);
 		Set<String> clusterTaskNames = paths.stream().filter(p -> !p.equals("file")).collect(Collectors.toSet());
 
-		for (Task task : list) {
-			clusterTaskNames.remove(task.getName());
-			Different different = new Different();
-			different.setPath(task.getName());
-			different.setGroupName(groupName);
-			different.setType(0);
-			diffTask(task, different, null, null);
-			if (different.getMessage() != null) {
-				diffs.add(different);
-			}
+		Set<String> taskNames = new HashSet<>();
+		taskNames.addAll(clusterTaskNames);
+		list.forEach(t -> taskNames.add(t.getName()));
 
-		}
 
-		for (String clusterTaskName : clusterTaskNames) {
-			Different different = new Different();
-			different.setPath(clusterTaskName);
-			different.setGroupName(groupName);
-			different.setType(0);
-			different.addMessage("本机中不存在此Task");
-			diffs.add(different);
-
-		}
+		Set<String> relativePaths = new HashSet<>();
 
 		//先判断根结点
-		FileInfo root = JSONObject.parseObject(getData2ZK(GROUP_PATH + "/" + groupName + "/file"), FileInfo.class);
+		FileInfo root = getData(GROUP_PATH + "/" + groupName + "/file", FileInfo.class);
 		if (root != null && root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5())) {
 			LOG.info(groupName + " file md5 same so skip");
-			return diffs;
-		}
-
-		LOG.info(groupName + " file changed find differents");
-
-
-		Set<String> sets = new HashSet<>();
-		walkAllDataNode(sets, GROUP_PATH + "/" + groupName + "/file");
-
-
-		for (int i = 0; i < fileInfos.size() - 1; i++) {
-			FileInfo lInfo = fileInfos.get(i);
-			Different different = new Different();
-			different.setGroupName(groupName);
-			different.setPath(lInfo.getRelativePath());
-			different.setType(1);
-
-			if (!sets.contains(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath())) {
-				different.addMessage("文件在主版本中不存在");
-			} else {
-				sets.remove(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
-				byte[] data2ZK = getData2ZK(GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath());
-				FileInfo cInfo = JSONObject.parseObject(data2ZK, FileInfo.class);
-				if (cInfo == null || !cInfo.getRelativePath().equals(lInfo.getRelativePath())) {
-					different.addMessage("文件内容不一致");
-				}
-
-			}
-			if (different.getMessage() != null) {
-				diffs.add(different);
+		} else {
+			LOG.info(groupName + " file changed find differents");
+			walkAllDataNode(relativePaths, GROUP_PATH + "/" + groupName + "/file");
+			for (int i = 0; i < fileInfos.size() - 1; i++) {
+				relativePaths.add(fileInfos.get(i).getRelativePath());
 			}
 		}
 
-		for (String set : sets) {
-			Different different = new Different();
-			different.setGroupName(groupName);
-			different.setPath(set.replaceFirst(GROUP_PATH + "/" + groupName + "/file", ""));
-			different.setType(1);
-			different.addMessage("文件在本地不存在");
-			diffs.add(different);
-		}
+
+		List<Different> diffs = different(groupName, taskNames, relativePaths,true);
 
 		boolean fileDiff = false;
 
@@ -689,8 +642,12 @@ public class SharedSpaceService {
 
 	/**
 	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
+	 * @Param upHostGroup 只有全局刷新的时候才设置为true， 默认值发现不同。
+	 *
 	 */
-	public void flushHostGroup(String groupName, Set<String> taskNames, List<FileInfo> fileInfos) throws Exception {
+	public List<Different> different(String groupName, Set<String> taskNames, Set<String> relativePaths, boolean upHostGroup) throws Exception {
+
+		LOG.info("to different group:{}",groupName);
 
 		List<Different> diffs = new ArrayList<>();
 
@@ -708,43 +665,71 @@ public class SharedSpaceService {
 			}
 		}
 
-
-		if (fileInfos != null && fileInfos.size() > 1) {
-			for (FileInfo lInfo : fileInfos) {
+		if (relativePaths != null && relativePaths.size() > 0) {
+			for (String relativePath : relativePaths) {
 				Different different = new Different();
 				different.setGroupName(groupName);
-				different.setPath(lInfo.getRelativePath());
+				different.setPath(relativePath);
 				different.setType(1);
-
-				FileInfo cInfo = getData((GROUP_PATH + "/" + groupName + "/file" + lInfo.getRelativePath()), FileInfo.class);
-				if (cInfo == null) {
-					different.addMessage("文件在主版本中不存在");
-				} else {
-					if (!cInfo.equals(lInfo)) {
-						different.addMessage("文件内容不一致");
-					}
-
-				}
+				diffFile(relativePath, different, groupName);
 				if (different.getMessage() != null) {
 					diffs.add(different);
 				}
 			}
 		}
 
-
 		HostGroup cHostGroup = hostGroupCache.get(StaticValue.getHostPort() + "_" + groupName);
 
-		if (cHostGroup.isCurrent() != (diffs.size() == 0 ? true : false)) {
+
+		if (upHostGroup || cHostGroup == null || (diffs.size() > 0 && cHostGroup.isCurrent())) {
 			HostGroup hostGroup = new HostGroup();
 			hostGroup.setSsl(StaticValue.IS_SSL);
 			hostGroup.setCurrent(diffs.size() == 0);
 			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+			Watcher watcher = null;
+			if (cHostGroup == null) {
+				new HostGroupWatcher(hostGroup);
+			}
 			try {
-				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), null); //new HostGroupWatcher(hostGroup) 应该已经有一个监听不用再加了
+				setData2ZKByEphemeral(HOST_GROUP_PATH + "/" + StaticValue.getHostPort() + "_" + groupName, JSONObject.toJSONBytes(hostGroup), watcher); //应该已经有一个监听不用再加了
 			} catch (Exception e1) {
 				e1.printStackTrace();
 				LOG.error("add host group info err !!!!!", e1);
 			}
+		}
+
+		return diffs;
+	}
+
+	/**
+	 * 和主版本对比
+	 *
+	 * @param relativePath
+	 * @param different
+	 * @param groupName
+	 * @throws Exception
+	 */
+	private void diffFile(String relativePath, Different different, String groupName) throws Exception {
+		FileInfo cInfo = getData((GROUP_PATH + "/" + groupName + "/file" + relativePath), FileInfo.class);
+
+		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
+
+		if (cInfo == null) {
+			if (file.exists()) {
+				different.addMessage("文件在主版本中不存在");
+				return;
+			}
+			return;
+		}
+
+		if (!file.exists()) {
+			different.addMessage("文件在本地不存在");
+			return;
+		}
+
+		FileInfo lInfo = new FileInfo(file);
+		if (!cInfo.equals(lInfo)) {
+			different.addMessage("文件内容不一致");
 		}
 	}
 
