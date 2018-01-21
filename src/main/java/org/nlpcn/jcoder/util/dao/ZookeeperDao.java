@@ -9,8 +9,14 @@ import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.server.auth.AuthenticationProvider;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
+import org.apache.zookeeper.server.auth.IPAuthenticationProvider;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,35 +28,64 @@ import java.util.List;
  */
 public class ZookeeperDao implements Closeable {
 
+	private static final Logger LOG = LoggerFactory.getLogger(ZookeeperDao.class);
+
 	private CuratorFramework client = null;
 
-    public ZookeeperDao(String connStr) throws NoSuchAlgorithmException {
-        AuthenticationProvider authProvider = new DigestAuthenticationProvider();
-        // TODO: 用户名和密码
-        String idPassword = "admin:admin";
-        List<ACL> defaultACL = new ArrayList<>(
-                Collections.singletonList(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), DigestAuthenticationProvider.generateDigest(idPassword)))));
-        client = CuratorFrameworkFactory.builder()
-                .connectString(connStr)
-                .retryPolicy(new RetryNTimes(10, 2000))
-                .authorization(authProvider.getScheme(), idPassword.getBytes())
-                .aclProvider(new ACLProvider() {
-                    @Override
-                    public List<ACL> getDefaultAcl() {
-                        return defaultACL;
-                    }
+	public ZookeeperDao(String connStr) throws NoSuchAlgorithmException {
 
-                    @Override
-                    public List<ACL> getAclForPath(String path) {
-                        return defaultACL;
-                    }
-                })
-                .build();
-    }
+		String[] split = connStr.split("\\|");
 
-	public ZookeeperDao start(){
+		connStr = split[0];
+		String authorStr = null;
+
+		AuthenticationProvider authProvider = null;
+
+		if (split.length > 2) {
+			LOG.error("connStr err: {} more than one split `|` so use world author", connStr);
+		}
+
+		if (split.length == 2) {
+			authorStr = split[1];
+			authProvider = new DigestAuthenticationProvider();
+		} else if (StaticValue.IS_LOCAL) {
+			authorStr = "127.0.0.1";
+			authProvider = new IPAuthenticationProvider();
+		}
+
+		CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().connectString(connStr).retryPolicy(new RetryNTimes(10, 2000));
+
+		if (authProvider != null) {
+			List<ACL> defaultACL = new ArrayList<>();
+			if (StaticValue.ZK.startsWith("127.0.0.1:" + (StaticValue.PORT + 2))) { //如果单机模式只有本机可以访问
+				defaultACL.add(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), authorStr)));
+			} else {
+				defaultACL.add(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), DigestAuthenticationProvider.generateDigest(authorStr))));
+			}
+
+			try {
+				builder.authorization(authProvider.getScheme(), authorStr.getBytes("utf-8")).aclProvider(new ACLProvider() {
+					@Override
+					public List<ACL> getDefaultAcl() {
+						return defaultACL;
+					}
+
+					@Override
+					public List<ACL> getAclForPath(String path) {
+						return defaultACL;
+					}
+				});
+			} catch (UnsupportedEncodingException e) {
+				e.printStackTrace();
+			}
+		}
+
+		client = builder.build();
+	}
+
+	public ZookeeperDao start() {
 		client.start();
-		return this ;
+		return this;
 	}
 
 	@Override
@@ -61,4 +96,5 @@ public class ZookeeperDao implements Closeable {
 	public CuratorFramework getZk() {
 		return client;
 	}
+
 }
