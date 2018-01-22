@@ -74,6 +74,9 @@ public class SiteSetup implements Setup {
 		}
 
 
+		new Thread(new CheckDiffJob()).start();
+
+
 		// 启动rpc服务,默认是当前端口+1 ;
 		LOG.info("begin start rpc server! on port " + StaticValue.RPCPORT);
 		try {

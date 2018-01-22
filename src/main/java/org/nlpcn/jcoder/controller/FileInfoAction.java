@@ -127,7 +127,7 @@ public class FileInfoAction {
 				jsonObject.put("open", true);
 				jsonObject.put("pId", fileInfo.file().getParentFile().equals(root.file()) ? "0" : MD5Util.md5(fileInfo.file().getParentFile().getAbsolutePath()));
 				JSONObject fi = JSONObject.parseObject(JSONObject.toJSONString(fileInfo));
-				fi.put("date", fileInfo.lastModified());
+				fi.put("date", fileInfo.getLastModified());
 				jsonObject.put("file", fi);
 				if (fileInfo.isDirectory()) {
 					jsonObject.put("isParent", true);

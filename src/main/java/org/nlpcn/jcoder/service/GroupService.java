@@ -20,12 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 
@@ -36,6 +31,8 @@ import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 public class GroupService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupService.class);
+
+	private static final Map<String, Group> GROUP_CACHE = new HashMap<>();
 
 	@Inject
 	private TaskService taskService;
@@ -189,7 +186,7 @@ public class GroupService {
 			try {
 				Thread.sleep(1000L);
 			} catch (InterruptedException e) {
-				throw new RuntimeException(e) ;
+				throw new RuntimeException(e);
 			}
 		}
 
@@ -202,13 +199,13 @@ public class GroupService {
 		}
 
 
-
 		return !grouFile.exists();
 
 
 	}
 
 	public Group findGroupByName(String name) {
+		LOG.info("find group by db " + name);
 		return basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
 	}
 
@@ -231,4 +228,9 @@ public class GroupService {
 		return sharedSpaceService.joinCluster(group, upMapping);
 	}
 
+	public static List<Group> allLocalGroup() {
+		LOG.info("find all group by db");
+		return StaticValue.systemDao.search(Group.class, "id");
+
+	}
 }

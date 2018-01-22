@@ -3,6 +3,8 @@ package org.nlpcn.jcoder.service;
 import com.alibaba.fastjson.JSONObject;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
@@ -21,6 +23,7 @@ import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.HostGroupWatcher;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.job.CheckDiffJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.GroupFileListener;
@@ -285,6 +288,18 @@ public class SharedSpaceService {
 		if (flag) {
 			zkDao.getZk().setData().forPath(path, data);
 		}
+
+		//如果修改了子目录节点则将 跟目录md5设置为空
+		if (path.startsWith(GROUP_PATH)) {
+			int index = path.indexOf("/file/");
+			if (index > -1) {
+				String rootPath = path.substring(0, index + 5);
+				System.out.println("aaaaaaaaaaaaaaaaaaaaa" + rootPath);
+				FileInfo root = getData(rootPath, FileInfo.class);
+				root.setMd5("EMPTY__");
+				setData2ZK(rootPath, JSONObject.toJSONBytes(root));
+			}
+		}
 	}
 
 	public byte[] getData2ZK(String path) throws Exception {
@@ -300,24 +315,19 @@ public class SharedSpaceService {
 
 
 	/**
-	 * 将临时数据写入到zk中
+	 * 将临时数据写入到zk中，临时节点保证只有添加不做更新
 	 */
 	public void setData2ZKByEphemeral(String path, byte[] data, Watcher watcher) throws Exception {
 
-		boolean flag = true;
-
-		if (zkDao.getZk().checkExists().forPath(path) == null) {
+		if (zkDao.getZk().checkExists().forPath(path) != null) {
 			try {
-				zkDao.getZk().create().withMode(CreateMode.EPHEMERAL).forPath(path, data);
-				flag = false;
-			} catch (KeeperException.NodeExistsException e) {
-				flag = true;
+				zkDao.getZk().delete().forPath(path);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 
-		if (flag) {
-			zkDao.getZk().setData().forPath(path, data);
-		}
+		zkDao.getZk().create().withMode(CreateMode.EPHEMERAL).forPath(path, data);
 
 		if (watcher != null) {
 			zkDao.getZk().getData().usingWatcher(watcher).forPath(path); //注册监听
@@ -331,6 +341,9 @@ public class SharedSpaceService {
 		LOG.info("shared space init");
 
 		this.zkDao = new ZookeeperDao(StaticValue.ZK).start();
+
+		//清空临时节点
+
 
 		//注册监听事件
 		zkDao.getZk().getConnectionStateListenable().addListener((client, connectionState) -> {
@@ -427,7 +440,7 @@ public class SharedSpaceService {
 		 */
 		groupCache = new PathChildrenCache(zkDao.getZk(), GROUP_PATH, false);
 
-		groupCache.getListenable().addListener((client, event) -> {
+		groupCache.getListenable().addListener((client, event) -> { //广播监听group目录
 			if (event.getData() != null) {
 				switch (event.getType()) {
 					case CHILD_ADDED:
@@ -460,7 +473,7 @@ public class SharedSpaceService {
 							taskNames.add(split[2]);
 						}
 
-						different(groupName, taskNames, relativePaths,false);
+						different(groupName, taskNames, relativePaths, false);
 						break;
 				}
 			}
@@ -506,12 +519,11 @@ public class SharedSpaceService {
 
 		Map<String, List<Different>> result = new HashMap<>();
 
-		List<Group> groups = StaticValue.systemDao.search(Group.class, "id");
+		List<Group> groups = GroupService.allLocalGroup();
 		Collections.shuffle(groups); //因为要锁组，重新排序下防止顺序锁
 
 
 		for (Group group : groups) {
-
 			List<Different> diffs = joinCluster(group, true);
 			result.put(group.getName(), diffs);
 
@@ -620,7 +632,7 @@ public class SharedSpaceService {
 		}
 
 
-		List<Different> diffs = different(groupName, taskNames, relativePaths,true);
+		List<Different> diffs = different(groupName, taskNames, relativePaths, true);
 
 		boolean fileDiff = false;
 
@@ -642,12 +654,12 @@ public class SharedSpaceService {
 
 	/**
 	 * 刷新一个，固定的task 或者是 file。不和集群中的其他文件进行对比
-	 * @Param upHostGroup 只有全局刷新的时候才设置为true， 默认值发现不同。
 	 *
+	 * @Param upHostGroup 只有全局刷新的时候才设置为true， 默认值发现不同。
 	 */
 	public List<Different> different(String groupName, Set<String> taskNames, Set<String> relativePaths, boolean upHostGroup) throws Exception {
 
-		LOG.info("to different group:{}",groupName);
+		LOG.info("to different group:{}", groupName);
 
 		List<Different> diffs = new ArrayList<>();
 
@@ -680,6 +692,7 @@ public class SharedSpaceService {
 
 		HostGroup cHostGroup = hostGroupCache.get(StaticValue.getHostPort() + "_" + groupName);
 
+		CheckDiffJob.addDiff(groupName, diffs);//注册到定时任务的监控
 
 		if (upHostGroup || cHostGroup == null || (diffs.size() > 0 && cHostGroup.isCurrent())) {
 			HostGroup hostGroup = new HostGroup();

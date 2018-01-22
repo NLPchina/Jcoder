@@ -38,6 +38,8 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 
 	private String groupName;
 
+	private long lastModified;
+
 	private FileInfo() {
 	}
 
@@ -48,8 +50,8 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		String groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/");
 		this.groupName = groupPath.split("/")[1];
 		this.relativePath = groupPath.substring(groupName.length() + 1);
-		if(this.relativePath.endsWith("/")){
-			this.relativePath = this.relativePath.substring(0,this.relativePath.length()-1) ;
+		if (this.relativePath.endsWith("/")) {
+			this.relativePath = this.relativePath.substring(0, this.relativePath.length() - 1);
 		}
 		this.length = file.length();
 	}
@@ -105,8 +107,15 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		this.length = length;
 	}
 
-	public Date lastModified() {
-		return new Date(file.lastModified());
+	public long getLastModified() {
+		if (this.lastModified == 0 && file != null) {
+			this.lastModified = file.lastModified();
+		}
+		return lastModified;
+	}
+
+	public void setLastModified(long lastModified) {
+		this.lastModified = lastModified;
 	}
 
 	public String getGroupName() {
@@ -119,7 +128,7 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 
 	@Override
 	public int compareTo(FileInfo ji) {
-		return (this.file.getAbsolutePath().compareTo(ji.file.getAbsolutePath()));
+		return (this.getRelativePath().compareTo(ji.getRelativePath()));
 	}
 
 	@Override
@@ -129,13 +138,13 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		FileInfo fileInfo = (FileInfo) o;
 		if (this.length != fileInfo.length) return false;
 		if (this.groupName != null ? this.name.equals(fileInfo.groupName) : fileInfo.groupName == null) return false;
-		if (this.file.lastModified() != fileInfo.file.lastModified()) return false;
+		if (this.getLastModified() != fileInfo.getLastModified()) return false;
 		return relativePath != null ? relativePath.equals(fileInfo.relativePath) : fileInfo.relativePath == null;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(groupName, relativePath, file.lastModified(), length);
+		return Objects.hashCode(groupName, relativePath, getLastModified(), length);
 	}
 
 }

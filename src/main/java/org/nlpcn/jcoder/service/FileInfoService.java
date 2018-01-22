@@ -113,29 +113,17 @@ public class FileInfoService {
 
 
 		//先查缓存中是否存在用缓存做对比
-		List<Long> collect = result.stream().map(fi -> fi.lastModified().getTime()).sorted().collect(Collectors.toList());
+		List<Long> collect = result.stream().map(fi -> fi.getLastModified()).sorted().collect(Collectors.toList());
 		String nowTimeMd5 = MD5Util.md5(collect.toString()); //当前文件的修改时间md5
 
-		GroupCache groupCache = null;
-
-		try {
-			File cacheFile = new File(StaticValue.GROUP_FILE, groupName + ".cache");
-			if (cacheFile.exists()) {
-				String content = IOUtil.getContent(cacheFile, "utf-8");
-				if (org.nlpcn.jcoder.util.StringUtil.isNotBlank(content)) {
-					groupCache = JSONObject.parseObject(content, GroupCache.class);
-				}
-			}
-		} catch (Exception e) {
-			LOG.warn(groupName + " cache read err so create new ");
-		}
+		GroupCache groupCache = getGroupCache(groupName);
 
 		//本group本身的插入zk中用来比较md5加快对比
 		FileInfo root = new FileInfo(new File(StaticValue.GROUP_FILE, groupName));
 		root.setLength(result.stream().mapToLong(f -> f.getLength()).sum());
 
 		if (groupCache != null && nowTimeMd5.equals(groupCache.getTimeMD5())) {
-			LOG.info(groupName + " time md5 same so add it");
+			LOG.info(groupName + " time+ md5 same so add it");
 			root.setMd5(groupCache.getGroupMD5());
 		} else {
 			LOG.info("to computer md5 in gourp: " + groupName);
@@ -154,6 +142,27 @@ public class FileInfoService {
 		result.add(root);
 
 		return result;
+	}
+
+	/**
+	 * 获取文件的缓存类
+	 * @param groupName
+	 * @return
+	 */
+	public static GroupCache getGroupCache(String groupName) {
+		GroupCache groupCache = null;
+		try {
+			File cacheFile = new File(StaticValue.GROUP_FILE, groupName + ".cache");
+			if (cacheFile.exists()) {
+				String content = IOUtil.getContent(cacheFile, "utf-8");
+				if (org.nlpcn.jcoder.util.StringUtil.isNotBlank(content)) {
+					groupCache = JSONObject.parseObject(content, GroupCache.class);
+				}
+			}
+		} catch (Exception e) {
+			LOG.warn(groupName + " cache read err so create new ");
+		}
+		return groupCache;
 	}
 
 
