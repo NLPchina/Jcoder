@@ -528,7 +528,7 @@ public class TaskAction {
 
 			String[] hostPorts = groupHostList.stream().map(HostGroup::getHostPort).toArray(String[]::new);
 
-			Map<String, Restful> map = proxyService.post(hostPorts, "/admin/task/statistics", ImmutableMap.of("groupName", groupName, "name", name, "first", false), 1000);
+			Map<String, Restful> map = proxyService.post(hostPorts, "/admin/task/statistics", ImmutableMap.of("groupName", groupName, "name", name, "first", false), 10000);
 
 			List<TaskStatistics> result = new ArrayList<>();
 

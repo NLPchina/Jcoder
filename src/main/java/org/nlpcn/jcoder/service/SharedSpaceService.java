@@ -1,11 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -15,16 +11,10 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.nlpcn.jcoder.domain.CodeInfo;
-import org.nlpcn.jcoder.domain.Different;
-import org.nlpcn.jcoder.domain.FileInfo;
-import org.nlpcn.jcoder.domain.Group;
-import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.HostGroupWatcher;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.CheckDiffJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
+import org.nlpcn.jcoder.job.MasterTaskCheckJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.util.GroupFileListener;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -37,17 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -93,7 +73,6 @@ public class SharedSpaceService {
 	 */
 	public static final String GROUP_PATH = StaticValue.ZK_ROOT + "/group";
 
-
 	/**
 	 * group /jcoder/lock
 	 */
@@ -131,7 +110,7 @@ public class SharedSpaceService {
 	/**
 	 * 在线groupcache
 	 */
-	private PathChildrenCache groupCache;
+	private TreeCache groupCache;
 
 
 	/**
@@ -184,13 +163,13 @@ public class SharedSpaceService {
 	/**
 	 * 递归查询所有子文件
 	 */
-	public void walkAllDataNode(Set<String> set, String path) throws Exception {
+	public void walkGroupCache(Set<String> set, String path) throws Exception {
 		try {
-			List<String> children = zkDao.getZk().getChildren().forPath(path);
+			Set<String> children = groupCache.getCurrentChildren(path).keySet();
 			for (String child : children) {
 				String cPath = path + "/" + child;
 				set.add(cPath);
-				walkAllDataNode(set, cPath);
+				walkGroupCache(set, cPath);
 			}
 		} catch (Exception e) {
 			LOG.error("walk file err: " + path);
@@ -294,7 +273,6 @@ public class SharedSpaceService {
 			int index = path.indexOf("/file/");
 			if (index > -1) {
 				String rootPath = path.substring(0, index + 5);
-				System.out.println("aaaaaaaaaaaaaaaaaaaaa" + rootPath);
 				FileInfo root = getData(rootPath, FileInfo.class);
 				root.setMd5("EMPTY__");
 				setData2ZK(rootPath, JSONObject.toJSONBytes(root));
@@ -373,6 +351,7 @@ public class SharedSpaceService {
 			public void isLeader() {
 				StaticValue.setMaster(true);
 				LOG.info("I am master my host is " + StaticValue.getHostPort());
+				MasterTaskCheckJob.startJob();
 				MasterRunTaskJob.startJob();
 			}
 
@@ -380,6 +359,7 @@ public class SharedSpaceService {
 			public void notLeader() {
 				StaticValue.setMaster(false);
 				LOG.info("I am lost master " + StaticValue.getHostPort());
+				MasterTaskCheckJob.stopJob();
 				MasterRunTaskJob.stopJob();
 			}
 
@@ -403,6 +383,12 @@ public class SharedSpaceService {
 		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
 			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 		}
+
+		/**
+		 * 监听group目录
+		 */
+		groupCache = new TreeCache(zkDao.getZk(), GROUP_PATH);
+		groupCache.start();
 
 
 		/**
@@ -434,30 +420,30 @@ public class SharedSpaceService {
 		 */
 		tokenCache = new ZKMap(zkDao.getZk(), TOKEN_PATH, Token.class).start();
 
-
-		/**
-		 * 监听各个group
-		 */
-		groupCache = new PathChildrenCache(zkDao.getZk(), GROUP_PATH, false);
-
 		groupCache.getListenable().addListener((client, event) -> { //广播监听group目录
+			LOG.info("found group change type:{} path:{}", event.getType(), event.getData().getPath());
 			if (event.getData() != null) {
 				switch (event.getType()) {
-					case CHILD_ADDED:
-					case CHILD_UPDATED:
-					case CHILD_REMOVED:
+					case NODE_ADDED:
+					case NODE_UPDATED:
+					case NODE_REMOVED:
 						String path = event.getData().getPath().substring(GROUP_PATH.length() + 1);
 						String[] split = path.split("/");
 						String groupName = split[0];
+
+						if (split.length < 2) {
+							return;
+						}
+
+						if (StaticValue.isMaster() && !path.endsWith("/file") || !path.contains("/file/")) {//如果本机是master,说明更新的是task
+							MasterTaskCheckJob.addQueue(new Handler(groupName, event.getData().getPath(), event.getType()));
+						}
 
 						//如果本机没有group则忽略
 						if (StaticValue.getSystemIoc().get(GroupService.class, "groupService").findGroupByName(groupName) == null) {
 							return;
 						}
 
-						if (split.length < 3) {
-							return;
-						}
 
 						Set<String> taskNames = null;
 						Set<String> relativePaths = null;
@@ -470,7 +456,7 @@ public class SharedSpaceService {
 							}
 						} else {
 							taskNames = new HashSet<>();
-							taskNames.add(split[2]);
+							taskNames.add(split[1]);
 						}
 
 						different(groupName, taskNames, relativePaths, false);
@@ -478,7 +464,6 @@ public class SharedSpaceService {
 				}
 			}
 		});
-		groupCache.start();
 
 
 		LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
@@ -609,7 +594,7 @@ public class SharedSpaceService {
 
 		String path = GROUP_PATH + "/" + groupName;
 
-		List<String> paths = zkDao.getZk().getChildren().forPath(path);
+		Set<String> paths = groupCache.getCurrentChildren(path).keySet();
 		Set<String> clusterTaskNames = paths.stream().filter(p -> !p.equals("file")).collect(Collectors.toSet());
 
 		Set<String> taskNames = new HashSet<>();
@@ -620,12 +605,12 @@ public class SharedSpaceService {
 		Set<String> relativePaths = new HashSet<>();
 
 		//先判断根结点
-		FileInfo root = getData(GROUP_PATH + "/" + groupName + "/file", FileInfo.class);
+		FileInfo root = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/file", FileInfo.class);
 		if (root != null && root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5())) {
 			LOG.info(groupName + " file md5 same so skip");
 		} else {
-			LOG.info(groupName + " file changed find differents");
-			walkAllDataNode(relativePaths, GROUP_PATH + "/" + groupName + "/file");
+			LOG.info(groupName + " file changed find differents");//TODO:是否改为从缓存中拿？
+			walkGroupCache(relativePaths, GROUP_PATH + "/" + groupName + "/file");
 			for (int i = 0; i < fileInfos.size() - 1; i++) {
 				relativePaths.add(fileInfos.get(i).getRelativePath());
 			}
@@ -723,7 +708,7 @@ public class SharedSpaceService {
 	 * @throws Exception
 	 */
 	private void diffFile(String relativePath, Different different, String groupName) throws Exception {
-		FileInfo cInfo = getData((GROUP_PATH + "/" + groupName + "/file" + relativePath), FileInfo.class);
+		FileInfo cInfo = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/file" + relativePath, FileInfo.class);
 
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
@@ -756,9 +741,9 @@ public class SharedSpaceService {
 		}
 
 		try {
-			byte[] bytes = getData2ZK(GROUP_PATH + "/" + groupName + "/" + taskName);
+			Task cluster = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
 
-			if (bytes == null) {
+			if (cluster == null) {
 				if (task == null) {
 					return;
 				}
@@ -771,8 +756,6 @@ public class SharedSpaceService {
 					return;
 				}
 			}
-
-			Task cluster = JSONObject.parseObject(bytes, Task.class);
 
 			if (!Objects.equals(task.getCode(), cluster.getCode())) {
 				different.addMessage("代码不一致");
@@ -843,11 +826,23 @@ public class SharedSpaceService {
 	}
 
 	public <T> T getData(String path, Class<T> c) throws Exception {
+		if(path.startsWith(TOKEN_PATH)){
+			path = "/jcoder/token/************"  ;//token path 不敢直接打印到日志
+		}
+		LOG.info("get data from: {} ", path);
 		byte[] bytes = getData2ZK(path);
 		if (bytes == null) {
 			return null;
 		}
 		return JSONObject.parseObject(bytes, c);
+	}
+
+	public <T> T getDataInGroupCache(String path, Class<T> c) {
+		byte[] data = groupCache.getCurrentData(path).getData();
+		if (data == null) {
+			return null;
+		}
+		return JSONObject.parseObject(data, c);
 	}
 
 	/**
@@ -887,22 +882,9 @@ public class SharedSpaceService {
 		return hostGroupCache;
 	}
 
-	public PathChildrenCache getGroupCache() {
+	public TreeCache getGroupCache() {
 		return groupCache;
 	}
 
-
-	/**
-	 * 重置master
-	 */
-	public void resetMaster() {
-		Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
-
-		try {
-			leader.start();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
 }

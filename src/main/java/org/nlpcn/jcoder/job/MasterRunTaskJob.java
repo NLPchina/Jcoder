@@ -19,6 +19,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * master 发布job
+ */
 public class MasterRunTaskJob implements Runnable {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MasterRunTaskJob.class);
@@ -30,7 +33,7 @@ public class MasterRunTaskJob implements Runnable {
 	/**
 	 * 当竞选为master时候调用此方法
 	 */
-	public static void startJob() {
+	public synchronized static void startJob() {
 		stopJob();
 		ThreadManager.startScheduler();
 		thread = new Thread(new MasterRunTaskJob());
@@ -40,7 +43,7 @@ public class MasterRunTaskJob implements Runnable {
 	/**
 	 * 当失去master时候调用此方法
 	 */
-	public static void stopJob() {
+	public synchronized static void stopJob() {
 		ThreadManager.stopScheduler();
 		if (thread != null) {
 			try {
@@ -59,14 +62,10 @@ public class MasterRunTaskJob implements Runnable {
 	@Override
 	public void run() {
 
-
-
 		ProxyService proxyService = StaticValue.getSystemIoc().get(ProxyService.class, "proxyService");
-		SharedSpaceService space = StaticValue.space();
+
 
 		LOG.info("I am master so to start master job");
-
-
 
 		/**
 		 *  监听任务变化
@@ -76,7 +75,7 @@ public class MasterRunTaskJob implements Runnable {
 				try {
 					KeyValue<String, String> groupTask = TASK_QUEUE.poll(Integer.MAX_VALUE, TimeUnit.DAYS);
 					LOG.info("publish " + groupTask);
-					String hostPort = space.getRandomCurrentHostPort(groupTask.getKey());
+					String hostPort = StaticValue.space().getRandomCurrentHostPort(groupTask.getKey());
 					if (StringUtil.isBlank(hostPort)) {
 						LOG.warn(groupTask + " not found any current hostport");
 						continue;

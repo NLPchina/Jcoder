@@ -25,7 +25,7 @@ public class Task {
 	@Column
 	private String description;
 
-	// while 至少有一台机器保持运行
+	// while 至少有一台机器保持运行 , all 所有机器都运行，但是只运行一次。 “”字符表示之运行一次之后不在运行
 	@Column("schedule_str")
 	private String scheduleStr;
 

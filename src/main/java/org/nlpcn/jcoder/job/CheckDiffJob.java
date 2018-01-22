@@ -36,7 +36,7 @@ public class CheckDiffJob implements Runnable {
 					String name = group.getName();
 					HashSet<String> paths = DIFF_MAP.get(name);
 					if (paths == null || paths.size() == 0) {
-						FileInfo root = StaticValue.space().getData(SharedSpaceService.GROUP_PATH + "/" + name + "/file", FileInfo.class);
+						FileInfo root = StaticValue.space().getDataInGroupCache(SharedSpaceService.GROUP_PATH + "/" + name + "/file", FileInfo.class);
 						GroupCache groupCache = FileInfoService.getGroupCache(name);
 						if (groupCache != null && root != null && root.getMd5().equals(groupCache.getGroupMD5())) {
 							LOG.info(name + " file md5 same so skip diff");

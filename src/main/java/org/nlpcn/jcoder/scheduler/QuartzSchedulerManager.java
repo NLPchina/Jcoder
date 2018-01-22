@@ -27,19 +27,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 任务调度管理
- * 
+ *
  * @author ansj
- * 
  */
 class QuartzSchedulerManager {
 
 	private static final Logger LOG = LoggerFactory.getLogger(QuartzSchedulerManager.class);
 
-	private static Scheduler scheduler ;
+	private static Scheduler scheduler;
 
 	/**
 	 * 初始化
-	 * 
+	 *
 	 * @return
 	 */
 	private static Scheduler init() {
@@ -53,21 +52,21 @@ class QuartzSchedulerManager {
 			return scheduler;
 		} catch (SchedulerException e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		}
 		return null;
 	}
 
 	/**
 	 * 增加一个ｊｏｂ
-	 * 
+	 *
 	 * @param groupTaskName
 	 * @throws SchedulerException
 	 */
-	protected static synchronized boolean addJob(String groupTaskName , String scheduleStr) throws SchedulerException {
+	protected static synchronized boolean addJob(String groupTaskName, String scheduleStr) throws SchedulerException {
 		LOG.info(groupTaskName + " add to the schedulejob! ");
 		scheduler.scheduleJob(makeJobDetail(groupTaskName), makeTrigger(scheduleStr));
 		return true;
@@ -88,7 +87,7 @@ class QuartzSchedulerManager {
 
 	/**
 	 * 删除一个job
-	 * 
+	 *
 	 * @param groupTaskName
 	 * @throws SchedulerException
 	 * @throws Exception
@@ -100,7 +99,7 @@ class QuartzSchedulerManager {
 
 	/**
 	 * 判断一个task是否运行
-	 * 
+	 *
 	 * @return
 	 * @throws SchedulerException
 	 */
@@ -110,7 +109,7 @@ class QuartzSchedulerManager {
 
 	/**
 	 * 重置任务队列
-	 * 
+	 *
 	 * @throws SchedulerException
 	 */
 	protected static void startScheduler() throws SchedulerException {
@@ -128,22 +127,19 @@ class QuartzSchedulerManager {
 
 	/**
 	 * 获得所有当前的task
-	 * 
+	 *
 	 * @return
 	 * @throws SchedulerException
 	 */
-	protected static List<Task> getTaskList() throws SchedulerException {
+	protected static List<String> getTaskList() throws SchedulerException {
 		if (scheduler == null) {
 			return Collections.emptyList();
 		}
-		List<Task> list = new ArrayList<>();
+		List<String> list = new ArrayList<>();
 		Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.anyJobGroup());
 
 		for (JobKey jobKey : jobKeys) {
-			String[] names = jobKey.getName().split("@");
-			Task task = TaskService.findTaskByCache(names[0],names[1]);
-			task.setRunStatus("Schedulerd");
-			list.add(task);
+			list.add(jobKey.getName());
 		}
 		return list;
 	}

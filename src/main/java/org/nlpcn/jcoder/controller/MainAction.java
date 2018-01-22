@@ -63,13 +63,6 @@ public class MainAction {
 		result.add(ImmutableMap.of("name","Task管理","submenus",submenus)) ;
 
 
-		//jar 管理
-		submenus = new JSONArray() ;
-		for (String groupName : allGroups) {
-			submenus.add(ImmutableMap.of("name",groupName.toString(),"url","jar/list.html?name="+groupName)) ;
-		}
-		result.add(ImmutableMap.of("name","Jar管理","submenus",submenus)) ;
-
 
 		//Resource管理
 		submenus = new JSONArray() ;

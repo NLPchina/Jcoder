@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
+import static org.nlpcn.jcoder.util.StaticValue.*;
 
 /**
  * Created by Ansj on 05/12/2017.
@@ -32,14 +33,11 @@ public class GroupService {
 
 	private static final Logger LOG = LoggerFactory.getLogger(GroupService.class);
 
-	private static final Map<String, Group> GROUP_CACHE = new HashMap<>();
-
 	@Inject
 	private TaskService taskService;
 
-	private BasicDao basicDao = StaticValue.systemDao;
+	private BasicDao basicDao = systemDao;
 
-	private SharedSpaceService sharedSpaceService = StaticValue.space();
 
 	public List<Group> list() throws Exception {
 		List<Group> result = new ArrayList<>();
@@ -48,18 +46,18 @@ public class GroupService {
 			Group group = new Group();
 			group.setName(gName);
 			try {
-				List<String> children = sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH + "/" + gName);
+				Set<String> children = space().getGroupCache().getCurrentChildren(GROUP_PATH + "/" + gName).keySet();
 				group.setTaskNum(children.size() - 1);
 
 				Set<String> set = new HashSet<>();
-				sharedSpaceService.walkAllDataNode(set, GROUP_PATH + "/" + gName + "/file");
+				space().walkGroupCache(set, GROUP_PATH + "/" + gName + "/file");
 				group.setFileNum(set.size());
 
-				FileInfo root = JSONObject.parseObject(sharedSpaceService.getData2ZK(GROUP_PATH + "/" + gName + "/file"), FileInfo.class);
+				FileInfo root = space().getDataInGroupCache(GROUP_PATH + "/" + gName + "/file", FileInfo.class);
 
 				group.setFileLength(root.getLength());
 
-				Set<Map.Entry<String, HostGroup>> entries = sharedSpaceService.getHostGroupCache().entrySet();
+				Set<Map.Entry<String, HostGroup>> entries = space().getHostGroupCache().entrySet();
 
 				List<HostGroup> hosts = new ArrayList<>();
 
@@ -93,7 +91,7 @@ public class GroupService {
 	 */
 	public List<HostGroup> getGroupHostList(String groupName) throws Exception {
 
-		Set<Map.Entry<String, HostGroup>> entries = sharedSpaceService.getHostGroupCache().entrySet();
+		Set<Map.Entry<String, HostGroup>> entries = space().getHostGroupCache().entrySet();
 
 		List<HostGroup> hosts = new ArrayList<>();
 		for (Map.Entry<String, HostGroup> entry : entries) {
@@ -115,11 +113,11 @@ public class GroupService {
 	 * 获取所有的分组
 	 */
 	public List<String> getAllGroupNames() throws Exception {
-		return sharedSpaceService.getZk().getChildren().forPath(GROUP_PATH);
+		return new ArrayList<>(space().getGroupCache().getCurrentChildren(GROUP_PATH).keySet());
 	}
 
 	public List<String> getAllHosts() throws Exception {
-		return sharedSpaceService.getAllHosts();
+		return space().getAllHosts();
 	}
 
 
@@ -128,20 +126,20 @@ public class GroupService {
 	 */
 	public void deleteByCluster(String groupName) throws Exception {
 
-		InterProcessMutex interProcessMutex = sharedSpaceService.lockGroup(groupName);
+		InterProcessMutex interProcessMutex = space().lockGroup(groupName);
 
 		try {
 			interProcessMutex.acquire();
 			//判断当前是否有机器在使用此group
-			for (String k : sharedSpaceService.getHostGroupCache().keySet()) {
+			for (String k : space().getHostGroupCache().keySet()) {
 				String gName = k.split("_")[1];
 				if (gName.equals(groupName)) {
 					throw new Exception("组: " + groupName + "存在主机持有。清删除后重试: " + k);
 				}
 			}
-			sharedSpaceService.getZk().delete().deletingChildrenIfNeeded().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName);
+			space().getZk().delete().deletingChildrenIfNeeded().forPath(SharedSpaceService.GROUP_PATH + "/" + groupName);
 		} finally {
-			sharedSpaceService.unLockAndDelete(interProcessMutex);
+			space().unLockAndDelete(interProcessMutex);
 		}
 	}
 
@@ -168,11 +166,11 @@ public class GroupService {
 			}
 		}
 
-		String key = StaticValue.getHostPort() + "_" + name;
+		String key = getHostPort() + "_" + name;
 
-		Files.deleteFile(new File(StaticValue.GROUP_FILE, name + ".cache"));
+		Files.deleteFile(new File(GROUP_FILE, name + ".cache"));
 
-		File grouFile = new File(StaticValue.GROUP_FILE, name);
+		File grouFile = new File(GROUP_FILE, name);
 
 		Files.deleteDir(grouFile);
 
@@ -190,11 +188,11 @@ public class GroupService {
 			}
 		}
 
-		HostGroup hostGroup = sharedSpaceService.getHostGroupCache().get(key);
+		HostGroup hostGroup = space().getHostGroupCache().get(key);
 		if (hostGroup != null && !grouFile.exists()) {
 			hostGroup.setWeight(-1); //理论上设置为-1就删除了
-			sharedSpaceService.getHostGroupCache().put(key, hostGroup);
-			sharedSpaceService.getHostGroupCache().remove(key);
+			space().getHostGroupCache().put(key, hostGroup);
+			space().getHostGroupCache().remove(key);
 			LOG.info("remove host_group in zk : " + hostGroup.getHostPort());
 		}
 
@@ -225,12 +223,12 @@ public class GroupService {
 	 * 刷新
 	 */
 	public List<Different> flush(Group group, boolean upMapping) throws IOException {
-		return sharedSpaceService.joinCluster(group, upMapping);
+		return space().joinCluster(group, upMapping);
 	}
 
 	public static List<Group> allLocalGroup() {
 		LOG.info("find all group by db");
-		return StaticValue.systemDao.search(Group.class, "id");
+		return systemDao.search(Group.class, "id");
 
 	}
 }

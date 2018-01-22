@@ -1,7 +1,7 @@
 package org.nlpcn.jcoder.domain;
 
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent.Type;
+
+import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 
 /**
  * 监听目录的操作

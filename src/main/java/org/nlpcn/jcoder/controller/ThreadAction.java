@@ -9,6 +9,7 @@ import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.ProxyService;
+import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,14 +47,18 @@ public class ThreadAction {
 	 * 通过api的方式获得线程
 	 */
 	@At
-	public Restful list(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String groupName, @Param(value = "first", df = "true") boolean first) throws Exception {
+	public Restful list(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String groupName, @Param("type") String type, @Param(value = "first", df = "true") boolean first) throws Exception {
 
 		if (first) {
 			if (hostPorts == null || hostPorts.length == 0 || StringUtil.isBlank(hostPorts[0])) {
 				hostPorts = StaticValue.space().getAllHosts().toArray(new String[0]);
 			}
 
-			Map<String, Restful> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "first", false), 100000);
+			if (groupName == null) {
+				groupName = "";
+			}
+
+			Map<String, Restful> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "type", type, "first", false), 100000);
 
 			// 线程任务
 			List<Object> threads = new ArrayList<>();
@@ -87,18 +93,37 @@ public class ThreadAction {
 		} else {
 
 			// 线程任务
-			List<TaskInfo> threads = ThreadManager.getAllThread();
-
+			List<TaskInfo> threads = Collections.emptyList();
 			// 获得计划任务
-			List<TaskInfo> schedulers = ThreadManager.getAllScheduler();
-
+			List<TaskInfo> schedulers = Collections.emptyList();
 			// 获得执行中的action
-			List<TaskInfo> actions = ThreadManager.getAllAction();
+			List<TaskInfo> actions = Collections.emptyList();
 
+			if (StringUtil.isNotBlank(type)) {
+				switch (type) {
+					case "threads":
+						threads = ThreadManager.getAllThread();
+						break;
+					case "schedulers":
+						schedulers = ThreadManager.getAllScheduler();
+						break;
+					case "actions":
+						actions = ThreadManager.getAllAction();
+						break;
+					default:
+						throw new ApiException(500, "err type " + type);
+				}
+			} else {
+				threads = ThreadManager.getAllThread();
+				schedulers = ThreadManager.getAllScheduler();
+				actions = ThreadManager.getAllAction();
+			}
+
+			final String gn = groupName ;
 			if (StringUtil.isNotBlank(groupName)) {
-				threads = threads.stream().filter(t -> t.getGroupName().equals(groupName)).collect(Collectors.toList());
-				schedulers = schedulers.stream().filter(t -> t.getGroupName().equals(groupName)).collect(Collectors.toList());
-				actions = actions.stream().filter(t -> t.getGroupName().equals(groupName)).collect(Collectors.toList());
+				threads = threads.stream().filter(t -> t.getGroupName().equals(gn)).collect(Collectors.toList());
+				schedulers = schedulers.stream().filter(t -> t.getGroupName().equals(gn)).collect(Collectors.toList());
+				actions = actions.stream().filter(t -> t.getGroupName().equals(gn)).collect(Collectors.toList());
 			}
 
 			JSONObject json = new JSONObject();
@@ -125,6 +150,19 @@ public class ThreadAction {
 				e.printStackTrace();
 				LOG.error("stop action err", e);
 			}
+		} catch (Exception e) {
+			LOG.error("author err", e);
+			throw e;
+		}
+	}
+
+	/**
+	 * 停止一个运行的job的所有实例线程
+	 */
+	@At
+	public void stopAllJob(String groupName, String taskName) throws Exception {
+		try {
+			ThreadManager.stopAllJob(groupName, taskName);
 		} catch (Exception e) {
 			LOG.error("author err", e);
 			throw e;

@@ -59,9 +59,9 @@ public class ProxyService {
 	 */
 	public static Function<Map<String, Restful>, Restful> MERGE_MESSAGE_CALLBACK = (Map<String, Restful> result) -> {
 		List<String> messages = new ArrayList<>();
-		boolean ok = true;
+		boolean ok = true ;
 		for (Map.Entry<String, Restful> entry : result.entrySet()) {
-			ok = ok && entry.getValue().isOk();
+			ok = entry.getValue().isOk() ;
 			messages.add(entry.getKey() + ":" + entry.getValue().getMessage());
 		}
 		return Restful.instance(ok).msg(Joiner.on(" , ").join(messages));

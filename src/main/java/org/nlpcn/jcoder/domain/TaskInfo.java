@@ -7,8 +7,8 @@ public class TaskInfo {
 	private Long id;
 
 	private String name;
-	
-	private String taskName ;
+
+	private String taskName;
 
 	private String description;
 
@@ -22,7 +22,7 @@ public class TaskInfo {
 
 	private Integer status;
 
-	private String hostPort ;
+	private String hostPort;
 
 	/**
 	 * 标记状态 调度 活动 正在停止
@@ -30,12 +30,14 @@ public class TaskInfo {
 	private String runStatus;
 
 	public TaskInfo() {
-	};
+	}
 
-	public TaskInfo(String name ,Task task, long startTime) {
+	;
+
+	public TaskInfo(String name, Task task, long startTime) {
 		this.id = task.getId();
 		this.name = name;
-		this.taskName = task.getName() ;
+		this.taskName = task.getName();
 		this.description = task.getDescription();
 		this.success = task.success();
 		this.error = task.error();
@@ -43,7 +45,18 @@ public class TaskInfo {
 		this.status = task.getStatus();
 		this.runStatus = task.getRunStatus();
 		this.startTime = startTime;
-		this.hostPort = StaticValue.getHostPort() ;
+		this.hostPort = StaticValue.getHostPort();
+	}
+
+	public TaskInfo(String name, String taskName, String groupName) {
+		this.id = 0L;
+		this.name = name;
+		this.taskName = taskName;
+		this.success = 0;
+		this.error = 0;
+		this.groupName = groupName;
+		this.status = 1;
+		this.hostPort = StaticValue.getHostPort();
 	}
 
 	public long getStartTime() {

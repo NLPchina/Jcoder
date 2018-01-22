@@ -56,9 +56,9 @@ public class ThreadManager {
 	public static void addApi(Task oldTask, Task newTask) {
 
 		oldTask.codeInfo().getExecuteMethods().forEach(m -> {
-			try{
+			try {
 				StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
-			}catch (Exception e){
+			} catch (Exception e) {
 				e.printStackTrace();
 				System.out.println("AAAAAAAAAAAAAAAA");
 			}
@@ -84,11 +84,12 @@ public class ThreadManager {
 
 	/**
 	 * 停用一个task并从定时任务中删除
+	 *
 	 * @param GroupName
 	 * @param taskName
 	 */
-	public static void removeTaskJob(String GroupName , String taskName) throws SchedulerException {
-		QuartzSchedulerManager.stopTaskJob(GroupName+Constants.GROUP_TASK_SPLIT+taskName) ;
+	public static void removeTaskJob(String GroupName, String taskName) throws SchedulerException {
+		QuartzSchedulerManager.stopTaskJob(GroupName + Constants.GROUP_TASK_SPLIT + taskName);
 	}
 
 	/**
@@ -124,18 +125,18 @@ public class ThreadManager {
 	 *
 	 * @throws TaskException
 	 */
-	private static synchronized void stopTask(String groupName ,String taskName) throws TaskException {
+	private static synchronized void stopTask(String groupName, String taskName) throws TaskException {
 		try {
 			// 从任务中移除
 			try {
-				TaskRunManager.stopAll(groupName,taskName);
+				TaskRunManager.stopAll(groupName, taskName);
 			} catch (Exception e) {
 				LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
 
-			TaskRunManager.stopAll(groupName,taskName);
+			TaskRunManager.stopAll(groupName, taskName);
 
 
 		} catch (Exception e) {
@@ -154,11 +155,11 @@ public class ThreadManager {
 
 			if (oldTask.getType() == 2) {
 				LOG.info("to stop oldTask " + oldTask.getName() + " BEGIN! ");
-				stopTask(oldTask.getGroupName(),oldTask.getName());
+				stopTask(oldTask.getGroupName(), oldTask.getName());
 				LOG.info("to stop oldTask " + oldTask.getName() + " OK! ");
 			} else if (oldTask.getType() == 1) {
 				LOG.info("to remove Api oldTask " + oldTask.getName() + " BEGIN! ");
-				stopActionAndRemove(oldTask.getGroupName(),oldTask.getName());
+				stopActionAndRemove(oldTask.getGroupName(), oldTask.getName());
 				LOG.info("to remove Api stop oldTask " + oldTask.getName() + " BEGIN! ");
 			}
 
@@ -176,19 +177,19 @@ public class ThreadManager {
 
 	}
 
-	private static void stopActionAndRemove(String groupName ,String taskName) throws TaskException {
-		StaticValue.MAPPING.remove(groupName,taskName); // remove url from api mapping
+	private static void stopActionAndRemove(String groupName, String taskName) throws TaskException {
+		StaticValue.MAPPING.remove(groupName, taskName); // remove url from api mapping
 		try {
 			// 从任务中移除
 			try {
-				ActionRunManager.stopAll(groupName,taskName);
+				ActionRunManager.stopAll(groupName, taskName);
 			} catch (Exception e) {
 				LOG.error(e.getMessage(), e);
 				e.printStackTrace();
 			}
 			// 进行二次停止
 
-			ActionRunManager.stopAll(groupName,taskName);
+			ActionRunManager.stopAll(groupName, taskName);
 
 		} catch (Exception e) {
 			LOG.error(e.getMessage(), e);
@@ -204,9 +205,9 @@ public class ThreadManager {
 	 * @return
 	 * @throws SchedulerException
 	 */
-	public static boolean checkExists(String groupName ,String taskName) {
+	public static boolean checkExists(String groupName, String taskName) {
 		try {
-			String key = groupName+ Constants.GROUP_TASK_SPLIT+taskName ;
+			String key = groupName + Constants.GROUP_TASK_SPLIT + taskName;
 			return QuartzSchedulerManager.checkExists(key) || TaskRunManager.checkExists(key);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -246,11 +247,11 @@ public class ThreadManager {
 	 * @throws SchedulerException
 	 */
 	public static List<TaskInfo> getAllScheduler() throws SchedulerException {
-		List<Task> taskList = QuartzSchedulerManager.getTaskList();
+		List<String> taskList = QuartzSchedulerManager.getTaskList();
 		List<TaskInfo> schedulers = new ArrayList<>();
-		long time = System.currentTimeMillis();
-		for (Task task : taskList) {
-			schedulers.add(new TaskInfo(task.getName(), task, time));
+		for (String jobKey : taskList) {
+			String[] split = jobKey.split(Constants.GROUP_TASK_SPLIT);
+			schedulers.add(new TaskInfo(jobKey, split[0], split[1]));
 		}
 		return schedulers;
 	}
@@ -262,7 +263,7 @@ public class ThreadManager {
 			TaskInfo taskInfo = null;
 			try {
 				String[] split = key.split("@");
-				Task task = TaskService.findTaskByCache(split[0],split[1]);
+				Task task = TaskService.findTaskByCache(split[0], split[1]);
 				if (task == null) {
 					task = new Task();
 				}
@@ -354,4 +355,7 @@ public class ThreadManager {
 		return ActionRunManager.checkExists(taskName);
 	}
 
+	public static void stopAllJob(String groupName, String taskName) {
+		TaskRunManager.stopAll(groupName, taskName);
+	}
 }
