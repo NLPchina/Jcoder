@@ -52,7 +52,7 @@ public class ThreadAction {
 				hostPorts = StaticValue.space().getAllHosts().toArray(new String[0]);
 			}
 
-			Map<String, String> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "first", false), 100000);
+			Map<String, Restful> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "first", false), 100000);
 
 			// 线程任务
 			List<Object> threads = new ArrayList<>();
@@ -63,13 +63,13 @@ public class ThreadAction {
 			// 获得执行中的action
 			List<Object> actions = new ArrayList<>();
 
-			for (Map.Entry<String, String> entry : post.entrySet()) {
-				JSONObject ref = JSONObject.parseObject(entry.getValue());
-				if (!ref.getBoolean("ok")) {
+			for (Map.Entry<String, Restful> entry : post.entrySet()) {
+				Restful ref = entry.getValue();
+				if (!ref.isOk()) {
 					LOG.error(entry.toString());
 					continue;
 				}
-				JSONObject jsonObject = ref.getJSONObject("obj");
+				JSONObject jsonObject = ref.obj2JsonObject();
 				threads.addAll(jsonObject.getJSONArray("threads"));
 				schedulers.addAll(jsonObject.getJSONArray("schedulers"));
 				actions.addAll(jsonObject.getJSONArray("actions"));
@@ -113,7 +113,7 @@ public class ThreadAction {
 
 	/**
 	 * 停止一个运行的action
-	 *
+	 * <p>
 	 * 停止一个运行的action，或者task
 	 */
 	@At

@@ -106,7 +106,7 @@ public class GroupAction {
 	}
 
 	@At
-	public Restful diff(@Param("name") String name) {
+	public Restful check(@Param("name") String name) {
 		Condition con = Cnd.where("name", "=", name);
 		int count = basicDao.searchCount(Group.class, con);
 		if (count > 0) {
@@ -199,15 +199,13 @@ public class GroupAction {
 
 			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
 
-			String message = proxyService.post(hostPortsArr, "/admin/group/diff", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+			Restful restful = proxyService.post(hostPortsArr, "/admin/group/check", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
 
-			if (StringUtil.isNotBlank(message)) {
-				return Restful.instance().ok(false).code(500).msg(message);
+			if (!restful.isOk()) {
+				return restful.code(500);
 			}
 
-			message = proxyService.post(hostPortsArr, "/admin/group/add", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
-
-			return Restful.instance().msg(message);
+			return proxyService.post(hostPortsArr, "/admin/group/add", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
 		}
 	}
 
@@ -245,8 +243,7 @@ public class GroupAction {
 		} else {
 			Set<String> hostPortsArr = new HashSet<>();
 			Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-			String message = proxyService.post(hostPortsArr, "/admin/group/delete", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
-			return Restful.instance().msg(message);
+			return proxyService.post(hostPortsArr, "/admin/group/delete", ImmutableMap.of("name", name, "first", false), 100000, ProxyService.MERGE_MESSAGE_CALLBACK);
 		}
 	}
 
@@ -257,12 +254,11 @@ public class GroupAction {
 			toGroupName = groupName;
 		}
 
-		if(hostPorts==null || hostPorts.length==0 || StringUtil.isBlank(hostPorts[0])){
+		if (hostPorts == null || hostPorts.length == 0 || StringUtil.isBlank(hostPorts[0])) {
 			return Restful.fail().msg("必须选择一个目标主机");
 		}
 
-		String msg = proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "toGroupName", toGroupName.trim()), 1200000, ProxyService.MERGE_MESSAGE_CALLBACK);
-		return Restful.instance().msg(msg);
+		return proxyService.post(hostPorts, "/admin/group/installGroup", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "toGroupName", toGroupName.trim()), 1200000, ProxyService.MERGE_MESSAGE_CALLBACK);
 	}
 
 
@@ -346,7 +342,7 @@ public class GroupAction {
 			return Restful.instance(groupService.flush(groupName, upMapping));
 		} else {
 			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping), 120000);
-			return JSONObject.parseObject(post.getContent(), Restful.class);
+			return Restful.instance(post);
 		}
 
 	}
@@ -390,12 +386,10 @@ public class GroupAction {
 		for (String relativePath : relativePaths) {
 			if (relativePath.startsWith("/")) {//更新文件的
 				if (toHostPorts.size() > 0) {
-					String post = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
-					flag = flag && StringUtil.isBlank(post);
-					if (StringUtil.isNotBlank(post)) {
-						message.add(post);
-					} else {
-						message.add("添加成功");
+					Restful restful = proxyService.post(toHostPorts, "/admin/fileInfo/copyFile", ImmutableMap.of("fromHostPort", fromHostPort, "groupName", groupName, "relativePaths", relativePath), 120000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+					flag = flag && restful.isOk();
+					if (!restful.isOk()) {
+						message.add(restful.getMessage());
 					}
 				}
 
@@ -408,10 +402,10 @@ public class GroupAction {
 			} else {//更新task的
 
 				if (toHostPorts.size() > 0) {
-					String result = proxyService.post(toHostPorts, Api.TASK_SYN.getPath(), ImmutableMap.of("fromHost", fromHostPort, "groupName", groupName, "taskName", relativePath), 10000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
-					if (StringUtil.isNotBlank(result)) {
+					Restful restful = proxyService.post(toHostPorts, Api.TASK_SYN.getPath(), ImmutableMap.of("fromHost", fromHostPort, "groupName", groupName, "taskName", relativePath), 10000, ProxyService.MERGE_FALSE_MESSAGE_CALLBACK);
+					if (!restful.isOk()) {
 						flag = false;
-						message.add(result);
+						message.add(restful.getMessage());
 					}
 				}
 

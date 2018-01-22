@@ -336,7 +336,7 @@ public class FileInfoAction {
 					arrayList.remove(Constants.HOST_MASTER);
 					firstHost.add(arrayList.get(0).toString());
 				}
-				String message = proxyService.post(hostPortsArr, "/admin/fileInfo/deleteFile",
+				Restful restful = proxyService.post(hostPortsArr, "/admin/fileInfo/deleteFile",
 						ImmutableMap.of("groupName", groupName, "relativePaths[]", relativePaths, "first", false), 100000,
 						ProxyService.MERGE_MESSAGE_CALLBACK);
 				//删除master数据节点
@@ -349,7 +349,7 @@ public class FileInfoAction {
 							ImmutableMap.of("groupName", groupName, "relativePaths",
 									list.toArray(new String[list.size()])), 100000);
 				}
-				return Restful.instance().ok(true).msg(message);
+				return restful;
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

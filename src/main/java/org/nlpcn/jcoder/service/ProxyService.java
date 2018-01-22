@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
@@ -56,32 +57,34 @@ public class ProxyService {
 	/**
 	 * 合并所有的返回信息
 	 */
-	public static Function<Map<String, String>, String> MERGE_MESSAGE_CALLBACK = (Map<String, String> result) -> {
-		StringBuilder sb = new StringBuilder();
-		for (Map.Entry<String, String> entry : result.entrySet()) {
-			sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + " , ");
-
+	public static Function<Map<String, Restful>, Restful> MERGE_MESSAGE_CALLBACK = (Map<String, Restful> result) -> {
+		List<String> messages = new ArrayList<>();
+		boolean ok = true;
+		for (Map.Entry<String, Restful> entry : result.entrySet()) {
+			ok = ok && entry.getValue().isOk();
+			messages.add(entry.getKey() + ":" + entry.getValue().getMessage());
 		}
-		return sb.toString();
+		return Restful.instance(ok).msg(Joiner.on(" , ").join(messages));
 	};
 
 	/**
 	 * 合并所有的okfalse的返回信息
 	 */
-	public static Function<Map<String, String>, String> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, String> result) -> {
-		StringBuilder sb = new StringBuilder();
-		for (Map.Entry<String, String> entry : result.entrySet()) {
+	public static Function<Map<String, Restful>, Restful> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, Restful> result) -> {
+		List<String> messages = new ArrayList<>();
+		boolean ok = true;
+		for (Map.Entry<String, Restful> entry : result.entrySet()) {
 			try {
-				boolean flag = JSONObject.parseObject(entry.getValue()).getBoolean("ok");
+				boolean flag = entry.getValue().isOk();
 				if (!flag) {
-					sb.append(entry.getKey() + ": " + JSONObject.parseObject(entry.getValue()).getString("message") + ", ");
+					ok = false;
+					messages.add(entry.getKey() + ":" + entry.getValue().getMessage());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				sb.append(entry.getKey() + ":" + e.getMessage());
 			}
 		}
-		return sb.toString();
+		return Restful.instance(ok).msg(Joiner.on(" , ").join(messages));
 	};
 
 	/**
@@ -226,10 +229,8 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public <T> T post(String[] hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, String>, T> fun) throws Exception {
-		Set<String> hostPortsArr = new HashSet<>();
-		Arrays.stream(hostPorts).forEach(s -> hostPortsArr.add((String) s));
-		return post(hostPortsArr, path, params, timeout, fun);
+	public <T> T post(String[] hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Restful>, T> fun) throws Exception {
+		return post(Arrays.stream(hostPorts).collect(Collectors.toSet()), path, params, timeout, fun);
 	}
 
 
@@ -244,8 +245,8 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public <T> T post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, String>, T> fun) throws Exception {
-		Map<String, String> result = post(hostPorts, path, params, timeout);
+	public <T> T post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Restful>, T> fun) throws Exception {
+		Map<String, Restful> result = post(hostPorts, path, params, timeout);
 		return fun.apply(result);
 	}
 
@@ -258,7 +259,7 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, String> post(String[] hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+	public Map<String, Restful> post(String[] hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 		return post(Arrays.stream(hostPorts).collect(Collectors.toSet()), path, params, timeout);
 	}
 
@@ -271,7 +272,7 @@ public class ProxyService {
 	 * @return
 	 * @throws Exception
 	 */
-	public Map<String, String> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+	public Map<String, Restful> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
 		if (hostPorts.size() == 0) {
 			return new HashMap<>();
@@ -283,27 +284,24 @@ public class ProxyService {
 
 		List<String> urlList = new ArrayList<>(hostPorts);
 
-		Map<String, String> result = new LinkedHashMap<>();
+		Map<String, Restful> result = new LinkedHashMap<>();
 
 		ExecutorService threadPool = null;
 		try {
 			threadPool = Executors.newFixedThreadPool(urlList.size());
 
-			BlockingQueue<Future<String>> queue = new LinkedBlockingQueue<Future<String>>(urlList.size());
+			BlockingQueue<Future<Restful>> queue = new LinkedBlockingQueue<>(urlList.size());
 
 			for (String hostPort : urlList) {
-				Future<String> future = threadPool.submit(() -> {
+				Future<Restful> future = threadPool.submit(() -> {
 					LOG.info("post url : http://" + hostPort + path);
-					String content = null;
 					try {
 						Response send = Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(UserConstants.CLUSTER_TOKEN_HEAD, fToken)))).setTimeout(timeout).setConnTimeout(timeout).send();
-						content = send.getContent();
+						return Restful.instance(send);
 					} catch (Exception e) {
 						LOG.error("post to url : http://" + hostPort + path + " error ", e);
-
-						content = Restful.instance(false, "请求异常：" + e.getMessage()).toJsonString();
+						return Restful.instance(false, "请求异常：" + e.getMessage());
 					}
-					return content;
 				});
 				queue.add(future);
 			}

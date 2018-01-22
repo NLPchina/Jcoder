@@ -208,9 +208,9 @@ public class TaskAction {
 		}
 		// 如果激活任务, 需要检查代码
 		// 如果是新增, 确保任务不存在
-		String errorMessage = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-		if (StringUtil.isNotBlank(errorMessage)) {
-			return Restful.fail().code(ServerException).msg(errorMessage);
+		Restful restful = proxyService.post(hostPorts, Api.TASK_CHECK.getPath(), ImmutableMap.of("task", JSON.toJSONString(task)), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+		if (!restful.isOk()) {
+			return restful;
 		}
 
 		// 保存
@@ -243,9 +243,9 @@ public class TaskAction {
 		}
 
 		// 集群的每台机器保存
-		errorMessage = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-		if (StringUtil.isNotBlank(errorMessage)) {
-			return Restful.fail().code(ServerException).msg(errorMessage);
+		restful = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+		if (!restful.isOk()) {
+			return restful;
 		}
 
 		// 如果更新了主版本, 所有机器都得做diff
@@ -255,9 +255,9 @@ public class TaskAction {
 			hostPortSet.removeAll(hostPorts);
 
 			// diff
-			errorMessage = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", task.getGroupName(), "taskName", task.getName(), "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-			if (StringUtil.isNotBlank(errorMessage)) {
-				return Restful.fail().code(ServerException).msg(errorMessage);
+			restful = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", task.getGroupName(), "taskName", task.getName(), "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+			if (!restful.isOk()) {
+				return restful;
 			}
 		}
 
@@ -419,9 +419,9 @@ public class TaskAction {
 			}
 
 			// 集群的每台机器删除
-			String errorMessage = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("force", true, "groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-			if (StringUtil.isNotBlank(errorMessage)) {
-				return Restful.fail().code(ServerException).msg(errorMessage);
+			Restful restful = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("force", true, "groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+			if (!restful.isOk()) {
+				return restful;
 			}
 		} else {
 			// 更改类型为垃圾, 并停用
@@ -436,9 +436,9 @@ public class TaskAction {
 			}
 
 			// 集群的每台机器更新
-			String errorMessage = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-			if (StringUtil.isNotBlank(errorMessage)) {
-				return Restful.fail().code(ServerException).msg(errorMessage);
+			Restful restful = proxyService.post(hostPorts, Api.TASK_DELETE.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "user", u.getName(), "time", now.getTime()), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+			if (!restful.isOk()) {
+				return restful;
 			}
 		}
 
@@ -449,9 +449,9 @@ public class TaskAction {
 			hostPortSet.removeAll(hostPorts);
 
 			// diff
-			String errorMessage = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", groupName, "taskName", name, "oldName", name), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-			if (StringUtil.isNotBlank(errorMessage)) {
-				return Restful.fail().code(ServerException).msg(errorMessage);
+			Restful restful = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", groupName, "taskName", name, "oldName", name), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+			if (!restful.isOk()) {
+				return restful.code(ServerException);
 			}
 		}
 
@@ -528,23 +528,18 @@ public class TaskAction {
 
 			String[] hostPorts = groupHostList.stream().map(HostGroup::getHostPort).toArray(String[]::new);
 
-			Map<String, String> map = proxyService.post(hostPorts, "/admin/task/statistics", ImmutableMap.of("groupName", groupName, "name", name, "first", false), 1000);
+			Map<String, Restful> map = proxyService.post(hostPorts, "/admin/task/statistics", ImmutableMap.of("groupName", groupName, "name", name, "first", false), 1000);
 
 			List<TaskStatistics> result = new ArrayList<>();
 
-			JSONObject jsonObject;
 			for (HostGroup hostGroup : groupHostList) {
-				String content = map.get(hostGroup.getHostPort());
-				try {
-					jsonObject = JSONObject.parseObject(content);
-					if (!jsonObject.getBoolean("ok")) {
-						continue;
-					}
-				} catch (Exception e) {
+				Restful restful = map.get(hostGroup.getHostPort());
+
+				if(!restful.isOk()){
 					continue;
 				}
 
-				String[] split = jsonObject.getString("message").split("_");
+				String[] split = restful.getMessage().split("_");
 
 				TaskStatistics ts = new TaskStatistics();
 				ts.setHostPort(hostGroup.getHostPort());

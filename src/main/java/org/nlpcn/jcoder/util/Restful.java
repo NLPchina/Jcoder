@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.util;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.server.rpc.Rpcs;
@@ -58,6 +59,24 @@ public class Restful {
 
 	public <T> T getObj() {
 		return (T) obj;
+	}
+
+	public JSONObject obj2JsonObject() {
+		if (obj == null || obj instanceof JSONObject) return (JSONObject) obj;
+		if (obj instanceof String) {
+			return JSONObject.parseObject((String) obj);
+		} else {
+			return (JSONObject) JSONObject.toJSON(obj);
+		}
+	}
+
+	public JSONArray obj2JsonArray() {
+		if (obj == null || obj instanceof JSONArray) return (JSONArray) obj;
+		if (obj instanceof String) {
+			return JSONObject.parseArray((String) obj);
+		} else {
+			return (JSONArray) JSONObject.toJSON(obj);
+		}
 	}
 
 	public void setObj(Object obj) {

@@ -56,7 +56,12 @@ public class ThreadManager {
 	public static void addApi(Task oldTask, Task newTask) {
 
 		oldTask.codeInfo().getExecuteMethods().forEach(m -> {
-			StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
+			try{
+				StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName(), StaticValue.getHostPort());
+			}catch (Exception e){
+				e.printStackTrace();
+				System.out.println("AAAAAAAAAAAAAAAA");
+			}
 		});
 
 

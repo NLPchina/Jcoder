@@ -741,7 +741,7 @@ public class SharedSpaceService {
 		}
 
 		FileInfo lInfo = new FileInfo(file);
-		if (!cInfo.equals(lInfo)) {
+		if (!cInfo.getMd5().equals(lInfo.getMd5())) {
 			different.addMessage("文件内容不一致");
 		}
 	}
