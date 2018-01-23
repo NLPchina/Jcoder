@@ -22,47 +22,6 @@
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
 
-	<servlet>
-		<servlet-name>VerificationCode</servlet-name>
-		<servlet-class>com.google.code.kaptcha.servlet.KaptchaServlet</servlet-class>
-		<async-supported>true</async-supported>
-		<!-- 设置是否有边框 -->
-		<init-param>
-			<param-name>kaptcha.border</param-name>
-			<param-value>yes</param-value>
-		</init-param>
-		<!-- 设置边框颜色 -->
-		<init-param>
-			<param-name>kaptcha.border.color</param-name>
-			<param-value>105,179,90</param-value>
-		</init-param>
-		<!-- 设置验证码宽度 -->
-		<init-param>
-			<param-name>kaptcha.image.width</param-name>
-			<param-value>150</param-value>
-		</init-param>
-		<!-- 设置验证码高度 -->
-		<init-param>
-			<param-name>kaptcha.image.height</param-name>
-			<param-value>50</param-value>
-		</init-param>
-		<!-- 设置字体大小 -->
-		<init-param>
-			<param-name>kaptcha.textproducer.font.size</param-name>
-			<param-value>40</param-value>
-		</init-param>
-		<!-- 设置字体个数 -->
-		<init-param>
-			<param-name>kaptcha.textproducer.char.length</param-name>
-			<param-value>4</param-value>
-		</init-param>
-		
-	</servlet>
-	<servlet-mapping>
-		<servlet-name>VerificationCode</servlet-name>
-		<url-pattern>/verification_code.jpg</url-pattern>
-	</servlet-mapping>
-
 	<session-config>
 		<session-timeout>14400</session-timeout>
 	</session-config>

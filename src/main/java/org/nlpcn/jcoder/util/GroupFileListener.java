@@ -295,6 +295,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			task.setDescription("file create");
 			try {
 				StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
+				flush(task.getName());
 				taskFileMap.put(fileName, file);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -339,7 +340,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 						}
 
 						StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
-
+						flush(task.getName());
 						taskFileMap.put(fileName, file);
 					} catch (Exception e) {
 						e.printStackTrace();
@@ -349,6 +350,22 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				}
 			}
 
+		}
+	}
+
+	/**
+	 * 刷新這個類
+	 *
+	 * @param task
+	 * @throws Exception
+	 */
+	private void flush(String taskName) {
+		Set<String> taskNames = new HashSet<>(1);
+		taskNames.add(taskName);
+		try {
+			StaticValue.space().different(groupName, taskNames, null, false, false);
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -380,7 +397,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				return;
 			}
 
-			taskFileMap.remove(fileName);
 
 			Task task = getTask(fileName);
 			if (task != null) {
@@ -391,7 +407,9 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 					e.printStackTrace();
 				}
 			}
+			taskFileMap.remove(fileName);
 
+			flush(fileName);
 		}
 	}
 

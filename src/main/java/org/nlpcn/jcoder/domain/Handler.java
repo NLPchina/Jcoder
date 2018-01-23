@@ -17,11 +17,10 @@ public class Handler {
 
 	private Type action;
 
-	private long time;
-
-	public Handler(String groupName ,String path, Type action) {
-		this.groupName = groupName ;
+	public Handler(String path, String groupName ,String taskName,Type action) {
 		this.path = path;
+		this.groupName = groupName ;
+		this.taskName = taskName ;
 		this.action = action;
 	}
 
@@ -49,14 +48,6 @@ public class Handler {
 		this.action = action;
 	}
 
-	public long getTime() {
-		return time;
-	}
-
-	public void setTime(long time) {
-		this.time = time;
-	}
-
 	public String getTaskName() {
 		return taskName;
 	}
@@ -68,10 +59,10 @@ public class Handler {
 	@Override
 	public String toString() {
 		return "Handler{" +
-				"groupName='" + groupName + '\'' +
-				", path='" + path + '\'' +
+				"path='" + path + '\'' +
+				", groupName='" + groupName + '\'' +
+				", taskName='" + taskName + '\'' +
 				", action='" + action + '\'' +
-				", time=" + time +
 				'}';
 	}
 }

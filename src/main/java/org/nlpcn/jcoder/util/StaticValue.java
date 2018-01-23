@@ -1,9 +1,8 @@
 package org.nlpcn.jcoder.util;
 
 import com.alibaba.fastjson.util.TypeUtils;
-
 import org.nlpcn.jcoder.run.mvc.ApiUrlMappingImpl;
-import org.nlpcn.jcoder.server.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.dao.BasicDao;
@@ -260,7 +259,7 @@ public class StaticValue {
 	 * 获得当前groupname
 	 */
 	public static String getCurrentGroup() {
-		return Rpcs.getContext().getGroupName();
+		return Rpcs.ctx().getGroupName();
 	}
 
 

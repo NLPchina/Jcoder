@@ -1,4 +1,6 @@
-package org.nlpcn.jcoder.server.rpc.domain;
+package org.nlpcn.jcoder.run.rpc.domain;
+
+import com.alibaba.fastjson.JSON;
 
 import java.io.Serializable;
 
@@ -7,12 +9,13 @@ public class RpcRequest implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String messageId;
-	private String groupName ;
+	private String groupName;
 	private String className;
 	private String methodName;
-	private String tokenStr ;
-	private Object[] arguments;
-	
+	private String tokenStr;
+	private boolean debug;
+	private JSON arguments;
+
 	public RpcRequest() {
 	}
 
@@ -40,11 +43,11 @@ public class RpcRequest implements Serializable {
 		this.methodName = methodName;
 	}
 
-	public Object[] getArguments() {
+	public JSON getArguments() {
 		return arguments;
 	}
 
-	public void setArguments(Object[] arguments) {
+	public void setArguments(JSON arguments) {
 		this.arguments = arguments;
 	}
 
@@ -64,4 +67,11 @@ public class RpcRequest implements Serializable {
 		this.tokenStr = tokenStr;
 	}
 
+	public boolean isDebug() {
+		return debug;
+	}
+
+	public void setDebug(boolean debug) {
+		this.debug = debug;
+	}
 }

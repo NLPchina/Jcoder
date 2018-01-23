@@ -2,9 +2,9 @@ package org.nlpcn.jcoder.job;
 
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
+import org.nlpcn.jcoder.run.rpc.websocket.ApiWebsocket;
 import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.ZKServer;
-import org.nlpcn.jcoder.server.rpc.websocket.WebSocketServer;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.NutConfig;
@@ -13,8 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletException;
+import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpoint;
 import java.util.Arrays;
 
 public class SiteSetup implements Setup {
@@ -30,7 +30,6 @@ public class SiteSetup implements Setup {
 		}
 		;
 		H2Server.stopServer();
-		WebSocketServer.stopServer();
 	}
 
 	@Override
@@ -76,37 +75,18 @@ public class SiteSetup implements Setup {
 
 		new Thread(new CheckDiffJob()).start();
 
-
-		// 启动rpc服务,默认是当前端口+1 ;
-		LOG.info("begin start rpc server! on port " + StaticValue.RPCPORT);
+		//init webscoket
+		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
+		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
 		try {
-			WebSocketServer.startServer(StaticValue.RPCPORT);
-		} catch (NumberFormatException e) {
+			ServerContainer configureContext = configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
+			configureContext.addEndpoint((Class<?>) ApiWebsocket.class);
+		} catch (ServletException e) {
 			e.printStackTrace();
-			LOG.error(StaticValue.PREFIX + "port not set in system property");
-		} catch (Exception e) {
-			LOG.error("rpc server stop fail ", e);
+		} catch (DeploymentException e) {
+			e.printStackTrace();
 		}
 
-//		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
-//		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
-//
-//		try {
-//			ServerContainer configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
-//			Arrays.stream(nc.getIoc().getNames()).forEach(name -> {
-//				Object object = nc.getIoc().get(Object.class, name);
-//				if (object.getClass().getAnnotation(ServerEndpoint.class) != null) {
-//					try {
-//						configureContext.addEndpoint(object.getClass());
-//						LOG.info("add " + object.getClass() + " in websocket container");
-//					} catch (Exception e) {
-//						LOG.error("add " + object.getClass() + " in websocket container fail!!", e);
-//					}
-//				}
-//			});
-//		} catch (ServletException e) {
-//			e.printStackTrace();
-//		}
 
 		LOG.info("start all ok , goodluck YouYou");
 

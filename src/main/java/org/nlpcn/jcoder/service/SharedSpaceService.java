@@ -375,13 +375,13 @@ public class SharedSpaceService {
 						String path = event.getData().getPath().substring(GROUP_PATH.length() + 1);
 						String[] split = path.split("/");
 						String groupName = split[0];
-
 						if (split.length < 2) {
 							return;
 						}
+						String taskName = split[1];
 
-						if (StaticValue.isMaster() && !"file".equals(split[1])) {//如果本机是master,并且更新的是task
-							MasterTaskCheckJob.addQueue(new Handler(groupName, event.getData().getPath(), event.getType()));
+						if (StaticValue.isMaster() && !"file".equals(taskName)) {//如果本机是master,并且更新的是task
+							MasterTaskCheckJob.addQueue(new Handler(event.getData().getPath(), groupName, taskName, event.getType()));
 						}
 
 						//如果本机没有group则忽略
@@ -393,7 +393,7 @@ public class SharedSpaceService {
 						Set<String> taskNames = null;
 						Set<String> relativePaths = null;
 
-						if ("file".equals(split[1])) {
+						if ("file".equals(taskName)) {
 							path = path.substring(groupName.length() + 5);
 							if (StringUtil.isNotBlank(path) && path != "/") {
 								relativePaths = new HashSet<>();
@@ -401,7 +401,7 @@ public class SharedSpaceService {
 							}
 						} else {
 							taskNames = new HashSet<>();
-							taskNames.add(split[1]);
+							taskNames.add(taskName);
 						}
 
 						if ((relativePaths != null && relativePaths.size() > 0) || (taskNames != null && taskNames.size() > 0)) {

@@ -515,7 +515,7 @@ public class TaskService {
 	/**
 	 * 将map转换为参数
 	 */
-	private static Object[] map2Args(Map<String, Object> params, Method method) {
+	public static Object[] map2Args(Map<String, Object> params, Method method) {
 		Parameter[] parameters = method.getParameters();
 
 		Object[] args = new Object[parameters.length];

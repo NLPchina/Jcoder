@@ -1,7 +1,7 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
 import org.nlpcn.jcoder.constant.Constants;
-import org.nlpcn.jcoder.server.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -31,7 +31,7 @@ public class ApiProxyProcessor extends ViewProcessor {
 	}
 
 	public void process(ActionContext ac) throws Throwable {
-		Rpcs.getContext().setTook(System.currentTimeMillis()); //设置请求时间
+		Rpcs.ctx().setTook(System.currentTimeMillis()); //设置请求时间
 
 		HttpServletRequest request = ac.getRequest();
 		HttpServletResponse response = ac.getResponse();

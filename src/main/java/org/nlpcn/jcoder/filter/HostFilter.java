@@ -1,20 +1,20 @@
 package org.nlpcn.jcoder.filter;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
-import org.nlpcn.jcoder.server.rpc.RpcFilter;
-import org.nlpcn.jcoder.server.rpc.Rpcs;
-import org.nlpcn.jcoder.server.rpc.domain.RpcRequest;
+import org.nlpcn.jcoder.run.rpc.RpcFilter;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionFilter;
 import org.nutz.mvc.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class HostFilter implements ActionFilter, RpcFilter {
 
@@ -46,8 +46,8 @@ public class HostFilter implements ActionFilter, RpcFilter {
 			return null;
 		}
 
-		if (!host.equals(Rpcs.getContext().localAddress())) {
-			LOG.info(Rpcs.getContext().remoteAddress() + " only vist by host! the server name is : " + Rpcs.getContext().localAddress());
+		if (!host.equals(Rpcs.ctx().localAddress())) {
+			LOG.info(Rpcs.ctx().remoteAddress() + " only vist by host! the server name is : " + Rpcs.ctx().localAddress());
 			return Restful.instance(false, req.getClassName() + "/" + req.getMethodName() + " only vist by host! ", null, ApiException.Unauthorized);
 		}
 

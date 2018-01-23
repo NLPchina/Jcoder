@@ -4,11 +4,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.nlpcn.jcoder.run.rpc.RpcFilter;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.run.mvc.view.JsonView;
-import org.nlpcn.jcoder.server.rpc.RpcFilter;
-import org.nlpcn.jcoder.server.rpc.Rpcs;
-import org.nlpcn.jcoder.server.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -86,7 +86,7 @@ public class IpErrorCountFilter implements ActionFilter, RpcFilter {
 	@Override
 	public Restful match(RpcRequest req) {
 
-		String ip = Rpcs.getContext().remoteAddress();
+		String ip = Rpcs.ctx().remoteAddress();
 
 		AtomicInteger times = IP_CACHW.getIfPresent(ip);
 

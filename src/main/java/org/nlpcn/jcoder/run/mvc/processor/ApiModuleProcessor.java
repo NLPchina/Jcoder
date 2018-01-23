@@ -2,7 +2,7 @@ package org.nlpcn.jcoder.run.mvc.processor;
 
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.server.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
@@ -26,7 +26,7 @@ public class ApiModuleProcessor extends AbstractProcessor {
 	public void init(NutConfig config, ActionInfo ai) throws Throwable {
 		String path = ai.getPaths()[0];
 		String[] split = path.split("/");
-		Task task = TaskService.findTaskByCache(split[2],split[3]);
+		Task task = TaskService.findTaskByCache(split[2], split[3]);
 		method = ai.getMethod();
 		moduleObj = new JavaRunner(task).compile().instance().getTask();
 		groupName = task.getGroupName();
@@ -35,7 +35,7 @@ public class ApiModuleProcessor extends AbstractProcessor {
 	public void process(ActionContext ac) throws Throwable {
 		ac.setModule(moduleObj);
 		ac.setMethod(method);
-		Rpcs.getContext().setGroupName(groupName);
+		Rpcs.ctx().setGroupName(groupName);
 		doNext(ac);
 	}
 

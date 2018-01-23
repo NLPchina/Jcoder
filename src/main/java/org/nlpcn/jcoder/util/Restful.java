@@ -3,10 +3,8 @@ package org.nlpcn.jcoder.util;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import org.nlpcn.jcoder.constant.Constants;
-import org.nlpcn.jcoder.server.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
 import org.nutz.http.Response;
-import org.nutz.mvc.Mvcs;
 
 public class Restful {
 
@@ -188,7 +186,7 @@ public class Restful {
 			this.version = StaticValue.VERSION;
 		}
 
-		this.took = System.currentTimeMillis() - Rpcs.getContext().getTook();
+		this.took = System.currentTimeMillis() - Rpcs.ctx().getTook();
 
 		return this;
 	}
