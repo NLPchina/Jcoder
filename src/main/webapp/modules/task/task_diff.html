@@ -1,0 +1,38 @@
+<link type="text/css" rel="stylesheet" href="vendors/mergely/lib/mergely.css"/>
+<style type="text/css">
+    #vmTaskDiffModule .CodeMirror {
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+        overflow: no-display;
+        font-size: 18px;
+        height: 420px;
+    }
+</style>
+
+<div class="row" id="vmTaskDiffModule">
+    <table class="col-md-12">
+        <tr>
+            <td class="col-md-6">
+                <select class="form-control" id="lt_version">
+                    <option value="current" selected="selected">Current Version</option>
+                    <option value="admin_2017-08-29 14:18:11">admin_2017-08-29 14:18:11</option>
+                    <option value="admin_2017-08-29 14:17:37">admin_2017-08-29 14:17:37</option>
+                </select>
+            </td>
+            <td class="col-md-6">
+                <select class="form-control" id="rt_version">
+                    <option value="current">Current Version</option>
+                    <option selected="selected" value="admin_2017-08-29 14:18:11">admin_2017-08-29 14:18:11</option>
+                    <option value="admin_2017-08-29 14:17:37">admin_2017-08-29 14:17:37</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <div class="col-md-12" style="height:420px;">
+        <div class="mergely-resizer">
+            <div id="mergely"></div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="vendors/codemirror/addon/search/searchcursor.js"></script>
+<script type="text/javascript" src="vendors/mergely/lib/mergely.min.js"></script>

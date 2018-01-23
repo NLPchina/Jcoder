@@ -179,6 +179,59 @@ vmApp.module = new Vue({
                     JqdeBox.message(false, req.responseText);
                 });
             });
+        },
+
+        diff: function () {
+            var me = this;
+            JqdeBox.dialog({
+                title: "比较 " + "",
+                buttons: {cancel: {label: '<i class="fa fa-times"></i> 关闭', className: 'btn-sm'}},
+                init: function (dlg) {
+                    $.get('modules/task/task_diff.html', function (html) {
+                        dlg.on('hide.bs.modal', function (e) {
+                            $('#mergely').mergely('destroy');
+                            me.editor.refresh();
+                        }).find('.modal-dialog').css('width', '80%').find('.bootbox-body').html(html);
+
+                        //
+                        new Vue({
+                            el: '#vmTaskDiffModule',
+                            data: {},
+                            mounted: function () {
+                                Vue.nextTick(function () {
+                                    $('#mergely').mergely({
+                                        width: "auto",
+                                        height: 'auto',
+                                        cmsettings: {mode: "text/x-java", theme: "monokai", readOnly: false}
+                                    });
+
+                                    $('#mergely').mergely('lhs', "package org.nlpcn.jcoder.run.java;\n" +
+                                        "\n" +
+                                        "public class ApiTest3333 {\n" +
+                                        "\n" +
+                                        "\t@org.nlpcn.jcoder.run.annotation.Execute\n" +
+                                        "\tpublic Object test(int i,String content) throws Exception {\n" +
+                                        "    \treturn null;\n" +
+                                        "\t}\n" +
+                                        "}\n");
+
+                                    $('#mergely').mergely('rhs', "package org.nlpcn.jcoder.run.java;\n" +
+                                        "\n" +
+                                        "public class ApiTest3333 {\n" +
+                                        "\n" +
+                                        "\t@org.nlpcn.jcoder.run.annotation.Execute\n" +
+                                        "\tpublic Object test(int i,String content) throws Exception {\n" +
+                                        "    \treturn null;\n" +
+                                        "\t}\n" +
+                                        "}\n");
+                                    $("#vmTaskDiffModule").resize();
+                                });
+                            },
+                            methods: {}
+                        });
+                    });
+                }
+            });
         }
     }
 });

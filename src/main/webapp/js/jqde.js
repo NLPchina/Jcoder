@@ -146,7 +146,7 @@ var JqdeBox = {
         var dialog = bootbox.dialog({
             title: "<span class='bigger-130'>" + options.title + "</span>",
             message: message,
-            buttons: {
+            buttons: options.buttons || {
                 cancel: {
                     label: '<i class="fa fa-times"></i> 取消',
                     className: 'btn-sm',
