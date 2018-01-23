@@ -58,6 +58,10 @@ public class ThreadAction {
 				groupName = "";
 			}
 
+			if (type == null) {
+				type = "";//TODO：自己寫一個map工具吧。這個忒煩人了
+			}
+
 			Map<String, Restful> post = proxyService.post(hostPorts, "/admin/thread/list", ImmutableMap.of("groupName", groupName, "type", type, "first", false), 100000);
 
 			// 线程任务
@@ -119,7 +123,7 @@ public class ThreadAction {
 				actions = ThreadManager.getAllAction();
 			}
 
-			final String gn = groupName ;
+			final String gn = groupName;
 			if (StringUtil.isNotBlank(groupName)) {
 				threads = threads.stream().filter(t -> t.getGroupName().equals(gn)).collect(Collectors.toList());
 				schedulers = schedulers.stream().filter(t -> t.getGroupName().equals(gn)).collect(Collectors.toList());

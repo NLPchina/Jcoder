@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.service;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import com.alibaba.fastjson.JSONObject;
@@ -273,6 +274,13 @@ public class ProxyService {
 	 * @throws Exception
 	 */
 	public Map<String, Restful> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
+
+		//fix param
+		for (String key : params.keySet()) {
+			if(params.get(key)==null){
+
+			}
+		}
 
 		if (hostPorts.size() == 0) {
 			return new HashMap<>();
