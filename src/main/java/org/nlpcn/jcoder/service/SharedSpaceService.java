@@ -435,7 +435,7 @@ public class SharedSpaceService {
 							return;
 						}
 
-						if (StaticValue.isMaster() && !path.endsWith("/file") || !path.contains("/file/")) {//如果本机是master,说明更新的是task
+						if (StaticValue.isMaster() && !"file".equals(split[1])) {//如果本机是master,并且更新的是task
 							MasterTaskCheckJob.addQueue(new Handler(groupName, event.getData().getPath(), event.getType()));
 						}
 
@@ -459,7 +459,9 @@ public class SharedSpaceService {
 							taskNames.add(split[1]);
 						}
 
-						different(groupName, taskNames, relativePaths, false);
+						if ((relativePaths != null && relativePaths.size() > 0) || (taskNames != null && taskNames.size() > 0)) {
+							different(groupName, taskNames, relativePaths, false, false);
+						}
 						break;
 				}
 			}
@@ -605,19 +607,20 @@ public class SharedSpaceService {
 		Set<String> relativePaths = new HashSet<>();
 
 		//先判断根结点
-		FileInfo root = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/file", FileInfo.class);
-		if (root != null && root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5())) {
+		FileInfo root = getData(GROUP_PATH + "/" + groupName + "/file", FileInfo.class);
+
+		boolean fileChange = !root.getMd5().equals(fileInfos.get(fileInfos.size() - 1).getMd5());
+		if (root != null && !fileChange) {
 			LOG.info(groupName + " file md5 same so skip");
 		} else {
-			LOG.info(groupName + " file changed find differents");//TODO:是否改为从缓存中拿？
+			LOG.info(groupName + " file changed find differents");
 			walkGroupCache(relativePaths, GROUP_PATH + "/" + groupName + "/file");
 			for (int i = 0; i < fileInfos.size() - 1; i++) {
 				relativePaths.add(fileInfos.get(i).getRelativePath());
 			}
 		}
 
-
-		List<Different> diffs = different(groupName, taskNames, relativePaths, true);
+		List<Different> diffs = different(groupName, taskNames, relativePaths, true, true);
 
 		boolean fileDiff = false;
 
@@ -628,7 +631,7 @@ public class SharedSpaceService {
 			LOG.info(diff.toString());
 		}
 
-		if (!fileDiff) { //发现文件无不同。那么更新根目录md5
+		if (!fileDiff && fileChange) { //发现文件无不同。那么更新根目录md5
 			setData2ZK(GROUP_PATH + "/" + groupName + "/file", JSONObject.toJSONBytes(fileInfos.get(fileInfos.size() - 1)));
 		}
 
@@ -642,7 +645,7 @@ public class SharedSpaceService {
 	 *
 	 * @Param upHostGroup 只有全局刷新的时候才设置为true， 默认值发现不同。
 	 */
-	public List<Different> different(String groupName, Set<String> taskNames, Set<String> relativePaths, boolean upHostGroup) throws Exception {
+	public List<Different> different(String groupName, Set<String> taskNames, Set<String> relativePaths, boolean upHostGroup, boolean useCache) throws Exception {
 
 		LOG.info("to different group:{}", groupName);
 
@@ -655,7 +658,7 @@ public class SharedSpaceService {
 				different.setPath(taskName);
 				different.setGroupName(groupName);
 				different.setType(0);
-				diffTask(taskService.findTask(groupName, taskName), different, groupName, taskName);
+				diffTask(taskService.findTask(groupName, taskName), different, groupName, taskName, useCache);
 				if (different.getMessage() != null) {
 					diffs.add(different);
 				}
@@ -668,11 +671,15 @@ public class SharedSpaceService {
 				different.setGroupName(groupName);
 				different.setPath(relativePath);
 				different.setType(1);
-				diffFile(relativePath, different, groupName);
+				diffFile(relativePath, different, groupName, useCache);
 				if (different.getMessage() != null) {
 					diffs.add(different);
 				}
 			}
+		}
+
+		for (Different diff : diffs) {
+			LOG.info("useCache:{} {} ", useCache, diff);
 		}
 
 		HostGroup cHostGroup = hostGroupCache.get(StaticValue.getHostPort() + "_" + groupName);
@@ -707,8 +714,15 @@ public class SharedSpaceService {
 	 * @param groupName
 	 * @throws Exception
 	 */
-	private void diffFile(String relativePath, Different different, String groupName) throws Exception {
-		FileInfo cInfo = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/file" + relativePath, FileInfo.class);
+	private void diffFile(String relativePath, Different different, String groupName, boolean useCache) throws Exception {
+
+		FileInfo cInfo = null;
+		if (useCache) {
+			cInfo = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/file" + relativePath, FileInfo.class);
+		} else {
+			cInfo = getData(GROUP_PATH + "/" + groupName + "/file" + relativePath, FileInfo.class);
+		}
+
 
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
@@ -734,14 +748,21 @@ public class SharedSpaceService {
 	/**
 	 * 比较两个task是否一致
 	 */
-	private void diffTask(Task task, Different different, String groupName, String taskName) {
+	private void diffTask(Task task, Different different, String groupName, String taskName, boolean useCache) {
 		if (task != null) {
 			groupName = task.getGroupName();
 			taskName = task.getName();
 		}
 
 		try {
-			Task cluster = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
+			Task cluster = null;
+			if (useCache) {
+				cluster = getDataInGroupCache(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
+			} else {
+				getZk().sync().forPath(GROUP_PATH + "/" + groupName + "/" + taskName);
+				cluster = getData(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
+			}
+
 
 			if (cluster == null) {
 				if (task == null) {
@@ -826,10 +847,9 @@ public class SharedSpaceService {
 	}
 
 	public <T> T getData(String path, Class<T> c) throws Exception {
-		if(path.startsWith(TOKEN_PATH)){
-			path = "/jcoder/token/************"  ;//token path 不敢直接打印到日志
+		if (path.startsWith(TOKEN_PATH)) {
+			path = "/jcoder/token/************";//token path 不敢直接打印到日志
 		}
-		LOG.info("get data from: {} ", path);
 		byte[] bytes = getData2ZK(path);
 		if (bytes == null) {
 			return null;
@@ -837,10 +857,10 @@ public class SharedSpaceService {
 		return JSONObject.parseObject(bytes, c);
 	}
 
-	public <T> T getDataInGroupCache(String path, Class<T> c) {
+	public <T> T getDataInGroupCache(String path, Class<T> c) throws Exception {
 		byte[] data = groupCache.getCurrentData(path).getData();
 		if (data == null) {
-			return null;
+			return getData(path, c); //缓存没生效这里补漏
 		}
 		return JSONObject.parseObject(data, c);
 	}

@@ -26,7 +26,9 @@ class TaskRunManager {
 		try {
 			taskJob.start();
 			THREAD_POOL.put(taskJob.getName(), taskJob);
+			taskJob.getTask().success();
 		} catch (Exception e) {
+			taskJob.getTask().error();
 			throw new TaskException("the thread " + taskJob.getName() + e.toString());
 		}
 	}

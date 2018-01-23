@@ -224,6 +224,11 @@ public class TaskAction {
 		task.setUpdateTime(now);
 		String taskStr = JSON.toJSONString(task);
 
+
+
+		// 集群的每台机器保存
+		restful = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+
 		// 如果更新主版本
 		if (containsMaster) {
 			// 如果任务名变更, 需要删除之前的任务
@@ -242,23 +247,18 @@ public class TaskAction {
 			StaticValue.space().addTask(task);
 		}
 
-		// 集群的每台机器保存
-		restful = proxyService.post(hostPorts, Api.TASK_SAVE.getPath(), ImmutableMap.of("task", taskStr, "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
+
+		// 不管有没有更新主版本。所有机器都做diff
+		Set<String> hostPortSet = groupService.getGroupHostList(task.getGroupName()).stream().map(HostGroup::getHostPort).collect(Collectors.toSet());
+
+		// diff
+		restful = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", task.getGroupName(), "taskName", task.getName(), "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
 		if (!restful.isOk()) {
 			return restful;
 		}
 
-		// 如果更新了主版本, 所有机器都得做diff
-		if (containsMaster) {
-			// 首先排除这次指定更新的主机
-			Set<String> hostPortSet = groupService.getGroupHostList(task.getGroupName()).stream().map(HostGroup::getHostPort).collect(Collectors.toSet());
-			hostPortSet.removeAll(hostPorts);
-
-			// diff
-			restful = proxyService.post(hostPortSet, Api.TASK_DIFF.getPath(), ImmutableMap.of("groupName", task.getGroupName(), "taskName", task.getName(), "oldName", oldName), TIMEOUT, MERGE_FALSE_MESSAGE_CALLBACK);
-			if (!restful.isOk()) {
-				return restful;
-			}
+		if (!restful.isOk()) {
+			return restful;
 		}
 
 		return Restful.ok().obj(task.getName());
@@ -303,10 +303,6 @@ public class TaskAction {
 		}
 		LOG.info("to save task[{}-{}]: {}", task.getGroupName(), task.getName(), taskService.saveOrUpdate(task));
 
-		// diff
-		__diff__(task.getGroupName(), task.getName(), oldName);
-
-
 		if (StaticValue.TESTRING) { //测试模式下写入
 			try {
 				GroupFileListener.writeTask2Src(task);
@@ -328,7 +324,7 @@ public class TaskAction {
 		if (StringUtil.isNotBlank(oldName)) {
 			taskNames.add(oldName);
 		}
-		StaticValue.space().different(groupName, taskNames, null, false);
+		StaticValue.space().different(groupName, taskNames, null, false, false);
 
 		return Restful.ok();
 	}
@@ -535,7 +531,7 @@ public class TaskAction {
 			for (HostGroup hostGroup : groupHostList) {
 				Restful restful = map.get(hostGroup.getHostPort());
 
-				if(!restful.isOk()){
+				if (!restful.isOk()) {
 					continue;
 				}
 
