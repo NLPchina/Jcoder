@@ -52,30 +52,31 @@ vmApp.module = new Vue({
         }
     },
 
-    data: {
-        hosts: [],
+    data: function () {
+        var hosts = param.host.split(",");
+        return {
+            hosts: [],
 
-        sourceHost: null,
-        sourceHosts: [],
-        selectedHosts: null,
+            sourceHost: hosts[0],
+            sourceHosts: [],
+            selectedHosts: hosts,
 
-        task: {
-            type: 1,
-            status: 0,
-            groupName: param.group
-        },
+            task: {
+                type: 1,
+                status: 0,
+                groupName: param.group,
+                name: param.name
+            },
 
-        editor: null
+            editor: null
+        };
     },
 
     mounted: function () {
         var me = this;
 
-        //
-        me.sourceHost = (me.selectedHosts = param.host.split(","))[0];
-
         // 如果是编辑
-        if (me.task.name = param.name) {
+        if (me.task.name) {
             // 加载任务
             me.loadTask();
 
