@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +27,7 @@ public class MasterRunTaskJob implements Runnable {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MasterRunTaskJob.class);
 
-	private static BlockingQueue<KeyValue<String, String>> TASK_QUEUE = new SynchronousQueue<>();
+	private static BlockingQueue<KeyValue<String, String>> TASK_QUEUE = new LinkedBlockingQueue<>();
 
 	private static Thread thread = null;
 

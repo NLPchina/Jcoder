@@ -30,7 +30,7 @@ public class CheckDiffJob implements Runnable {
 	public void run() {
 
 		while (true) {
-			LOG.info("to run different !");
+			long start = System.currentTimeMillis();
 			try {
 				for (Group group : GroupService.allLocalGroup()) {
 					String name = group.getName();
@@ -46,14 +46,15 @@ public class CheckDiffJob implements Runnable {
 					} else {
 						Set<String> taskNames = null;
 						Set<String> relativePaths = null;
-						List<String> rm = new ArrayList<>() ;
+						List<String> rm = new ArrayList<>();
 						for (String path : paths) {
 							if (path.startsWith("/")) {
 								relativePaths = Sets.newHashSet(path);
 							} else {
 								taskNames = Sets.newHashSet(path);
 							}
-							List<Different> different = StaticValue.space().different(group.getName(), taskNames, relativePaths, false);
+							//TODO:监听到事件的时候理论上缓存已经刷新了。如果发现没刷新再改回来
+							List<Different> different = StaticValue.space().different(group.getName(), taskNames, relativePaths, false, true);
 
 							if (different.size() == 0) {
 								rm.add(path);
@@ -62,9 +63,9 @@ public class CheckDiffJob implements Runnable {
 							}
 						}
 
-						if(rm.size()>0){
+						if (rm.size() > 0) {
 							paths.removeAll(rm);
-							if(paths.size()==0){
+							if (paths.size() == 0) {
 								StaticValue.space().joinCluster(group, false);
 							}
 						}
@@ -73,11 +74,15 @@ public class CheckDiffJob implements Runnable {
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+
+			LOG.info("to run check different end use time {}", (System.currentTimeMillis() - start));
 			try {
 				Thread.sleep(60 * 1000L);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+
+
 		}
 	}
 
