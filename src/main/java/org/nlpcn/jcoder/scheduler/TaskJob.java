@@ -37,7 +37,9 @@ public class TaskJob extends Thread {
 		over = false;
 		try {
 			new JavaRunner(task).compile().instance().execute() ;
+			task.updateSuccess();
 		} catch (Exception e) {
+			task.updateError();
 			e.printStackTrace();
 			LOG.error(e.getMessage(),e);
 		} finally {

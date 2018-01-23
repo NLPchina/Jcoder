@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
@@ -52,7 +53,19 @@ public class TaskService {
 	private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
 
 	private static final ConcurrentHashMap<Object, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
+
 	public static final String VERSION_SPLIT = "_";
+
+
+	/**
+	 * 记录task执行成功失败的计数器
+	 */
+	private static final Map<String, AtomicLong> taskSuccess = new ConcurrentHashMap<>();
+
+	/**
+	 * 记录task执行成功失败的计数器
+	 */
+	private static final Map<String, AtomicLong> taskErr = new ConcurrentHashMap<>();
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
@@ -204,11 +217,15 @@ public class TaskService {
 
 		synchronized (oldTask) {
 			synchronized (newTask) {
+
 				TASK_MAP_CACHE.remove(oldTask.getId());
 				TASK_MAP_CACHE.remove(makeKey(oldTask));
 
 				TASK_MAP_CACHE.put(newTask.getId(), newTask);
 				TASK_MAP_CACHE.put(makeKey(newTask), newTask);
+
+				clearSucessErr(oldTask);
+				clearSucessErr(newTask);
 
 				ThreadManager.flush(oldTask, newTask);
 			}
@@ -335,6 +352,7 @@ public class TaskService {
 
 	/**
 	 * 查找出缓存中的所有task
+	 *
 	 * @return
 	 */
 	public static List<Task> findAllTasksByCache() {
@@ -534,6 +552,65 @@ public class TaskService {
 			args[i] = Castors.me().castTo(params[i], parameter.getType());
 		}
 		return args;
+	}
+
+	/**
+	 * 计数器，记录task成功失败个数
+	 */
+	public static void counter(Task task, boolean success) {
+		String groupTaskName = makeKey(task);
+		if (success) {
+			taskSuccess.compute(groupTaskName, (k, v) -> {
+				if (v == null) {
+					v = new AtomicLong();
+				}
+				v.incrementAndGet();
+				return v;
+			});
+		} else {
+			taskErr.compute(groupTaskName, (k, v) -> {
+				if (v == null) {
+					v = new AtomicLong();
+				}
+				v.incrementAndGet();
+				return v;
+			});
+		}
+	}
+
+	/**
+	 * 获得一个task成功次数
+	 */
+	public static long getSuccess(Task task) {
+		AtomicLong atomicLong = taskSuccess.get(makeKey(task));
+		if (atomicLong == null) {
+			return 0L;
+		} else {
+			return atomicLong.get();
+		}
+	}
+
+	/**
+	 * 获得一个task失败次数
+	 */
+	public static long getError(Task task) {
+		AtomicLong atomicLong = taskErr.get(makeKey(task));
+		if (atomicLong == null) {
+			return 0L;
+		} else {
+			return atomicLong.get();
+		}
+	}
+
+	/**
+	 * 清空计数器
+	 *
+	 * @param
+	 */
+	public static void clearSucessErr(Task task) {
+		String groupTaskName = makeKey(task);
+		taskErr.remove(groupTaskName);
+		taskSuccess.remove(groupTaskName);
 	}
 
 

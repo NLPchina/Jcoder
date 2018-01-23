@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.domain;
 
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
+import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
@@ -180,19 +181,19 @@ public class Task {
 	}
 
 	public long success() {
-		return StaticValue.space().getSuccess(this.getId());
+		return TaskService.getSuccess(this);
 	}
 
 	public long error() {
-		return StaticValue.space().getError(this.getId());
+		return TaskService.getError(this);
 	}
 
 	public void updateError() {
-		StaticValue.space().counter(this.getId(), false);
+		TaskService.counter(this, false);
 	}
 
 	public void updateSuccess() {
-		StaticValue.space().counter(this.getId(), true);
+		TaskService.counter(this, true);
 	}
 
 	public String getVersion() {

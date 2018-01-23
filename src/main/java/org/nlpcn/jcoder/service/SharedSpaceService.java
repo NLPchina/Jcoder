@@ -28,6 +28,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -78,15 +79,6 @@ public class SharedSpaceService {
 	 */
 	private static final String LOCK_PATH = StaticValue.ZK_ROOT + "/lock";
 
-	/**
-	 * 记录task执行成功失败的计数器
-	 */
-	private static final Map<Long, AtomicLong> taskSuccess = new HashMap<>();
-
-	/**
-	 * 记录task执行成功失败的计数器
-	 */
-	private static final Map<Long, AtomicLong> taskErr = new HashMap<>();
 
 	private ZookeeperDao zkDao;
 
@@ -112,53 +104,6 @@ public class SharedSpaceService {
 	 */
 	private TreeCache groupCache;
 
-
-	/**
-	 * 计数器，记录task成功失败个数
-	 */
-	public void counter(Long id, boolean success) {
-		if (success) {
-			taskSuccess.compute(id, (k, v) -> {
-				if (v == null) {
-					v = new AtomicLong();
-				}
-				v.incrementAndGet();
-				return v;
-			});
-		} else {
-			taskErr.compute(id, (k, v) -> {
-				if (v == null) {
-					v = new AtomicLong();
-				}
-				v.incrementAndGet();
-				return v;
-			});
-		}
-	}
-
-	/**
-	 * 获得一个task成功次数
-	 */
-	public long getSuccess(Long id) {
-		AtomicLong atomicLong = taskSuccess.get(id);
-		if (atomicLong == null) {
-			return 0L;
-		} else {
-			return atomicLong.get();
-		}
-	}
-
-	/**
-	 * 获得一个task失败次数
-	 */
-	public long getError(Long id) {
-		AtomicLong atomicLong = taskErr.get(id);
-		if (atomicLong == null) {
-			return 0L;
-		} else {
-			return atomicLong.get();
-		}
-	}
 
 	/**
 	 * 递归查询所有子文件
