@@ -1,7 +1,9 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderLatch;
 import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
@@ -11,7 +13,15 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.domain.CodeInfo;
+import org.nlpcn.jcoder.domain.Different;
+import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.Handler;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.HostGroupWatcher;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.job.CheckDiffJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.job.MasterTaskCheckJob;
@@ -27,9 +37,17 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -219,8 +237,10 @@ public class SharedSpaceService {
 			if (index > -1) {
 				String rootPath = path.substring(0, index + 5);
 				FileInfo root = getData(rootPath, FileInfo.class);
-				root.setMd5("EMPTY__");
-				setData2ZK(rootPath, JSONObject.toJSONBytes(root));
+				if (root != null) {
+					root.setMd5("EMPTY__");
+					setData2ZK(rootPath, JSONObject.toJSONBytes(root));
+				}
 			}
 		}
 	}
@@ -653,11 +673,6 @@ public class SharedSpaceService {
 
 	/**
 	 * 和主版本对比
-	 *
-	 * @param relativePath
-	 * @param different
-	 * @param groupName
-	 * @throws Exception
 	 */
 	private void diffFile(String relativePath, Different different, String groupName, boolean useCache) throws Exception {
 
@@ -803,7 +818,12 @@ public class SharedSpaceService {
 	}
 
 	public <T> T getDataInGroupCache(String path, Class<T> c) throws Exception {
-		byte[] data = groupCache.getCurrentData(path).getData();
+		ChildData currentData = groupCache.getCurrentData(path);
+		byte[] data = null;
+		if (currentData != null) {
+			data = currentData.getData();
+		}
+
 		if (data == null) {
 			return getData(path, c); //缓存没生效这里补漏
 		}
