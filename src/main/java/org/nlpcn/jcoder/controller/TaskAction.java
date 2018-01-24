@@ -384,6 +384,108 @@ public class TaskAction {
 	}
 
 	/**
+	 * 获取任务所有的版本信息
+	 *
+	 * @param host      主机名
+	 * @param groupName 组名
+	 * @param name      任务名
+	 * @param size      版本的数量限制
+	 * @return
+	 * @throws Exception
+	 */
+	@At
+	public Restful version(String host, String groupName, String name, @Param(value = "size", df = "50") int size) throws Exception {
+		if (StringUtil.isBlank(host)) {
+			throw new IllegalArgumentException("empty host");
+		}
+		if (StringUtil.isBlank(groupName)) {
+			throw new IllegalArgumentException("empty groupName");
+		}
+		if (StringUtil.isBlank(name)) {
+			throw new IllegalArgumentException("empty name");
+		}
+
+		// 如果取主版本, 直接访问ZK
+		if (Constants.HOST_MASTER.equals(host)) {
+			LOG.warn("only one task[{}-{}] in zookeeper", groupName, name);
+			return Restful.ok();
+		} else if (StaticValue.getHostPort().equals(host)) {
+			return __version__(groupName, name, size);
+		}
+
+		//
+		Response resp = proxyService.post(host, Api.TASK_VERSION.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "size", size), TIMEOUT);
+		return Restful.instance(resp);
+	}
+
+	@At
+	public Restful __version__(String groupName, String name, int size) {
+		// 从本地数据库中找到任务
+		Task t = taskService.findTask(groupName, name);
+		if (t == null) {
+			LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
+			return Restful.fail().code(NotFound);
+		}
+		return Restful.ok().obj(taskService.versions(t.getId(), size));
+	}
+
+	/**
+	 * 获取历史版本的任务
+	 *
+	 * @param host      主机名
+	 * @param groupName 组名
+	 * @param name      任务名
+	 * @param version   版本
+	 * @return
+	 */
+	@At
+	public Restful history(String host, String groupName, String name, String version) throws Exception {
+		if (StringUtil.isBlank(host)) {
+			throw new IllegalArgumentException("empty host");
+		}
+		if (StringUtil.isBlank(groupName)) {
+			throw new IllegalArgumentException("empty groupName");
+		}
+		if (StringUtil.isBlank(name)) {
+			throw new IllegalArgumentException("empty name");
+		}
+
+		// 如果取主版本, 直接访问ZK
+		if (Constants.HOST_MASTER.equals(host)) {
+			Optional<Task> opt = taskService.getTasksByGroupNameFromCluster(groupName).stream().filter(t -> Objects.equals(t.getName(), name)).findAny();
+			if (!opt.isPresent()) {
+				LOG.warn("task[{}-{}] not found in zookeeper", groupName, name);
+				return Restful.fail().code(NotFound).msg("task not found in master");
+			}
+
+			return Restful.ok().obj(opt.get().getCode());
+		} else {
+			if (StringUtil.isBlank(version)) {
+				throw new IllegalArgumentException("empty version");
+			}
+		}
+
+		if (StaticValue.getHostPort().equals(host)) {
+			return __history__(groupName, name, version);
+		}
+
+		//
+		Response resp = proxyService.post(host, Api.TASK_HISTORY.getPath(), ImmutableMap.of("groupName", groupName, "name", name, "version", version), TIMEOUT);
+		return Restful.instance(resp);
+	}
+
+	@At
+	public Restful __history__(String groupName, String name, String version) {
+		// 从本地数据库中找到任务
+		Task t = taskService.findTask(groupName, name);
+		if (t == null) {
+			LOG.warn("task[{}-{}] not found in host[{}]", groupName, name, StaticValue.getHostPort());
+			return Restful.fail().code(NotFound);
+		}
+		return Restful.ok().obj(TaskService.findTaskByDBHistory(t.getId(), version).getCode());
+	}
+
+	/**
 	 * 删除任务
 	 * 如果任务类型是垃圾, 就物理删除
 	 * 如果任务类型不是垃圾, 就更改任务类型和状态

@@ -12,7 +12,9 @@ public enum Api {
     TASK_DELETE(Api.BASE_PATH + "/task/__delete__"),
     TASK_TASK(Api.BASE_PATH + "/task/__task__"),
     TASK_CRON(Api.BASE_PATH + "/task/__cron__"),
-    TASK_SYN(Api.BASE_PATH + "/task/__syn__");
+    TASK_SYN(Api.BASE_PATH + "/task/__syn__"),
+    TASK_VERSION(Api.BASE_PATH + "/task/__version__"),
+    TASK_HISTORY(Api.BASE_PATH + "/task/__history__");
 
     private static final String BASE_PATH = "/admin";
 
