@@ -85,13 +85,19 @@ vmApp.module = new Vue({
         }
 
         Vue.nextTick(function () {
-            (me.editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+            me.editor = CodeMirror.fromTextArea(document.getElementById("code"), {
                 lineNumbers: true,
                 mode: "text/x-java",
                 matchBrackets: true,
                 theme: "monokai",
                 showCursorWhenSelecting: true
-            })).setSize($(me.$el).find('form:first').width() - 37);
+            });
+            var $this = $(me.$el);
+            $this.find(".CodeMirror").resizable({
+                resize: function () {
+                    me.editor.setSize($this.find("form:first").width() - 37);
+                }
+            });
         });
     },
 
@@ -190,6 +196,7 @@ vmApp.module = new Vue({
                     $.get('modules/task/task_diff.html', function (html) {
                         dlg.on('hide.bs.modal', function (e) {
                             $('#mergely').mergely('destroy');
+                        }).on('hidden.bs.modal', function (e) {
                             me.editor.refresh();
                         }).find('.modal-dialog').css('width', '80%').find('.bootbox-body').html(html);
 
