@@ -26,6 +26,9 @@ import org.nlpcn.jcoder.job.CheckDiffJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.job.MasterTaskCheckJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.nlpcn.jcoder.run.rpc.service.MemoryRoomService;
+import org.nlpcn.jcoder.run.rpc.service.RoomService;
+import org.nlpcn.jcoder.run.rpc.service.ZookeeperRoomService;
 import org.nlpcn.jcoder.util.GroupFileListener;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -104,6 +107,12 @@ public class SharedSpaceService {
 	 * 选举
 	 */
 	private LeaderLatch leader;
+
+
+	/**
+	 * 房间
+	 */
+	private RoomService roomService ;
 
 	/**
 	 * 监听路由缓存
@@ -213,7 +222,7 @@ public class SharedSpaceService {
 	/**
 	 * 将数据写入到zk中
 	 */
-	private void setData2ZK(String path, byte[] data) throws Exception {
+	public void setData2ZK(String path, byte[] data) throws Exception {
 
 		LOG.info("add data to: {}, data len: {} ", path, data.length);
 
@@ -433,6 +442,13 @@ public class SharedSpaceService {
 		});
 
 
+		if(StaticValue.IS_LOCAL){
+			roomService = new MemoryRoomService() ;
+		}else{
+			roomService = new ZookeeperRoomService(this.zkDao) ;
+		}
+
+
 		LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
 		return this;
 
@@ -449,6 +465,7 @@ public class SharedSpaceService {
 		Optional.of(tokenCache).ifPresent((o) -> closeWithoutException(o));
 		Optional.of(hostGroupCache).ifPresent((o) -> closeWithoutException(o));
 		Optional.of(zkDao).ifPresent((o) -> closeWithoutException(o));
+		Optional.of(roomService).ifPresent((o) -> closeWithoutException(o));
 	}
 
 

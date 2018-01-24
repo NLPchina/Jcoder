@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.run.rpc.websocket;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -13,6 +14,8 @@ import org.nlpcn.jcoder.run.rpc.Rpcs;
 import org.nlpcn.jcoder.run.rpc.domain.RpcContext;
 import org.nlpcn.jcoder.run.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.run.rpc.domain.RpcResponse;
+import org.nlpcn.jcoder.run.rpc.domain.RpcUser;
+import org.nlpcn.jcoder.run.rpc.service.SessionService;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ApiException;
@@ -25,10 +28,18 @@ import org.nutz.mvc.annotation.Filters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.websocket.*;
-import javax.websocket.server.ServerEndpoint;
 import java.util.Date;
 import java.util.Map;
+
+import javax.websocket.CloseReason;
+import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
 
 @ServerEndpoint(value = "/api", configurator = JcoderConfigurator.class)
 @IocBean
@@ -39,6 +50,7 @@ public class ApiWebsocket extends Endpoint {
 	@OnClose
 	public void onClose(Session session, CloseReason closeReason) {
 		LOG.info("{} onClose , reson:{} ", session.getId(), closeReason);
+		SessionService.remove(session.getId());
 
 	}
 
@@ -51,16 +63,12 @@ public class ApiWebsocket extends Endpoint {
 	@OnOpen
 	public void onOpen(Session session, EndpointConfig config) {
 		LOG.info("{} onOpen ", session.getId());
+		SessionService.add(new RpcUser(null, session));
 	}
 
 
 	/**
 	 * api执行接口，rpc websocket协议
-	 *
-	 * @param message
-	 * @param session
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
 	 */
 	@OnMessage
 	public void onMessage(String message, Session session) throws InstantiationException, IllegalAccessException {
@@ -150,9 +158,6 @@ public class ApiWebsocket extends Endpoint {
 
 	/**
 	 * 收集一些必要的信息
-	 *
-	 * @param message
-	 * @param session
 	 */
 	private RpcRequest context(String message, Session session) {
 		RpcContext rpcContext = Rpcs.ctx();
@@ -170,10 +175,6 @@ public class ApiWebsocket extends Endpoint {
 
 	/**
 	 * 进行一些必要的过滤
-	 *
-	 * @return
-	 * @throws IllegalAccessException
-	 * @throws InstantiationException
 	 */
 	public boolean filter(RpcRequest req) throws IllegalAccessException, InstantiationException {
 

@@ -6,6 +6,8 @@ import org.nutz.dao.entity.annotation.Table;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Table("user")
 public class User implements Serializable {
@@ -38,6 +40,9 @@ public class User implements Serializable {
 
 	@Column("create_time")
 	private Date createTime; // 创建时间
+
+	//扩展用户的属性字段
+	private Map<String, Object> attr;
 
 	public Long getId() {
 		return id;
@@ -88,6 +93,27 @@ public class User implements Serializable {
 
 	public void setCreateTime(Date createTime) {
 		this.createTime = createTime;
+	}
+
+
+	/**
+	 * 通用属性的拓展添加。不是线程安全的
+	 */
+	public void put(String key, Object value) {
+		if (attr == null) {
+			attr = new HashMap<>();
+		}
+		this.attr.put(key, value);
+	}
+
+	/**
+	 * 获得属性
+	 */
+	public Object get(String key) {
+		if (attr == null) {
+			return null;
+		}
+		return attr.get(key);
 	}
 
 }

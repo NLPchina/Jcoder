@@ -48,7 +48,7 @@ public class ZookeeperDao implements Closeable {
 		if (split.length == 2) {
 			authorStr = split[1];
 			authProvider = new DigestAuthenticationProvider();
-		} else if (StaticValue.IS_LOCAL) {
+		} else if (StaticValue.IS_LOCAL && connStr.startsWith("127.0.0.1")) {
 			authorStr = "127.0.0.1";
 			authProvider = new IPAuthenticationProvider();
 		}
