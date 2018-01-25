@@ -57,6 +57,7 @@
                 <th>描述</th>
                 <th width="6.8%">编译</th>
                 <th width="6.8%">状态</th>
+                <th width="6.8%">衝突</th>
                 <th width="14%">创建时间</th>
                 <th width="14%">更新时间</th>
                 <th width="7%">操作</th>
@@ -86,6 +87,16 @@
                     <span v-else class="label label-warning label-white middle">
                         <i class="ace-icon fa fa-exclamation-triangle bigger-120"></i>
                         停用
+                    </span>
+                </td>
+                <td>
+                    <span v-if="item.diff==null" class="label label-success label-white middle">
+                        <i class="ace-icon glyphicon glyphicon-ok bigger-120"></i>
+                        同步
+                    </span>
+                    <span v-else class="label label-warning label-white middle">
+                        <i class="ace-icon fa fa-exclamation-triangle bigger-120"></i>
+                        <a :title="item.diff">冲突</a>
                     </span>
                 </td>
                 <td>{{item.createTime}}</td>

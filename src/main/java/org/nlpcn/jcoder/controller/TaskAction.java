@@ -1,20 +1,11 @@
 package org.nlpcn.jcoder.controller;
 
-import com.google.common.collect.ImmutableMap;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-
+import com.google.common.collect.ImmutableMap;
 import org.h2.util.DateTimeUtils;
-import org.nlpcn.jcoder.constant.Api;
-import org.nlpcn.jcoder.constant.Constants;
-import org.nlpcn.jcoder.constant.TaskStatus;
-import org.nlpcn.jcoder.constant.TaskType;
-import org.nlpcn.jcoder.constant.UserConstants;
-import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskStatistics;
-import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.constant.*;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -22,45 +13,27 @@ import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
+import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.GroupFileListener;
-import org.nlpcn.jcoder.util.Maps;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.*;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.adaptor.WhaleAdaptor;
-import org.nutz.mvc.annotation.AdaptBy;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
-import static org.nlpcn.jcoder.util.ApiException.Forbidden;
-import static org.nlpcn.jcoder.util.ApiException.NotFound;
-import static org.nlpcn.jcoder.util.ApiException.ServerException;
+import static org.nlpcn.jcoder.util.ApiException.*;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -132,18 +105,35 @@ public class TaskAction {
 
 	@At
 	public Restful __list__(String groupName, int taskType) {
+
+		//判斷本機是否衝突狀態
+		boolean isCurrent = groupService.getCurrentHostPort(groupName).stream().collect(Collectors.toSet()).contains(StaticValue.getHostPort());
+
 		Object[] tasks = taskService.findTaskByGroupNameCache(groupName)
 				.stream()
 				.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
-				.map(t -> Maps.hash("name", t.getName(),
-						"groupName", t.getGroupName(),
-						"hostPort", StaticValue.getHostPort(),
-						"description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
-						"status", t.getStatus(),
-						"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
-						"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null),
-						"compile", t.sourceUtil() != null && t.codeInfo().getClassz() != null))
+				.map(t -> {
+					Map<String, Object> map = Maps.hash("name", t.getName(),
+							"groupName", t.getGroupName(),
+							"hostPort", StaticValue.getHostPort(),
+							"description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
+							"status", t.getStatus(),
+							"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
+							"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null),
+							"compile", t.sourceUtil() != null && t.codeInfo().getClassz() != null);
+
+					if (!isCurrent) {
+						Different different = new Different();
+						StaticValue.space().diffTask(t, different, groupName, t.getName(), false); //查找冲突原因
+						if (StringUtil.isNotBlank(different.getMessage())) {
+							map.put("diff", different.getMessage());
+						}
+					}
+					return map;
+				})
 				.toArray();
+
+
 		return Restful.instance(tasks);
 	}
 
@@ -354,13 +344,12 @@ public class TaskAction {
 
 		// 如果取主版本, 直接访问ZK
 		if (Constants.HOST_MASTER.equals(sourceHost)) {
-			Optional<Task> opt = taskService.getTasksByGroupNameFromCluster(groupName).stream().filter(t -> Objects.equals(t.getName(), name)).findAny();
-			if (!opt.isPresent()) {
+			Task task = taskService.getTaskFromCluster(groupName, name);
+			if (task == null) {
 				LOG.warn("task[{}-{}] not found in zookeeper", groupName, name);
 				return Restful.ok();
 			}
-
-			return Restful.ok().obj(opt.get());
+			return Restful.ok().obj(task);
 		} else if (StaticValue.getHostPort().equals(sourceHost)) {
 			return __task__(groupName, name);
 		}

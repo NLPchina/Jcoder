@@ -94,6 +94,7 @@ vmApp.module = new Vue({
                 theme: "monokai",
                 showCursorWhenSelecting: true
             });
+            me.editor.setSize(null,document.documentElement.clientHeight-400);//设置高度
             var $this = $(me.$el);
             $this.find(".CodeMirror").resizable({
                 resize: function () {
@@ -202,6 +203,7 @@ vmApp.module = new Vue({
                 t.name + "</span>",
                 buttons: {cancel: {label: '<i class="fa fa-times"></i> 关闭', className: 'btn-sm'}},
                 init: function (dlg) {
+                    //$(".bootbox-body").css("height",(document.documentElement.clientHeight-400)+"px")
                     $.get('modules/task/task_diff.html?_=' + _.now(), function (html) {
                         dlg.on('hide.bs.modal', function (e) {
                             $('#mergely').mergely('destroy');

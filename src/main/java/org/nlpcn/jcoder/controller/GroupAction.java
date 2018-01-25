@@ -337,11 +337,11 @@ public class GroupAction {
 	 * @return 不同
 	 */
 	@At
-	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("upMapping") boolean upMapping) throws Exception {
-		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("upMapping") boolean upMapping,@Param(value = "first", df = "true") boolean first) throws Exception {
+		if (!first || StaticValue.getHostPort().equals(hostPort)) {
 			return Restful.instance(groupService.flush(groupName, upMapping));
 		} else {
-			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping), 120000);
+			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping,"first",false), 120000);
 			return Restful.instance(post);
 		}
 
