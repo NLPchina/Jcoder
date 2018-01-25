@@ -3,14 +3,15 @@ package org.nlpcn.jcoder.controller;
 import com.google.common.collect.ImmutableMap;
 
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
-import org.apache.curator.framework.recipes.cache.ChildData;
+import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.Maps;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
  * Created by Ansj on 14/12/2017.
@@ -45,7 +47,10 @@ public class MainAction {
 	private TaskService taskService;
 
 	@Inject
-	private GroupService groupService ;
+	private GroupService groupService;
+
+	@Inject
+	private ProxyService proxyService;
 
 	@At("/admin/main/left")
 	public Restful left() throws Exception {
@@ -95,19 +100,19 @@ public class MainAction {
 		//系统健康
 		submenus = new JSONArray();
 
-		Set<String> tempGroups = new HashSet<>(allGroups) ;
+		Set<String> tempGroups = new HashSet<>(allGroups);
 
 
 		//冲突的group
 		List<String> groups = new ArrayList<>();
 		StaticValue.space().getHostGroupCache().entrySet().forEach(e -> {
 			int index = e.getKey().indexOf("_");
-			String groupName = e.getKey().substring(index+1);
+			String groupName = e.getKey().substring(index + 1);
 			if (!e.getValue().isCurrent()) {
 				groups.add(groupName);
 
 			}
-			tempGroups.remove(groupName) ;
+			tempGroups.remove(groupName);
 		});
 		for (String group : groups) {
 			submenus.add(ImmutableMap.of("name", "冲突：" + group, "url", "group/group_host_list.html?name=" + group));
@@ -115,12 +120,35 @@ public class MainAction {
 
 		//同步主机
 		for (String group : tempGroups) {
-			submenus.add(ImmutableMap.of("name", "无同步：" + group, "url", "group/list.html#"+group));
+			submenus.add(ImmutableMap.of("name", "无同步：" + group, "url", "group/list.html#" + group));
 		}
 
+		final List<Object> errTask = new ArrayList<>();
+
 		//编译失败的类
+		//查询所有的group
+		groupService.getAllGroupNames().forEach((String gn) -> {
+			try {
+				// 查询所有的组
+				Set<String> hosts = groupService.getGroupHostList(gn).stream().map(gh -> gh.getHostPort()).collect(Collectors.toSet());
+				// 查询所有组的机器
+				Map<String, Restful> post = proxyService.post(hosts, Api.TASK_LIST.getPath(), Maps.hash("groupName", gn, "taskType", -1), 10000);
+				post.entrySet().forEach(e -> {
+					e.getValue().obj2JsonArray().stream().forEach(o -> {
+						JSONObject job = (JSONObject) o;
+						if (!job.getBooleanValue("compile") && job.getIntValue("status") == 1) {
+							errTask.add(ImmutableMap.of("name", "编译：" + gn + "/" + job.getString("name"), "url", "task/list.html?name=" + gn + "&hostPort=" + e.getKey()));
+						}
+					});
 
+				});
 
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		});
+		submenus.addAll(errTask);
 
 
 		if (submenus.size() > 0) {
