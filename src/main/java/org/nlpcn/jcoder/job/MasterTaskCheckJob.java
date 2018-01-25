@@ -1,35 +1,41 @@
 package org.nlpcn.jcoder.job;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.Handler;
+import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.MapCount;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.ZKMap;
 import org.nutz.http.Response;
 import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class MasterTaskCheckJob implements Runnable {
 
@@ -154,6 +160,9 @@ public class MasterTaskCheckJob implements Runnable {
 						});
 
 
+						/**
+						 * 对于规划外的定时任务移除
+						 */
 						if (allScheduler.size() > 0) {
 							allScheduler.stream().forEach(groupTaskName -> {
 								String[] split = groupTaskName.split(Constants.GROUP_TASK_SPLIT);
@@ -188,18 +197,23 @@ public class MasterTaskCheckJob implements Runnable {
 	}
 
 	private void stopOutsideJob() {
+		//检查非同步状态的机器如果有定时任务就停止
+		ZKMap<HostGroup> hostGroupCache = StaticValue.space().getHostGroupCache();
 
-		//todo:检查非同步状态的机器如果有定时任务就停止
+		/**
+		 * 停止为同步状态机上的任务
+		 */
+		taskInfos.parallelStream().forEach(t -> {
+			HostGroup hostGroup = hostGroupCache.get(t.getHostPort() + "_" + t.getGroupName());
+			if (hostGroup != null && !hostGroup.isCurrent()) {
+				stopTask(t.getHostPort(), t.getGroupName(), t.getTaskName());
+			}
 
-		//TODO:检查同步状态的机器如果有两个以上的while oncce all 就停止
-
-
+		});
 	}
 
 	/**
 	 * 只执行一次的任务
-	 *
-	 * @param task
 	 */
 	private void checkOneceJob(Task task) throws ExecutionException {
 		if (oneCache.getIfPresent(task.getMd5()) == null) {
@@ -210,8 +224,6 @@ public class MasterTaskCheckJob implements Runnable {
 
 	/**
 	 * 检查all的task
-	 *
-	 * @param task
 	 */
 	private void checkAllJob(Task task) {
 		Set<String> currentHostPort = new HashSet<>(StaticValue.space().getCurrentHostPort(task.getGroupName())); //获得所有有这个group的同步机器
@@ -239,8 +251,6 @@ public class MasterTaskCheckJob implements Runnable {
 
 	/**
 	 * 检查while的定时任务。必须有且只有一个存在
-	 *
-	 * @param task
 	 */
 	private void checkWhileJob(Task task) {
 		boolean have = false;
@@ -263,10 +273,6 @@ public class MasterTaskCheckJob implements Runnable {
 
 	/**
 	 * 停止某个机器的定时任务
-	 *
-	 * @param hostPort
-	 * @param groupName
-	 * @param taskName
 	 */
 	private void stopTask(String hostPort, String groupName, String taskName) {
 		LOG.info("to stop task {}/{} in host {}", groupName, taskName, hostPort);
@@ -295,8 +301,6 @@ public class MasterTaskCheckJob implements Runnable {
 
 	/**
 	 * 获取所有机器运行中的任务
-	 *
-	 * @throws Exception
 	 */
 	private void findAllRuningJob() throws Exception {
 
@@ -310,8 +314,6 @@ public class MasterTaskCheckJob implements Runnable {
 
 	/**
 	 * 发布一个监听任务
-	 *
-	 * @param handler
 	 */
 	public static void addQueue(Handler handler) {
 		HANDLER_QUEUE.add(handler);

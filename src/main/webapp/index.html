@@ -136,20 +136,22 @@
 
 				<div class="sidebar-shortcuts" id="sidebar-shortcuts">
 					<div class="sidebar-shortcuts-large" id="sidebar-shortcuts-large">
-						<button class="btn btn-success" title="库表管理" onclick="window.location.hash='/mssTableAction/index.html'">
-							<i class="ace-icon glyphicon glyphicon-th"></i>
-						</button>
 
 						<button class="btn btn-info"  title="开发环境下载" onclick="window.location.href='/admin/fileInfo/downSDK'">
 							<i class="ace-icon fa fa-globe" style="font-size:18px;"></i>
 						</button>
 
-						<button class="btn btn-warning"  title="系统运行统计" onclick="window.location.hash='/usageStatsMgr/index.html'">
-							<i class="ace-icon fa fa-bar-chart-o"></i>
+						<button class="btn btn-success" title="API" onclick="window.open('/apidoc');">
+							<i class="ace-icon glyphicon glyphicon-th"></i>
 						</button>
 
-						<button class="btn btn-danger"  title="服务器动态监控" onclick="window.location.hash='/coreMon/index.html'">
-							<i class="ace-icon fa fa-tachometer" style="font-size:18px;"></i>
+
+						<button class="btn btn-warning"  title="系统运行统计" onclick="window.location.hash='/usageStatsMgr/index.html'">
+							<i class="ace-icon fa fa-tachometer"></i>
+						</button>
+
+						<button class="btn btn-pink"  title="刷新" onclick="vmApp.initMenus()">
+							<i class="ace-icon fa fa-refresh" style="font-size:18px;"></i>
 						</button>
 					</div>
 
@@ -176,8 +178,8 @@
 					
 					<li class="" v-for="(menu, index) in menus">
 						<a href="#" class="dropdown-toggle">
-							<i :class="'menu-icon ' + iconCls[index]"></i>
-							<span class="menu-text"> {{menu.name}} </span>
+							<i :class="'menu-icon '+(menu.name=='系统健康'?'fa fa-remove':iconCls[index])"></i>
+							<span :class="'menu-text '+(menu.name=='系统健康'?'red':'')"> {{menu.name}} </span>
 
 							<b class="arrow fa fa-angle-down"></b>
 						</a>

@@ -25,6 +25,7 @@ import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.GroupFileListener;
+import org.nlpcn.jcoder.util.Maps;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
@@ -102,42 +103,44 @@ public class TaskAction {
 			Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
 					.stream()
 					.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
-					.map(t -> ImmutableMap.of("name", t.getName(),
+					.map(t -> Maps.hash("name", t.getName(),
+							"groupName", t.getGroupName(),
+							"hostPort", "master",
 							"description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
 							"status", t.getStatus(),
 							"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
-							"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null)))
+							"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null),
+							"compile", t.sourceUtil() != null))
 					.toArray();
 			return Restful.instance(tasks);
 		}
 
 		//
 		Response res = proxyService.post(host, Api.TASK_LIST.getPath(), ImmutableMap.of("groupName", groupName, "taskType", taskType), Constants.TIMEOUT);
-		JSONObject result = JSON.parseObject(res.getContent());
-		if (!result.getBooleanValue("ok")) {
-			return Restful.fail().code(ServerException).msg(result.getString("message"));
+
+		Restful restful = Restful.instance(res);
+
+		if (!restful.isOk()) {
+			return Restful.fail().code(ServerException).msg(restful.getMessage());
 		}
 
-		Object[] tasks = result.getJSONArray("obj")
-				.stream()
-				.map(obj -> {
-					JSONObject json = (JSONObject) obj;
-					return ImmutableMap.of("name", json.getString("name"),
-							"description", Optional.ofNullable(json.getString("description")).orElse(StringUtil.EMPTY),
-							"status", json.getIntValue("status"),
-							"createTime", DateTimeUtils.formatDateTime(json.getDate("createTime"), DATETIME_FORMAT, null, null),
-							"updateTime", DateTimeUtils.formatDateTime(json.getDate("updateTime"), DATETIME_FORMAT, null, null));
-				})
-				.toArray();
-		return Restful.instance(tasks);
+		return restful;
 	}
 
 	@At
 	public Restful __list__(String groupName, int taskType) {
-		List<Task> tasks = taskService.findTasksByGroupName(groupName)
+		Object[] tasks = taskService.findTasksByGroupName(groupName)
 				.stream()
 				.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
-				.collect(Collectors.toList());
+				.map(t -> Maps.hash("name", t.getName(),
+						"groupName", t.getGroupName(),
+						"hostPort", StaticValue.getHostPort(),
+						"description", Optional.ofNullable(t.getDescription()).orElse(StringUtil.EMPTY),
+						"status", t.getStatus(),
+						"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
+						"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null),
+						"compile", t.sourceUtil() != null && t.codeInfo().getClassz() != null))
+				.toArray();
 		return Restful.instance(tasks);
 	}
 
@@ -223,7 +226,6 @@ public class TaskAction {
 		task.setUpdateUser(u.getName());
 		task.setUpdateTime(now);
 		String taskStr = JSON.toJSONString(task);
-
 
 
 		// 集群的每台机器保存
@@ -593,8 +595,6 @@ public class TaskAction {
 
 	/**
 	 * 同步task到本机，只进行可抽取验证，只要有类名称和package名称就存储，这个存储包括删除
-	 *
-	 * @return
 	 */
 	@At
 	public Restful __syn__(@Param("fromHost") String fromHost, @Param("groupName") String groupName, @Param("taskName") String taskName) throws Exception {
