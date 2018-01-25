@@ -1,23 +1,20 @@
 package org.nlpcn.jcoder.job;
 
 import com.google.common.collect.ImmutableMap;
+
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -65,6 +62,8 @@ public class MasterRunTaskJob implements Runnable {
 
 		ProxyService proxyService = StaticValue.getSystemIoc().get(ProxyService.class, "proxyService");
 
+		GroupService groupService = StaticValue.getSystemIoc().get(GroupService.class, "groupService");
+
 
 		LOG.info("I am master so to start master job");
 
@@ -76,7 +75,7 @@ public class MasterRunTaskJob implements Runnable {
 				try {
 					KeyValue<String, String> groupTask = TASK_QUEUE.poll(Integer.MAX_VALUE, TimeUnit.DAYS);
 					LOG.info("publish " + groupTask);
-					String hostPort = StaticValue.space().getRandomCurrentHostPort(groupTask.getKey());
+					String hostPort = groupService.getRandomCurrentHostPort(groupTask.getKey());
 					if (StringUtil.isBlank(hostPort)) {
 						LOG.warn(groupTask + " not found any current hostport");
 						continue;
@@ -106,8 +105,6 @@ public class MasterRunTaskJob implements Runnable {
 
 	/**
 	 * 发布一个task到任务队列
-	 *
-	 * @param kv
 	 */
 	public static void addQueue(KeyValue kv) {
 		TASK_QUEUE.add(kv);

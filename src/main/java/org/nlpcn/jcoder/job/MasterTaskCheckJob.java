@@ -16,6 +16,7 @@ import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.MapCount;
@@ -44,11 +45,13 @@ public class MasterTaskCheckJob implements Runnable {
 	private static final BlockingQueue<Handler> HANDLER_QUEUE = new LinkedBlockingQueue<>();
 
 
-	private static Thread thread = null;
+	private static Thread thread;
 
-	private List<TaskInfo> taskInfos = null;
+	private List<TaskInfo> taskInfos;
 
-	private ProxyService proxyService = null;
+	private ProxyService proxyService;
+
+	private GroupService groupService;
 
 	private Cache<String, String> oneCache = CacheBuilder.newBuilder().maximumSize(1000).build();
 
@@ -87,6 +90,8 @@ public class MasterTaskCheckJob implements Runnable {
 	public void run() {
 
 		proxyService = StaticValue.getSystemIoc().get(ProxyService.class, "proxyService");
+
+		groupService = StaticValue.getSystemIoc().get(GroupService.class, "groupService");
 
 		/**
 		 *  监听任务变化
@@ -226,7 +231,7 @@ public class MasterTaskCheckJob implements Runnable {
 	 * 检查all的task
 	 */
 	private void checkAllJob(Task task) {
-		Set<String> currentHostPort = new HashSet<>(StaticValue.space().getCurrentHostPort(task.getGroupName())); //获得所有有这个group的同步机器
+		Set<String> currentHostPort = new HashSet<>(groupService.getCurrentHostPort(task.getGroupName())); //获得所有有这个group的同步机器
 
 		MapCount<String> mc = new MapCount<>();
 		for (TaskInfo taskInfo : taskInfos) {

@@ -7,6 +7,8 @@ import com.alibaba.fastjson.JSONArray;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
+import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
@@ -42,6 +44,8 @@ public class MainAction {
 	@Inject
 	private TaskService taskService;
 
+	@Inject
+	private GroupService groupService ;
 
 	@At("/admin/main/left")
 	public Restful left() throws Exception {
@@ -113,6 +117,10 @@ public class MainAction {
 		for (String group : tempGroups) {
 			submenus.add(ImmutableMap.of("name", "无同步：" + group, "url", "group/list.html#"+group));
 		}
+
+		//编译失败的类
+
+
 
 
 		if (submenus.size() > 0) {

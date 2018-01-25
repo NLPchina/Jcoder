@@ -366,14 +366,14 @@ public class GroupAction {
 		Set<String> toHostPorts = new HashSet<>();
 
 		if (Constants.HOST_MASTER.equals(fromHostPort)) { //说明是主机
-			fromHostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			fromHostPort = groupService.getRandomCurrentHostPort(groupName);
 			if (fromHostPort == null) {
 				return Restful.fail().msg("主版本中不存在任何实例，所以无法同步");
 			}
 		}
 
 		if (toMaster) {
-			List<String> currentHostPort = StaticValue.space().getCurrentHostPort(groupName);
+			List<String> currentHostPort = groupService.getCurrentHostPort(groupName);
 			toHostPorts.addAll(currentHostPort);
 		} else {
 			toHostPorts.add(toHostPort);

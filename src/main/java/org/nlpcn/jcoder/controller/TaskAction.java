@@ -100,7 +100,7 @@ public class TaskAction {
 
 		// 从主板本取任务列表
 		if (StringUtil.isBlank(host)) { //先找一个机器。找不到再从主版本中获取
-			host = StaticValue.space().getRandomCurrentHostPort(groupName);
+			host = groupService.getRandomCurrentHostPort(groupName);
 		}
 
 		if (StringUtil.isBlank(host)) {

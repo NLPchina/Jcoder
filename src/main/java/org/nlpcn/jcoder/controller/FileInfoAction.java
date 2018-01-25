@@ -75,7 +75,7 @@ public class FileInfoAction {
 	public Restful listFiles(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
-			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			hostPort = groupService.getRandomCurrentHostPort(groupName);
 			if (hostPort == null) {
 				return Restful.fail().msg("无同步主机");
 			}
@@ -106,7 +106,7 @@ public class FileInfoAction {
 		JSONArray nodes = new JSONArray();
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
-			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			hostPort = groupService.getRandomCurrentHostPort(groupName);
 			if (hostPort == null) {
 				return Restful.fail().msg("无同步主机");
 			}
@@ -155,7 +155,7 @@ public class FileInfoAction {
 	@Ok("void")
 	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "maxSize", df = "20480") int maxSize) throws Exception {
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
-			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			hostPort = groupService.getRandomCurrentHostPort(groupName);
 			if (hostPort == null) {
 				return Restful.fail().msg("无同步主机");
 			}
@@ -185,7 +185,7 @@ public class FileInfoAction {
 	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "zip", df = "true") boolean zip, HttpServletResponse response) throws Throwable {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
-			hostPort = StaticValue.space().getRandomCurrentHostPort(groupName);
+			hostPort = groupService.getRandomCurrentHostPort(groupName);
 			if (hostPort == null) {
 				throw new RuntimeException("无同步主机");
 			}

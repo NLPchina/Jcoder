@@ -1,7 +1,5 @@
 package org.nlpcn.jcoder.service;
 
-import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.nlpcn.jcoder.domain.Different;
 import org.nlpcn.jcoder.domain.FileInfo;
@@ -20,10 +18,20 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
-import static org.nlpcn.jcoder.util.StaticValue.*;
+import static org.nlpcn.jcoder.util.StaticValue.GROUP_FILE;
+import static org.nlpcn.jcoder.util.StaticValue.getHostPort;
+import static org.nlpcn.jcoder.util.StaticValue.space;
+import static org.nlpcn.jcoder.util.StaticValue.systemDao;
 
 /**
  * Created by Ansj on 05/12/2017.
@@ -170,15 +178,15 @@ public class GroupService {
 
 		Files.deleteFile(new File(GROUP_FILE, name + ".cache"));
 
-		File grouFile = new File(GROUP_FILE, name);
+		File groupFile = new File(GROUP_FILE, name);
 
-		Files.deleteDir(grouFile);
+		Files.deleteDir(groupFile);
 
 		/**
 		 * 尝试循环删除
 		 */
-		for (int i = 0; i < 10 && grouFile.exists(); i++) {
-			Files.deleteDir(grouFile);
+		for (int i = 0; i < 10 && groupFile.exists(); i++) {
+			Files.deleteDir(groupFile);
 			System.gc();
 			LOG.info("delete group:{} times:{}", name, i + 1);
 			try {
@@ -189,7 +197,7 @@ public class GroupService {
 		}
 
 		HostGroup hostGroup = space().getHostGroupCache().get(key);
-		if (hostGroup != null && !grouFile.exists()) {
+		if (hostGroup != null && !groupFile.exists()) {
 			hostGroup.setWeight(-1); //理论上设置为-1就删除了
 			space().getHostGroupCache().put(key, hostGroup);
 			space().getHostGroupCache().remove(key);
@@ -197,7 +205,7 @@ public class GroupService {
 		}
 
 
-		return !grouFile.exists();
+		return !groupFile.exists();
 
 
 	}
@@ -230,5 +238,26 @@ public class GroupService {
 		LOG.info("find all group by db");
 		return systemDao.search(Group.class, "id");
 
+	}
+
+	/**
+	 * 随机的获取一台和主版本同步着的主机
+	 */
+	public List<String> getCurrentHostPort(String groupName) {
+		List<String> collect = StaticValue.space().getHostGroupCache().entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k -> k.split("_")[0]).collect(Collectors.toList());
+		return collect;
+	}
+
+	/**
+	 * 从主机集群中获取随机一个同步版本的机器，如果机器不存在则返回null
+	 *
+	 * @param groupName 组名称
+	 */
+	public String getRandomCurrentHostPort(String groupName) {
+		List<String> collect = getCurrentHostPort(groupName);
+		if (collect.size() == 0) {
+			return null;
+		}
+		return collect.get(new Random().nextInt(collect.size()));
 	}
 }

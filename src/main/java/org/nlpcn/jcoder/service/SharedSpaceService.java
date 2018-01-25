@@ -847,26 +847,7 @@ public class SharedSpaceService {
 		return JSONObject.parseObject(data, c);
 	}
 
-	/**
-	 * 随机的获取一台和主版本同步着的主机
-	 */
-	public List<String> getCurrentHostPort(String groupName) {
-		List<String> collect = hostGroupCache.entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k -> k.split("_")[0]).collect(Collectors.toList());
-		return collect;
-	}
 
-	/**
-	 * 从主机集群中获取随机一个同步版本的机器，如果机器不存在则返回null
-	 *
-	 * @param groupName 组名称
-	 */
-	public String getRandomCurrentHostPort(String groupName) {
-		List<String> collect = getCurrentHostPort(groupName);
-		if (collect.size() == 0) {
-			return null;
-		}
-		return collect.get(new Random().nextInt(collect.size()));
-	}
 
 	public CuratorFramework getZk() {
 		return zkDao.getZk();
