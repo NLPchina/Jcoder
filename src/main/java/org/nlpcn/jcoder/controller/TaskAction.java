@@ -99,6 +99,10 @@ public class TaskAction {
 		}
 
 		// 从主板本取任务列表
+		if (StringUtil.isBlank(host)) { //先找一个机器。找不到再从主版本中获取
+			host = StaticValue.space().getRandomCurrentHostPort(groupName);
+		}
+
 		if (StringUtil.isBlank(host)) {
 			Object[] tasks = taskService.getTasksByGroupNameFromCluster(groupName)
 					.stream()
@@ -115,7 +119,6 @@ public class TaskAction {
 			return Restful.instance(tasks);
 		}
 
-		//
 		Response res = proxyService.post(host, Api.TASK_LIST.getPath(), ImmutableMap.of("groupName", groupName, "taskType", taskType), Constants.TIMEOUT);
 
 		Restful restful = Restful.instance(res);
@@ -129,7 +132,7 @@ public class TaskAction {
 
 	@At
 	public Restful __list__(String groupName, int taskType) {
-		Object[] tasks = taskService.findTasksByGroupName(groupName)
+		Object[] tasks = taskService.findTaskByGroupNameCache(groupName)
 				.stream()
 				.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
 				.map(t -> Maps.hash("name", t.getName(),
