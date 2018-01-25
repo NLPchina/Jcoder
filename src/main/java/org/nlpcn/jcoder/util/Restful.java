@@ -226,6 +226,7 @@ public class Restful {
 		return version;
 	}
 
+
 	public void setVersion(String version) {
 		this.version = version;
 	}
