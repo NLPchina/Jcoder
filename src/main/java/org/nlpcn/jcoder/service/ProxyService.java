@@ -3,19 +3,17 @@ package org.nlpcn.jcoder.service;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.recipes.cache.ChildData;
-import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.KeyValue;
+import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Header;
 import org.nutz.http.Http;
 import org.nutz.http.Request;
@@ -27,7 +25,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Enumeration;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,9 +48,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import static org.nlpcn.jcoder.constant.Constants.*;
-import static org.nlpcn.jcoder.service.SharedSpaceService.*;
+import static org.nlpcn.jcoder.constant.Constants.PROXY_HEADER;
 import static org.nlpcn.jcoder.service.SharedSpaceService.HOST_GROUP_PATH;
+import static org.nlpcn.jcoder.service.SharedSpaceService.MAPPING_PATH;
 
 @IocBean
 public class ProxyService {
@@ -60,9 +68,9 @@ public class ProxyService {
 	 */
 	public static Function<Map<String, Restful>, Restful> MERGE_MESSAGE_CALLBACK = (Map<String, Restful> result) -> {
 		List<String> messages = new ArrayList<>();
-		boolean ok = true ;
+		boolean ok = true;
 		for (Map.Entry<String, Restful> entry : result.entrySet()) {
-			ok = entry.getValue().isOk() ;
+			ok = entry.getValue().isOk();
 			messages.add(entry.getKey() + ":" + entry.getValue().getMessage());
 		}
 		return Restful.instance(ok).msg(Joiner.on(" , ").join(messages));
@@ -91,10 +99,7 @@ public class ProxyService {
 	/**
 	 * 执行请求
 	 *
-	 * @param req
-	 * @param req
 	 * @return true 代表经过代理，false代表不需要代理
-	 * @throws IOException
 	 */
 	public boolean service(HttpServletRequest req, HttpServletResponse rep, String targetUrl)
 			throws ServletException, IOException {
@@ -144,9 +149,6 @@ public class ProxyService {
 
 	/**
 	 * 构建请求头
-	 *
-	 * @param req
-	 * @return
 	 */
 	private Header makeHeader(HttpServletRequest req) {
 		Enumeration<String> headerNames = req.getHeaderNames();
@@ -160,12 +162,10 @@ public class ProxyService {
 	}
 
 	/**
-	 * Encodes characters in the query or fragment part of the URI.
-	 * <p>
-	 * <p>Unfortunately, an incoming URI sometimes has characters disallowed by the spec.  HttpClient
-	 * insists that the outgoing proxied request has a valid URI because it uses Java's {@link }.
-	 * To be more forgiving, we must escape the problematic characters.  See the URI class for the
-	 * spec.
+	 * Encodes characters in the query or fragment part of the URI. <p> <p>Unfortunately, an
+	 * incoming URI sometimes has characters disallowed by the spec.  HttpClient insists that the
+	 * outgoing proxied request has a valid URI because it uses Java's {@link }. To be more
+	 * forgiving, we must escape the problematic characters.  See the URI class for the spec.
 	 *
 	 * @param in            example: name=value&amp;foo=bar#fragment
 	 * @param encodePercent determine whether percent characters need to be encoded
@@ -221,14 +221,6 @@ public class ProxyService {
 
 	/**
 	 * 同时提交到多个主机上
-	 *
-	 * @param hostPorts
-	 * @param params
-	 * @param timeout
-	 * @param fun
-	 * @param <T>
-	 * @return
-	 * @throws Exception
 	 */
 	public <T> T post(String[] hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Restful>, T> fun) throws Exception {
 		return post(Arrays.stream(hostPorts).collect(Collectors.toSet()), path, params, timeout, fun);
@@ -237,14 +229,6 @@ public class ProxyService {
 
 	/**
 	 * 同时提交到多个主机上
-	 *
-	 * @param hostPorts
-	 * @param params
-	 * @param timeout
-	 * @param fun
-	 * @param <T>
-	 * @return
-	 * @throws Exception
 	 */
 	public <T> T post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Restful>, T> fun) throws Exception {
 		Map<String, Restful> result = post(hostPorts, path, params, timeout);
@@ -253,12 +237,6 @@ public class ProxyService {
 
 	/**
 	 * 同时向多个主机提交
-	 *
-	 * @param hostPorts
-	 * @param params
-	 * @param timeout
-	 * @return
-	 * @throws Exception
 	 */
 	public Map<String, Restful> post(String[] hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 		return post(Arrays.stream(hostPorts).collect(Collectors.toSet()), path, params, timeout);
@@ -266,18 +244,12 @@ public class ProxyService {
 
 	/**
 	 * 同时向多个主机提交
-	 *
-	 * @param hostPorts
-	 * @param params
-	 * @param timeout
-	 * @return
-	 * @throws Exception
 	 */
 	public Map<String, Restful> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
 		//fix param
 		for (String key : params.keySet()) {
-			if(params.get(key)==null){
+			if (params.get(key) == null) {
 
 			}
 		}
@@ -331,12 +303,6 @@ public class ProxyService {
 
 	/**
 	 * 同时向多个主机提交
-	 *
-	 * @param hostPorts
-	 * @param params
-	 * @param timeout
-	 * @return
-	 * @throws Exception
 	 */
 	public Map<String, String> upload(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
@@ -388,13 +354,11 @@ public class ProxyService {
 
 	/**
 	 * 获取一个token
-	 *
-	 * @return
-	 * @throws Exception
 	 */
 
 	private synchronized String getOrCreateToken() throws Exception {
-		if (myToken == null || TokenService.getToken(myToken) == null) {
+		Token token = StringUtil.isBlank(myToken) ? null : TokenService.getToken(myToken);
+		if (token == null || token.getExpiration() < System.currentTimeMillis()) {
 			LOG.info("token timeout so create it ");
 			myToken = TokenService.regToken(User.CLUSTER_USER);
 		}
@@ -404,12 +368,6 @@ public class ProxyService {
 
 	/**
 	 * 提交一个请求
-	 *
-	 * @param hostPort
-	 * @param path
-	 * @param params
-	 * @param timeout
-	 * @throws Exception
 	 */
 	public Response post(String hostPort, String path, Map<String, Object> params, int timeout) throws Exception {
 		return Sender.create(Request.create("http://" + hostPort + path, Request.METHOD.POST, params, Header.create(ImmutableMap.of(UserConstants.CLUSTER_TOKEN_HEAD, getOrCreateToken())))).setTimeout(timeout).setConnTimeout(timeout).send();
