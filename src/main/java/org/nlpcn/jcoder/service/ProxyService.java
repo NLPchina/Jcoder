@@ -133,7 +133,7 @@ public class ProxyService {
 			uri.append(encodeUriQuery(queryString, false));
 		}
 
-		Request request = Request.create(uri.toString(), Request.METHOD.valueOf(req.getMethod()), new HashMap<>(req.getParameterMap()), makeHeader(req));
+		Request request = Request.create(uri.toString(), Request.METHOD.valueOf(req.getMethod()), new HashMap<>(), makeHeader(req));
 
 		if (req.getInputStream() != null) {
 			request.setInputStream(req.getInputStream());
