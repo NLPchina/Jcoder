@@ -387,7 +387,7 @@ var resourceManager = new Vue({
              });
           },
           confirm: function () {
-            Jcoder.ajax('/admin/resource/saveAndFlush', 'post',
+            Jcoder.ajax('/admin/fileInfo/saveAndFlush', 'post',
                 {hostPorts:importFile.checkedHosts,groupName:$this.groupName,
                 content:$this.editor.getValue(),relativePath:$this.currentNode.file.relativePath},null).then(function (data) {
                 JqdeBox.unloading();

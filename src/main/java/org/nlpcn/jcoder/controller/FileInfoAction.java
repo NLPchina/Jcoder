@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
-import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
@@ -82,7 +81,7 @@ public class FileInfoAction {
 		}
 
 		if (!first || StaticValue.getHostPort().equals(hostPort)) {
-			List<FileInfo> result = fileInfoService.listFileInfosByGroup(groupName);
+			List<FileInfo> result = FileInfoService.listFileInfosByGroup(groupName);
 			return Restful.instance().obj(result);
 		} else {
 			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName, "first", false), 10000);
@@ -253,6 +252,51 @@ public class FileInfoAction {
 		}
 
 	}
+
+    @At
+    public Restful saveAndFlush(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String groupName,
+                                @Param("content") String content,
+                                @Param("relativePath") String relativePath,
+                                @Param(value = "first", df = "true") boolean first) {
+        try {
+            if (!first) {
+                JarService jarService = JarService.getOrCreate(groupName);
+                if (relativePath.endsWith("ioc.js")) {
+                    jarService.saveIoc(groupName, content);
+                } else if (relativePath.endsWith("pom.xml")) {
+                    jarService.savePom(groupName, content);
+                } else {
+
+                }
+
+                return Restful.instance().ok(true).msg("保存并刷新成功！");
+            } else {
+                List<String> hosts = Arrays.asList(hostPorts);
+                Set<String> hostPortsArr = new HashSet<>(hosts);
+                Set<String> firstHost = new HashSet<>();
+                if (hostPortsArr.contains(Constants.HOST_MASTER)) {
+                    hostPortsArr.remove(Constants.HOST_MASTER);
+                    List<String> arrayList = new ArrayList<>(hosts);
+                    arrayList.remove(Constants.HOST_MASTER);
+                    firstHost.add(arrayList.get(0));
+                }
+
+                Restful message = proxyService.post(hostPortsArr, "/admin/fileInfo/saveAndFlush",
+                        ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "content", content, "first", false), 100000,
+                        ProxyService.MERGE_MESSAGE_CALLBACK);
+
+                // 更新master数据节点
+                if (firstHost.size() > 0) {
+                    proxyService.post(firstHost, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePaths", new String[]{relativePath}), 100000);
+                }
+
+                return message;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+        }
+    }
 
 	/**
 	 * 删除一个文件或文件夹
