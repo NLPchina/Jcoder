@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -151,6 +152,11 @@ public class ApiWebsocket extends Endpoint {
 			LOG.error(e.getMessage(), e);
 			restful.setOk(false);
 			restful.setMessage("server err :" + e.getMessage());
+		}
+
+
+		if (Rpcs.getReq().isDebug()) {
+			restful.debug();
 		}
 
 		Rpcs.getRep().write(restful);
