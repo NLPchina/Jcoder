@@ -123,7 +123,7 @@ public class FileInfoService {
 		root.setLength(result.stream().mapToLong(f -> f.getLength()).sum());
 
 		if (groupCache != null && nowTimeMd5.equals(groupCache.getTimeMD5())) {
-			LOG.info(groupName + " time+ md5 same so add it");
+			LOG.info(groupName + " time md5 same so add it");
 			root.setMd5(groupCache.getGroupMD5());
 		} else {
 			LOG.info("to computer md5 in gourp: " + groupName);

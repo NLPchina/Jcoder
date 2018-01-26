@@ -49,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -112,7 +111,7 @@ public class SharedSpaceService {
 	/**
 	 * 房间
 	 */
-	private RoomService roomService ;
+	private RoomService roomService;
 
 	/**
 	 * 监听路由缓存
@@ -255,11 +254,17 @@ public class SharedSpaceService {
 	}
 
 	public byte[] getData2ZK(String path) throws Exception {
-		LOG.info("get data from: {} ", path);
+		if (path.startsWith(TOKEN_PATH)) {
+			LOG.info("get data from: /jcoder/token/************");
+		} else {
+			LOG.info("get data from: {}", path);
+		}
+
 		byte[] bytes = null;
 		try {
 			bytes = zkDao.getZk().getData().forPath(path);
 		} catch (KeeperException.NoNodeException e) {
+			LOG.warn("not found any data from {}", path);
 		}
 
 		return bytes;
@@ -442,10 +447,10 @@ public class SharedSpaceService {
 		});
 
 
-		if(StaticValue.IS_LOCAL){
-			roomService = new MemoryRoomService() ;
-		}else{
-			roomService = new ZookeeperRoomService(this.zkDao) ;
+		if (StaticValue.IS_LOCAL) {
+			roomService = new MemoryRoomService();
+		} else {
+			roomService = new ZookeeperRoomService(this.zkDao);
 		}
 
 
@@ -824,9 +829,6 @@ public class SharedSpaceService {
 	}
 
 	public <T> T getData(String path, Class<T> c) throws Exception {
-		if (path.startsWith(TOKEN_PATH)) {
-			path = "/jcoder/token/************";//token path 不敢直接打印到日志
-		}
 		byte[] bytes = getData2ZK(path);
 		if (bytes == null) {
 			return null;
@@ -846,7 +848,6 @@ public class SharedSpaceService {
 		}
 		return JSONObject.parseObject(data, c);
 	}
-
 
 
 	public CuratorFramework getZk() {

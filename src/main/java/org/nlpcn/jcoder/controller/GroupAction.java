@@ -155,7 +155,7 @@ public class GroupAction {
 								"\t\t\t<groupId>org.nlpcn</groupId>\n" +
 								"\t\t\t<artifactId>jcoder</artifactId>\n" +
 								"\t\t\t<version>0.1</version>\n" +
-								"\t\t\t<systemPath>" + StaticValue.getJcoderJarFile().getCanonicalPath() + "</systemPath>\n" +
+								"\t\t\t<systemPath>${basedir}/../../../lib/" + StaticValue.getJcoderJarFile().getName() + "</systemPath>\n" +
 								"\t\t\t<scope>system</scope>\n" +
 								"\t\t</dependency>" +
 								"\n" +
