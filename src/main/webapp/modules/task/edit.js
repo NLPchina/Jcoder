@@ -92,7 +92,8 @@ vmApp.module = new Vue({
                 mode: "text/x-java",
                 matchBrackets: true,
                 theme: "monokai",
-                showCursorWhenSelecting: true
+                showCursorWhenSelecting: true,
+                extraKeys: {"Ctrl-S": function (e) {}}
             });
             me.editor.setSize(null,document.documentElement.clientHeight-300);//设置高度
             var $this = $(me.$el);
