@@ -7,6 +7,7 @@ import java.util.Map;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.service.TaskService;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.Chain;
 
@@ -27,8 +28,8 @@ public class ApiTest {
 	 * @throws Exception
 	 */
 	@Execute
-	public Object test() throws Exception {
-		return "OK";
+	public Object test(String name) throws Exception {
+		return Restful.ok().msg("hello "+name);
 	}
 
 }

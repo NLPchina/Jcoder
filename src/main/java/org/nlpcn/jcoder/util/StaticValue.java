@@ -39,10 +39,10 @@ public class StaticValue {
 	public static final File GROUP_FILE = new File(HOME_FILE, "group");
 	public static final String VERSION = getResource("version");
 
-	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 2));
+	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 1));
 
 	//集群方式还是单机方式启动
-	public static final boolean IS_LOCAL = ZK.equals("127.0.0.1:" + (PORT + 2));
+	public static final boolean IS_LOCAL = ZK.equals("127.0.0.1:" + (PORT + 1));
 
 	//是否是以SSL方式启动
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
@@ -71,7 +71,7 @@ public class StaticValue {
 		if (location.toExternalForm().endsWith(".jar")) {
 			JCODER_JAR_FILE = new File(location.toExternalForm().substring(6));
 		} else { //如果源码方式启动去编译目录找jar
-			File dir = new File("build/libs");
+			File dir = new File("lib");
 
 			if (dir.exists() && dir.isDirectory()) {
 				File[] files = dir.listFiles();

@@ -132,13 +132,14 @@ public class GroupAction {
 
 			File file = new File(StaticValue.GROUP_FILE, name);
 			file.mkdirs();
-			File ioc = new File(StaticValue.GROUP_FILE, name + "/resources");
-			ioc.mkdir();
+			File resource = new File(StaticValue.GROUP_FILE, name + "/resources");
+			resource.mkdir();
 			File lib = new File(StaticValue.GROUP_FILE, name + "/lib");
 			lib.mkdir();
 
-			if (!ioc.exists()) {
-				IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", "var ioc = {\n\t\n};");
+
+			if (!new File(resource, "ioc.js").exists()) {
+				IOUtil.Writer(new File(resource, "ioc.js").getAbsolutePath(), "utf-8", "var ioc = {\n\t\n};");
 			}
 
 			if (!new File(file, "pom.xml").exists()) {
@@ -337,11 +338,11 @@ public class GroupAction {
 	 * @return 不同
 	 */
 	@At
-	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("upMapping") boolean upMapping,@Param(value = "first", df = "true") boolean first) throws Exception {
+	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("upMapping") boolean upMapping, @Param(value = "first", df = "true") boolean first) throws Exception {
 		if (!first || StaticValue.getHostPort().equals(hostPort)) {
 			return Restful.instance(groupService.flush(groupName, upMapping));
 		} else {
-			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping,"first",false), 120000);
+			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping, "first", false), 120000);
 			return Restful.instance(post);
 		}
 
