@@ -8,14 +8,14 @@
 
 </style>
 
-<div class="row" id="vmTaskEditModule">
+<div class="row" id="vmTaskEditModule" @keydown.ctrl.83="$event.preventDefault();return false;">
     <div>
         <host-component :hosts.sync="hosts"/>
     </div>
 
     <form class="form-horizontal">
         <div class="col-sm-12">
-            <div class="form-group col-sm-2">
+            <div class="form-group col-sm-4">
                 <label class="col-sm-3 control-label no-padding-right">类型</label>
                 <div class="col-sm-9">
                     <select class="col-sm-12" v-model="task.type">
@@ -25,7 +25,7 @@
                 </div>
             </div>
 
-            <div class="form-group col-sm-2">
+            <div class="form-group col-sm-4">
                 <label class="col-sm-4 control-label no-padding-right">状态</label>
                 <div class="col-sm-8">
                     <select class="col-sm-12" v-model="task.status">
@@ -35,7 +35,7 @@
                 </div>
             </div>
 
-            <div class="form-group col-sm-3">
+            <div class="form-group col-sm-4">
                 <label class="col-sm-3 control-label no-padding-right" v-if="!!task.name">版本</label>
                 <label class="col-sm-3 control-label no-padding-right" style="visibility:hidden;" v-else>&nbsp;</label>
                 <div class="col-sm-9">
@@ -45,8 +45,14 @@
                 </div>
             </div>
 
+            <div class="form-group col-sm-4" style="margin-bottom:0">
+                <label class="col-sm-3 control-label no-padding-right">描述</label>
+                <div class="col-sm-9">
+                    <input type="text" placeholder="任务描述" class="col-sm-12" v-model="task.description"/>
+                </div>
+            </div>
 
-            <div class="form-group col-sm-3" style="margin-bottom:0">
+            <div class="form-group col-sm-4" style="margin-bottom:0">
                 <div v-if="task.type==2">
                     <label class="col-sm-4 control-label no-padding-right">Cron表达式</label>
                     <div class="col-sm-8">
@@ -55,15 +61,7 @@
                 </div>
             </div>
 
-<!--
-            <div class="form-group col-sm-3" style="margin-bottom:0">
-                <label class="col-sm-3 control-label no-padding-right">描述</label>
-                <div class="col-sm-9">
-                    <input type="text" placeholder="任务描述" class="col-sm-12" v-model="task.description"/>
-                </div>
-            </div>
--->
-            <div class="form-group col-sm-3" style="margin-bottom:0;text-align:right;">
+            <div class="form-group col-sm-4" style="margin-bottom:0;text-align:right;">
                 <div class="col-md-12">
                     <button class="btn btn-primary" type="button" style="border:none;margin-right:7px;" v-if="!!task.name" @click="diff()">
                         <i class="ace-icon fa fa-exchange bigger-110"></i>
