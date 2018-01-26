@@ -4,7 +4,9 @@ vmApp.module = new Vue({
     components: {
         'host-component': {
             props: ['hosts'],
-            data: function () {return {isLoading: true};},
+            data: function () {
+                return {isLoading: true};
+            },
             template: '#host-component',
             mounted: function () {
                 var me = this, parent = me.$parent, task = parent.task;
@@ -92,6 +94,7 @@ vmApp.module = new Vue({
                 theme: "monokai",
                 showCursorWhenSelecting: true
             });
+            me.editor.setSize(null,document.documentElement.clientHeight-400);//设置高度
             var $this = $(me.$el);
             $this.find(".CodeMirror").resizable({
                 resize: function () {
@@ -174,7 +177,11 @@ vmApp.module = new Vue({
                 if (!confirm) return;
 
                 JqdeBox.loading();
-                Jcoder.ajax('/admin/task/save', 'POST', {hosts: hosts, task: JSON.stringify($.extend({}, task, {name: null})), oldName: task.name}).then(function (data) {
+                Jcoder.ajax('/admin/task/save', 'POST', {
+                    hosts: hosts,
+                    task: JSON.stringify($.extend({}, task, {name: null})),
+                    oldName: task.name
+                }).then(function (data) {
                     JqdeBox.unloading();
                     JqdeBox.message(true, "修改任务 " + task.name + " 成功！");
                     setTimeout(function () {
@@ -188,53 +195,134 @@ vmApp.module = new Vue({
         },
 
         diff: function () {
-            var me = this;
+            var me = this, t = me.task, editor = me.editor;
             JqdeBox.dialog({
-                title: "比较 " + "",
+                title: "<span class='blue' style='font-size:80%;'><i class='ace-icon fa fa-retweet bigger-130'></i> " +
+                me.sourceHost + " <i class='ace-icon fa fa-angle-right'></i> " +
+                t.groupName + " <i class='ace-icon fa fa-angle-right'></i> " +
+                t.name + "</span>",
                 buttons: {cancel: {label: '<i class="fa fa-times"></i> 关闭', className: 'btn-sm'}},
                 init: function (dlg) {
-                    $.get('modules/task/task_diff.html', function (html) {
+                    //$(".bootbox-body").css("height",(document.documentElement.clientHeight-400)+"px")
+                    $.get('modules/task/task_diff.html?_=' + _.now(), function (html) {
                         dlg.on('hide.bs.modal', function (e) {
                             $('#mergely').mergely('destroy');
                         }).on('hidden.bs.modal', function (e) {
-                            me.editor.refresh();
+                            editor.refresh();
                         }).find('.modal-dialog').css('width', '80%').find('.bootbox-body').html(html);
 
                         //
+                        var h = me.sourceHost;
                         new Vue({
                             el: '#vmTaskDiffModule',
-                            data: {},
-                            mounted: function () {
-                                Vue.nextTick(function () {
-                                    $('#mergely').mergely({
-                                        width: "auto",
-                                        height: 'auto',
-                                        cmsettings: {mode: "text/x-java", theme: "monokai", readOnly: false}
-                                    });
-
-                                    $('#mergely').mergely('lhs', "package org.nlpcn.jcoder.run.java;\n" +
-                                        "\n" +
-                                        "public class ApiTest3333 {\n" +
-                                        "\n" +
-                                        "\t@org.nlpcn.jcoder.run.annotation.Execute\n" +
-                                        "\tpublic Object test(int i,String content) throws Exception {\n" +
-                                        "    \treturn null;\n" +
-                                        "\t}\n" +
-                                        "}\n");
-
-                                    $('#mergely').mergely('rhs', "package org.nlpcn.jcoder.run.java;\n" +
-                                        "\n" +
-                                        "public class ApiTest3333 {\n" +
-                                        "\n" +
-                                        "\t@org.nlpcn.jcoder.run.annotation.Execute\n" +
-                                        "\tpublic Object test(int i,String content) throws Exception {\n" +
-                                        "    \treturn null;\n" +
-                                        "\t}\n" +
-                                        "}\n");
-                                    $("#vmTaskDiffModule").resize();
-                                });
+                            data: {
+                                hosts: me.sourceHosts,
+                                lhs_host: h,
+                                lhs_version: "Current",
+                                rhs_host: h,
+                                rhs_version: "Current",
+                                tasks: _.object([[h, [{version: "Current", code: editor.getValue()}]]])
                             },
-                            methods: {}
+                            mounted: function () {
+                                $('#mergely').mergely({
+                                    width: "auto",
+                                    height: 'auto',
+                                    cmsettings: {mode: "text/x-java", theme: "monokai", readOnly: false}
+                                });
+                                $('#mergely').resize();
+
+                                this.init();
+                            },
+                            methods: {
+                                init: function () {
+                                    $('#mergely').mergely("lhs", editor.getValue());
+                                    if (h == "master") return $('#mergely').mergely("rhs", editor.getValue());
+
+                                    var self = this, tasks = self.tasks;
+                                    JqdeBox.loading();
+                                    Jcoder.ajax('/admin/task/version', 'POST', {
+                                        host: h,
+                                        groupName: t.groupName,
+                                        name: t.name
+                                    }).then(function (data) {
+                                        data = data.obj;
+                                        tasks[h] = Array.prototype.concat(tasks[h], _.map(data, function (ele) {
+                                            return {version: ele, code: ""};
+                                        }));
+
+                                        Jcoder.ajax('/admin/task/history', 'POST', {
+                                            host: h,
+                                            groupName: t.groupName,
+                                            name: t.name,
+                                            version: data[0]
+                                        }).then(function (ret) {
+                                            JqdeBox.unloading();
+                                            self.rhs_version = data[0];
+                                            $('#mergely').mergely("rhs", tasks[h][1].code = ret.obj);
+                                        }).catch(function (req) {
+                                            JqdeBox.unloading();
+                                            JqdeBox.message(false, req.responseText);
+                                        });
+                                    }).catch(function (req) {
+                                        JqdeBox.unloading();
+                                        JqdeBox.message(false, req.responseText);
+                                    })
+                                },
+
+                                changeHost: function (side) {
+                                    var self = this, tasks = self.tasks, hKey = side + "_host",
+                                        vKey = side + "_version";
+
+                                    if (tasks[self[hKey]]) {
+                                        self[vKey] = tasks[self[hKey]][0].version;
+                                        return self.changeVersion(side);
+                                    }
+
+                                    // 如果主机是master, 无历史版本
+                                    if (self[hKey] == "master") {
+                                        tasks["master"] = [{version: self[vKey] = "Current", code: ""}];
+                                        return self.changeVersion(side);
+                                    }
+
+                                    JqdeBox.loading();
+                                    Jcoder.ajax('/admin/task/version', 'POST', {
+                                        host: self[hKey],
+                                        groupName: t.groupName,
+                                        name: t.name
+                                    }).then(function (data) {
+                                        JqdeBox.unloading();
+                                        tasks[self[hKey]] = Array.prototype.concat(tasks[me[hKey]] || [], _.map(data.obj, function (ele) {
+                                            return {version: ele, code: ""};
+                                        }));
+
+                                        self[vKey] = data.obj[0];
+                                        self.changeVersion(side);
+                                    }).catch(function (req) {
+                                        JqdeBox.unloading();
+                                        JqdeBox.message(false, req.responseText);
+                                    });
+                                },
+
+                                changeVersion: function (side) {
+                                    var self = this, hKey = side + "_host", vKey = side + "_version",
+                                        history = _.findWhere(self.tasks[self[hKey]], {version: self[vKey]});
+                                    if (history.code) return $('#mergely').mergely(side, history.code);
+
+                                    JqdeBox.loading();
+                                    Jcoder.ajax('/admin/task/history', 'POST', {
+                                        host: self[hKey],
+                                        groupName: t.groupName,
+                                        name: t.name,
+                                        version: self[vKey]
+                                    }).then(function (data) {
+                                        JqdeBox.unloading();
+                                        $('#mergely').mergely(side, history.code = data.obj);
+                                    }).catch(function (req) {
+                                        JqdeBox.unloading();
+                                        JqdeBox.message(false, req.responseText);
+                                    });
+                                }
+                            }
                         });
                     });
                 }

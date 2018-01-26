@@ -725,7 +725,7 @@ public class SharedSpaceService {
 	/**
 	 * 比较两个task是否一致
 	 */
-	private void diffTask(Task task, Different different, String groupName, String taskName, boolean useCache) {
+	public void diffTask(Task task, Different different, String groupName, String taskName, boolean useCache) {
 		if (task != null) {
 			groupName = task.getGroupName();
 			taskName = task.getName();

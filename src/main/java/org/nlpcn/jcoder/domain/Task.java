@@ -85,6 +85,7 @@ public class Task {
 	}
 
 	public void setCode(String code) {
+		this.code = code;
 		if (code == null) {
 			this.md5 = "EMTPY";
 			this.name = md5;
@@ -100,12 +101,15 @@ public class Task {
 			}
 		} catch (Throwable e) {
 			LOG.warn("not compile task Name: {}", e.getMessage());
-			this.name = JavaSourceUtil.findClassName(this.code);
+			try{
+				this.name = JavaSourceUtil.findClassName(code);
+			}catch (Exception e1){
+				e1.printStackTrace();
+			}
 			if (name == null) {
 				name = MD5Util.md5(this.code);
 			}
 		}
-		this.code = code;
 	}
 
 	public Integer getType() {

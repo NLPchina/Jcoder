@@ -90,6 +90,20 @@ public class TaskService {
 	}
 
 	/**
+	 * 根据分组名称获取所有Task
+	 *
+	 * @param groupName 组名
+	 */
+	public Task getTaskFromCluster(String groupName, String taskName) {
+		try {
+			return StaticValue.space().getData(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null ;
+	}
+
+	/**
 	 * 删除ZK集群里的Task
 	 *
 	 * @param groupName 组名

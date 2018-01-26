@@ -72,7 +72,7 @@ public class FileInfoAction {
 	 * 获取文件列表
 	 */
 	@At
-	public Restful listFiles(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
+	public Restful listFiles(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param(value = "first", df = "true") boolean first) throws Exception {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = groupService.getRandomCurrentHostPort(groupName);
@@ -81,11 +81,11 @@ public class FileInfoAction {
 			}
 		}
 
-		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+		if (!first || StaticValue.getHostPort().equals(hostPort)) {
 			List<FileInfo> result = fileInfoService.listFileInfosByGroup(groupName);
 			return Restful.instance().obj(result);
 		} else {
-			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 10000);
+			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName, "first", false), 10000);
 
 			if (response.isOK()) {
 				return JSONObject.parseObject(response.getContent(), Restful.class);
@@ -101,7 +101,7 @@ public class FileInfoAction {
 	 * 获取文件目录树
 	 */
 	@At
-	public Restful getFileTree(@Param("hostPort") String hostPort, @Param("groupName") String groupName) throws Exception {
+	public Restful getFileTree(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param(value = "first", df = "true") boolean first) throws Exception {
 
 		JSONArray nodes = new JSONArray();
 
@@ -112,7 +112,7 @@ public class FileInfoAction {
 			}
 		}
 
-		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+		if (!first || StaticValue.getHostPort().equals(hostPort)) {
 
 			List<FileInfo> result = FileInfoService.listFileInfosByGroup(groupName);
 			result.sort(Comparator.comparingInt(t -> (t.isDirectory() ? -100000000 : 0) + t.getRelativePath().length())); //进行一次排序， 先浏览父目录
@@ -137,7 +137,7 @@ public class FileInfoAction {
 
 			return Restful.instance().obj(nodes);
 		} else {
-			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("groupName", groupName), 10000);
+			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("groupName", groupName, "first", false), 10000);
 
 			if (response.isOK()) {
 				return JSONObject.parseObject(response.getContent(), Restful.class);
@@ -153,21 +153,21 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "maxSize", df = "20480") int maxSize) throws Exception {
+	public Restful fileContent(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "maxSize", df = "20480") int maxSize, @Param(value = "first", df = "true") boolean first) throws Exception {
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = groupService.getRandomCurrentHostPort(groupName);
 			if (hostPort == null) {
 				return Restful.fail().msg("无同步主机");
 			}
 		}
-		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+		if (!first || StaticValue.getHostPort().equals(hostPort)) {
 			try {
 				return Restful.ok().msg(fileInfoService.getContent(groupName, relativePath, maxSize)).obj(new File(StaticValue.GROUP_FILE, groupName + relativePath));
 			} catch (FileNotFoundException e) {
 				return Restful.fail().msg(e.getMessage());
 			}
 		} else {
-			Response post = proxyService.post(hostPort, "/admin/fileInfo/fileContent", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "maxSize", maxSize), 10000);
+			Response post = proxyService.post(hostPort, "/admin/fileInfo/fileContent", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "maxSize", maxSize, "first", false), 10000);
 
 			return Restful.instance(post);
 		}
@@ -182,7 +182,7 @@ public class FileInfoAction {
 	 */
 	@At
 	@Ok("void")
-	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "zip", df = "true") boolean zip, HttpServletResponse response) throws Throwable {
+	public void downFile(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("relativePath") String relativePath, @Param(value = "zip", df = "true") boolean zip, @Param(value = "first", df = "true") boolean first, HttpServletResponse response) throws Throwable {
 
 		if (Constants.HOST_MASTER.equals(hostPort)) { //说明是主机
 			hostPort = groupService.getRandomCurrentHostPort(groupName);
@@ -192,7 +192,7 @@ public class FileInfoAction {
 		}
 
 
-		if (StringUtil.isBlank(hostPort) || StaticValue.getHostPort().equals(hostPort)) {
+		if (!first || StaticValue.getHostPort().equals(hostPort)) {
 			if (relativePath.contains("..")) {
 				throw new FileNotFoundException("下载路径不能包含`..`字符");
 			}
@@ -210,9 +210,9 @@ public class FileInfoAction {
 
 			if (file.isDirectory()) {
 
-				if(!zip){ //如果不是压缩，则抛出304 状态码
+				if (!zip) { //如果不是压缩，则抛出304 状态码
 					response.setStatus(ApiException.NotModified);
-					response.getWriter().write(Restful.fail().msg(relativePath+" is directory").code(ApiException.NotModified).toJsonString());
+					response.getWriter().write(Restful.fail().msg(relativePath + " is directory").code(ApiException.NotModified).toJsonString());
 					return;
 				}
 
@@ -248,7 +248,7 @@ public class FileInfoAction {
 				}
 			}
 		} else {
-			Response post = proxyService.post(hostPort, "/admin/fileInfo/downFile", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath), 100000);
+			Response post = proxyService.post(hostPort, "/admin/fileInfo/downFile", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "relativePath", relativePath, "first", false), 100000);
 			IOUtil.writeAndClose(post, response);
 		}
 
@@ -464,18 +464,18 @@ public class FileInfoAction {
 
 			long start = System.currentTimeMillis();
 
-			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath , "zip",false), 120000);
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "zip", false), 120000);
 
 			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 
 			if (post.getStatus() == ApiException.NotFound) { //没找到，那么就删除本地
 				org.nutz.lang.Files.deleteFile(file);
 				LOG.info("delete file {} -> {} ", groupName, relativePath);
-			} else if(post.getStatus()==ApiException.NotModified){
-				file.mkdirs() ;
-			}else if (post.getStatus() == ApiException.OK) {
-				if(!file.getParentFile().exists()){
-					file.getParentFile().mkdirs() ;
+			} else if (post.getStatus() == ApiException.NotModified) {
+				file.mkdirs();
+			} else if (post.getStatus() == ApiException.OK) {
+				if (!file.getParentFile().exists()) {
+					file.getParentFile().mkdirs();
 				}
 				IOUtil.writeAndClose(post.getStream(), file);
 				LOG.info("down ok : {} use time : {} ", relativePath, System.currentTimeMillis() - start);

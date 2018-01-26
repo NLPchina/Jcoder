@@ -4,8 +4,8 @@
         border-bottom: 1px solid #eee;
         overflow: no-display;
         font-size: 18px;
-        height: 500px;
     }
+
 </style>
 
 <div class="row" id="vmTaskEditModule" @keydown.ctrl.83="$event.preventDefault();return false;">
@@ -63,7 +63,7 @@
 
             <div class="form-group col-sm-4" style="margin-bottom:0;text-align:right;">
                 <div class="col-md-12">
-                    <button class="btn btn-primary" type="button" style="border:none;margin-right:7px;" @click="diff()">
+                    <button class="btn btn-primary" type="button" style="border:none;margin-right:7px;" v-if="!!task.name" @click="diff()">
                         <i class="ace-icon fa fa-exchange bigger-110"></i>
                         比较
                     </button>

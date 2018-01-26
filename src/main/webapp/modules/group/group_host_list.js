@@ -158,6 +158,7 @@ var groupHostList = new Vue({
 
 			if(list.length==0){
 				JqdeBox.message(false, "至少选择一项");
+				JqdeBox.unloading();
 				return ;
 			}
 
@@ -178,17 +179,6 @@ var groupHostList = new Vue({
 			JqdeBox.message(false,req.responseText) ;
 		});
 	},
-
-	showDiff: function(){
-		JqdeBox.dialog({
-		  title: "对比",
-		  url: 'modules/group/diff.html',
-		  confirm: function () {
-
-		  }
-		});
-  	},
-
   }
 
 });

@@ -68,12 +68,17 @@ public class ProxyService {
 	 */
 	public static Function<Map<String, Restful>, Restful> MERGE_MESSAGE_CALLBACK = (Map<String, Restful> result) -> {
 		List<String> messages = new ArrayList<>();
+
 		boolean ok = true;
+		int code = 200;
 		for (Map.Entry<String, Restful> entry : result.entrySet()) {
-			ok = entry.getValue().isOk();
+			ok &= entry.getValue().isOk();
+			if (entry.getValue().code() != 200) {
+				code = entry.getValue().code();
+			}
 			messages.add(entry.getKey() + ":" + entry.getValue().getMessage());
 		}
-		return Restful.instance(ok).msg(Joiner.on(" , ").join(messages));
+		return Restful.instance().ok(ok).code(code).msg(Joiner.on(" , ").join(messages));
 	};
 
 	/**
@@ -82,18 +87,22 @@ public class ProxyService {
 	public static Function<Map<String, Restful>, Restful> MERGE_FALSE_MESSAGE_CALLBACK = (Map<String, Restful> result) -> {
 		List<String> messages = new ArrayList<>();
 		boolean ok = true;
+		int code = 200;
 		for (Map.Entry<String, Restful> entry : result.entrySet()) {
 			try {
 				boolean flag = entry.getValue().isOk();
 				if (!flag) {
 					ok = false;
+					if (entry.getValue().code() != 200) {
+						code = entry.getValue().code();
+					}
 					messages.add(entry.getKey() + ":" + entry.getValue().getMessage());
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
-		return Restful.instance(ok).msg(Joiner.on(" , ").join(messages));
+		return Restful.instance().ok(ok).code(code).msg(Joiner.on(" , ").join(messages));
 	};
 
 	/**
