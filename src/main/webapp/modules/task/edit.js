@@ -94,7 +94,7 @@ vmApp.module = new Vue({
                 theme: "monokai",
                 showCursorWhenSelecting: true
             });
-            me.editor.setSize(null,document.documentElement.clientHeight-400);//设置高度
+            me.editor.setSize(null,document.documentElement.clientHeight-300);//设置高度
             var $this = $(me.$el);
             $this.find(".CodeMirror").resizable({
                 resize: function () {

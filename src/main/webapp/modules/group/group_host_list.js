@@ -46,7 +46,10 @@ var groupHostList = new Vue({
 		Jcoder.ajax('/admin/group/changeWeight', 'post',{"groupName":$this.groupName,"weight":weight,"hostPort":hostPort},null).then(function (data) {
 			JqdeBox.unloading();
 			JqdeBox.message(data.ok, data.message);
-		});
+		}).catch(function(req){
+            JqdeBox.unloading();
+            JqdeBox.message(false,req.responseText) ;
+        });
 	},
 
 	del: function(hostPort,groupName){
