@@ -8,7 +8,6 @@ import com.google.common.collect.Sets;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.util.Restful;
@@ -424,7 +423,7 @@ public class ProxyService {
 			}
 		}
 
-		List<KeyValue<String, Integer>> hosts = new ArrayList<>();
+		List<HostGroup> hosts = new ArrayList<>();
 
 		int sum = 0;
 		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
@@ -440,11 +439,11 @@ public class ProxyService {
 
 			Integer weight = hostGroup.getWeight();
 			if (weight <= 0) {
-				LOG.info(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " weight less than zero , so skip");
+				LOG.debug(HOST_GROUP_PATH + "/" + hostPort + "_" + groupName + " weight less than zero , so skip");
 				continue;
 			}
 			sum += weight;
-			hosts.add(KeyValue.with((hostGroup.isSsl() ? "https://" : "http://") + hostPort, weight));
+			hosts.add(hostGroup);
 		}
 
 
@@ -454,11 +453,15 @@ public class ProxyService {
 
 		int random = new Random().nextInt(sum);
 
-		for (KeyValue<String, Integer> host : hosts) {
-			random -= host.getValue();
+		for (HostGroup hostGroup : hosts) {
+			random -= hostGroup.getWeight();
 			if (random < 0) {
-				LOG.info("{}/{}/{} proxy to {} ", groupName, className, mehtodName, host.getKey());
-				return host.getKey();
+				if (StaticValue.getHostPort().equals(hostGroup.getHostPort())) { //by self
+					return null;
+				}
+				String toHost = (hostGroup.isSsl() ? "https://" : "http://") + hostGroup.getHostPort();
+				LOG.info("{}/{}/{} proxy to {} ", groupName, className, mehtodName, toHost);
+				return toHost;
 			}
 		}
 

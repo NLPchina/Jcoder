@@ -678,6 +678,7 @@ public class SharedSpaceService {
 			hostGroup.setSsl(StaticValue.IS_SSL);
 			hostGroup.setCurrent(diffs.size() == 0);
 			hostGroup.setWeight(diffs.size() > 0 ? 0 : 100);
+			hostGroup.setHostPort(StaticValue.getHostPort());
 			Watcher watcher = null;
 			if (cHostGroup == null) {
 				new HostGroupWatcher(hostGroup);

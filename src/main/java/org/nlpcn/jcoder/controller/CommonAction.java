@@ -22,23 +22,23 @@ import java.util.List;
 @Ok("json")
 public class CommonAction {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CommonAction.class);
+	private static final Logger LOG = LoggerFactory.getLogger(CommonAction.class);
 
-    @Inject
-    private GroupService groupService;
+	@Inject
+	private GroupService groupService;
 
-    private HostGroup master;
+	private HostGroup master;
 
-    {
-        master = new HostGroup();
-        master.setCurrent(true);
-        master.setHostPort(Constants.HOST_MASTER);
-    }
+	{
+		master = new HostGroup();
+		master.setCurrent(true);
+		master.setHostPort(Constants.HOST_MASTER);
+	}
 
-    @At
-    public Restful host(String groupName) throws Exception {
-        List<HostGroup> hostList = groupService.getGroupHostList(groupName);
-        hostList.add(0, master);
-        return Restful.instance(hostList);
-    }
+	@At
+	public Restful host(String groupName) throws Exception {
+		List<HostGroup> hostList = groupService.getGroupHostList(groupName);
+		hostList.add(0, master);
+		return Restful.instance(hostList);
+	}
 }
