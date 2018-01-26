@@ -1,21 +1,14 @@
 package cn.com.infcn.api.test;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.run.annotation.Execute;
-import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.dao.Chain;
+
+import java.util.Arrays;
 
 /**
  * 测试文档搜索
- * 
- * @author Ansj
  *
+ * @author Ansj
  */
 
 public class ApiTest {
@@ -23,13 +16,12 @@ public class ApiTest {
 
 	/**
 	 *
-	 * @param i
 	 * @return
 	 * @throws Exception
 	 */
 	@Execute
 	public Object test(String name) throws Exception {
-		return Restful.ok().msg("hello "+name);
+		return Restful.ok().msg("hello " + name);
 	}
 
 }
