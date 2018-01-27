@@ -428,7 +428,6 @@ public class GroupAction {
 
 			}
 		}
-
 		return Restful.instance(flag, Joiner.on(",").skipNulls().join(message));
 	}
 

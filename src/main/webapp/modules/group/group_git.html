@@ -1,0 +1,95 @@
+<div id="groupManager">
+    <div class="row">
+        <div class="col-xs-6">
+            <button class="btn btn-xs btn-info" @click="add()">
+                <i class="ace-icon glyphicon glyphicon-plus bigger-100"></i> 添加
+            </button>
+            <!-- <button class="btn btn-xs btn-danger" @click="remove()" :disabled="ids.length==0">
+                <i class="ace-icon glyphicon glyphicon-remove bigger-100"></i>删除
+            </button>
+            <button class="btn btn-xs btn-success" type="button" @click="emptyKeyword()">
+                <i class="ace-icon glyphicon glyphicon-refresh bigger-100"></i>刷新
+            </button> -->
+        </div>
+    </div>
+
+    <div class="space-4"></div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="table-responsive dataTables_wrapper">
+                <table id="dynamic-table" class="table table-striped table-bordered table-hover">
+                    <thead>
+                    <tr>
+						<th class="center" width="6.8%">组名称</th>
+						<th class="center">git地址</th>
+						<th class="center" width="8%">用户名</th>
+						<th class="center" width="8%">密码</th>
+						<th class="center" width="10%">分支</th>
+						<th class="center">最后更新</th>
+						<th class="center">回调地址</th>
+						<th class="center" width="9%">自动同步</th>
+						<th class="center">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody class="infor-tbody">
+                    	<tr v-for="(item, index) in groups">
+							<td  class="center">
+								<input readonly type="text" class="col-xs-10 col-sm-12" :value="item.groupName" />
+							</td>
+							<td  class="center">
+								<input type="text" class="col-xs-10 col-sm-12" :value="item.uri" />
+							</td>
+							<td  class="center">
+								<input type="text" class="col-xs-10 col-sm-12" :value="item.userName" />
+							</td>
+							<td  class="center">
+								<input type="text" class="col-xs-10 col-sm-12" :value="item.passowrd" />
+							</td>
+							<td  class="center">
+								<select class="chosen-select form-control" id="form-field-select-3" data-placeholder="Choose a State...">
+									<option :value="item.branch">{{item.branch==null?'选择分支':item.branch}}</option>
+									<option value="AL">Alabama</option>
+									<option value="AR">Arkansas</option>
+									<option value="CA">California</option>
+								</select>
+							</td>
+							<td  class="center">
+								<input readonly type="text" class="col-xs-10 col-sm-12" :value="new Date(item.lastPullTime).toLocaleString()" />
+							</td>
+							<td  class="center">
+								<input readonly type="text" class="col-xs-10 col-sm-12" :value="item.token" />
+							</td>
+							<td  class="center">
+								<select class="chosen-select form-control" id="form-field-select-3" data-placeholder="Choose a State...">
+									<option value="0">不同步</option>
+									<option value="60000">1分钟</option>
+									<option value="300000">5分钟</option>
+									<option value="600000">10分钟</option>
+									<option value="1800000">30分钟</option>
+								</select>
+							</td>
+							<td  class="center">
+								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+		                            <div class="editbutton" style="display:inline;">
+										<a class="red" style="margin-left:7px;" title="管理">
+											<i class="ace-icon fa fa-trash bigger-130"></i>
+										</a>
+                                    </div>
+		                        </div>
+								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
+									<div class="editbutton" style="display:inline;">
+										<a class="red" style="margin-left:7px;" title="管理">
+											<i class="ace-icon fa fa-trash bigger-130"></i>
+										</a>
+									</div>
+								</div>
+							</td>
+						</tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="modules/group/group_git.js"></script>

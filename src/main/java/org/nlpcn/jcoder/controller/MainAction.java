@@ -94,6 +94,7 @@ public class MainAction {
 		submenus = new JSONArray();
 		submenus.add(ImmutableMap.of("name", "用户管理", "url", "user/list.html"));
 		submenus.add(ImmutableMap.of("name", "Group管理", "url", "group/list.html"));
+		submenus.add(ImmutableMap.of("name", "持续集成", "url", "group/group_git.html"));
 		result.add(ImmutableMap.of("name", "系统管理", "submenus", submenus));
 
 
@@ -132,7 +133,7 @@ public class MainAction {
 				// 查询所有的组
 				Set<String> hosts = groupService.getGroupHostList(gn).stream().map(gh -> gh.getHostPort()).collect(Collectors.toSet());
 				// 查询所有组的机器
-				Map<String, Restful> post = proxyService.post(hosts, Api.TASK_LIST.getPath(), Maps.hash("groupName", gn, "taskType", -1), 10000);
+				Map<String, Restful> post = proxyService.post(hosts, Api.TASK_LIST.getPath(), Maps.hash("groupName", gn, "taskType", -1), 5000);
 				post.entrySet().forEach(e -> {
 					e.getValue().obj2JsonArray().stream().forEach(o -> {
 						JSONObject job = (JSONObject) o;
