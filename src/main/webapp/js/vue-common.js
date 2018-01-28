@@ -60,10 +60,10 @@ Vue.component('host-component', {
             me.isLoading = false;
 
             data = data.obj;
-            var hosts = (me.hosts = me.hosts || []), sum = _.chain(data).pluck("weight").reduce(function (memo, num) {return memo + num;}, 0).value();
+            var hosts = (me.hosts = me.hosts || []), sum = _.chain(data).pluck("weight").reduce(function (memo, num) {return memo + num;}, 0).value(), host = param.host || "master";
             if (sum == 0) sum = 1;
             _.each(data, function (ele) {
-                hosts.push({host: ele.hostPort, selected: ele.current, current: ele.current, weight: ele.hostPort == "master" ? 100 : (ele.weight / sum * 100).toFixed(0)});
+                hosts.push({host: ele.hostPort, selected: host == "master" ? ele.current : host == ele.hostPort, current: ele.current, weight: ele.hostPort == "master" ? 100 : (ele.weight / sum * 100).toFixed(0)});
             });
 
             Vue.nextTick(function () {

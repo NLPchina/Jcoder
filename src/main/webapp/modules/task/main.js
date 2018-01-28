@@ -18,7 +18,7 @@ vmApp.module = new Vue({
             methods: {
                 loadTasks: function () {
                     var me = this, parent = me.$parent,
-                        host = (_.findWhere(parent.hosts, {selected: true}) || {current: true}).host;
+                        host = (_.findWhere(parent.hosts, {selected: true}) || {host: param.host}).host;
                     Jcoder.ajax('/admin/task/list', 'POST', {
                         host: !host || host == "master" ? null : host,
                         groupName: parent.groupName,
