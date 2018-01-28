@@ -255,13 +255,6 @@ public class ProxyService {
 	 */
 	public Map<String, Restful> post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout) throws Exception {
 
-		//fix param
-		for (String key : params.keySet()) {
-			if (params.get(key) == null) {
-
-			}
-		}
-
 		if (hostPorts.size() == 0) {
 			return new HashMap<>();
 		}
@@ -366,7 +359,7 @@ public class ProxyService {
 
 	private synchronized String getOrCreateToken() throws Exception {
 		Token token = StringUtil.isBlank(myToken) ? null : TokenService.getToken(myToken);
-		if (token == null || token.getExpiration() < System.currentTimeMillis()) {
+		if (token == null) {
 			LOG.info("token timeout so create it ");
 			myToken = TokenService.regToken(User.CLUSTER_USER);
 		}

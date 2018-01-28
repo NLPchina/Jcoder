@@ -43,11 +43,23 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 	private FileInfo() {
 	}
 
-	public FileInfo(File file) {
+	/**
+	 * 从git创建文件
+	 *
+	 * @param file
+	 * @param git
+	 */
+	public FileInfo(File file, boolean git) {
 		this.file = file;
 		this.directory = file.isDirectory();
 		this.name = file.getName();
-		String groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/");
+		String groupPath = null;
+		if (git) {
+			groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "git").toURI().toString(), "/");
+		} else {
+			groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/");
+		}
+
 		this.groupName = groupPath.split("/")[1];
 		this.relativePath = groupPath.substring(groupName.length() + 1);
 		if (this.relativePath.endsWith("/")) {

@@ -2,6 +2,7 @@ package org.nlpcn.jcoder.service;
 
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.ZKMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +31,26 @@ public class TokenService {
 		Token token = tokenCache.get(key);
 
 		if (token == null) {
-			return null;
+			//嘗試從zk中直接獲取
+			try {
+				token = StaticValue.space().getData(SharedSpaceService.TOKEN_PATH + "/" + key, Token.class);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			if (token == null) {
+				return null;
+			}
 		}
 
 		long time = token.getExpirationTime().getTime() - System.currentTimeMillis();
 
 		if (time < 0) {
 			tokenCache.remove(key);
+			try {
+				StaticValue.space().getZk().delete().forPath(SharedSpaceService.TOKEN_PATH + "/" + key);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			return null;
 		}
 

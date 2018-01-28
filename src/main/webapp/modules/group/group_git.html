@@ -25,7 +25,7 @@
 						<th class="center">git地址</th>
 						<th class="center" width="8%">用户名</th>
 						<th class="center" width="8%">密码</th>
-						<th class="center" width="10%">分支</th>
+						<th class="center" width="8%">分支</th>
 						<th class="center">最后更新</th>
 						<th class="center">回调地址</th>
 						<th class="center" width="9%">自动同步</th>
@@ -35,33 +35,28 @@
                     <tbody class="infor-tbody">
                     	<tr v-for="(item, index) in groups">
 							<td  class="center">
-								<input readonly type="text" class="col-xs-10 col-sm-12" :value="item.groupName" />
+								<input readonly type="text" class="col-xs-10 col-sm-12" v-model="item.groupName" />
 							</td>
 							<td  class="center">
-								<input type="text" class="col-xs-10 col-sm-12" :value="item.uri" />
+								<input type="text" class="col-xs-10 col-sm-12" v-model="item.uri" />
 							</td>
 							<td  class="center">
-								<input type="text" class="col-xs-10 col-sm-12" :value="item.userName" />
+								<input type="text" class="col-xs-10 col-sm-12" v-model="item.userName" />
 							</td>
 							<td  class="center">
-								<input type="text" class="col-xs-10 col-sm-12" :value="item.passowrd" />
+								<input type="password" class="col-xs-10 col-sm-12" v-model="item.password" />
 							</td>
-							<td  class="center">
-								<select class="chosen-select form-control" id="form-field-select-3" data-placeholder="Choose a State...">
-									<option :value="item.branch">{{item.branch==null?'选择分支':item.branch}}</option>
-									<option value="AL">Alabama</option>
-									<option value="AR">Arkansas</option>
-									<option value="CA">California</option>
-								</select>
+							<td  class="center" >
+								<input type="text" class="col-xs-10 col-sm-12" v-model="item.branch" />
 							</td>
 							<td  class="center">
 								<input readonly type="text" class="col-xs-10 col-sm-12" :value="new Date(item.lastPullTime).toLocaleString()" />
 							</td>
 							<td  class="center">
-								<input readonly type="text" class="col-xs-10 col-sm-12" :value="item.token" />
+								<input readonly type="text" class="col-xs-10 col-sm-12" :value="'?token='+item.token"/>
 							</td>
 							<td  class="center">
-								<select class="chosen-select form-control" id="form-field-select-3" data-placeholder="Choose a State...">
+								<select class="chosen-select form-control" id="form-field-select-3" v-model="item.autoPullMillis">
 									<option value="0">不同步</option>
 									<option value="60000">1分钟</option>
 									<option value="300000">5分钟</option>
@@ -70,19 +65,13 @@
 								</select>
 							</td>
 							<td  class="center">
-								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
-		                            <div class="editbutton" style="display:inline;">
-										<a class="red" style="margin-left:7px;" title="管理">
-											<i class="ace-icon fa fa-trash bigger-130"></i>
-										</a>
-                                    </div>
-		                        </div>
-								<div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
-									<div class="editbutton" style="display:inline;">
-										<a class="red" style="margin-left:7px;" title="管理">
-											<i class="ace-icon fa fa-trash bigger-130"></i>
-										</a>
-									</div>
+								<div style="display:inline;">
+									<button class="btn btn-info" @click="save(index)">
+										<i class="ace-icon fa fa-save icon-only bigger-150"></i>
+									</button>
+									<button class="btn btn-success" @click="flush(index)">
+										<i class="ace-icon fa fa-refresh icon-only bigger-150"></i>
+									</button>
 								</div>
 							</td>
 						</tr>

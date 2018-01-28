@@ -85,7 +85,7 @@ public class JarService {
 		JarService jarService = CACHE.getIfPresent(groupName);
 		if (jarService == null) {
 
-			Lock lock = LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock());
+			Lock lock = getLock(groupName);
 			try {
 				lock.lock();
 				jarService = CACHE.get(groupName);
@@ -97,12 +97,34 @@ public class JarService {
 			} catch (Exception e) {
 				e.printStackTrace();
 			} finally {
-				LOCK_CONCURRENT_HASH_MAP.remove(groupName) ;
-				lock.unlock();
+				unLock(groupName);
 			}
 
 		}
 		return jarService;
+	}
+
+	/**
+	 * 锁一个group
+	 *
+	 * @param groupName
+	 * @return
+	 */
+	public synchronized static Lock getLock(String groupName) {
+		return LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock());
+	}
+
+	/**
+	 * 解锁一个group
+	 *
+	 * @param groupName
+	 */
+	public static void unLock(String groupName) {
+		Lock lock = getLock(groupName);
+		if (lock != null) {
+			lock.unlock();
+			LOCK_CONCURRENT_HASH_MAP.remove(groupName);
+		}
 	}
 
 	public static void remove(String groupName) {

@@ -158,8 +158,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				} else {
 					taskFileMap.put(name, files.get(0));
 				}
-
-
 			});
 
 
@@ -180,7 +178,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-
 			});
 
 		} catch (IOException e) {

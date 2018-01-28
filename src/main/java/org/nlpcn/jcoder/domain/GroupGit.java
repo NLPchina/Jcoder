@@ -14,6 +14,8 @@ public class GroupGit {
 
 	private String branch;
 
+	private String md5 ;
+
 	/**
 	 * 多少毫秒pull一次，0不自动
 	 */
@@ -89,5 +91,13 @@ public class GroupGit {
 
 	public void setBranch(String branch) {
 		this.branch = branch;
+	}
+
+	public String getMd5() {
+		return md5;
+	}
+
+	public void setMd5(String md5) {
+		this.md5 = md5;
 	}
 }

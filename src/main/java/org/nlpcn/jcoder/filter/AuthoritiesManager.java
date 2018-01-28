@@ -39,11 +39,6 @@ public class AuthoritiesManager implements ActionFilter {
 
 				Token token = TokenService.getToken(tokenStr);
 
-				if (token == null) { //缓存还没有刷新到，先从zk里面直接取
-					LOG.warn("not in cache ,so get it from zk");
-					token = StaticValue.space().getData(SharedSpaceService.TOKEN_PATH + "/" + tokenStr, Token.class);
-				}
-
 				if (token != null) {
 					actionContext.getRequest().getSession().setAttribute(UserConstants.USER, token.getUser());
 					return null;
