@@ -12,7 +12,12 @@ import org.nlpcn.jcoder.service.FileInfoService;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.MD5Util;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -29,7 +34,11 @@ import org.nutz.mvc.upload.UploadAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.file.FileVisitResult;
@@ -37,7 +46,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -84,7 +98,7 @@ public class FileInfoAction {
 			List<FileInfo> result = FileInfoService.listFileInfosByGroup(groupName);
 			return Restful.instance().obj(result);
 		} else {
-			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName, "first", false), 10000);
+			Response response = proxyService.post(hostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "first", false), 10000);
 
 			if (response.isOK()) {
 				return JSONObject.parseObject(response.getContent(), Restful.class);
@@ -136,7 +150,7 @@ public class FileInfoAction {
 
 			return Restful.instance().obj(nodes);
 		} else {
-			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("groupName", groupName, "first", false), 10000);
+			Response response = proxyService.post(hostPort, "/admin/fileInfo/getFileTree", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "first", false), 10000);
 
 			if (response.isOK()) {
 				return JSONObject.parseObject(response.getContent(), Restful.class);
@@ -253,50 +267,50 @@ public class FileInfoAction {
 
 	}
 
-    @At
-    public Restful saveAndFlush(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String groupName,
-                                @Param("content") String content,
-                                @Param("relativePath") String relativePath,
-                                @Param(value = "first", df = "true") boolean first) {
-        try {
-            if (!first) {
-                JarService jarService = JarService.getOrCreate(groupName);
-                if (relativePath.endsWith("ioc.js")) {
-                    jarService.saveIoc(groupName, content);
-                } else if (relativePath.endsWith("pom.xml")) {
-                    jarService.savePom(groupName, content);
-                } else {
+	@At
+	public Restful saveAndFlush(@Param("hostPorts[]") String[] hostPorts, @Param("groupName") String groupName,
+								@Param("content") String content,
+								@Param("relativePath") String relativePath,
+								@Param(value = "first", df = "true") boolean first) {
+		try {
+			if (!first) {
+				JarService jarService = JarService.getOrCreate(groupName);
+				if (relativePath.endsWith("ioc.js")) {
+					jarService.saveIoc(groupName, content);
+				} else if (relativePath.endsWith("pom.xml")) {
+					jarService.savePom(groupName, content);
+				} else {
 
-                }
+				}
 
-                return Restful.instance().ok(true).msg("保存并刷新成功！");
-            } else {
-                List<String> hosts = Arrays.asList(hostPorts);
-                Set<String> hostPortsArr = new HashSet<>(hosts);
-                Set<String> firstHost = new HashSet<>();
-                if (hostPortsArr.contains(Constants.HOST_MASTER)) {
-                    hostPortsArr.remove(Constants.HOST_MASTER);
-                    List<String> arrayList = new ArrayList<>(hosts);
-                    arrayList.remove(Constants.HOST_MASTER);
-                    firstHost.add(arrayList.get(0));
-                }
+				return Restful.instance().ok(true).msg("保存并刷新成功！");
+			} else {
+				List<String> hosts = Arrays.asList(hostPorts);
+				Set<String> hostPortsArr = new HashSet<>(hosts);
+				Set<String> firstHost = new HashSet<>();
+				if (hostPortsArr.contains(Constants.HOST_MASTER)) {
+					hostPortsArr.remove(Constants.HOST_MASTER);
+					List<String> arrayList = new ArrayList<>(hosts);
+					arrayList.remove(Constants.HOST_MASTER);
+					firstHost.add(arrayList.get(0));
+				}
 
-                Restful message = proxyService.post(hostPortsArr, "/admin/fileInfo/saveAndFlush",
-                        ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "content", content, "first", false), 100000,
-                        ProxyService.MERGE_MESSAGE_CALLBACK);
+				Restful message = proxyService.post(hostPortsArr, "/admin/fileInfo/saveAndFlush",
+						ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "content", content, "first", false), 100000,
+						ProxyService.MERGE_MESSAGE_CALLBACK);
 
-                // 更新master数据节点
-                if (firstHost.size() > 0) {
-                    proxyService.post(firstHost, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePaths", new String[]{relativePath}), 100000);
-                }
+				// 更新master数据节点
+				if (firstHost.size() > 0) {
+					proxyService.post(firstHost, "/admin/fileInfo/upCluster", ImmutableMap.of("groupName", groupName, "relativePaths", new String[]{relativePath}), 100000);
+				}
 
-                return message;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
-        }
-    }
+				return message;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return Restful.instance().ok(false).msg("保存失败！" + e.getMessage());
+		}
+	}
 
 	/**
 	 * 删除一个文件或文件夹
@@ -320,8 +334,8 @@ public class FileInfoAction {
 	 */
 	@At
 	public Restful deleteFile(@Param("hostPort[]") String[] hostPorts, @Param("groupName") String groupName,
-	                          @Param("relativePaths[]") String[] relativePaths,
-	                          @Param(value = "first", df = "true") boolean first) throws Exception {
+							  @Param("relativePaths[]") String[] relativePaths,
+							  @Param(value = "first", df = "true") boolean first) throws Exception {
 		try {
 			if (!first) {
 				//String[] paths = relativePath.split(",");
@@ -436,7 +450,7 @@ public class FileInfoAction {
 	@At
 	@AdaptBy(type = UploadAdaptor.class)
 	public Restful uploadFile(@Param("hostPorts") String[] hostPorts, @Param("group_name") String groupName, @Param("filePath") String filePath,
-	                          @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
+							  @Param("file") TempFile[] file, @Param("fileNames") String[] fileNames, @Param(value = "first", df = "true") boolean first) throws IOException {
 		int fileNum = (int) file.length;
 
 		if (fileNum <= 0) {
@@ -508,7 +522,7 @@ public class FileInfoAction {
 
 			long start = System.currentTimeMillis();
 
-			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", relativePath, "zip", false), 120000);
+			Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("hostPort", fromHostPort, "groupName", groupName, "relativePath", relativePath, "zip", false), 120000);
 
 			File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 

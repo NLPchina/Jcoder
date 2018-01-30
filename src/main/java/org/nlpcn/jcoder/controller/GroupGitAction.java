@@ -1,30 +1,34 @@
 package org.nlpcn.jcoder.controller;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.ListBranchCommand;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.nlpcn.jcoder.domain.GroupGit;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GitSerivce;
+import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
+import org.nlpcn.jcoder.util.Maps;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
+import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.nlpcn.jcoder.util.StaticValue.*;
+import static org.nlpcn.jcoder.util.StaticValue.space;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -35,10 +39,14 @@ public class GroupGitAction {
 	@Inject
 	private GitSerivce gitSerivce;
 
+	@Inject
+	private GroupService groupService;
+
+	@Inject
+	private ProxyService proxyService;
+
 	/**
 	 * 组列表
-	 *
-	 * @return
 	 */
 	@At
 	public Restful list() {
@@ -58,9 +66,6 @@ public class GroupGitAction {
 
 	/**
 	 * 保存
-	 *
-	 * @param groupGit
-	 * @return
 	 */
 	@At
 	public Restful save(@Param("..") GroupGit groupGit) throws Exception {
@@ -81,17 +86,36 @@ public class GroupGitAction {
 
 	/**
 	 * 從git同步
-	 *
-	 * @param
-	 * @return
 	 */
 	@At
 	public Restful flush(String groupName) throws Exception {
 		GroupGit groupGit = space().getData(SharedSpaceService.GROUP_PATH + "/" + groupName, GroupGit.class);
+
 		if (groupGit == null) {
 			return Restful.fail().msg("未定义group");
 		}
 
+		//找一台同步机器进行更新，找最小的机器
+		List<String> currentHostPort = groupService.getCurrentHostPort(groupName);
+
+		if (currentHostPort.size() == 0) {
+			return Restful.fail().msg("无同步主机");
+		}
+
+		String hostPort = currentHostPort.stream().min(String::compareTo).get();
+
+		Response response = proxyService.post(hostPort, "/admin/groupGit/__flush__", Maps.hash("groupName", groupName), 1200000);
+
+		return Restful.instance(response);
+
+	}
+
+	@At
+	public Restful __flush__(String groupName) throws Exception {
+		GroupGit groupGit = space().getData(SharedSpaceService.GROUP_PATH + "/" + groupName, GroupGit.class);
+		if (groupGit == null) {
+			return Restful.fail().msg("未定义group");
+		}
 		String message = gitSerivce.flush(groupGit);
 		return Restful.ok().msg(message);
 	}

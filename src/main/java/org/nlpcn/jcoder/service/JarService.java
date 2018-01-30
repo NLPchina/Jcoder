@@ -106,9 +106,6 @@ public class JarService {
 
 	/**
 	 * 锁一个group
-	 *
-	 * @param groupName
-	 * @return
 	 */
 	public synchronized static Lock getLock(String groupName) {
 		return LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock());
@@ -116,8 +113,6 @@ public class JarService {
 
 	/**
 	 * 解锁一个group
-	 *
-	 * @param groupName
 	 */
 	public static void unLock(String groupName) {
 		Lock lock = getLock(groupName);
@@ -279,10 +274,21 @@ public class JarService {
 	 * copyjar包到当前目录中
 	 */
 	private String copy() throws IOException {
-		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			return execute(new File(StaticValue.GROUP_FILE, groupName), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=lib/target/dependency");
-		} else {
-			return execute(new File(StaticValue.GROUP_FILE, groupName), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=lib/target/dependency");
+		String tempPom = pomContent();
+		File tempFile = new File(jarPath + "/pom.xml");
+		try (FileOutputStream fos = new FileOutputStream(new File(jarPath + "/pom.xml"))) {
+			fos.write(tempPom.getBytes("utf-8"));
+			fos.flush();
+		}
+		try {
+
+			if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+				return execute(new File(jarPath), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=target/dependency");
+			} else {
+				return execute(new File(jarPath), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=target/dependency");
+			}
+		} finally {
+			org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
 		}
 	}
 
@@ -290,13 +296,7 @@ public class JarService {
 	 * 删除jiar包
 	 */
 	private void clean() throws IOException {
-		String tempPom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-				"         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
-				"    <modelVersion>4.0.0</modelVersion>\n" +
-				"    <groupId>org.nlpcn.jcoder</groupId>\n" +
-				"    <artifactId>InfcnNlp</artifactId>\n" +
-				"    <version>0.1</version>\n" +
-				"</project>";
+		String tempPom = pomContent();
 
 		File tempFile = new File(jarPath + "/pom.xml");
 
@@ -305,13 +305,16 @@ public class JarService {
 			fos.flush();
 		}
 
-		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			execute(new File(jarPath), "cmd", "/c", getMavenPath(), "clean");
-		} else {
-			execute(new File(jarPath), getMavenPath(), "clean");
-		}
+		try {
 
-		org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
+			if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+				execute(new File(jarPath), "cmd", "/c", getMavenPath(), "clean");
+			} else {
+				execute(new File(jarPath), getMavenPath(), "clean");
+			}
+		} finally {
+			org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
+		}
 	}
 
 	/**
@@ -352,6 +355,55 @@ public class JarService {
 			clean();
 			copy();
 		}
+	}
+
+	/**
+	 * 获取pom文件的内容并移除掉jcoder元素
+	 */
+	private String pomContent() {
+		File file = new File(pomPath);
+		if (!file.exists()) {
+			return null;
+		}
+		String content = IOUtil.getContent(file, "utf-8");
+
+		String[] split = content.split("\n");
+
+		int mid = 0;
+
+		for (int i = 0; i < split.length; i++) {
+			if ("<scope>system</scope>".equals(split[i].replace("\\s+", "").trim())) {
+				mid = i;
+				break;
+			}
+		}
+
+		int min = mid;
+
+		while (!"<dependency>".equals(split[min].replace("\\s+", "").trim())) {
+			min--;
+		}
+
+		int max = mid;
+
+		while (!"</dependency>".equals(split[max].replace("\\s+", "").trim())) {
+			max++;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		for (int i = 0; i < min; i++) {
+			sb.append(split[i]);
+			sb.append("\n");
+		}
+
+		for (int i = max + 1; i < split.length; i++) {
+			sb.append(split[i]);
+			sb.append("\n");
+		}
+
+		return sb.toString();
+
 	}
 
 

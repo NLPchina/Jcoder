@@ -69,7 +69,7 @@ public class StaticValue {
 		LOG.info("env in system.propertie: ssl : " + getValueOrCreate("ssl", null));
 		URL location = StaticValue.class.getProtectionDomain().getCodeSource().getLocation();
 		if (location.toExternalForm().endsWith(".jar")) {
-			JCODER_JAR_FILE = new File(location.toExternalForm().substring(6));
+			JCODER_JAR_FILE = new File(location.toExternalForm().substring(5));
 		} else { //如果源码方式启动去编译目录找jar
 			File dir = new File("lib");
 
@@ -266,7 +266,7 @@ public class StaticValue {
 
 
 	public static File getCurrentResourceFile() {
-		return new File(GROUP_FILE, getCurrentGroup() + "resources");
+		return new File(GROUP_FILE, getCurrentGroup() + "/resources");
 	}
 
 	public static File getJcoderJarFile() {

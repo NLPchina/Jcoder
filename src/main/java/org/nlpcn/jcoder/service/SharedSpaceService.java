@@ -23,6 +23,7 @@ import org.nlpcn.jcoder.domain.HostGroupWatcher;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.job.CheckDiffJob;
+import org.nlpcn.jcoder.job.MasterGitPullJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.job.MasterTaskCheckJob;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -332,6 +333,7 @@ public class SharedSpaceService {
 				LOG.info("I am master my host is " + StaticValue.getHostPort());
 				MasterTaskCheckJob.startJob();
 				MasterRunTaskJob.startJob();
+				MasterGitPullJob.startJob();
 			}
 
 			@Override
@@ -340,6 +342,7 @@ public class SharedSpaceService {
 				LOG.info("I am lost master " + StaticValue.getHostPort());
 				MasterTaskCheckJob.stopJob();
 				MasterRunTaskJob.stopJob();
+				MasterGitPullJob.stopJob();
 			}
 
 		});
@@ -400,7 +403,7 @@ public class SharedSpaceService {
 		tokenCache = new ZKMap(zkDao.getZk(), TOKEN_PATH, Token.class).start();
 
 		groupCache.getListenable().addListener((client, event) -> { //广播监听group目录
-			LOG.info("found group change type:{} path:{}", event.getType(), event.getData().getPath());
+			LOG.info("found group change type:{} path:{}", event.getType(), event.getData() == null ? "" : event.getData().getPath());
 			if (event.getData() != null) {
 				switch (event.getType()) {
 					case NODE_ADDED:
@@ -824,7 +827,11 @@ public class SharedSpaceService {
 			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file, false)));
 			LOG.info("up file: {} to {} -> {}", file.getAbsoluteFile(), groupName, relativePath);
 		} else {
-			zkDao.getZk().delete().deletingChildrenIfNeeded().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
+			try{
+				zkDao.getZk().delete().deletingChildrenIfNeeded().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
+			}catch (KeeperException.NoNodeException e){
+			}
+
 			LOG.info("delete file to {} -> {}", groupName, relativePath);
 		}
 	}

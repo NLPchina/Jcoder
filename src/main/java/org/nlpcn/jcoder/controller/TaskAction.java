@@ -1,11 +1,21 @@
 package org.nlpcn.jcoder.controller;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.ImmutableMap;
+
 import org.h2.util.DateTimeUtils;
-import org.nlpcn.jcoder.constant.*;
-import org.nlpcn.jcoder.domain.*;
+import org.nlpcn.jcoder.constant.Api;
+import org.nlpcn.jcoder.constant.Constants;
+import org.nlpcn.jcoder.constant.TaskStatus;
+import org.nlpcn.jcoder.constant.TaskType;
+import org.nlpcn.jcoder.constant.UserConstants;
+import org.nlpcn.jcoder.domain.Different;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.TaskStatistics;
+import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -13,27 +23,45 @@ import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.GroupFileListener;
+import org.nlpcn.jcoder.util.Maps;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.adaptor.WhaleAdaptor;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.AdaptBy;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.nlpcn.jcoder.constant.Constants.TIMEOUT;
 import static org.nlpcn.jcoder.service.ProxyService.MERGE_FALSE_MESSAGE_CALLBACK;
-import static org.nlpcn.jcoder.util.ApiException.*;
+import static org.nlpcn.jcoder.util.ApiException.Forbidden;
+import static org.nlpcn.jcoder.util.ApiException.NotFound;
+import static org.nlpcn.jcoder.util.ApiException.ServerException;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -379,8 +407,6 @@ public class TaskAction {
 	 * @param groupName 组名
 	 * @param name      任务名
 	 * @param size      版本的数量限制
-	 * @return
-	 * @throws Exception
 	 */
 	@At
 	public Restful version(String host, String groupName, String name, @Param(value = "size", df = "50") int size) throws Exception {
@@ -425,7 +451,6 @@ public class TaskAction {
 	 * @param groupName 组名
 	 * @param name      任务名
 	 * @param version   版本
-	 * @return
 	 */
 	@At
 	public Restful history(String host, String groupName, String name, String version) throws Exception {
@@ -702,7 +727,13 @@ public class TaskAction {
 		if (restful.code() == 404) { //删除
 			return __delete__(false, true, groupName, taskName, user.getName(), new Date());
 		} else if (restful.code() == 200 && restful.getObj() != null) {
-			Task remote = JSONObject.toJavaObject(restful.getObj(), Task.class);
+			Task remote = null;
+			if (restful.getObj() instanceof Task) {
+				remote = restful.getObj();
+			} else {
+				remote = JSONObject.toJavaObject(restful.getObj(), Task.class);
+			}
+
 			//从本机查一下要是有。本机走update，没有走save
 			Task local = taskService.findTask(groupName, taskName);
 			String oldName = null;

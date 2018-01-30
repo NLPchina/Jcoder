@@ -13,7 +13,7 @@ public class Restful {
 	}
 
 	public static Restful fail() {
-		return new Restful(false);
+		return new Restful(false).code(ApiException.ServerException);
 	}
 
 	private boolean ok = true;
