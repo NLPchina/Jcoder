@@ -22,7 +22,7 @@ import java.util.Set;
  */
 public class ZookeeperRoomService implements RoomService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ZookeeperRoomService.class);
 
 	private static final byte[] EMPTY = new byte[0];
 
@@ -43,7 +43,6 @@ public class ZookeeperRoomService implements RoomService {
 	public Set<String> ids(String room) {
 		Map<String, ChildData> currentChildren = roomCache.getCurrentChildren(ROOM_PATH + "/" + room);
 		if (currentChildren == null) {
-			LOG.info("romt {} not created ", room);
 			return Collections.emptySet();
 		}
 		return currentChildren.keySet();

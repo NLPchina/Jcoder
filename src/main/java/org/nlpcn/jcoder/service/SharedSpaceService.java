@@ -880,5 +880,7 @@ public class SharedSpaceService {
 		return groupCache;
 	}
 
-
+	public RoomService getRoomService() {
+		return roomService;
+	}
 }
