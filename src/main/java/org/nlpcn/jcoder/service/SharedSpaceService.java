@@ -22,10 +22,7 @@ import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.HostGroupWatcher;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
-import org.nlpcn.jcoder.job.CheckDiffJob;
-import org.nlpcn.jcoder.job.MasterGitPullJob;
-import org.nlpcn.jcoder.job.MasterRunTaskJob;
-import org.nlpcn.jcoder.job.MasterTaskCheckJob;
+import org.nlpcn.jcoder.job.*;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.rpc.service.MemoryRoomService;
 import org.nlpcn.jcoder.run.rpc.service.RoomService;
@@ -334,6 +331,7 @@ public class SharedSpaceService {
 				MasterTaskCheckJob.startJob();
 				MasterRunTaskJob.startJob();
 				MasterGitPullJob.startJob();
+				MasterCleanTokenJob.startJob();
 			}
 
 			@Override
@@ -343,6 +341,7 @@ public class SharedSpaceService {
 				MasterTaskCheckJob.stopJob();
 				MasterRunTaskJob.stopJob();
 				MasterGitPullJob.stopJob();
+				MasterCleanTokenJob.stopJob();
 			}
 
 		});
