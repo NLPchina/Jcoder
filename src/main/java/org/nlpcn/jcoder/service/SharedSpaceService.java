@@ -409,6 +409,9 @@ public class SharedSpaceService {
 					case NODE_ADDED:
 					case NODE_UPDATED:
 					case NODE_REMOVED:
+						if (event.getData().getPath().equals(GROUP_PATH)) {
+							return;
+						}
 						String path = event.getData().getPath().substring(GROUP_PATH.length() + 1);
 						String[] split = path.split("/");
 						String groupName = split[0];
@@ -827,9 +830,9 @@ public class SharedSpaceService {
 			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file, false)));
 			LOG.info("up file: {} to {} -> {}", file.getAbsoluteFile(), groupName, relativePath);
 		} else {
-			try{
+			try {
 				zkDao.getZk().delete().deletingChildrenIfNeeded().forPath(GROUP_PATH + "/" + groupName + "/file" + relativePath);
-			}catch (KeeperException.NoNodeException e){
+			} catch (KeeperException.NoNodeException e) {
 			}
 
 			LOG.info("delete file to {} -> {}", groupName, relativePath);

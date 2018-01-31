@@ -7,6 +7,8 @@ import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.CodeRuntimeException;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.run.annotation.Single;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.domain.RpcContext;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.MapCount;
@@ -128,7 +130,7 @@ public class JavaRunner {
 				codeInfo.setClassz(clz);
 
 			} catch (IOException | CodeException e) {
-				LOG.debug("code compile err ",e);
+				LOG.debug("code compile err ", e);
 				throw new CodeRuntimeException(e);
 			}
 		}
@@ -174,8 +176,16 @@ public class JavaRunner {
 		try {
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
 
+			/**
+			 * 设置groupname
+			 */
+			RpcContext ctx = Rpcs.ctx();
+			if (ctx.getGroupName() == null) {
+				ctx.setGroupName(task.getGroupName());
+			}
 
 			Thread.currentThread().setContextClassLoader(codeInfo.getClassLoader());
+
 			Mvcs.setIoc(codeInfo.getIoc());
 
 			objInstance = codeInfo.getClassz().newInstance();

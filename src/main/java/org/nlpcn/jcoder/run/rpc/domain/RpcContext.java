@@ -24,7 +24,6 @@ public class RpcContext {
 	 */
 	private long took ;
 
-	private int type;
 
 	public void put(Object key, Object value) {
 		if (map == null) {
@@ -38,15 +37,6 @@ public class RpcContext {
 			return null;
 		}
 		return map.get(key);
-	}
-
-
-	public int getType() {
-		return type;
-	}
-
-	public void setType(int type) {
-		this.type = type;
 	}
 
 	public String getGroupName() {
