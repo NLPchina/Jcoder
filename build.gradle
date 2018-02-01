@@ -34,7 +34,7 @@ dependencies {
 	compile 'org.eclipse.jgit:org.eclipse.jgit:4.10.0.201712302008-r'
 
 	//new version use log
-	compile 'org.slf4j:log4j-over-slf4j:1.7.25'
+	compile 'org.apache.logging.log4j:log4j-1.2-api:2.10.0'
 	compile 'org.slf4j:slf4j-api:1.7.25'
 	compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-jcl:2.10.0'

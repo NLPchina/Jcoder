@@ -9,6 +9,7 @@ import org.nlpcn.jcoder.service.FileInfoService;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,7 @@ import java.util.*;
  * 定时比和主集群做different
  */
 public class CheckDiffJob implements Runnable {
+
 
 	private static final Logger LOG = LoggerFactory.getLogger(CheckDiffJob.class);
 

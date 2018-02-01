@@ -1,12 +1,19 @@
 package org.nlpcn.jcoder.util;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 
 import java.io.Closeable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -14,7 +21,7 @@ import java.util.stream.Collectors;
  * <p>
  * Created by Ansj on 18/12/2017.
  */
-public class ZKMap<V> implements Closeable{
+public class ZKMap<V> implements Closeable {
 
 	private TreeCache treeCache;
 
@@ -36,8 +43,6 @@ public class ZKMap<V> implements Closeable{
 
 	/**
 	 * 值返回当前目录下一级节点的个数
-	 *
-	 * @return
 	 */
 	public int size() {
 		return treeCache.getCurrentChildren(path).size();
@@ -57,9 +62,6 @@ public class ZKMap<V> implements Closeable{
 
 	/**
 	 * key是抽象路径。不要以/开始
-	 *
-	 * @param key
-	 * @return
 	 */
 	public V get(Object key) {
 		ChildData currentData = treeCache.getCurrentData(path + "/" + key);
@@ -144,7 +146,12 @@ public class ZKMap<V> implements Closeable{
 	public Map<String, V> toMap() {
 		Map<String, ChildData> currentChildren = treeCache.getCurrentChildren(path);
 
+		if (currentChildren == null) {
+			return Collections.emptyMap();
+		}
+
 		Map<String, V> result = new HashMap<>();
+
 
 		for (Map.Entry<String, ChildData> entry : currentChildren.entrySet()) {
 			result.put(entry.getKey(), JSONObject.parseObject(entry.getValue().getData(), vClass));
