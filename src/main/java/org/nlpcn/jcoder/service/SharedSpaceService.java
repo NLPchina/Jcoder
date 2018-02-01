@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  */
 public class SharedSpaceService {
 
+	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
+
 	/**
 	 * 路由表
 	 */
@@ -56,7 +58,7 @@ public class SharedSpaceService {
 	 * |-lib libMap(libName,md5)
 	 */
 	public static final String GROUP_PATH = StaticValue.ZK_ROOT + "/group";
-	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
+
 	/**
 	 * Master
 	 */
