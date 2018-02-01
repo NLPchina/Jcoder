@@ -5,7 +5,7 @@ out/
 .settings/
 bin/
 .ext*
-log/
+/log/
 /build/
 /target
 bak/
