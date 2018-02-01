@@ -1,16 +1,14 @@
 package org.nlpcn.jcoder.run.mvc.cache;
 
-import java.util.Arrays;
-import java.util.Objects;
+import com.alibaba.fastjson.JSON;
+import org.nutz.json.Json;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpSession;
-
-import org.nutz.json.Json;
-
-import com.alibaba.fastjson.JSON;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class Args {
 
@@ -20,16 +18,22 @@ public class Args {
 		this.args = args;
 	}
 
+	public static Args create(Object[] args) {
+		return new Args(args);
+	}
+
+	public static void main(String[] args) {
+		Object temp = new Object[0];
+
+		System.out.println(temp instanceof Object[]);
+	}
+
 	public Object[] getArgs() {
 		return args;
 	}
 
 	public void setArgs(Object[] args) {
 		this.args = args;
-	}
-
-	public static Args create(Object[] args) {
-		return new Args(args);
 	}
 
 	@Override
@@ -97,11 +101,5 @@ public class Args {
 		}
 
 		return Json.toJson(o1).equals(JSON.toJSON(o2));
-	}
-
-	public static void main(String[] args) {
-		Object temp = new Object[0];
-
-		System.out.println(temp instanceof Object[]);
 	}
 }

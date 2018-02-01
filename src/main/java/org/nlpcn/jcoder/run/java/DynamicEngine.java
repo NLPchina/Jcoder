@@ -1,5 +1,13 @@
 package org.nlpcn.jcoder.run.java;
 
+import com.google.common.base.Joiner;
+import org.nlpcn.jcoder.run.CodeException;
+import org.nlpcn.jcoder.scheduler.TaskException;
+import org.nlpcn.jcoder.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.tools.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -10,50 +18,32 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.ToolProvider;
-
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.run.CodeException;
-import org.nlpcn.jcoder.scheduler.TaskException;
-import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Joiner;
-
 @SuppressWarnings("all")
 public class DynamicEngine {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DynamicEngine.class);
 
-	private String groupName ;
+	private String groupName;
+	private URLClassLoader classLoader;
+	private String classpath;
 
-	public DynamicEngine(String groupName){
-		this.groupName = groupName ;
+
+	public DynamicEngine(String groupName) {
+		this.groupName = groupName;
+	}
+
+	private DynamicEngine(URLClassLoader classLoader) {
+		this.classLoader = classLoader;
+		this.buildClassPath();
 	}
 
 	/**
 	 * 刷新instance
-	 * 
+	 *
 	 * @throws TaskException
 	 */
 	public void flush(URLClassLoader classLoader) throws TaskException {
 		// if class load change , to flush all task
-		this.classLoader = classLoader ;
-		this.buildClassPath() ;
-	}
-
-
-	private URLClassLoader classLoader;
-
-	private String classpath;
-
-	private DynamicEngine(URLClassLoader classLoader) {
 		this.classLoader = classLoader;
 		this.buildClassPath();
 	}
@@ -234,7 +224,7 @@ public class DynamicEngine {
 
 
 	public void close() throws IOException {
-		if(this.classLoader!=null){
+		if (this.classLoader != null) {
 			this.classLoader.close();
 			System.gc();
 			try {

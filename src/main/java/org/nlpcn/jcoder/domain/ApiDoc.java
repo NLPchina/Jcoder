@@ -6,10 +6,10 @@ import java.util.Map;
 
 public abstract class ApiDoc {
 
-	private String name;
-	private String content;
 	protected List<ApiDoc> sub;
 	protected Map<String, String> attr;
+	private String name;
+	private String content;
 
 	public ApiDoc(String name) {
 		this.name = name;

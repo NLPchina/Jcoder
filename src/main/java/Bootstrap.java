@@ -1,4 +1,3 @@
-import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -6,7 +5,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.nlpcn.jcoder.util.StaticValue;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -44,8 +42,6 @@ public class Bootstrap {
 						putEnv(PREFIX + "host", dim[1]);
 					} else if (dim[0].equals("--port")) {
 						putEnv(PREFIX + "port", dim[1]);
-					} else if (dim[0].equals("--rpcport")) {
-						putEnv(PREFIX + "rpcport", dim[1]);
 					} else if (dim[0].equals("--home")) {
 						putEnv(PREFIX + "home", dim[1]);
 					} else if (dim[0].equals("--log")) {
@@ -58,7 +54,7 @@ public class Bootstrap {
 						putEnv(PREFIX + "token", dim[1]);
 					} else if (dim[0].equals("--zk")) {
 						putEnv(PREFIX + "zk", dim[1]);
-					}else if (dim[0].equals("--testing")) {
+					} else if (dim[0].equals("--testing")) {
 						putEnv(PREFIX + "testing", dim[1]);
 					}
 				}

@@ -22,15 +22,6 @@ public class JcoderAppender extends AbstractAppender {
 		super(name, filter, layout);
 	}
 
-	@Override
-	public void append(LogEvent event) {
-//		if (StaticValue.space() == null) {
-//			return;
-//		}
-//		StaticValue.space().getRoomService().sendMessage("jcoder_log", event.getMessage().getFormattedMessage());
-		return  ;
-	}
-
 	// 下面这个方法可以接收配置文件中的参数信息
 	@PluginFactory
 	public static JcoderAppender createAppender(@PluginAttribute("name") String name,
@@ -45,5 +36,11 @@ public class JcoderAppender extends AbstractAppender {
 			layout = PatternLayout.createDefaultLayout();
 		}
 		return new JcoderAppender(name, filter, layout);
+	}
+
+	@Override
+	public void append(LogEvent event) {
+//		StaticValue.space().getRoomService().sendMessage("jcoder_log", event.getMessage().getFormattedMessage());
+		return;
 	}
 }

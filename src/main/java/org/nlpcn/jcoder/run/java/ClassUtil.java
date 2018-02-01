@@ -1,11 +1,8 @@
 package org.nlpcn.jcoder.run.java;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import org.nlpcn.jcoder.util.JcoderIOUtil;
+
+import java.io.*;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -15,13 +12,10 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.nlpcn.jcoder.util.JcoderIOUtil;
-
 /**
  * 类相关的工具类
- * 
+ *
  * @author <a href="mailto:ohergal@gmail.com">ohergal</a>
- * 
  */
 public class ClassUtil {
 
@@ -50,7 +44,7 @@ public class ClassUtil {
 	 * @param packageName
 	 * @return
 	 */
-	public static Map<String, byte[]> getClasses(String packageName , ClassLoader classLoader) {
+	public static Map<String, byte[]> getClasses(String packageName, ClassLoader classLoader) {
 
 		// 第一个class类的集合
 		Map<String, byte[]> classes = new HashMap<>();
@@ -75,7 +69,7 @@ public class ClassUtil {
 			sb.append(split[split.length - 2]);
 			sb.append(".class");
 
-			String resourcePath = sb.toString() ;
+			String resourcePath = sb.toString();
 
 			InputStream resourceAsStream = classLoader.getResourceAsStream(resourcePath);
 			byte[] input2Bytes;
@@ -160,7 +154,7 @@ public class ClassUtil {
 
 	/**
 	 * 以文件的形式来获取包下的所有Class
-	 * 
+	 *
 	 * @param packageName
 	 * @param packagePath
 	 * @param recursive

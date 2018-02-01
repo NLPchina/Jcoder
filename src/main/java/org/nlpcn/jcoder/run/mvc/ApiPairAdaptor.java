@@ -38,40 +38,85 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 public class ApiPairAdaptor extends PairAdaptor {
-	
+
 	private static final Log log = Logs.get();
-	
+
 	protected UploadingContext uploadCtx;
-	
+
 	public ApiPairAdaptor() {
 		this("");
 	}
 
 	public ApiPairAdaptor(String path) {
-        String appRoot = Mvcs.getServletContext().getRealPath("/");
-        if(appRoot==null){
-        	appRoot = "" ;
-        }
-        if (path.isEmpty()) {
-            path = "${app.root}/WEB-INF/tmp/nutzupload2";
-        }
-        if (path.contains("${app.root}")){
-            path = path.replace("${app.root}", appRoot);
-        }
-        try{
-        	uploadCtx = new UploadingContext(new UU32FilePool(path));
-        }catch (Exception e) {
-        	log.error(e.getMessage());
+		String appRoot = Mvcs.getServletContext().getRealPath("/");
+		if (appRoot == null) {
+			appRoot = "";
 		}
-    }
+		if (path.isEmpty()) {
+			path = "${app.root}/WEB-INF/tmp/nutzupload2";
+		}
+		if (path.contains("${app.root}")) {
+			path = path.replace("${app.root}", appRoot);
+		}
+		try {
+			uploadCtx = new UploadingContext(new UU32FilePool(path));
+		} catch (Exception e) {
+			log.error(e.getMessage());
+		}
+	}
 
-    public ApiPairAdaptor(FilePool pool) {
-        this(new UploadingContext(pool));
-    }
+	public ApiPairAdaptor(FilePool pool) {
+		this(new UploadingContext(pool));
+	}
 
-    public ApiPairAdaptor(UploadingContext up) {
-        uploadCtx = up;
-    }
+	public ApiPairAdaptor(UploadingContext up) {
+		uploadCtx = up;
+	}
+
+	private static ParamInjector evalInjectorByAttrScope(Attr attr) {
+		if (attr.scope() == Scope.APP)
+			return new AppAttrInjector(attr.value());
+		if (attr.scope() == Scope.SESSION)
+			return new SessionAttrInjector(attr.value());
+		if (attr.scope() == Scope.REQUEST)
+			return new RequestAttrInjector(attr.value());
+		return new AllAttrInjector(attr.value());
+	}
+
+	private static ParamInjector evalInjectorByParamType(Class<?> type) {
+		// Request
+		if (ServletRequest.class.isAssignableFrom(type)) {
+			return new RequestInjector();
+		}
+		// Response
+		else if (ServletResponse.class.isAssignableFrom(type)) {
+			return new ResponseInjector();
+		}
+		// Session
+		else if (HttpSession.class.isAssignableFrom(type)) {
+			return new SessionInjector();
+		}
+		// ServletContext
+		else if (ServletContext.class.isAssignableFrom(type)) {
+			return new ServletContextInjector();
+		}
+		// Ioc
+		else if (Ioc.class.isAssignableFrom(type)) {
+			return new IocInjector();
+		}
+		// InputStream
+		else if (InputStream.class.isAssignableFrom(type)) {
+			return new HttpInputStreamInjector();
+		}
+		// Reader
+		else if (Reader.class.isAssignableFrom(type)) {
+			return new HttpReaderInjector();
+		}
+		// ViewModel
+		else if (ViewModel.class.isAssignableFrom(type))
+			return new ViewModelInjector();
+		return null;
+	}
 
 	@Override
 	public void init(Method method) {
@@ -152,7 +197,7 @@ public class ApiPairAdaptor extends PairAdaptor {
 
 			if (param == null) {
 
-				
+
 				final String paramName = parameters[i].getName();
 
 				param = new Param() {
@@ -205,18 +250,6 @@ public class ApiPairAdaptor extends PairAdaptor {
 		}
 	}
 
-	
-	private static ParamInjector evalInjectorByAttrScope(Attr attr) {
-        if (attr.scope() == Scope.APP)
-            return new AppAttrInjector(attr.value());
-        if (attr.scope() == Scope.SESSION)
-            return new SessionAttrInjector(attr.value());
-        if (attr.scope() == Scope.REQUEST)
-            return new RequestAttrInjector(attr.value());
-        return new AllAttrInjector(attr.value());
-    }
-
-
 	protected ParamInjector evalInjectorBy(Type type, Param param) {
 		// TODO 这里的实现感觉很丑, 感觉可以直接用type进行验证与传递
 		// TODO 这里将Type的影响局限在了 github issue #30 中提到的局部范围
@@ -268,7 +301,6 @@ public class ApiPairAdaptor extends PairAdaptor {
 		return getNameInjector(pm, datefmt, type, paramTypes, defaultValue);
 	}
 
-
 	protected Object getReferObject(ServletContext sc, HttpServletRequest req, HttpServletResponse resp, String[] pathArgs) {
 		String type = req.getHeader("Content-Type");
 		if (!Strings.isBlank(type)) {
@@ -290,39 +322,4 @@ public class ApiPairAdaptor extends PairAdaptor {
 		}
 		return super.getReferObject(sc, req, resp, pathArgs);
 	}
-	
-	  private static ParamInjector evalInjectorByParamType(Class<?> type) {
-	        // Request
-	        if (ServletRequest.class.isAssignableFrom(type)) {
-	            return new RequestInjector();
-	        }
-	        // Response
-	        else if (ServletResponse.class.isAssignableFrom(type)) {
-	            return new ResponseInjector();
-	        }
-	        // Session
-	        else if (HttpSession.class.isAssignableFrom(type)) {
-	            return new SessionInjector();
-	        }
-	        // ServletContext
-	        else if (ServletContext.class.isAssignableFrom(type)) {
-	            return new ServletContextInjector();
-	        }
-	        // Ioc
-	        else if (Ioc.class.isAssignableFrom(type)) {
-	            return new IocInjector();
-	        }
-	        // InputStream
-	        else if (InputStream.class.isAssignableFrom(type)) {
-	            return new HttpInputStreamInjector();
-	        }
-	        // Reader
-	        else if (Reader.class.isAssignableFrom(type)) {
-	            return new HttpReaderInjector();
-	        }
-	        // ViewModel
-	        else if (ViewModel.class.isAssignableFrom(type))
-	            return new ViewModelInjector();
-	        return null;
-	    }
 }

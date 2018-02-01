@@ -14,7 +14,7 @@ public class TaskStatistics {
 
 	private long weight;
 
-	private HostGroup hostGroup ;
+	private HostGroup hostGroup;
 
 	public String getHostPort() {
 		return hostPort;

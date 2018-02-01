@@ -17,22 +17,17 @@ public abstract class ProxyHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(ProxyHandler.class);
 
 	private static String myToken = null;
-
+	protected String className;
+	protected int timeout;
 	private String[] hostPorts;
 
-	protected String className;
-
-	protected int timeout;
-
-
-	public void setHostPorts(String... hostPorts){
-		this.hostPorts = hostPorts ;
+	public void setHostPorts(String... hostPorts) {
+		this.hostPorts = hostPorts;
 	}
 
-	public void setPath(String path){
+	public void setPath(String path) {
 
 	}
-
 
 
 	/**

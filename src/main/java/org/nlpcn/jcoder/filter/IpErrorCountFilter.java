@@ -1,17 +1,15 @@
 package org.nlpcn.jcoder.filter;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.run.rpc.RpcFilter;
 import org.nlpcn.jcoder.run.rpc.Rpcs;
 import org.nlpcn.jcoder.run.rpc.domain.RpcRequest;
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.run.mvc.view.JsonView;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionFilter;
 import org.nutz.mvc.Mvcs;
@@ -19,14 +17,14 @@ import org.nutz.mvc.View;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * this filter record err times by err() , if times gather than maxCount , it while be shield your request
- * 
- * @author ansj
  *
+ * @author ansj
  */
 public class IpErrorCountFilter implements ActionFilter, RpcFilter {
 
@@ -42,25 +40,6 @@ public class IpErrorCountFilter implements ActionFilter, RpcFilter {
 		} else {
 			this.maxCount = Integer.parseInt(maxCountStr);
 		}
-	}
-
-	@Override
-	public View match(ActionContext actionContext) {
-
-		String ip = StaticValue.getRemoteHost(actionContext.getRequest());
-
-		AtomicInteger times = IP_CACHW.getIfPresent(ip);
-
-		if (times == null) {
-			return null;
-		}
-
-		if (times.get() >= maxCount) {
-			LOG.info(ip + "err times gather than " + maxCount);
-			return new JsonView(Restful.instance(false, "your err times gather than " + maxCount + " please wait 20 minute try again", null, ApiException.Unauthorized));
-		}
-
-		return null;
 	}
 
 	public static int err() {
@@ -81,6 +60,25 @@ public class IpErrorCountFilter implements ActionFilter, RpcFilter {
 			LOG.error(e.getMessage(), e);
 		}
 		return 0;
+	}
+
+	@Override
+	public View match(ActionContext actionContext) {
+
+		String ip = StaticValue.getRemoteHost(actionContext.getRequest());
+
+		AtomicInteger times = IP_CACHW.getIfPresent(ip);
+
+		if (times == null) {
+			return null;
+		}
+
+		if (times.get() >= maxCount) {
+			LOG.info(ip + "err times gather than " + maxCount);
+			return new JsonView(Restful.instance(false, "your err times gather than " + maxCount + " please wait 20 minute try again", null, ApiException.Unauthorized));
+		}
+
+		return null;
 	}
 
 	@Override

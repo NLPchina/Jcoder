@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.controller;
 
 import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.nlpcn.jcoder.domain.GroupGit;
@@ -16,11 +15,7 @@ import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 
 import java.util.List;
 import java.util.Map;

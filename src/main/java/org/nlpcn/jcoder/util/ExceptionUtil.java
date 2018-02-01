@@ -1,17 +1,16 @@
 package org.nlpcn.jcoder.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * 打印异常
- * 
+ *
  * @author ansj
- * 
  */
 public class ExceptionUtil {
 
@@ -19,7 +18,7 @@ public class ExceptionUtil {
 
 	/**
 	 * 将堆栈异常转换为string
-	 * 
+	 *
 	 * @param e
 	 * @return
 	 */
@@ -31,14 +30,14 @@ public class ExceptionUtil {
 			sw.flush();
 			return sw.toString();
 		} catch (IOException e1) {
-			LOG.error(e.getMessage(),e1);
+			LOG.error(e.getMessage(), e1);
 			return e.getMessage();
 		}
 	}
 
 	/**
 	 * 将堆栈异常转换为string,转为一行
-	 * 
+	 *
 	 * @param e
 	 * @return
 	 */
@@ -50,14 +49,14 @@ public class ExceptionUtil {
 			sw.flush();
 			return sw.toString().replace("\n", "\t");
 		} catch (IOException e1) {
-			LOG.info(e1.getMessage(),e1);
+			LOG.info(e1.getMessage(), e1);
 			return e.getMessage();
 		}
 	}
 
 	/**
 	 * 检查当前抛出异常是否是interruptException
-	 * 
+	 *
 	 * @param e
 	 * @return
 	 */
@@ -85,11 +84,11 @@ public class ExceptionUtil {
 	}
 
 	public static Throwable realException(Throwable e) {
-		Throwable exception = e ;
-		Throwable temp = null ;
-		while((temp=exception.getCause())!=null){
-			exception = temp ;
+		Throwable exception = e;
+		Throwable temp = null;
+		while ((temp = exception.getCause()) != null) {
+			exception = temp;
 		}
-		return exception ;
+		return exception;
 	}
 }

@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LsRemoteCommand;
@@ -16,12 +15,7 @@ import org.nlpcn.jcoder.domain.GroupGit;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.Maps;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.*;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -36,14 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 @IocBean
@@ -221,9 +209,8 @@ public class GitSerivce {
 		}
 
 		if (changeList.size() > 0) {
-			Lock lock = JarService.getLock(groupName);
 			try {
-				lock.lock();
+				JarService.lock(groupName);
 				// 关闭classloader，和Ioc
 				JarService.getOrCreate(groupName).release();
 				System.gc();

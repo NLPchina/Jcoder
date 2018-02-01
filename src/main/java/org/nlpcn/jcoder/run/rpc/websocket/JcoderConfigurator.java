@@ -7,7 +7,7 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 
-public class JcoderConfigurator  extends ServerEndpointConfig.Configurator {
+public class JcoderConfigurator extends ServerEndpointConfig.Configurator {
 
 	public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
 		Ioc ioc = Mvcs.getIoc();

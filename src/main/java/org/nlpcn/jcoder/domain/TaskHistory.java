@@ -52,6 +52,25 @@ public class TaskHistory {
 	@Column("status")
 	private Integer status;
 
+	public TaskHistory() {
+	}
+
+	public TaskHistory(Task t) {
+		this.taskId = t.getId();
+		this.code = t.getCode();
+		this.createTime = t.getCreateTime();
+		this.createUser = t.getCreateUser();
+		this.description = t.getDescription();
+		this.groupName = t.getGroupName();
+		this.name = t.getName();
+		this.scheduleStr = t.getScheduleStr();
+		this.status = t.getStatus();
+		this.type = t.getType();
+		this.updateTime = t.getUpdateTime();
+		this.updateUser = t.getUpdateUser();
+		this.version = t.getVersion();
+	}
+
 	public Long getId() {
 		return id;
 	}
@@ -146,26 +165,6 @@ public class TaskHistory {
 
 	public void setStatus(Integer status) {
 		this.status = status;
-	}
-
-	
-	public TaskHistory() {
-	}
-
-	public TaskHistory(Task t) {
-		this.taskId = t.getId();
-		this.code = t.getCode();
-		this.createTime = t.getCreateTime();
-		this.createUser = t.getCreateUser();
-		this.description = t.getDescription();
-		this.groupName = t.getGroupName();
-		this.name = t.getName();
-		this.scheduleStr = t.getScheduleStr();
-		this.status = t.getStatus();
-		this.type = t.getType();
-		this.updateTime = t.getUpdateTime();
-		this.updateUser = t.getUpdateUser();
-		this.version = t.getVersion();
 	}
 
 	public Long getTaskId() {

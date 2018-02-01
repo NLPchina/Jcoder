@@ -1,31 +1,25 @@
 package org.nlpcn.jcoder.util.dao;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.Multipart;
-import javax.mail.Session;
-import javax.mail.Transport;
+import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.Properties;
 
 /**
- * 
  * @author wang.kai@kuyun.com
  * @date 2014年10月27日
  */
 public class EmailDao {
 
 	private static final Logger LOG = LoggerFactory.getLogger(EmailDao.class);
-	
+
 	private String fromUser;
 	private String fromPassword;
 	private String smtpServer;
@@ -43,7 +37,7 @@ public class EmailDao {
 
 	/**
 	 * 向1到多个用户发送html格式的邮件。
-	 * 
+	 *
 	 * @param fromUser
 	 * @param fromPassword
 	 * @param smtpServer
@@ -57,7 +51,7 @@ public class EmailDao {
 
 	/**
 	 * 向1到多个用户发送文本格式的邮件。
-	 * 
+	 *
 	 * @param fromUser
 	 * @param fromPassword
 	 * @param smtpServer
@@ -71,7 +65,7 @@ public class EmailDao {
 
 	/**
 	 * 发送邮件， 支持1到多个用户，支持纯文本/html格式邮件。
-	 * 
+	 *
 	 * @param fromUser
 	 * @param fromPassword
 	 * @param smtpServer
@@ -120,7 +114,7 @@ public class EmailDao {
 			transport.close();
 		} catch (Exception e) {
 			e.printStackTrace();
-			LOG.error(e.getMessage(),e);
+			LOG.error(e.getMessage(), e);
 		}
 	}
 
@@ -132,8 +126,7 @@ public class EmailDao {
 	}
 
 	/**
-	 * @param fromUser
-	 *            the fromUser to set
+	 * @param fromUser the fromUser to set
 	 */
 	public void setFromUser(String fromUser) {
 		this.fromUser = fromUser;
@@ -147,8 +140,7 @@ public class EmailDao {
 	}
 
 	/**
-	 * @param fromPassword
-	 *            the fromPassword to set
+	 * @param fromPassword the fromPassword to set
 	 */
 	public void setFromPassword(String fromPassword) {
 		this.fromPassword = fromPassword;
@@ -162,12 +154,11 @@ public class EmailDao {
 	}
 
 	/**
-	 * @param smtpServer
-	 *            the smtpServer to set
+	 * @param smtpServer the smtpServer to set
 	 */
 	public void setSmtpServer(String smtpServer) {
 		this.smtpServer = smtpServer;
 	}
-	
+
 
 }

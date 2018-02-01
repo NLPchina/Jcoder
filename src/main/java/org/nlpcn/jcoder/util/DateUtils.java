@@ -16,15 +16,19 @@ public class DateUtils {
 	public static final String SDF_MMDD_ZH = "MM月dd日";
 	public static final String SDF_MONTH = "yyyy-MM";
 
-	/** 锁对象 */
+	/**
+	 * 锁对象
+	 */
 	private static final Object lockObj = new Object();
 
-	/** 存放不同的日期模板格式的sdf的Map */
+	/**
+	 * 存放不同的日期模板格式的sdf的Map
+	 */
 	private static Map<String, ThreadLocal<SimpleDateFormat>> sdfMap = new HashMap<String, ThreadLocal<SimpleDateFormat>>();
 
 	/**
 	 * 返回一个ThreadLocal的sdf,每个线程只会new一次sdf
-	 * 
+	 *
 	 * @param pattern
 	 * @return
 	 */
@@ -54,7 +58,7 @@ public class DateUtils {
 
 	/**
 	 * 将date转为今日0点
-	 * 
+	 *
 	 * @return
 	 */
 	public static Date zeroDate(Date date) {
@@ -69,17 +73,17 @@ public class DateUtils {
 
 	/**
 	 * 将date时间转换为整小时
-	 * 
+	 *
 	 * @return
 	 */
 	public static Date zeroHour(long time) {
 		return zeroHour(new Date(time));
 	}
-	
-	
+
+
 	/**
 	 * 将date时间转换为整小时
-	 * 
+	 *
 	 * @return
 	 */
 	public static Date zeroHour(Date date) {
@@ -93,7 +97,7 @@ public class DateUtils {
 
 	/**
 	 * 将date转为今日0点
-	 * 
+	 *
 	 * @return
 	 */
 	public static Date zeroDate(long time) {
@@ -140,11 +144,11 @@ public class DateUtils {
 
 	/**
 	 * 增加分钟
-	 * 
-	 * @author zhang_zg
+	 *
 	 * @param date
 	 * @param mi
 	 * @return
+	 * @author zhang_zg
 	 */
 	public static Date addMinutes(Date date, int minute) {
 		Calendar calendar = Calendar.getInstance();
@@ -155,10 +159,8 @@ public class DateUtils {
 	}
 
 	/**
-	 * @param date
-	 *            日期
-	 * @param days
-	 *            前几天
+	 * @param date 日期
+	 * @param days 前几天
 	 * @return
 	 */
 	public static Date getNextDay(Date date, int days) {
@@ -171,11 +173,11 @@ public class DateUtils {
 
 	/**
 	 * 增加月份
-	 * 
-	 * @author zhang_zg
+	 *
 	 * @param date
 	 * @param months
 	 * @return
+	 * @author zhang_zg
 	 */
 	public static Date addMonths(Date date, int months) {
 		Calendar calendar = Calendar.getInstance();
@@ -187,11 +189,11 @@ public class DateUtils {
 
 	/**
 	 * 获取两个日期之间的时间差，单位 秒
-	 * 
-	 * @author zhang_zg
+	 *
 	 * @param start
 	 * @param end
 	 * @return
+	 * @author zhang_zg
 	 */
 	public static long getDateDiff(Date start, Date end) {
 		return (end.getTime() - start.getTime()) / 1000;
@@ -224,7 +226,7 @@ public class DateUtils {
 
 	/**
 	 * 获得某一个时间的0点
-	 * 
+	 *
 	 * @param date
 	 * @return
 	 */

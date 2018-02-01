@@ -6,26 +6,21 @@ import java.util.Set;
 
 /**
  * api 的信息类
- * 
- * @author ansj
  *
+ * @author ansj
  */
 
 public class ClassDoc extends ApiDoc {
 
+	private String group;
+	private boolean single = true;
+	private boolean status = true;
+	private String version;
+	private String description;
+
 	public ClassDoc(String name) {
 		super(name);
 	}
-
-	private String group;
-
-	private boolean single = true;
-
-	private boolean status = true;
-	
-	private String version ;
-
-	private String description;
 
 	public String getGroup() {
 		return group;
@@ -42,7 +37,7 @@ public class ClassDoc extends ApiDoc {
 	public void setSingle(boolean single) {
 		this.single = single;
 	}
-	
+
 	public String getVersion() {
 		return version;
 	}
@@ -67,17 +62,25 @@ public class ClassDoc extends ApiDoc {
 		this.description = description;
 	}
 
+	@Override
+	public ApiDoc createSubDoc(String name) {
+		MethodDoc methodDoc = new MethodDoc(name);
+		if (sub == null) {
+			sub = new ArrayList<>();
+		}
+		sub.add(methodDoc);
+		return methodDoc;
+	}
+
 	public class MethodDoc extends ApiDoc {
+		private boolean defaultExecute;
+		private String returnContent;
+		private Set<String> methods = new HashSet<>();
+
 		public MethodDoc(String name) {
 			super(name);
 		}
 
-		private boolean defaultExecute;
-
-		private String returnContent;
-
-		private Set<String> methods = new HashSet<>();
-		
 		public boolean isDefaultExecute() {
 			return defaultExecute;
 		}
@@ -106,13 +109,23 @@ public class ClassDoc extends ApiDoc {
 			methods.add(method);
 		}
 
+		@Override
+		public ApiDoc createSubDoc(String name) {
+			ParamDoc paramDoc = new ParamDoc(name);
+			if (sub == null) {
+				sub = new ArrayList<>();
+			}
+			sub.add(paramDoc);
+			return paramDoc;
+		}
+
 		public class ParamDoc extends ApiDoc {
 
 			private String fieldName;
 
 			private String type;
 
-            private boolean required;
+			private boolean required;
 
 			public ParamDoc(String name) {
 				super(name);
@@ -134,39 +147,19 @@ public class ClassDoc extends ApiDoc {
 				this.type = type;
 			}
 
-            public boolean isRequired() {
-                return required;
-            }
+			public boolean isRequired() {
+				return required;
+			}
 
-            public void setRequired(boolean required) {
-                this.required = required;
-            }
+			public void setRequired(boolean required) {
+				this.required = required;
+			}
 
-            @Override
+			@Override
 			public ApiDoc createSubDoc(String name) {
 				return null;
 			}
 		}
-
-		@Override
-		public ApiDoc createSubDoc(String name) {
-			ParamDoc paramDoc = new ParamDoc(name);
-			if (sub == null) {
-				sub = new ArrayList<>();
-			}
-			sub.add(paramDoc);
-			return paramDoc;
-		}
-	}
-
-	@Override
-	public ApiDoc createSubDoc(String name) {
-		MethodDoc methodDoc = new MethodDoc(name);
-		if (sub == null) {
-			sub = new ArrayList<>();
-		}
-		sub.add(methodDoc);
-		return methodDoc;
 	}
 
 }

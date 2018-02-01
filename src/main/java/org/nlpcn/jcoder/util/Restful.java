@@ -8,86 +8,22 @@ import org.nutz.http.Response;
 
 public class Restful {
 
-	public static Restful ok() {
-		return new Restful(true);
-	}
-
-	public static Restful fail() {
-		return new Restful(false).code(ApiException.ServerException);
-	}
-
 	private boolean ok = true;
-
 	private String message;
-
 	private Object obj;
-
 	/**
 	 * server ipPort
 	 */
 	private String server;
-
 	/**
 	 * use time
 	 */
 	private Long took;
-
 	/**
 	 * 执行的版本
 	 */
 	private String version;
-
 	private int code = ApiException.OK;
-
-	public boolean isOk() {
-		return ok;
-	}
-
-	public void setOk(boolean ok) {
-		this.ok = ok;
-	}
-
-	public String getMessage() {
-		return message;
-	}
-
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public <T> T getObj() {
-		return (T) obj;
-	}
-
-	public JSONObject obj2JsonObject() {
-		if (obj == null || obj instanceof JSONObject) return (JSONObject) obj;
-		if (obj instanceof String) {
-			return JSONObject.parseObject((String) obj);
-		} else {
-			return (JSONObject) JSONObject.toJSON(obj);
-		}
-	}
-
-	public JSONArray obj2JsonArray() {
-		if (obj == null || obj instanceof JSONArray) return (JSONArray) obj;
-		if (obj instanceof String) {
-			return JSONObject.parseArray((String) obj);
-		} else {
-			return (JSONArray) JSONObject.toJSON(obj);
-		}
-	}
-
-	public void setObj(Object obj) {
-		this.obj = obj;
-	}
-
-	public int code() {
-		return code;
-	}
-
-	public void setCode(int code) {
-		this.code = code;
-	}
 
 	public Restful() {
 	}
@@ -123,6 +59,14 @@ public class Restful {
 		this.obj = obj;
 	}
 
+	public static Restful ok() {
+		return new Restful(true);
+	}
+
+	public static Restful fail() {
+		return new Restful(false).code(ApiException.ServerException);
+	}
+
 	public static Restful instance() {
 		return new Restful();
 	}
@@ -149,6 +93,67 @@ public class Restful {
 	 */
 	public static Restful instance(Object obj) {
 		return new Restful(obj);
+	}
+
+	/**
+	 * nutz response 转换为 restful对象
+	 *
+	 * @return
+	 */
+	public static Restful instance(Response response) {
+		Restful restful = JSONObject.parseObject(response.getContent(), Restful.class);
+		restful.setCode(response.getStatus());
+		return restful;
+	}
+
+	public boolean isOk() {
+		return ok;
+	}
+
+	public void setOk(boolean ok) {
+		this.ok = ok;
+	}
+
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
+
+	public <T> T getObj() {
+		return (T) obj;
+	}
+
+	public void setObj(Object obj) {
+		this.obj = obj;
+	}
+
+	public JSONObject obj2JsonObject() {
+		if (obj == null || obj instanceof JSONObject) return (JSONObject) obj;
+		if (obj instanceof String) {
+			return JSONObject.parseObject((String) obj);
+		} else {
+			return (JSONObject) JSONObject.toJSON(obj);
+		}
+	}
+
+	public JSONArray obj2JsonArray() {
+		if (obj == null || obj instanceof JSONArray) return (JSONArray) obj;
+		if (obj instanceof String) {
+			return JSONObject.parseArray((String) obj);
+		} else {
+			return (JSONArray) JSONObject.toJSON(obj);
+		}
+	}
+
+	public int code() {
+		return code;
+	}
+
+	public void setCode(int code) {
+		this.code = code;
 	}
 
 	public Restful msg(String message) {
@@ -193,17 +198,6 @@ public class Restful {
 
 	public String toJsonString() {
 		return JSON.toJSONString(this);
-	}
-
-	/**
-	 * nutz response 转换为 restful对象
-	 *
-	 * @return
-	 */
-	public static Restful instance(Response response) {
-		Restful restful = JSONObject.parseObject(response.getContent(), Restful.class);
-		restful.setCode(response.getStatus());
-		return restful;
 	}
 
 	public String getServer() {

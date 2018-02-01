@@ -1,9 +1,7 @@
 package org.nlpcn.jcoder.job;
 
-import com.google.common.collect.ImmutableMap;
-
 import com.alibaba.fastjson.JSONObject;
-
+import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.nlpcn.jcoder.domain.GroupGit;
@@ -27,6 +25,9 @@ public class MasterGitPullJob implements Runnable {
 	private static final Logger LOG = LoggerFactory.getLogger(MasterGitPullJob.class);
 
 	private static Thread thread = null;
+
+	private MasterGitPullJob() {
+	}
 
 	/**
 	 * 当竞选为master时候调用此方法
@@ -53,9 +54,6 @@ public class MasterGitPullJob implements Runnable {
 		thread = null;
 	}
 
-	private MasterGitPullJob() {
-	}
-
 	@Override
 	public void run() {
 
@@ -69,10 +67,6 @@ public class MasterGitPullJob implements Runnable {
 		 */
 		while (StaticValue.isMaster()) {
 			try {
-				if (StaticValue.space() == null) { //space 可能没准备好
-					Thread.sleep(100L);
-					continue;
-				}
 				TreeCache groupCache = StaticValue.space().getGroupCache();
 				Map<String, ChildData> currentChildren = groupCache.getCurrentChildren(SharedSpaceService.GROUP_PATH);
 				List<GroupGit> list = currentChildren.entrySet().stream().map(e -> {

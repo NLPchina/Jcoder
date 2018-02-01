@@ -1,17 +1,13 @@
 package org.nlpcn.jcoder.domain;
 
-import org.nlpcn.jcoder.util.StaticValue;
-
-import java.io.File;
-
 /**
  * Created by Ansj on 25/12/2017.
  */
 public class GroupCache {
 
-	private String timeMD5 ;
-	private String groupMD5 ;
-	private String pomMD5 ;
+	private String timeMD5;
+	private String groupMD5;
+	private String pomMD5;
 
 	public String getTimeMD5() {
 		return timeMD5;

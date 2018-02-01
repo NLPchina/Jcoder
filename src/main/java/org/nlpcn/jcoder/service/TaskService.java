@@ -4,25 +4,16 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.nlpcn.jcoder.constant.TaskStatus;
 import org.nlpcn.jcoder.constant.TaskType;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
-import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskHistory;
-import org.nlpcn.jcoder.domain.TaskInfo;
 import org.nlpcn.jcoder.filter.TestingFilter;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.JavaDocUtil;
-import org.nlpcn.jcoder.util.MapCount;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.castor.Castors;
 import org.nutz.dao.Cnd;
@@ -35,11 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,13 +37,9 @@ import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
 @IocBean
 public class TaskService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
-
-	private static final ConcurrentHashMap<Object, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
-
 	public static final String VERSION_SPLIT = "_";
-
-
+	private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
+	private static final ConcurrentHashMap<Object, Task> TASK_MAP_CACHE = new ConcurrentHashMap<>();
 	/**
 	 * 记录task执行成功失败的计数器
 	 */
@@ -69,260 +52,6 @@ public class TaskService {
 
 	private BasicDao basicDao = StaticValue.systemDao;
 
-	/**
-	 * 根据分组名称获取所有Task
-	 *
-	 * @param groupName 组名
-	 */
-	public List<Task> getTasksByGroupNameFromCluster(String groupName) throws Exception {
-		CuratorFramework zk = StaticValue.space().getZk();
-		String path = GROUP_PATH + "/" + groupName;
-		List<String> taskNames = zk.getChildren().forPath(path);
-		List<Task> tasks = new ArrayList<>(taskNames.size());
-		Task t;
-		for (String name : taskNames) {
-			t = JSONObject.parseObject(zk.getData().forPath(path + "/" + name), Task.class);
-			if (t != null && StringUtil.isNotBlank(t.getCode())) {
-				tasks.add(t);
-			}
-		}
-		return tasks;
-	}
-
-	/**
-	 * 根据分组名称获取所有Task
-	 *
-	 * @param groupName 组名
-	 */
-	public Task getTaskFromCluster(String groupName, String taskName) {
-		try {
-			return StaticValue.space().getData(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return null ;
-	}
-
-	/**
-	 * 删除ZK集群里的Task
-	 *
-	 * @param groupName 组名
-	 * @param taskName  任务名
-	 */
-	public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
-		String path = GROUP_PATH + "/" + groupName + "/" + taskName;
-		LOG.info("to delete task in zookeeper: {}", path);
-		if (!existsInCluster(groupName, taskName)) {
-			LOG.warn("task[{}] not found in zookeeper", path);
-		} else {
-			StaticValue.space().getZk().delete().forPath(path);
-		}
-	}
-
-	public boolean existsInCluster(String groupName, String taskName) throws Exception {
-		return StaticValue.space().getZk().checkExists().forPath(GROUP_PATH + "/" + groupName + "/" + taskName) != null;
-	}
-
-	/**
-	 * 保存或者更新一个任务
-	 */
-	public boolean saveOrUpdate(Task task) throws Exception {
-		// 历史库版本保存
-		boolean isModify = checkTaskModify(task);
-
-		String message = null;
-		if ((validate(task)) != null) {
-			throw new CodeException(message);
-		}
-
-		if (isModify) {
-			String version = generateVersion(task);
-			task.setVersion(version);
-		}
-
-		if (task.getId() == null) {
-			task = basicDao.save(task);
-		} else {
-			basicDao.update(task);
-		}
-
-		if (isModify) {
-			basicDao.save(new TaskHistory(task));
-		}
-
-		flush(task.getId());
-
-		return isModify;
-	}
-
-	/**
-	 * 验证一个taskcode是否正确
-	 */
-	public String validate(Task task) throws ParseException {
-
-		String code = task.getCode();
-		String name = null;
-		String pk = null;
-
-		CompilationUnit compile = JavaDocUtil.compile(code);
-
-		pk = compile.getPackage().getPackageName();
-		if (StringUtil.isBlank(pk)) {
-			return ("package can not empty ");
-		}
-
-		List<TypeDeclaration> types = compile.getTypes();
-
-		for (TypeDeclaration type : types) {
-			if (type.getModifiers() == Modifier.PUBLIC) {
-				if (name != null) {
-					return "class not have more than one public class ";
-				}
-				name = type.getName();
-			}
-		}
-
-		if (name == null) {
-			return "not find className ";
-		}
-
-		return null;
-	}
-
-
-	/**
-	 * 判断task代码是否修改过
-	 */
-	private boolean checkTaskModify(Task task) {
-		Long id = task.getId();
-		if (id == null) {
-			return true;
-		}
-		Task t = basicDao.find(id, Task.class);
-		if (t == null) {
-			return true;
-		}
-		if (!t.getCode().equals(task.getCode())) {
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * 刷新某个task
-	 */
-	public void flush(Long id) throws Exception {
-
-		Task oldTask = TASK_MAP_CACHE.get(id);
-
-		// 查找处新的task
-		Task newTask = this.basicDao.find(id, Task.class);
-
-		Task temp = new Task();
-		temp.setId(0L);
-		temp.setName("");
-
-		if (oldTask == null) {
-			oldTask = temp;
-		}
-		if (newTask == null) {
-			newTask = temp;
-		}
-
-		synchronized (oldTask) {
-			synchronized (newTask) {
-
-				TASK_MAP_CACHE.remove(oldTask.getId());
-				TASK_MAP_CACHE.remove(makeKey(oldTask));
-
-				TASK_MAP_CACHE.put(newTask.getId(), newTask);
-				TASK_MAP_CACHE.put(makeKey(newTask), newTask);
-
-				clearSucessErr(oldTask);
-				clearSucessErr(newTask);
-
-				ThreadManager.flush(oldTask, newTask);
-			}
-		}
-	}
-
-
-	/**
-	 * 删除一个任务
-	 */
-	public void delete(Task task) throws Exception {
-		task.setType(TaskType.RECYCLE.getValue());
-		task.setStatus(TaskStatus.STOP.getValue());
-		saveOrUpdate(task);
-	}
-
-	/**
-	 * 彻底删除一个任务
-	 */
-	public void delByDB(Task task) {
-
-		// 删除任务历史
-		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
-
-		// 删除任务
-		basicDao.delById(task.getId(), Task.class);
-
-		//删除缓存中的
-		TASK_MAP_CACHE.remove(task.getId());
-		TASK_MAP_CACHE.remove(makeKey(task));
-	}
-
-	public Task findTask(String groupName, String name) {
-		return basicDao.findByCondition(Task.class, Cnd.where("groupName", "=", groupName).and("name", "=", name));
-	}
-
-	public List<Task> findTasksByGroupName(String groupName) {
-		if (groupName == null) {
-			return null;
-		}
-
-		return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
-	}
-
-	/**
-	 * 找到task根据groupName
-	 */
-	public LinkedHashSet<Task> findTaskByGroupNameCache(String groupName) {
-		Collection<Task> values = TASK_MAP_CACHE.values();
-
-		LinkedHashSet<Task> result = new LinkedHashSet<>();
-		for (Task task : values) {
-			if (groupName.equals(task.getGroupName())) {
-				result.add(task);
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * 从数据库中init所有的task
-	 */
-	public void initTaskFromDB(String groupName) {
-		List<Task> search = findTasksByGroupName(groupName);
-		flushTaskMappingAndCache(search);
-	}
-
-	/**
-	 * 刷新传入的tasks mapping and cache
-	 */
-	private void flushTaskMappingAndCache(List<Task> tasks) {
-		for (Task task : tasks) {
-			try {
-				TASK_MAP_CACHE.put(task.getId(), task);
-				TASK_MAP_CACHE.put(makeKey(task), task);
-				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
-			} catch (Throwable e) {
-				e.printStackTrace();
-				LOG.error(e.getMessage(), e);
-			}
-		}
-	}
-
 	public static synchronized Task findTaskByCache(Long id) {
 		return TASK_MAP_CACHE.get(id);
 	}
@@ -330,7 +59,6 @@ public class TaskService {
 	public static synchronized Task findTaskByCache(String groupName, String name) {
 		return TASK_MAP_CACHE.get(makeKey(groupName, name));
 	}
-
 
 	public static synchronized Task findTaskByDB(Long id) {
 		LOG.info("find task by db!");
@@ -374,21 +102,12 @@ public class TaskService {
 	}
 
 	/**
-	 * @param taskId
-	 * @param size
+	 * 查找出缓存中的所有task
+	 *
 	 * @return
 	 */
-	public List<String> versions(Long taskId, int size) {
-		List<String> list = new ArrayList<>();
-		Condition cnd = Cnd.where("taskId", "=", taskId).desc("id");
-		List<TaskHistory> tasks = basicDao.search(TaskHistory.class, cnd);
-		for (TaskHistory taskHistory : tasks) {
-			list.add(taskHistory.getVersion());
-			if (size-- == 0) {
-				break;
-			}
-		}
-		return list;
+	public static List<Task> findAllTasksByCache(String groupName) {
+		return findAllTasksByCache().stream().filter(t -> groupName.equals(t.getGroupName())).collect(Collectors.toList());
 	}
 
 	// 生成任务的版本号
@@ -398,40 +117,6 @@ public class TaskService {
 		sb.append(VERSION_SPLIT);
 		sb.append(DateUtils.formatDate(t.getUpdateTime(), "yyyy-MM-dd HH:mm:ss"));
 		return sb.toString();
-	}
-
-	/**
-	 * 检查所有的task
-	 */
-	public void checkAllTask() throws Exception {
-		// 获得当前运行的任务
-		List<Task> search = StaticValue.systemDao.search(Task.class, "id");
-
-		// 线程任务
-		List<TaskInfo> threads = ThreadManager.getAllThread();
-
-		MapCount<String> mc = new MapCount<>();
-
-		threads.forEach(ti -> mc.add(ti.getTaskName()));
-
-		for (Task task : search) {
-			// 检查while的task是否活着
-			if (task.getStatus() == 1 && "while".equalsIgnoreCase(task.getScheduleStr())) {
-				Double num = mc.get().get(task.getName());
-				if (num == null || num < 1) {
-					LOG.warn(task.getName() + " is while task , not find in threads , now to start it! ");
-					this.flush(task.getId());
-				}
-			}
-			// stop的task是否活着
-			if (task.getStatus() == 0) {
-				// 如果不是1 那么不正常，全局刷新
-				if (mc.get().containsKey(task.getName())) {
-					LOG.warn(task.getName() + " is stop task , but it is runing, now sotp it ! ");
-					this.flush(task.getId());
-				}
-			}
-		}
 	}
 
 	/**
@@ -465,7 +150,6 @@ public class TaskService {
 
 		return (T) StaticValue.MAPPING.getOrCreateByUrl(groupName, className, methodName).getChain().getInvokeProcessor().executeByCache(task, method.getMethod(), args);
 	}
-
 
 	/**
 	 * 通过test方式执行内部调用
@@ -506,7 +190,6 @@ public class TaskService {
 			throw new ApiException(500, e.getMessage());
 		}
 	}
-
 
 	/**
 	 * 通过test方式执行内部调用
@@ -627,7 +310,6 @@ public class TaskService {
 		taskSuccess.remove(groupTaskName);
 	}
 
-
 	/**
 	 * 构建task_cache 的key groupName_taskName
 	 */
@@ -640,5 +322,326 @@ public class TaskService {
 	 */
 	private static String makeKey(String groupName, String taskName) {
 		return groupName + "/" + taskName;
+	}
+
+	/**
+	 * 根据分组名称获取所有Task
+	 *
+	 * @param groupName 组名
+	 */
+	public List<Task> getTasksByGroupNameFromCluster(String groupName) throws Exception {
+		CuratorFramework zk = StaticValue.space().getZk();
+		String path = GROUP_PATH + "/" + groupName;
+		List<String> taskNames = zk.getChildren().forPath(path);
+		List<Task> tasks = new ArrayList<>(taskNames.size());
+		Task t;
+		for (String name : taskNames) {
+			t = JSONObject.parseObject(zk.getData().forPath(path + "/" + name), Task.class);
+			if (t != null && StringUtil.isNotBlank(t.getCode())) {
+				tasks.add(t);
+			}
+		}
+		return tasks;
+	}
+
+	/**
+	 * 根据分组名称获取所有Task
+	 *
+	 * @param groupName 组名
+	 */
+	public Task getTaskFromCluster(String groupName, String taskName) {
+		try {
+			return StaticValue.space().getData(GROUP_PATH + "/" + groupName + "/" + taskName, Task.class);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * 删除ZK集群里的Task
+	 *
+	 * @param groupName 组名
+	 * @param taskName  任务名
+	 */
+	public void deleteTaskFromCluster(String groupName, String taskName) throws Exception {
+		String path = GROUP_PATH + "/" + groupName + "/" + taskName;
+		LOG.info("to delete task in zookeeper: {}", path);
+		if (!existsInCluster(groupName, taskName)) {
+			LOG.warn("task[{}] not found in zookeeper", path);
+		} else {
+			StaticValue.space().getZk().delete().forPath(path);
+		}
+	}
+
+	public boolean existsInCluster(String groupName, String taskName) throws Exception {
+		return StaticValue.space().getZk().checkExists().forPath(GROUP_PATH + "/" + groupName + "/" + taskName) != null;
+	}
+
+	/**
+	 * 保存或者更新一个任务
+	 */
+	public boolean saveOrUpdate(Task task) throws Exception {
+		// 历史库版本保存
+		boolean isModify = checkTaskModify(task);
+
+		String message = null;
+		if ((validate(task)) != null) {
+			throw new CodeException(message);
+		}
+
+		if (isModify) {
+			String version = generateVersion(task);
+			task.setVersion(version);
+		}
+
+		if (task.getId() == null) {
+			task = basicDao.save(task);
+		} else {
+			basicDao.update(task);
+		}
+
+		if (isModify) {
+			basicDao.save(new TaskHistory(task));
+		}
+
+		flush(task.getId());
+
+		return isModify;
+	}
+
+	/**
+	 * 验证一个taskcode是否正确
+	 */
+	public String validate(Task task) throws ParseException {
+
+		String code = task.getCode();
+		String name = null;
+		String pk = null;
+
+		CompilationUnit compile = JavaDocUtil.compile(code);
+
+		pk = compile.getPackage().getPackageName();
+		if (StringUtil.isBlank(pk)) {
+			return ("package can not empty ");
+		}
+
+		List<TypeDeclaration> types = compile.getTypes();
+
+		for (TypeDeclaration type : types) {
+			if (type.getModifiers() == Modifier.PUBLIC) {
+				if (name != null) {
+					return "class not have more than one public class ";
+				}
+				name = type.getName();
+			}
+		}
+
+		if (name == null) {
+			return "not find className ";
+		}
+
+		return null;
+	}
+
+	/**
+	 * 判断task代码是否修改过
+	 */
+	private boolean checkTaskModify(Task task) {
+		Long id = task.getId();
+		if (id == null) {
+			return true;
+		}
+		Task t = basicDao.find(id, Task.class);
+		if (t == null) {
+			return true;
+		}
+		if (!t.getCode().equals(task.getCode())) {
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * 刷新某个task
+	 */
+	public void flush(Long id) throws Exception {
+
+		Task oldTask = TASK_MAP_CACHE.get(id);
+
+		// 查找处新的task
+		Task newTask = this.basicDao.find(id, Task.class);
+
+		Task temp = new Task();
+		temp.setId(0L);
+		temp.setName("");
+
+		if (oldTask == null) {
+			oldTask = temp;
+		}
+		if (newTask == null) {
+			newTask = temp;
+		}
+
+		synchronized (oldTask) {
+			synchronized (newTask) {
+
+				TASK_MAP_CACHE.remove(oldTask.getId());
+				TASK_MAP_CACHE.remove(makeKey(oldTask));
+
+				TASK_MAP_CACHE.put(newTask.getId(), newTask);
+				TASK_MAP_CACHE.put(makeKey(newTask), newTask);
+
+				clearSucessErr(oldTask);
+				clearSucessErr(newTask);
+
+				ThreadManager.flush(oldTask, newTask);
+			}
+		}
+	}
+
+	/**
+	 * 删除一个任务
+	 */
+	public void delete(Task task) throws Exception {
+		task.setType(TaskType.RECYCLE.getValue());
+		task.setStatus(TaskStatus.STOP.getValue());
+		saveOrUpdate(task);
+	}
+
+	/**
+	 * 彻底删除一个任务
+	 */
+	public void delByDB(Task task) {
+
+		// 删除任务历史
+		basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+
+		// 删除任务
+		basicDao.delById(task.getId(), Task.class);
+
+		//删除缓存中的
+		TASK_MAP_CACHE.remove(task.getId());
+		TASK_MAP_CACHE.remove(makeKey(task));
+	}
+
+	public Task findTask(String groupName, String name) {
+		return basicDao.findByCondition(Task.class, Cnd.where("groupName", "=", groupName).and("name", "=", name));
+	}
+
+	public List<Task> findTasksByGroupName(String groupName) {
+		LOG.info("find findTasksByGroupName from groupName: {}", groupName);
+		return basicDao.search(Task.class, Cnd.where("groupName", "=", groupName));
+	}
+
+	/**
+	 * 找到task根据groupName
+	 */
+	public LinkedHashSet<Task> findTaskByGroupNameCache(String groupName) {
+		Collection<Task> values = TASK_MAP_CACHE.values();
+
+		LinkedHashSet<Task> result = new LinkedHashSet<>();
+		for (Task task : values) {
+			if (groupName.equals(task.getGroupName())) {
+				result.add(task);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * 从数据库中init所有的task
+	 */
+	public synchronized void flushGroup(String groupName) {
+
+		//查询出缓存中的所有task并移除
+		List<Task> search = findAllTasksByCache(groupName);
+		for (Task task : search) {
+			try {
+				task.codeInfo().getExecuteMethods().forEach(m -> {
+					StaticValue.space().removeMapping(task.getGroupName(), task.getName(), m.getName());
+				});
+				TASK_MAP_CACHE.remove(task.getId());
+				TASK_MAP_CACHE.remove(makeKey(task));
+				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
+
+			} catch (Throwable e) {
+				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
+			}
+		}
+
+		search = findTasksByGroupName(groupName);
+
+		for (Task task : search) {
+			try {
+				TASK_MAP_CACHE.put(task.getId(), task);
+				TASK_MAP_CACHE.put(makeKey(task), task);
+				try {
+					new JavaRunner(task).compile();
+					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+					executeMethods.forEach(e -> {
+						StaticValue.space().addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+					});
+				} catch (Exception e) {
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getCode(), e);
+				}
+			} catch (Throwable e) {
+				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
+			}
+		}
+	}
+
+	/**
+	 * @param taskId
+	 * @param size
+	 * @return
+	 */
+	public List<String> versions(Long taskId, int size) {
+		List<String> list = new ArrayList<>();
+		Condition cnd = Cnd.where("taskId", "=", taskId).desc("id");
+		List<TaskHistory> tasks = basicDao.search(TaskHistory.class, cnd);
+		for (TaskHistory taskHistory : tasks) {
+			list.add(taskHistory.getVersion());
+			if (size-- == 0) {
+				break;
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * 检查所有的task
+	 */
+	public void checkAllTask() throws Exception {
+		// 获得当前运行的任务
+		List<Task> search = StaticValue.systemDao.search(Task.class, "id");
+
+		// 线程任务
+		List<TaskInfo> threads = ThreadManager.getAllThread();
+
+		MapCount<String> mc = new MapCount<>();
+
+		threads.forEach(ti -> mc.add(ti.getTaskName()));
+
+		for (Task task : search) {
+			// 检查while的task是否活着
+			if (task.getStatus() == 1 && "while".equalsIgnoreCase(task.getScheduleStr())) {
+				Double num = mc.get().get(task.getName());
+				if (num == null || num < 1) {
+					LOG.warn(task.getName() + " is while task , not find in threads , now to start it! ");
+					this.flush(task.getId());
+				}
+			}
+			// stop的task是否活着
+			if (task.getStatus() == 0) {
+				// 如果不是1 那么不正常，全局刷新
+				if (mc.get().containsKey(task.getName())) {
+					LOG.warn(task.getName() + " is stop task , but it is runing, now sotp it ! ");
+					this.flush(task.getId());
+				}
+			}
+		}
 	}
 }

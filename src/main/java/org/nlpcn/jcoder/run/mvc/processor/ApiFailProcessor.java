@@ -30,12 +30,12 @@ public class ApiFailProcessor extends ViewProcessor {
 			log.warn(String.format("Error@%s :", uri), ac.getError());
 		}
 
-		int status = ApiException.ServerException ;
+		int status = ApiException.ServerException;
 
 		Throwable error = ac.getError();
 
-		if(error instanceof ApiException){
-			status = ((ApiException) error).getStatus() ;
+		if (error instanceof ApiException) {
+			status = ((ApiException) error).getStatus();
 		}
 
 		if (ac.getRequest().getHeader(Constants.DEBUG) != null) {

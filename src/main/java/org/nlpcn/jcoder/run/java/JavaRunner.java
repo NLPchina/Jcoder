@@ -30,11 +30,9 @@ import java.util.Map.Entry;
 public class JavaRunner {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JavaRunner.class);
-
+	private static final Object[] DEFAULT_ARG = new Object[0];
 	private Task task = null;
-
 	private CodeInfo codeInfo;
-
 	private Object objInstance;
 
 	public JavaRunner(Task task) {
@@ -226,8 +224,6 @@ public class JavaRunner {
 	public Task getTask() {
 		return this.task;
 	}
-
-	private static final Object[] DEFAULT_ARG = new Object[0];
 
 	/**
 	 * execte task defaultExecute if not found , it execute excutemehtod ， if not found it throw Exception

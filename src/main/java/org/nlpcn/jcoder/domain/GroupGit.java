@@ -14,7 +14,7 @@ public class GroupGit {
 
 	private String branch;
 
-	private String md5 ;
+	private String md5;
 
 	/**
 	 * 多少毫秒pull一次，0不自动

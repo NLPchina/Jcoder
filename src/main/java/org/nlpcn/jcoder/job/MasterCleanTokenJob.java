@@ -1,23 +1,13 @@
 package org.nlpcn.jcoder.job;
 
-import com.alibaba.fastjson.JSONObject;
-import com.google.common.collect.ImmutableMap;
-import org.apache.curator.framework.recipes.cache.ChildData;
-import org.apache.curator.framework.recipes.cache.TreeCache;
-import org.nlpcn.jcoder.domain.GroupGit;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
-import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.ZKMap;
-import org.nutz.http.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 定期清除过期的token
@@ -28,6 +18,9 @@ public class MasterCleanTokenJob implements Runnable {
 	private static final Logger LOG = LoggerFactory.getLogger(MasterCleanTokenJob.class);
 
 	private static Thread thread = null;
+
+	private MasterCleanTokenJob() {
+	}
 
 	/**
 	 * 当竞选为master时候调用此方法
@@ -54,9 +47,6 @@ public class MasterCleanTokenJob implements Runnable {
 		thread = null;
 	}
 
-	private MasterCleanTokenJob() {
-	}
-
 	@Override
 	public void run() {
 
@@ -67,10 +57,6 @@ public class MasterCleanTokenJob implements Runnable {
 		 */
 		while (StaticValue.isMaster()) {
 			try {
-				if (StaticValue.space() == null) { //space 可能没准备好
-					Thread.sleep(100L);
-					continue;
-				}
 				ZKMap<Token> tokenCache = StaticValue.space().getTokenCache();
 
 				Map<String, Token> stringTokenMap = tokenCache.toMap();

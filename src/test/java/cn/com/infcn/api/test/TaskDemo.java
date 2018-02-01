@@ -11,21 +11,20 @@ import org.slf4j.Logger;
 @Single(true)
 public class TaskDemo {
 
+	int i = 0;
 	@Inject
 	private Logger log;
 
-	int i = 0;
-
 	/**
 	 * 测试
-	 * 
+	 *
 	 * @return {"FBI":[{"name":"rose","age":"25"},{"name":"jack","age":"23"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}],"NBA":[{"name":"tom","sex":"man"},{"name":"jack","sex":"women"}]}
 	 */
 	@Execute
-	@Filters(@By(type = TokenFilter.class, args = { "false" }))
+	@Filters(@By(type = TokenFilter.class, args = {"false"}))
 	public Object execute(String name, Integer age, Character sex) {
 		log.info("12312312");
-		return "name:" + name +" age:"+age+" sex:"+sex;
+		return "name:" + name + " age:" + age + " sex:" + sex;
 	}
-	
+
 }

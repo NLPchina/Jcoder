@@ -3,7 +3,6 @@ package org.nlpcn.jcoder.domain;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
@@ -80,6 +79,10 @@ public class Task {
 		return name;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public String getCode() {
 		return code;
 	}
@@ -101,9 +104,9 @@ public class Task {
 			}
 		} catch (Throwable e) {
 			LOG.warn("not compile task Name: {}", e.getMessage());
-			try{
+			try {
 				this.name = JavaSourceUtil.findClassName(code);
-			}catch (Exception e1){
+			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
 			if (name == null) {
@@ -210,10 +213,6 @@ public class Task {
 
 	public CodeInfo codeInfo() {
 		return codeInfo;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	public String getGroupName() {

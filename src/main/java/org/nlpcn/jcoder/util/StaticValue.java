@@ -20,49 +20,44 @@ import java.util.ResourceBundle;
 
 public class StaticValue {
 
-	private static final Logger LOG = LoggerFactory.getLogger(StaticValue.class);
+	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
+	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
+	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 1));
 
 	public static final String PREFIX = "jcoder_";
 	public static final String SELF_HOST = "127.0.0.1";
-
 	public static final String ZK_ROOT = "/jcoder";
-
-	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
-	private static final String HOST = getValueOrCreate("host", "*");
-	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
-	private static final String HOST_PORT = getHost() + ":" + PORT;
-	public static final int RPCPORT = TypeUtils.castToInt(getValueOrCreate("rpcport", String.valueOf(PORT + 1)));
-	//default token
-	public static final String TOKEN = getValueOrCreate("token", null);
-	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
 	public static final File HOME_FILE = new File(HOME);
 	public static final File GROUP_FILE = new File(HOME_FILE, "group");
 	public static final String VERSION = getResource("version");
 
-	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 1));
-
 	//集群方式还是单机方式启动
 	public static final boolean IS_LOCAL = ZK.equals("127.0.0.1:" + (PORT + 1));
 
+	// api路径的映射
+	public static final ApiUrlMappingImpl MAPPING = new ApiUrlMappingImpl();
+	private static final Logger LOG = LoggerFactory.getLogger(StaticValue.class);
+
+	//default token
+	public static final String TOKEN = getValueOrCreate("token", null);
+	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
 	//是否是以SSL方式启动
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
-
-	//启动jcoderjar所在的文件，如果源码方式则为null
-	private static File JCODER_JAR_FILE = null;
-
 	//是否是测试模式
 	public static final boolean TESTRING = Boolean.parseBoolean(getValueOrCreate("testing", "false"));
-
+	private static final String HOST = getValueOrCreate("host", "*");
+	private static final String HOST_PORT = getHost() + ":" + PORT;
+	public static BasicDao systemDao; // 系统DAO
+	//启动jcoderjar所在的文件，如果源码方式则为null
+	private static File JCODER_JAR_FILE = null;
 	private static boolean master = false;
-
 	private static SharedSpaceService sharedSpace;
-
+	private static Ioc systemIoc;
 
 	static {
 		LOG.info("env in system.propertie: jcoder_home : " + HOME_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: jcoder_host : " + HOST);
 		LOG.info("env in system.propertie: jcoder_port : " + PORT);
-		LOG.info("env in system.propertie: jcoder_rpcport : " + RPCPORT);
 		LOG.info("env in system.propertie: jcoder_log : " + LOG_PATH);
 		LOG.info("env in system.propertie: jcoder_group : " + GROUP_FILE.getAbsolutePath());
 		LOG.info("env in system.propertie: zookeeper : " + ZK);
@@ -90,16 +85,6 @@ public class StaticValue {
 		LOG.info("env in system.propertie: testing : " + TESTRING);
 	}
 
-	private static Ioc systemIoc;
-
-	public static BasicDao systemDao; // 系统DAO
-
-	public static final String SYSTEM_SPLIT = "SYSTEM_SPLIT_ANSJ";
-
-	// api路径的映射
-	public static final ApiUrlMappingImpl MAPPING = new ApiUrlMappingImpl();
-
-
 	private static String getValueOrCreate(String key, String def) {
 		String value = System.getProperty(PREFIX + key);
 		if (LOG.isDebugEnabled()) {
@@ -120,6 +105,10 @@ public class StaticValue {
 			systemIoc = Mvcs.getIoc();
 		}
 		return systemIoc;
+	}
+
+	public static void setSystemIoc(Ioc ioc) {
+		StaticValue.systemIoc = ioc;
 	}
 
 	/**
@@ -156,10 +145,6 @@ public class StaticValue {
 			object = getSystemIoc().get(t, name);
 		}
 		return object;
-	}
-
-	public static void setSystemIoc(Ioc ioc) {
-		StaticValue.systemIoc = ioc;
 	}
 
 	/**
@@ -228,12 +213,12 @@ public class StaticValue {
 		return HOST;
 	}
 
-	public static void setMaster(boolean flag) {
-		master = flag;
-	}
-
 	public static boolean isMaster() {
 		return master;
+	}
+
+	public static void setMaster(boolean flag) {
+		master = flag;
 	}
 
 	public static void setSharedSpace(SharedSpaceService sharedSpace) {
@@ -244,6 +229,14 @@ public class StaticValue {
 	 * 获得以zookeeper为内存的存储空间
 	 */
 	public static SharedSpaceService space() {
+		while (sharedSpace == null) { //space 可能没准备好 , 一直循环
+			try {
+				LOG.info("sharedSpace not ready , wait ....");
+				Thread.sleep(300L);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
 		return sharedSpace;
 	}
 
@@ -261,8 +254,6 @@ public class StaticValue {
 	public static String getCurrentGroup() {
 		return Rpcs.ctx().getGroupName();
 	}
-
-
 
 
 	public static File getCurrentResourceFile() {

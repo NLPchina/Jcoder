@@ -3,8 +3,6 @@ package cn.com.infcn.api.test;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.util.Restful;
 
-import java.util.Arrays;
-
 /**
  * 测试文档搜索
  *
@@ -15,7 +13,6 @@ public class ApiTest {
 
 
 	/**
-	 *
 	 * @return
 	 * @throws Exception
 	 */

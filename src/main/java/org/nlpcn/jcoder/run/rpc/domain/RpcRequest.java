@@ -55,16 +55,16 @@ public class RpcRequest implements Serializable {
 		return tokenStr;
 	}
 
+	public void setTokenStr(String tokenStr) {
+		this.tokenStr = tokenStr;
+	}
+
 	public String getGroupName() {
 		return groupName;
 	}
 
 	public void setGroupName(String groupName) {
 		this.groupName = groupName;
-	}
-
-	public void setTokenStr(String tokenStr) {
-		this.tokenStr = tokenStr;
 	}
 
 	public boolean isDebug() {

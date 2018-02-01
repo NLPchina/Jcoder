@@ -1,11 +1,6 @@
 package org.nlpcn.jcoder.domain;
 
-import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.StaticValue;
-
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * 解决冲突的操作

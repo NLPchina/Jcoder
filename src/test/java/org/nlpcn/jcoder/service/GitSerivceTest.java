@@ -1,14 +1,11 @@
 package org.nlpcn.jcoder.service;
 
-import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
-import org.eclipse.jgit.lib.Repository;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 
 public class GitSerivceTest {
 

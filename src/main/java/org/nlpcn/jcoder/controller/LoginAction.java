@@ -1,11 +1,7 @@
 package org.nlpcn.jcoder.controller;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
+import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.constant.UserConstants;
-import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.IpErrorCountFilter;
@@ -14,20 +10,19 @@ import org.nlpcn.jcoder.service.TokenService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.fastjson.JSONObject;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 @IocBean
 @Filters(@By(type = IpErrorCountFilter.class, args = {"20"}))
@@ -35,7 +30,10 @@ import com.alibaba.fastjson.JSONObject;
 public class LoginAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LoginAction.class);
-
+	private static final String origin = "*";
+	private static final String methods = "get, post, put, delete, options";
+	private static final String headers = "origin, content-type, accept, authorization";
+	private static final String credentials = "true";
 	public BasicDao basicDao = StaticValue.systemDao;
 
 	@At("/admin/login")
@@ -65,12 +63,6 @@ public class LoginAction {
 			return Restful.fail();
 		}
 	}
-
-
-	private static final String origin = "*";
-	private static final String methods = "get, post, put, delete, options";
-	private static final String headers = "origin, content-type, accept, authorization";
-	private static final String credentials = "true";
 
 	@At("/login/api")
 	@Ok("json")

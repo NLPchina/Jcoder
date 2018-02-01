@@ -8,10 +8,8 @@ import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.GroupCache;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.MD5Util;
-import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.Param;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +17,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +94,7 @@ public class FileInfoService {
 
 	/**
 	 * 从一个root目录获取某个group的文件列表信息
+	 *
 	 * @param groupName
 	 * @param root
 	 * @return
@@ -179,6 +181,14 @@ public class FileInfoService {
 		return groupCache;
 	}
 
+	public static String computerMD5(FileInfo fileInfo) {
+		try {
+			return FILE_INFO_MD5_CACHE.get(fileInfo);
+		} catch (ExecutionException e) {
+			e.printStackTrace();//不会发生理论上，如果发生就是bug
+			return fileInfo.getName();
+		}
+	}
 
 	public String getContent(String groupName, String relativePath, int maxSize) throws IOException {
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
@@ -199,15 +209,6 @@ public class FileInfoService {
 				content = new String(bytes, 0, len);
 			}
 			return content;
-		}
-	}
-
-	public static String computerMD5(FileInfo fileInfo) {
-		try {
-			return FILE_INFO_MD5_CACHE.get(fileInfo);
-		} catch (ExecutionException e) {
-			e.printStackTrace();//不会发生理论上，如果发生就是bug
-			return fileInfo.getName();
 		}
 	}
 }

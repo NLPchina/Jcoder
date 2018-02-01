@@ -11,16 +11,16 @@ public class Handler {
 
 	private String groupName;
 
-	private String taskName ;
+	private String taskName;
 
 	private String path;
 
 	private Type action;
 
-	public Handler(String path, String groupName ,String taskName,Type action) {
+	public Handler(String path, String groupName, String taskName, Type action) {
 		this.path = path;
-		this.groupName = groupName ;
-		this.taskName = taskName ;
+		this.groupName = groupName;
+		this.taskName = taskName;
 		this.action = action;
 	}
 

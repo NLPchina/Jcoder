@@ -21,9 +21,8 @@ public class ApiActionInvoker {
 
 	/**
 	 * 根据动作链上下文对象，调用一个相应的动作链
-	 * 
-	 * @param ac
-	 *            动作链上下文
+	 *
+	 * @param ac 动作链上下文
 	 * @return true- 成功的找到一个动作链并执行。 false- 没有找到动作链
 	 */
 	public boolean invoke(ActionContext ac) {
@@ -40,8 +39,8 @@ public class ApiActionInvoker {
 	public ActionChain getActionChain(ActionContext ac) {
 		return defaultChain;
 	}
-	
-	public JcoderActionChain getChain(){
-		return (JcoderActionChain) defaultChain ;
+
+	public JcoderActionChain getChain() {
+		return (JcoderActionChain) defaultChain;
 	}
 }

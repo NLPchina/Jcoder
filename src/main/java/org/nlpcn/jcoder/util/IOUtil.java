@@ -16,12 +16,11 @@ import java.io.*;
  */
 public class IOUtil {
 
-	private static final Logger LOG = LoggerFactory.getLogger(IOUtil.class);
-
 	public static final String UTF8 = "utf-8";
 	public static final String GBK = "gbk";
 	public static final String TAB = "\t";
 	public static final String LINE = "\n";
+	private static final Logger LOG = LoggerFactory.getLogger(IOUtil.class);
 
 	public static void Writer(String path, String charEncoding, String content) {
 		OutputStream fos = null;
@@ -227,7 +226,7 @@ public class IOUtil {
 				os.write(bytes, 0, len);
 				end = System.currentTimeMillis();
 				sum += len;
-				if (end-start>1000) {
+				if (end - start > 1000) {
 					LOG.info("down {} speed {}k/s", url, df.format((sum / (double) ((end - start + 1)))));
 					start = end;
 					sum = 0;

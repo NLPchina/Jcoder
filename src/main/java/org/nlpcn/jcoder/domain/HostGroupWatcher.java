@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.domain;
 
 import com.alibaba.fastjson.JSONObject;
-
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.nlpcn.jcoder.service.SharedSpaceService;
@@ -47,10 +46,6 @@ public class HostGroupWatcher implements Watcher {
 					String hostPort = key.split("_")[0];
 					if (StaticValue.getHostPort().equals(hostPort)) {
 						LOG.info("I lost HostGroup so add it again " + event.getPath());
-						for (int i = 0; i < 100 && StaticValue.space() == null; i++) {
-							LOG.warn("StaticValue.space() not ready wait!");
-							Thread.sleep(1000L);
-						}
 						StaticValue.space().setData2ZKByEphemeral(event.getPath(), JSONObject.toJSONBytes(hostGroup), this);
 					}
 				} catch (Exception e) {

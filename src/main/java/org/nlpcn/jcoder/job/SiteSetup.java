@@ -5,6 +5,8 @@ import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainer
 import org.nlpcn.jcoder.run.rpc.websocket.ApiWebsocket;
 import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.ZKServer;
+import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.NutConfig;
@@ -15,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
-import java.util.Arrays;
 
 public class SiteSetup implements Setup {
 
@@ -71,6 +72,9 @@ public class SiteSetup implements Setup {
 			LOG.error("zookpeer err ", e);
 			System.exit(-1);
 		}
+
+		//加載所有的group
+		GroupService.allLocalGroup().forEach(g -> JarService.getOrCreate(g.getName()));
 
 
 		new Thread(new CheckDiffJob()).start();

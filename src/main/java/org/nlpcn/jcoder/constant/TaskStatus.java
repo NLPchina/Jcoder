@@ -7,15 +7,15 @@ package org.nlpcn.jcoder.constant;
  */
 public enum TaskStatus {
 
-    STOP(0), ACTIVE(1);
+	STOP(0), ACTIVE(1);
 
-    private int value;
+	private int value;
 
-    TaskStatus(int value) {
-        this.value = value;
-    }
+	TaskStatus(int value) {
+		this.value = value;
+	}
 
-    public int getValue() {
-        return value;
-    }
+	public int getValue() {
+		return value;
+	}
 }

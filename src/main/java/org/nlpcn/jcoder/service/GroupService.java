@@ -1,12 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.nlpcn.jcoder.domain.Different;
-import org.nlpcn.jcoder.domain.FileInfo;
-import org.nlpcn.jcoder.domain.Group;
-import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskHistory;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
@@ -18,20 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.nlpcn.jcoder.service.SharedSpaceService.GROUP_PATH;
-import static org.nlpcn.jcoder.util.StaticValue.GROUP_FILE;
-import static org.nlpcn.jcoder.util.StaticValue.getHostPort;
-import static org.nlpcn.jcoder.util.StaticValue.space;
-import static org.nlpcn.jcoder.util.StaticValue.systemDao;
+import static org.nlpcn.jcoder.util.StaticValue.*;
 
 /**
  * Created by Ansj on 05/12/2017.
@@ -46,6 +32,11 @@ public class GroupService {
 
 	private BasicDao basicDao = systemDao;
 
+	public static List<Group> allLocalGroup() {
+		LOG.info("find all group by db");
+		return systemDao.search(Group.class, "id");
+
+	}
 
 	public List<Group> list() throws Exception {
 		List<Group> result = new ArrayList<>();
@@ -128,7 +119,6 @@ public class GroupService {
 		return space().getAllHosts();
 	}
 
-
 	/**
 	 * 从集群把一个组彻底删除掉
 	 */
@@ -152,60 +142,65 @@ public class GroupService {
 	}
 
 	public boolean deleteGroup(String name) {
+		try {
+			JarService.lock(name);
 
-		JarService.getOrCreate(name).release(); //释放环境变量
+			JarService.getOrCreate(name).release(); //释放环境变量
 
-		Group group = findGroupByName(name);
+			Group group = findGroupByName(name);
 
-		if (group != null) {
-			basicDao.delById(group.getId(), Group.class);
+			if (group != null) {
+				basicDao.delById(group.getId(), Group.class);
 
-			List<Task> tasks = taskService.findTasksByGroupName(group.getName());
+				List<Task> tasks = taskService.findTasksByGroupName(group.getName());
 
-			for (Task task : tasks) {
-				try {
-					LOG.info("delete task " + task.getName());
-					taskService.delete(task);
-					taskService.delByDB(task);
-					basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
-				} catch (Exception e) {
-					e.printStackTrace();
+				for (Task task : tasks) {
+					try {
+						LOG.info("delete task " + task.getName());
+						taskService.delete(task);
+						taskService.delByDB(task);
+						basicDao.delByCondition(TaskHistory.class, Cnd.where("taskId", "=", task.getId()));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 			}
-		}
 
-		String key = getHostPort() + "_" + name;
+			String key = getHostPort() + "_" + name;
 
-		Files.deleteFile(new File(GROUP_FILE, name + ".cache"));
+			Files.deleteFile(new File(GROUP_FILE, name + ".cache"));
 
-		File groupFile = new File(GROUP_FILE, name);
+			File groupFile = new File(GROUP_FILE, name);
 
-		Files.deleteDir(groupFile);
-
-		/**
-		 * 尝试循环删除
-		 */
-		for (int i = 0; i < 10 && groupFile.exists(); i++) {
 			Files.deleteDir(groupFile);
-			System.gc();
-			LOG.info("delete group:{} times:{}", name, i + 1);
-			try {
-				Thread.sleep(1000L);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
+
+			/**
+			 * 尝试循环删除
+			 */
+			for (int i = 0; i < 10 && groupFile.exists(); i++) {
+				Files.deleteDir(groupFile);
+				System.gc();
+				LOG.info("delete group:{} times:{}", name, i + 1);
+				try {
+					Thread.sleep(1000L);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
 			}
+
+			HostGroup hostGroup = space().getHostGroupCache().get(key);
+			if (hostGroup != null && !groupFile.exists()) {
+				hostGroup.setWeight(-1); //理论上设置为-1就删除了
+				space().getHostGroupCache().put(key, hostGroup);
+				space().getHostGroupCache().remove(key);
+				LOG.info("remove host_group in zk : " + hostGroup.getHostPort());
+			}
+
+
+			return !groupFile.exists();
+		} finally {
+			JarService.unLock(name);
 		}
-
-		HostGroup hostGroup = space().getHostGroupCache().get(key);
-		if (hostGroup != null && !groupFile.exists()) {
-			hostGroup.setWeight(-1); //理论上设置为-1就删除了
-			space().getHostGroupCache().put(key, hostGroup);
-			space().getHostGroupCache().remove(key);
-			LOG.info("remove host_group in zk : " + hostGroup.getHostPort());
-		}
-
-
-		return !groupFile.exists();
 
 
 	}
@@ -215,29 +210,22 @@ public class GroupService {
 		return basicDao.findByCondition(Group.class, Cnd.where("name", "=", name));
 	}
 
-
 	/**
 	 * 刷新一个group重新加载到集群中
 	 */
-	public List<Different> flush(String groupName, boolean upMapping) throws IOException {
+	public List<Different> flush(String groupName) throws IOException {
 		Group group = findGroupByName(groupName);
 		if (group == null) {
 			throw new RuntimeException("group not found " + groupName);
 		}
-		return flush(group, upMapping);
+		return flush(group);
 	}
 
 	/**
 	 * 刷新
 	 */
-	public List<Different> flush(Group group, boolean upMapping) throws IOException {
-		return space().joinCluster(group, upMapping);
-	}
-
-	public static List<Group> allLocalGroup() {
-		LOG.info("find all group by db");
-		return systemDao.search(Group.class, "id");
-
+	public List<Different> flush(Group group) throws IOException {
+		return space().joinCluster(group);
 	}
 
 	/**

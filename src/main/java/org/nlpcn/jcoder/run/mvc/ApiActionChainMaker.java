@@ -1,15 +1,14 @@
 package org.nlpcn.jcoder.run.mvc;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.nlpcn.jcoder.run.mvc.processor.*;
 import org.nutz.mvc.ActionChainMaker;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Processor;
-import org.nutz.mvc.impl.processor.ActionFiltersProcessor;
 import org.nutz.mvc.impl.processor.EncodingProcessor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ApiActionChainMaker implements ActionChainMaker {
 
@@ -20,7 +19,7 @@ public class ApiActionChainMaker implements ActionChainMaker {
 		List<Processor> list = new ArrayList<>();
 		list.add(init(config, ai, new ApiProxyProcessor())); // 设置代理类
 		list.add(init(config, ai, new EncodingProcessor())); // 设置编码信息@Encoding
-		list.add(init(config, ai, new ApiCrossOriginProcessor())) ;//增加跨域支持
+		list.add(init(config, ai, new ApiCrossOriginProcessor()));//增加跨域支持
 		list.add(init(config, ai, new ApiModuleProcessor())); // 获取入口类的对象,从ioc或直接new
 		list.add(init(config, ai, new ApiActionFiltersProcessor())); // 处理@Filters
 		list.add(init(config, ai, new ApiAdaptorProcessor())); // 处理@Adaptor

@@ -1,11 +1,5 @@
 package org.nlpcn.jcoder.run.mvc.processor;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Date;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.annotation.Cache;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -13,12 +7,17 @@ import org.nlpcn.jcoder.run.mvc.cache.CacheEntry;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.impl.processor.AbstractProcessor;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Date;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ApiMethodInvokeProcessor extends AbstractProcessor {
 
@@ -59,7 +58,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		}
 
 		try {
-			threadName = module.getGroupName()+"@"+module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@"
+			threadName = module.getGroupName() + "@" + module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@"
 					+ al.getAndIncrement();
 			ThreadManager.add2ActionTask(threadName, Thread.currentThread());
 			Object result = executeByCache(module, method, args);
@@ -78,7 +77,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 
 	/**
 	 * 执行一个task,利用缓存,rpc框架也调用这个
-	 * 
+	 *
 	 * @param task
 	 * @param method
 	 * @param args

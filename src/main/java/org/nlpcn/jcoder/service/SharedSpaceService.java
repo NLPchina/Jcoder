@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -13,17 +12,8 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.nlpcn.jcoder.domain.CodeInfo;
-import org.nlpcn.jcoder.domain.Different;
-import org.nlpcn.jcoder.domain.FileInfo;
-import org.nlpcn.jcoder.domain.Group;
-import org.nlpcn.jcoder.domain.Handler;
-import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.HostGroupWatcher;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.job.*;
-import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.rpc.service.MemoryRoomService;
 import org.nlpcn.jcoder.run.rpc.service.RoomService;
 import org.nlpcn.jcoder.run.rpc.service.ZookeeperRoomService;
@@ -38,16 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -55,43 +36,35 @@ import java.util.stream.Collectors;
  */
 public class SharedSpaceService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
 	/**
 	 * 路由表
 	 */
 	public static final String MAPPING_PATH = StaticValue.ZK_ROOT + "/mapping";
-
 	/**
 	 * Token
 	 */
 	public static final String TOKEN_PATH = StaticValue.ZK_ROOT + "/token";
-
-
-	/**
-	 * Master
-	 */
-	private static final String MASTER_PATH = StaticValue.ZK_ROOT + "/master";
-
 	/**
 	 * Host
 	 * /jcoder/host_group/[ipPort_groupName],[hostGroupInfo]
 	 * /jcoder/host_group/[ipPort]
 	 */
 	public static final String HOST_GROUP_PATH = StaticValue.ZK_ROOT + "/host_group";
-
-
-	/**
-	 * 在线主机
-	 */
-	private static final String HOST_PATH = StaticValue.ZK_ROOT + "/host";
-
 	/**
 	 * group /jcoder/task/group/className.task
 	 * |-resource (filePath,md5)
 	 * |-lib libMap(libName,md5)
 	 */
 	public static final String GROUP_PATH = StaticValue.ZK_ROOT + "/group";
-
+	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
+	/**
+	 * Master
+	 */
+	private static final String MASTER_PATH = StaticValue.ZK_ROOT + "/master";
+	/**
+	 * 在线主机
+	 */
+	private static final String HOST_PATH = StaticValue.ZK_ROOT + "/host";
 	/**
 	 * group /jcoder/lock
 	 */
@@ -149,7 +122,8 @@ public class SharedSpaceService {
 	/**
 	 * 删除一个地址映射
 	 */
-	public void removeMapping(String groupName, String className, String methodName, String hostPort) {
+	public void removeMapping(String groupName, String className, String methodName) {
+		String hostPort = StaticValue.getHostPort();
 		try {
 			String path = MAPPING_PATH + "/" + groupName + "/" + className + "/" + methodName + "/" + hostPort;
 			if (zkDao.getZk().checkExists().forPath(path) != null) {
@@ -163,7 +137,6 @@ public class SharedSpaceService {
 			e.printStackTrace();
 			LOG.error("remove err {}/{}/{}/{} message: {}", hostPort, groupName, className, methodName, e.getMessage());
 		}
-
 	}
 
 	/**
@@ -503,7 +476,7 @@ public class SharedSpaceService {
 
 
 		for (Group group : groups) {
-			List<Different> diffs = joinCluster(group, true);
+			List<Different> diffs = joinCluster(group);
 			result.put(group.getName(), diffs);
 
 			if (StaticValue.TESTRING) {
@@ -519,18 +492,21 @@ public class SharedSpaceService {
 	/**
 	 * 加入刷新一个主机到集群中
 	 */
-	public List<Different> joinCluster(Group group, boolean upMapping) throws IOException {
+	public List<Different> joinCluster(Group group) throws IOException {
 
-		LOG.info("join cluster by groupName: {} upMapping: {}", group.getName(), upMapping);
+		LOG.info("join cluster by groupName: {} ", group.getName());
 
 		List<Different> diffs = new ArrayList<>();
 
 		String groupName = group.getName();
 
-		JarService.getOrCreate(groupName);//查找之前先初始化一下
-
 		//查找出这个组所有的task
-		List<Task> tasks = TaskService.findAllTasksByCache().stream().filter(t -> groupName.equals(t.getGroupName())).collect(Collectors.toList());
+
+		List<Task> tasks = TaskService.findAllTasksByCache(groupName);
+
+		if (tasks.size() == 0) {
+			tasks = StaticValue.getSystemIoc().get(TaskService.class).findTasksByGroupName(groupName);
+		}
 
 		//查找出这个组所有的文件
 		List<FileInfo> fileInfos = FileInfoService.listFileInfosByGroup(groupName);
@@ -552,22 +528,7 @@ public class SharedSpaceService {
 			unLockAndDelete(lock);
 		}
 
-		if (upMapping) {
-			tasks.forEach(task -> {
-				try {
-					new JavaRunner(task).compile();
 
-					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
-
-					executeMethods.forEach(e -> {
-						addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-					});
-
-				} catch (Exception e) {
-					LOG.error("compile {}/{} err ", task.getGroupName(), task.getCode(), e);
-				}
-			});
-		}
 		return diffs;
 	}
 

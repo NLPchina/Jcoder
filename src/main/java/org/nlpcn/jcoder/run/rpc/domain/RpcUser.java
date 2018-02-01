@@ -8,15 +8,15 @@ import javax.websocket.Session;
 /**
  * Created by Ansj on 24/01/2018.
  */
-public class RpcUser{
+public class RpcUser {
 
-	private User user ;
+	private User user;
 
-	private Session session ;
+	private Session session;
 
-	public RpcUser(User user , Session session){
-		this.user = user ;
-		this.session = session ;
+	public RpcUser(User user, Session session) {
+		this.user = user;
+		this.session = session;
 	}
 
 	public User getUser() {

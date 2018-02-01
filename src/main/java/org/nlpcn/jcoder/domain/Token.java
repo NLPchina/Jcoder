@@ -8,9 +8,8 @@ import java.util.Set;
 
 /**
  * token entity
- * 
- * @author Ansj
  *
+ * @author Ansj
  */
 public class Token implements Serializable {
 
@@ -20,13 +19,13 @@ public class Token implements Serializable {
 
 	private User user;
 
-	private long expiration = 20*60*1000L ;
+	private long expiration = 20 * 60 * 1000L;
 
 	private Date expirationTime;
 
 	private Date createTime;
 
-	private Map<String,Object> params ;
+	private Map<String, Object> params;
 
 	/**
 	 * 权限数组。* 为全部

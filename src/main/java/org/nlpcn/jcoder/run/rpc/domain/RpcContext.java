@@ -11,18 +11,18 @@ public class RpcContext {
 
 	private Map<Object, Object> map = null;
 
-	private String groupName ;
+	private String groupName;
 
-	private Session session ;
+	private Session session;
 
-	private RpcRequest req ;
+	private RpcRequest req;
 
-	private RpcResponse rep ;
+	private RpcResponse rep;
 
 	/**
 	 * 單位是納秒
 	 */
-	private long took ;
+	private long took;
 
 
 	public void put(Object key, Object value) {
@@ -43,16 +43,16 @@ public class RpcContext {
 		return groupName;
 	}
 
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
+	}
+
 	public long getTook() {
 		return took;
 	}
 
 	public void setTook(long took) {
 		this.took = took;
-	}
-
-	public void setGroupName(String groupName) {
-		this.groupName = groupName;
 	}
 
 	public Session getSession() {
@@ -83,7 +83,7 @@ public class RpcContext {
 		return ((InetSocketAddress) session.getUserProperties().get("javax.websocket.endpoint.localAddress")).getHostName();
 	}
 
-	public String remoteAddress(){
+	public String remoteAddress() {
 		return ((InetSocketAddress) session.getUserProperties().get("javax.websocket.endpoint.remoteAddress")).getHostName();
 	}
 }

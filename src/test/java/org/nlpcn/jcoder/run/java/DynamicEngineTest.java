@@ -1,15 +1,9 @@
 package org.nlpcn.jcoder.run.java;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
-import java.net.URL;
-import java.net.URLClassLoader;
-
 import org.junit.Test;
 import org.nlpcn.jcoder.run.CodeException;
-import org.nlpcn.jcoder.scheduler.TaskException;
+
+import java.io.IOException;
 
 public class DynamicEngineTest {
 

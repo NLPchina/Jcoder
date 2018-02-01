@@ -1,12 +1,10 @@
 package org.nlpcn.jcoder.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
-
-import com.alibaba.fastjson.JSONObject;
-
 import org.nlpcn.jcoder.domain.GroupCache;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
@@ -24,11 +22,7 @@ import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
@@ -37,12 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
@@ -53,10 +42,6 @@ public class JarService {
 
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
-
-	@Inject
-	private BasicDao basicDao;
-
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
 			.removalListener((RemovalListener<String, JarService>) notification -> {
 				try {
@@ -78,69 +63,16 @@ public class JarService {
 					return new JarService(key);
 				}
 			});
-
 	private static final ConcurrentHashMap<String, Lock> LOCK_CONCURRENT_HASH_MAP = new ConcurrentHashMap<>();
-
-	public static JarService getOrCreate(String groupName) {
-		JarService jarService = CACHE.getIfPresent(groupName);
-		if (jarService == null) {
-
-			Lock lock = getLock(groupName);
-			try {
-				lock.lock();
-				jarService = CACHE.get(groupName);
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-			try {
-				StaticValue.getSystemIoc().get(TaskService.class, "taskService").initTaskFromDB(groupName);
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				unLock(groupName);
-			}
-
-		}
-		return jarService;
-	}
-
-	/**
-	 * 锁一个group
-	 */
-	public synchronized static Lock getLock(String groupName) {
-		return LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock());
-	}
-
-	/**
-	 * 解锁一个group
-	 */
-	public static void unLock(String groupName) {
-		Lock lock = getLock(groupName);
-		if (lock != null) {
-			lock.unlock();
-			LOCK_CONCURRENT_HASH_MAP.remove(groupName);
-		}
-	}
-
-	public static void remove(String groupName) {
-		CACHE.invalidate(groupName);
-	}
-
-
 	private static final String MAVEN_PATH = "maven";
-
-	private String groupName;
-
-	private String jarPath = null;
-
-	private String pomPath = null;
-
-	private String iocPath = null;
-
 	public Set<String> libPaths = new HashSet<>();
-
+	@Inject
+	private BasicDao basicDao;
+	private String groupName;
+	private String jarPath = null;
+	private String pomPath = null;
+	private String iocPath = null;
 	private DynamicEngine engine;
-
 	private Ioc ioc;
 
 	private JarService(String groupName) throws IOException {
@@ -157,10 +89,59 @@ public class JarService {
 		init();
 	}
 
+	public static JarService getOrCreate(String groupName) {
+
+		JarService jarService = CACHE.getIfPresent(groupName);
+
+		long start = System.currentTimeMillis();
+
+		if (jarService == null) {
+			LOG.info("to init JarService by group {}", groupName);
+			try {
+				lock(groupName);
+				jarService = CACHE.get(groupName);
+			} catch (ExecutionException e) {
+				e.printStackTrace();
+			}
+			try {
+				StaticValue.getSystemIoc().get(TaskService.class, "taskService").flushGroup(groupName);
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				unLock(groupName);
+			}
+			LOG.info("init JarService by group {} ok use time : {}", groupName, System.currentTimeMillis() - start);
+		}
+
+		return jarService;
+	}
+
+	/**
+	 * 锁一个group
+	 */
+	public synchronized static void lock(String groupName) {
+		LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock()).lock();
+	}
+
+	/**
+	 * 解锁一个group
+	 */
+	public static void unLock(String groupName) {
+		Lock lock = LOCK_CONCURRENT_HASH_MAP.get(groupName);
+		if (lock != null) {
+			lock.unlock();
+			LOCK_CONCURRENT_HASH_MAP.remove(groupName);
+		}
+	}
+
+	public static void remove(String groupName) {
+		CACHE.invalidate(groupName);
+	}
+
 	/**
 	 * 环境加载中
 	 */
-	public void init() {
+	private void init() {
 		// 如果发生改变则刷新一次
 		try {
 			flushMaven();
@@ -206,10 +187,10 @@ public class JarService {
 	public void saveIoc(String groupName, String code) throws IOException, NoSuchAlgorithmException {
 		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resources");
 		IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", code);
-		flushIOC();
+		this.release();
 	}
 
-	public synchronized void flushIOC() {
+	private synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 
 		JsonLoader loader = null;
@@ -457,7 +438,7 @@ public class JarService {
 	/**
 	 * 查找所有的jar
 	 */
-	public List<File> findJars() throws IOException {
+	private List<File> findJars() throws IOException {
 		List<File> findAllJar = new ArrayList<>();
 
 		if (!new File(jarPath).exists()) {
@@ -494,14 +475,7 @@ public class JarService {
 	public void savePom(String groupName, String content) throws IOException, NoSuchAlgorithmException {
 		File pom = new File(StaticValue.GROUP_FILE, groupName);
 		IOUtil.Writer(new File(pom, "pom.xml").getAbsolutePath(), "utf-8", content);
-		flushMaven();
-	}
-
-	/**
-	 * 得到启动时候加载的路径
-	 */
-	public HashSet<String> getLibPathSet() {
-		return new HashSet<>(libPaths);
+		this.release();
 	}
 
 	/**
@@ -522,6 +496,7 @@ public class JarService {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			this.release();
 			return true;
 		} else {
 			LOG.info(file.getAbsolutePath() + " is not manager by file JAR_PATH is :" + jarPath);
@@ -537,18 +512,6 @@ public class JarService {
 
 	public DynamicEngine getEngine() {
 		return engine;
-	}
-
-	public String getIocPath() {
-		return iocPath;
-	}
-
-	public String getPomPath() {
-		return pomPath;
-	}
-
-	public String getJarPath() {
-		return jarPath;
 	}
 
 	/**

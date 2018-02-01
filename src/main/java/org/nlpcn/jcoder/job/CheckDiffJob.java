@@ -9,7 +9,6 @@ import org.nlpcn.jcoder.service.FileInfoService;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +27,21 @@ public class CheckDiffJob implements Runnable {
 	 */
 	private static final Map<String, HashSet<String>> DIFF_MAP = new HashMap<>();
 
+	/**
+	 * 只要发现不同就往这里扔
+	 *
+	 * @param differents
+	 */
+	public static void addDiff(String groupName, List<Different> differents) {
+		if (differents == null || differents.size() == 0) {
+			return;
+		}
+		HashSet<String> paths = DIFF_MAP.computeIfAbsent(groupName, (k) -> new HashSet<>());
+		for (Different different : differents) {
+			paths.add(different.getPath());
+		}
+	}
+
 	@Override
 	public void run() {
 
@@ -43,7 +57,7 @@ public class CheckDiffJob implements Runnable {
 						if (groupCache != null && root != null && root.getMd5().equals(groupCache.getGroupMD5())) {
 							LOG.info(name + " file md5 same so skip diff");
 						} else {
-							StaticValue.space().joinCluster(group, false);
+							StaticValue.space().joinCluster(group);
 						}
 					} else {
 						Set<String> taskNames = null;
@@ -68,7 +82,7 @@ public class CheckDiffJob implements Runnable {
 						if (rm.size() > 0) {
 							paths.removeAll(rm);
 							if (paths.size() == 0) {
-								StaticValue.space().joinCluster(group, false);
+								StaticValue.space().joinCluster(group);
 							}
 						}
 					}
@@ -85,21 +99,6 @@ public class CheckDiffJob implements Runnable {
 			}
 
 
-		}
-	}
-
-	/**
-	 * 只要发现不同就往这里扔
-	 *
-	 * @param differents
-	 */
-	public static void addDiff(String groupName, List<Different> differents) {
-		if (differents == null || differents.size() == 0) {
-			return;
-		}
-		HashSet<String> paths = DIFF_MAP.computeIfAbsent(groupName, (k) -> new HashSet<>());
-		for (Different different : differents) {
-			paths.add(different.getPath());
 		}
 	}
 

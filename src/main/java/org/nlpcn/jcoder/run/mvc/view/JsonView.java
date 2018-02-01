@@ -1,21 +1,19 @@
 package org.nlpcn.jcoder.run.mvc.view;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.View;
 
-import com.alibaba.fastjson.JSONObject;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * 直接返回正文
- * 
+ *
  * @author ansj
- * 
  */
 public class JsonView implements View {
 
@@ -39,17 +37,17 @@ public class JsonView implements View {
 		if (obj == null) {
 			obj = result;
 		}
-		
+
 		if (obj instanceof Restful) {
 			Restful restful = (Restful) obj;
-			if(Mvcs.getResp()!=null && Mvcs.getReq().getHeader(Constants.DEBUG)!=null){
-				restful.debug() ;
+			if (Mvcs.getResp() != null && Mvcs.getReq().getHeader(Constants.DEBUG) != null) {
+				restful.debug();
 			}
 			resp.setStatus(restful.code());
-		}else {
+		} else {
 			resp.setStatus(httpStatus);
 		}
-		
+
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("application/json");
 
@@ -58,11 +56,11 @@ public class JsonView implements View {
 	}
 
 	public String toString(Object result) {
-		
-		if(result==null){
-			return "null" ;
+
+		if (result == null) {
+			return "null";
 		}
-		
+
 		if (result instanceof String) {
 			return (String) result;
 		}

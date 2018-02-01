@@ -6,12 +6,12 @@ import org.nutz.ioc.loader.annotation.Inject;
 
 public class TestRun {
 
-  @Inject
-  private Logger log;
+	@Inject
+	private Logger log;
 
-  @Execute
-  public String defaultTest(String name) throws InterruptedException {
-      return "Hello Jcoder " + name;
-  }
+	@Execute
+	public String defaultTest(String name) throws InterruptedException {
+		return "Hello Jcoder " + name;
+	}
 
 }

@@ -1,6 +1,5 @@
 package org.nlpcn.util.dao;
 
-import org.apache.zookeeper.ZooKeeper;
 import org.junit.Test;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 
@@ -13,7 +12,7 @@ public class ZookeeperDaoTest {
 
 	@Test
 	public void test() throws Exception {
-		ZookeeperDao zd = new ZookeeperDao("192.168.3.137:2181") ;
+		ZookeeperDao zd = new ZookeeperDao("192.168.3.137:2181");
 
 		zd.start();
 
