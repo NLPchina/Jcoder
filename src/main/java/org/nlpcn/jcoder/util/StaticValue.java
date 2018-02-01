@@ -20,38 +20,54 @@ import java.util.ResourceBundle;
 
 public class StaticValue {
 
-	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
-	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
-	public static final String ZK = getValueOrCreate("zk", "127.0.0.1:" + (PORT + 1));
+	private static final Logger LOG = LoggerFactory.getLogger(StaticValue.class);
 
 	public static final String PREFIX = "jcoder_";
+
 	public static final String SELF_HOST = "127.0.0.1";
+
 	public static final String ZK_ROOT = "/jcoder";
+
+	public static final String HOME = getValueOrCreate("home", new File(System.getProperty("user.home"), ".jcoder").getAbsolutePath());
+
+	private static final String HOST = getValueOrCreate("host", "*");
+
+	public static final int PORT = TypeUtils.castToInt(getValueOrCreate("port", "8080"));
+
+	private static final String HOST_PORT = getHost() + ":" + PORT;
+
+	public static final String ZK = getValueOrCreate("zk", SELF_HOST + ":" + (PORT + 1));
+
+	//default token
+	public static final String TOKEN = getValueOrCreate("token", null);
+
 	public static final File HOME_FILE = new File(HOME);
 	public static final File GROUP_FILE = new File(HOME_FILE, "group");
 	public static final String VERSION = getResource("version");
 
 	//集群方式还是单机方式启动
-	public static final boolean IS_LOCAL = ZK.equals("127.0.0.1:" + (PORT + 1));
+	public static final boolean IS_LOCAL = ZK.equals(SELF_HOST + ":" + (PORT + 1));
 
 	// api路径的映射
 	public static final ApiUrlMappingImpl MAPPING = new ApiUrlMappingImpl();
-	private static final Logger LOG = LoggerFactory.getLogger(StaticValue.class);
 
-	//default token
-	public static final String TOKEN = getValueOrCreate("token", null);
 	public static final String LOG_PATH = getValueOrCreate("log", new File("log/jcoder.log").getAbsolutePath());
+
 	//是否是以SSL方式启动
 	public static final boolean IS_SSL = StringUtil.isNotBlank(getValueOrCreate("ssl", null));
+
 	//是否是测试模式
 	public static final boolean TESTRING = Boolean.parseBoolean(getValueOrCreate("testing", "false"));
-	private static final String HOST = getValueOrCreate("host", "*");
-	private static final String HOST_PORT = getHost() + ":" + PORT;
+
 	public static BasicDao systemDao; // 系统DAO
+
 	//启动jcoderjar所在的文件，如果源码方式则为null
 	private static File JCODER_JAR_FILE = null;
+
 	private static boolean master = false;
+
 	private static SharedSpaceService sharedSpace;
+
 	private static Ioc systemIoc;
 
 	static {
