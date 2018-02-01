@@ -16,6 +16,10 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+	all*.exclude group: 'log4j', module: 'log4j'
+}
+
 dependencies {
 
 	compile 'org.nutz:nutz:1.r.63'
@@ -34,13 +38,13 @@ dependencies {
 	compile 'org.eclipse.jgit:org.eclipse.jgit:4.10.0.201712302008-r'
 
 	//new version use log
-	compile 'org.apache.logging.log4j:log4j-1.2-api:2.10.0'
-	compile 'org.slf4j:slf4j-api:1.7.25'
 	compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-jcl:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-api:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-core:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-web:2.10.0'
+	compile 'org.slf4j:slf4j-api:1.7.25'
+	compile 'org.apache.logging.log4j:log4j-1.2-api:2.10.0'
 
 
 	//javaee support
