@@ -194,10 +194,7 @@ public class JavaRunner {
 				Inject inject = field.getAnnotation(Inject.class);
 				if (inject != null) {
 					field.setAccessible(true);
-					if (field.getType().equals(org.apache.log4j.Logger.class)) {
-						LOG.warn("org.apache.log4j.Logger Deprecated please use org.slf4j.Logger by LoggerFactory");
-						mirror.setValue(objInstance, field, org.apache.log4j.Logger.getLogger(codeInfo.getClassz()));
-					} else if (field.getType().equals(org.slf4j.Logger.class)) {
+					if (field.getType().equals(org.slf4j.Logger.class)) {
 						mirror.setValue(objInstance, field, LoggerFactory.getLogger(codeInfo.getClassz()));
 					} else {
 						mirror.setValue(objInstance, field, codeInfo.getIoc().get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
