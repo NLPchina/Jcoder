@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 public class ApiModuleProcessor extends AbstractProcessor {
 
 	private Method method;
-	private Object moduleObj;
+	private Task moduleObj;
 	private String groupName;
 
 	@Override
@@ -36,7 +36,7 @@ public class ApiModuleProcessor extends AbstractProcessor {
 		ac.setModule(moduleObj);
 		ac.setMethod(method);
 		Rpcs.ctx().setGroupName(groupName);
-		Thread.currentThread().setContextClassLoader(moduleObj.getClass().getClassLoader());//设置classloader
+		Thread.currentThread().setContextClassLoader(moduleObj.codeInfo().getClassLoader());//设置classloader
 		doNext(ac);
 	}
 
