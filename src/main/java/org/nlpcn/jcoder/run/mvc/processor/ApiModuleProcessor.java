@@ -36,6 +36,7 @@ public class ApiModuleProcessor extends AbstractProcessor {
 		ac.setModule(moduleObj);
 		ac.setMethod(method);
 		Rpcs.ctx().setGroupName(groupName);
+		Thread.currentThread().setContextClassLoader(moduleObj.getClass().getClassLoader());//设置classloader
 		doNext(ac);
 	}
 
