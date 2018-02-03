@@ -33,7 +33,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -93,17 +92,13 @@ public class JarService {
 
 		JarService jarService = CACHE.getIfPresent(groupName);
 
-		long start = System.currentTimeMillis();
 
 		if (jarService == null) {
+			long start = System.currentTimeMillis();
 			LOG.info("to init JarService by group {}", groupName);
 			try {
 				lock(groupName);
 				jarService = CACHE.get(groupName);
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-			try {
 				StaticValue.getSystemIoc().get(TaskService.class, "taskService").flushGroup(groupName);
 			} catch (Exception e) {
 				e.printStackTrace();

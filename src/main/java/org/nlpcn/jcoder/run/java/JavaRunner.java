@@ -16,6 +16,7 @@ import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
+import org.nutz.lang.reflect.FastClassFactory;
 import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,6 +190,9 @@ public class JavaRunner {
 			objInstance = codeInfo.getClassz().newInstance();
 
 			Mirror<?> mirror = Mirror.me(codeInfo.getClassz());
+
+			//TODO: nutz的bug，暂时这么处理,更新后替换
+			FastClassFactory.clearCache();
 
 			for (Field field : mirror.getFields()) {
 				Inject inject = field.getAnnotation(Inject.class);
