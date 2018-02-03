@@ -158,7 +158,7 @@ public class JarService {
 			libPaths.clear();
 			for (int i = 0; i < findJars.size(); i++) {
 				urls[i] = findJars.get(i).toURI().toURL();
-				LOG.info("find JAR " + findJars.get(i));
+				LOG.debug("find JAR " + findJars.get(i));
 				libPaths.add(findJars.get(i).getAbsolutePath());
 			}
 		} catch (IOException e1) {

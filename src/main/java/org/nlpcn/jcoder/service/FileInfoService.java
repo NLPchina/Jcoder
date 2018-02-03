@@ -80,7 +80,7 @@ public class FileInfoService {
 			groupCache = new GroupCache();
 			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
 			groupCache.setTimeMD5(nowTimeMd5);
-			groupCache.setPomMD5(JarService.getOrCreate(groupName).getPomMd5());
+			groupCache.setPomMD5(MD5Util.md5(new File(StaticValue.GROUP_FILE, groupName + "/pom.xml")));
 			root.setMd5(groupCache.getGroupMD5());
 
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, JSONObject.toJSONString(groupCache));

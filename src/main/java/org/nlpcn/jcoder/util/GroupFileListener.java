@@ -170,7 +170,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 			Map<String, Task> maps = new HashMap<>();
 
-			StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTaskByGroupNameCache(groupName).forEach(t -> {
+			StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTasksByGroupName(groupName).forEach(t -> {
 				try {
 					maps.put(t.getName(), t);
 				} catch (Exception e) {
