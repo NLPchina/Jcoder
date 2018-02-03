@@ -10,7 +10,7 @@ public class KeyValue<K, V> {
 		this.value = value;
 	}
 
-	public static <K, V> KeyValue with(K key, V value) {
+	public static <K, V> KeyValue<K, V> with(K key, V value) {
 		return new KeyValue<>(key, value);
 	}
 
