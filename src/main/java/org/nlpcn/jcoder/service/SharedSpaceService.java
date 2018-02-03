@@ -29,6 +29,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +73,8 @@ public class SharedSpaceService {
 	 * group /jcoder/lock
 	 */
 	private static final String LOCK_PATH = StaticValue.ZK_ROOT + "/lock";
+
+	private static final Lock LOCK = new ReentrantLock();
 
 
 	private ZookeeperDao zkDao;
@@ -267,175 +271,186 @@ public class SharedSpaceService {
 
 	public SharedSpaceService init() throws Exception {
 
-		long start = System.currentTimeMillis();
-		LOG.info("shared space init");
+		LOCK.lock();
+		try {
 
-		this.zkDao = new ZookeeperDao(StaticValue.ZK).start();
+			long start = System.currentTimeMillis();
+			LOG.info("shared space init");
 
-		//清空临时节点
+			this.zkDao = new ZookeeperDao(StaticValue.ZK).start();
+
+			//清空临时节点
 
 
-		//注册监听事件
-		zkDao.getZk().getConnectionStateListenable().addListener((client, connectionState) -> {
-			LOG.info("=============================" + connectionState);
-			if (connectionState == ConnectionState.LOST) {
-				while (true) {
+			//注册监听事件
+			zkDao.getZk().getConnectionStateListenable().addListener((client, connectionState) -> {
+				LOG.info("=============================" + connectionState);
+				if (connectionState == ConnectionState.LOST) {
+					LOCK.lock();
 					try {
-						StaticValue.space().release();
-						StaticValue.space().init();
-						break;
-					} catch (InterruptedException e) {
-						throw new RuntimeException(e);
-					} catch (Exception e) {
-						LOG.error("reconn zk server ", e);
-					}
-				}
-			}
-		});
-
-
-		/**
-		 * 选举leader
-		 */
-		leader = new LeaderLatch(zkDao.getZk(), MASTER_PATH, StaticValue.getHostPort());
-		leader.addListener(new LeaderLatchListener() {
-			@Override
-			public void isLeader() {
-				StaticValue.setMaster(true);
-				LOG.info("I am master my host is " + StaticValue.getHostPort());
-				MasterTaskCheckJob.startJob();
-				MasterRunTaskJob.startJob();
-				MasterGitPullJob.startJob();
-				MasterCleanTokenJob.startJob();
-			}
-
-			@Override
-			public void notLeader() {
-				StaticValue.setMaster(false);
-				LOG.info("I am lost master " + StaticValue.getHostPort());
-				MasterTaskCheckJob.stopJob();
-				MasterRunTaskJob.stopJob();
-				MasterGitPullJob.stopJob();
-				MasterCleanTokenJob.stopJob();
-			}
-
-		});
-		leader.start();
-
-
-		if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
-			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH);
-		}
-
-
-		if (zkDao.getZk().checkExists().forPath(GROUP_PATH) == null) {
-			zkDao.getZk().create().creatingParentsIfNeeded().forPath(GROUP_PATH);
-		}
-
-		if (zkDao.getZk().checkExists().forPath(TOKEN_PATH) == null) {
-			zkDao.getZk().create().creatingParentsIfNeeded().forPath(TOKEN_PATH);
-		}
-
-		if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
-			zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
-		}
-
-		/**
-		 * 监听group目录
-		 */
-		groupCache = new TreeCache(zkDao.getZk(), GROUP_PATH);
-		groupCache.start();
-
-
-		/**
-		 * 缓存主机
-		 */
-		hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
-
-		joinCluster();
-
-		setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
-			@Override
-			public void process(WatchedEvent event) {
-				if (event.getType() == Watcher.Event.EventType.NodeDeleted) { //节点删除了
-					try {
-						LOG.info("I lost node so add it again " + event.getPath());
-						setData2ZKByEphemeral(event.getPath(), new byte[0], this);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		});
-
-		//映射信息
-		mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
-
-		/**
-		 * 监控token
-		 */
-		tokenCache = new ZKMap(zkDao.getZk(), TOKEN_PATH, Token.class).start();
-
-		groupCache.getListenable().addListener((client, event) -> { //广播监听group目录
-			LOG.info("found group change type:{} path:{}", event.getType(), event.getData() == null ? "" : event.getData().getPath());
-			if (event.getData() != null) {
-				switch (event.getType()) {
-					case NODE_ADDED:
-					case NODE_UPDATED:
-					case NODE_REMOVED:
-						if (event.getData().getPath().equals(GROUP_PATH)) {
-							return;
-						}
-						String path = event.getData().getPath().substring(GROUP_PATH.length() + 1);
-						String[] split = path.split("/");
-						String groupName = split[0];
-						if (split.length < 2) {
-							return;
-						}
-						String taskName = split[1];
-
-						if (StaticValue.isMaster() && !"file".equals(taskName)) {//如果本机是master,并且更新的是task
-							MasterTaskCheckJob.addQueue(new Handler(event.getData().getPath(), groupName, taskName, event.getType()));
-						}
-
-						//如果本机没有group则忽略
-						if (StaticValue.getSystemIoc().get(GroupService.class, "groupService").findGroupByName(groupName) == null) {
-							return;
-						}
-
-
-						Set<String> taskNames = null;
-						Set<String> relativePaths = null;
-
-						if ("file".equals(taskName)) {
-							path = path.substring(groupName.length() + 5);
-							if (StringUtil.isNotBlank(path) && path != "/") {
-								relativePaths = new HashSet<>();
-								relativePaths.add(path);
+						while (true) {
+							try {
+								StaticValue.space().release();
+								StaticValue.space().init();
+								break;
+							} catch (InterruptedException e) {
+								throw new RuntimeException(e);
+							} catch (Exception e) {
+								LOG.error("reconn zk server ", e);
 							}
-						} else {
-							taskNames = new HashSet<>();
-							taskNames.add(taskName);
 						}
-
-						if ((relativePaths != null && relativePaths.size() > 0) || (taskNames != null && taskNames.size() > 0)) {
-							different(groupName, taskNames, relativePaths, false, false);
-						}
-						break;
+					} finally {
+						LOCK.unlock();
+					}
 				}
+			});
+
+
+			/**
+			 * 选举leader
+			 */
+			leader = new LeaderLatch(zkDao.getZk(), MASTER_PATH, StaticValue.getHostPort());
+			leader.addListener(new LeaderLatchListener() {
+				@Override
+				public void isLeader() {
+					StaticValue.setMaster(true);
+					LOG.info("I am master my host is " + StaticValue.getHostPort());
+					MasterTaskCheckJob.startJob();
+					MasterRunTaskJob.startJob();
+					MasterGitPullJob.startJob();
+					MasterCleanTokenJob.startJob();
+				}
+
+				@Override
+				public void notLeader() {
+					StaticValue.setMaster(false);
+					LOG.info("I am lost master " + StaticValue.getHostPort());
+					MasterTaskCheckJob.stopJob();
+					MasterRunTaskJob.stopJob();
+					MasterGitPullJob.stopJob();
+					MasterCleanTokenJob.stopJob();
+				}
+
+			});
+			leader.start();
+
+
+			if (zkDao.getZk().checkExists().forPath(HOST_GROUP_PATH) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_GROUP_PATH);
 			}
-		});
 
 
-		if (StaticValue.IS_LOCAL) {
-			roomService = new MemoryRoomService();
-		} else {
-			roomService = new ZookeeperRoomService(this.zkDao);
+			if (zkDao.getZk().checkExists().forPath(GROUP_PATH) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(GROUP_PATH);
+			}
+
+			if (zkDao.getZk().checkExists().forPath(TOKEN_PATH) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(TOKEN_PATH);
+			}
+
+			if (zkDao.getZk().checkExists().forPath(HOST_PATH) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
+			}
+
+			/**
+			 * 监听group目录
+			 */
+			groupCache = new TreeCache(zkDao.getZk(), GROUP_PATH);
+			groupCache.start();
+
+
+			/**
+			 * 缓存主机
+			 */
+			hostGroupCache = new ZKMap(zkDao.getZk(), HOST_GROUP_PATH, HostGroup.class).start();
+
+			joinCluster();
+
+			setData2ZKByEphemeral(HOST_PATH + "/" + StaticValue.getHostPort(), new byte[0], new Watcher() {
+				@Override
+				public void process(WatchedEvent event) {
+					if (event.getType() == Watcher.Event.EventType.NodeDeleted) { //节点删除了
+						try {
+							LOG.info("I lost node so add it again " + event.getPath());
+							setData2ZKByEphemeral(event.getPath(), new byte[0], this);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			});
+
+			//映射信息
+			mappingCache = new TreeCache(zkDao.getZk(), MAPPING_PATH).start();
+
+			/**
+			 * 监控token
+			 */
+			tokenCache = new ZKMap(zkDao.getZk(), TOKEN_PATH, Token.class).start();
+
+			groupCache.getListenable().addListener((client, event) -> { //广播监听group目录
+				LOG.info("found group change type:{} path:{}", event.getType(), event.getData() == null ? "" : event.getData().getPath());
+				if (event.getData() != null) {
+					switch (event.getType()) {
+						case NODE_ADDED:
+						case NODE_UPDATED:
+						case NODE_REMOVED:
+							if (event.getData().getPath().equals(GROUP_PATH)) {
+								return;
+							}
+							String path = event.getData().getPath().substring(GROUP_PATH.length() + 1);
+							String[] split = path.split("/");
+							String groupName = split[0];
+							if (split.length < 2) {
+								return;
+							}
+							String taskName = split[1];
+
+							if (StaticValue.isMaster() && !"file".equals(taskName)) {//如果本机是master,并且更新的是task
+								MasterTaskCheckJob.addQueue(new Handler(event.getData().getPath(), groupName, taskName, event.getType()));
+							}
+
+							//如果本机没有group则忽略
+							if (StaticValue.getSystemIoc().get(GroupService.class, "groupService").findGroupByName(groupName) == null) {
+								return;
+							}
+
+
+							Set<String> taskNames = null;
+							Set<String> relativePaths = null;
+
+							if ("file".equals(taskName)) {
+								path = path.substring(groupName.length() + 5);
+								if (StringUtil.isNotBlank(path) && path != "/") {
+									relativePaths = new HashSet<>();
+									relativePaths.add(path);
+								}
+							} else {
+								taskNames = new HashSet<>();
+								taskNames.add(taskName);
+							}
+
+							if ((relativePaths != null && relativePaths.size() > 0) || (taskNames != null && taskNames.size() > 0)) {
+								different(groupName, taskNames, relativePaths, false, false);
+							}
+							break;
+					}
+				}
+			});
+
+
+			if (StaticValue.IS_LOCAL) {
+				roomService = new MemoryRoomService();
+			} else {
+				roomService = new ZookeeperRoomService(this.zkDao);
+			}
+
+
+			LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
+			return this;
+		} finally {
+			LOCK.unlock();
 		}
-
-
-		LOG.info("shared space init ok use time {}", System.currentTimeMillis() - start);
-		return this;
 
 	}
 
@@ -443,14 +458,19 @@ public class SharedSpaceService {
 	 * 主机关闭的时候调用,平时不调用
 	 */
 	public void release() throws Exception {
-		LOG.info("release SharedSpace");
-		Optional.of(groupCache).ifPresent(o -> closeWithoutException(o));
-		Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
-		Optional.of(mappingCache).ifPresent((o) -> closeWithoutException(o));
-		Optional.of(tokenCache).ifPresent((o) -> closeWithoutException(o));
-		Optional.of(hostGroupCache).ifPresent((o) -> closeWithoutException(o));
-		Optional.of(zkDao).ifPresent((o) -> closeWithoutException(o));
-		Optional.of(roomService).ifPresent((o) -> closeWithoutException(o));
+		LOCK.lock();
+		try {
+			LOG.info("release SharedSpace");
+			Optional.of(groupCache).ifPresent(o -> closeWithoutException(o));
+			Optional.of(leader).ifPresent((o) -> closeWithoutException(o));
+			Optional.of(mappingCache).ifPresent((o) -> closeWithoutException(o));
+			Optional.of(tokenCache).ifPresent((o) -> closeWithoutException(o));
+			Optional.of(hostGroupCache).ifPresent((o) -> closeWithoutException(o));
+			Optional.of(zkDao).ifPresent((o) -> closeWithoutException(o));
+			Optional.of(roomService).ifPresent((o) -> closeWithoutException(o));
+		} finally {
+			LOCK.unlock();
+		}
 	}
 
 
@@ -569,7 +589,9 @@ public class SharedSpaceService {
 			LOG.info(groupName + " file md5 same so skip");
 		} else {
 			LOG.info(groupName + " file changed find differents");
-			walkGroupCache(relativePaths, GROUP_PATH + "/" + groupName + "/file");
+			Set<String> fullPathSet = new HashSet<>();
+			walkGroupCache(fullPathSet, GROUP_PATH + "/" + groupName + "/file");
+			fullPathSet.forEach(fp -> relativePaths.add(fp.substring(GROUP_PATH.length() + groupName.length() + 6)));
 			for (int i = 0; i < fileInfos.size() - 1; i++) {
 				relativePaths.add(fileInfos.get(i).getRelativePath());
 			}
