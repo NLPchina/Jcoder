@@ -8,6 +8,7 @@ import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
+import org.nlpcn.jcoder.util.GroupFileListener;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
@@ -74,7 +75,13 @@ public class SiteSetup implements Setup {
 		}
 
 		//加載所有的group
-		GroupService.allLocalGroup().forEach(g -> JarService.getOrCreate(g.getName()));
+		GroupService.allLocalGroup().forEach(g -> { //并监听
+			JarService.getOrCreate(g.getName());
+			if (StaticValue.TESTRING) {
+				GroupFileListener.unRegediter(g.getName());
+				GroupFileListener.regediter(g.getName());
+			}
+		});
 
 
 		new Thread(new CheckDiffJob()).start();

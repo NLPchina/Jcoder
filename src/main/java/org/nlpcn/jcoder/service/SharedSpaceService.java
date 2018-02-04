@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -12,12 +13,22 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.nlpcn.jcoder.domain.*;
-import org.nlpcn.jcoder.job.*;
+import org.nlpcn.jcoder.domain.Different;
+import org.nlpcn.jcoder.domain.FileInfo;
+import org.nlpcn.jcoder.domain.Group;
+import org.nlpcn.jcoder.domain.Handler;
+import org.nlpcn.jcoder.domain.HostGroup;
+import org.nlpcn.jcoder.domain.HostGroupWatcher;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.Token;
+import org.nlpcn.jcoder.job.CheckDiffJob;
+import org.nlpcn.jcoder.job.MasterCleanTokenJob;
+import org.nlpcn.jcoder.job.MasterGitPullJob;
+import org.nlpcn.jcoder.job.MasterRunTaskJob;
+import org.nlpcn.jcoder.job.MasterTaskCheckJob;
 import org.nlpcn.jcoder.run.rpc.service.MemoryRoomService;
 import org.nlpcn.jcoder.run.rpc.service.RoomService;
 import org.nlpcn.jcoder.run.rpc.service.ZookeeperRoomService;
-import org.nlpcn.jcoder.util.GroupFileListener;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.ZKMap;
@@ -28,7 +39,15 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -500,12 +519,6 @@ public class SharedSpaceService {
 		for (Group group : groups) {
 			List<Different> diffs = joinCluster(group);
 			result.put(group.getName(), diffs);
-
-			if (StaticValue.TESTRING) {
-				GroupFileListener.unRegediter(group.getName());
-				GroupFileListener.regediter(group.getName());
-			}
-
 		}
 
 		return result;
