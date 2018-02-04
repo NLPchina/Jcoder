@@ -137,7 +137,7 @@ public class MainAction {
 					e.getValue().obj2JsonArray().stream().forEach(o -> {
 						JSONObject job = (JSONObject) o;
 						if (!job.getBooleanValue("compile") && job.getIntValue("status") == 1) {
-							errTask.add(ImmutableMap.of("name", "编译：" + gn + "/" + job.getString("name"), "url", "task/list.html?name=" + gn + "&hostPort=" + e.getKey()));
+							errTask.add(ImmutableMap.of("name", "编译：" + gn + "/" + job.getString("name"), "url", "task/list.html?name=" + gn + "&host=" + e.getKey()));
 						}
 					});
 
