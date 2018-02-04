@@ -20,7 +20,7 @@ public class BootstrapTestAnsj {
 				"--host=" + host,
 				"--home=jcoder_home_" + port,
 				"--port=" + port,
-				"--testing=true"
+				//"--testing=true"
 		});
 	}
 

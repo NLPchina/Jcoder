@@ -127,7 +127,13 @@ public class MainAction {
 				Set<String> hosts = groupService.getGroupHostList(gn).stream().map(gh -> gh.getHostPort()).collect(Collectors.toSet());
 				// 查询所有组的机器
 				Map<String, Restful> post = proxyService.post(hosts, Api.TASK_LIST.getPath(), Maps.hash("groupName", gn, "taskType", -1), 5000);
-				post.entrySet().forEach(e -> {
+				post.entrySet().stream().filter(e -> {
+					if (e.getValue().isOk()) {
+						return true;
+					}
+					errTask.add(ImmutableMap.of("name", "网络：" + e.getKey() + "\t" + e.getValue().getMessage(), "url", "#"));
+					return false;
+				}).forEach(e -> {
 					e.getValue().obj2JsonArray().stream().forEach(o -> {
 						JSONObject job = (JSONObject) o;
 						if (!job.getBooleanValue("compile") && job.getIntValue("status") == 1) {
@@ -139,6 +145,7 @@ public class MainAction {
 
 			} catch (Exception e) {
 				e.printStackTrace();
+				errTask.add(ImmutableMap.of("name", "网络：hosts失败", "url", "#"));
 			}
 
 		});
