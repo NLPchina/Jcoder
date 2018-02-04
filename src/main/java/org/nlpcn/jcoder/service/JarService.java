@@ -208,6 +208,7 @@ public class JarService {
 
 					LOG.info("to init bean[{}{}]", entry.getKey(), entry.getValue());
 
+					//TODO: nutz的bug 错误缓存
 					FastClassFactory.clearCache();
 					//
 					ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
