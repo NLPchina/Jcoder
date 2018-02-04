@@ -19,6 +19,7 @@ import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.lang.Lang;
+import org.nutz.lang.reflect.FastClassFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -207,6 +208,7 @@ public class JarService {
 
 					LOG.info("to init bean[{}{}]", entry.getKey(), entry.getValue());
 
+					FastClassFactory.clearCache();
 					//
 					ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 					try {
