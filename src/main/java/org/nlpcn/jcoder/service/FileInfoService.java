@@ -77,10 +77,11 @@ public class FileInfoService {
 			LOG.info("to computer md5 in gourp: " + groupName);
 			List<String> ts = result.stream().map(fi -> fi.getRelativePath() + fi.getMd5()).sorted().collect(Collectors.toList());
 
-			groupCache = new GroupCache();
+			if(groupCache==null){
+				groupCache = new GroupCache();
+			}
 			groupCache.setGroupMD5(MD5Util.md5(ts.toString()));
 			groupCache.setTimeMD5(nowTimeMd5);
-			groupCache.setPomMD5(MD5Util.md5(new File(StaticValue.GROUP_FILE, groupName + "/pom.xml")));
 			root.setMd5(groupCache.getGroupMD5());
 
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getCanonicalPath(), IOUtil.UTF8, JSONObject.toJSONString(groupCache));

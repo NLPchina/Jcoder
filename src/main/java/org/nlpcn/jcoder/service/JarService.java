@@ -328,7 +328,7 @@ public class JarService {
 
 		String pomMD5 = getPomMd5();
 
-		if (!pomMD5.equals(groupCache.getPomMD5())) {
+		if (pomMD5!=null && !pomMD5.equals(groupCache.getPomMD5())) {
 			groupCache.setPomMD5(pomMD5);
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getAbsolutePath(), "utf-8", JSONObject.toJSONString(groupCache));
 			clean();
