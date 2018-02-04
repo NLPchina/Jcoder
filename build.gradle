@@ -41,10 +41,10 @@ dependencies {
 	compile 'org.apache.logging.log4j:log4j-slf4j-impl:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-jcl:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-api:2.10.0'
-	compile 'org.apache.logging.log4j:log4j-core:2.10.0'
 	compile 'org.apache.logging.log4j:log4j-web:2.10.0'
 	compile 'org.slf4j:slf4j-api:1.7.25'
 	compile 'org.apache.logging.log4j:log4j-1.2-api:2.10.0'
+	compile 'org.apache.logging.log4j:log4j-core:2.10.0'
 
 
 	//javaee support
