@@ -115,8 +115,8 @@ public class ThreadAction {
 						actions = ThreadManager.getAllAction();
 						break;
 					default:
-						throw new ApiException(500, "err type " + type);
 				}
+				throw new ApiException(500, "err type " + type);
 			} else {
 				threads = ThreadManager.getAllThread();
 				schedulers = ThreadManager.getAllScheduler();
