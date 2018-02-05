@@ -18,6 +18,7 @@ import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.transform.Result;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -140,18 +141,26 @@ public class ThreadAction {
 	 * 停止一个运行的action，或者task
 	 */
 	@At
-	public void stop(String key) throws Exception {
+	public Restful stop(String key) throws Exception {
+	    boolean flag = false;
+	    String msg = "";
 		try {
 			try {
-				ThreadManager.stop(key);
-			} catch (TaskException e) {
+                flag = ThreadManager.stop(key);
+                msg = "停止任务成功！";
+            } catch (TaskException e) {
 				e.printStackTrace();
+				flag = false;
+                msg = "停止任务失败！";
 				LOG.error("stop action err", e);
 			}
 		} catch (Exception e) {
 			LOG.error("author err", e);
+			flag = false;
+            msg = "停止任务失败！";
 			throw e;
 		}
+		return Restful.instance(flag,msg);
 	}
 
 	/**

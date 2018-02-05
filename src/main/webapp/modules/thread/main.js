@@ -22,8 +22,8 @@ var threadManager = new Vue({
                 Vue.nextTick(function(){
                     var threadsTable = $('#threadsTable').DataTable({
                         /*"colReorder": true,*/
-                        /*"destroy":true, //Cannot reinitialise DataTable,解决重新加载表格内容问题
-                        "bDestroy":true,*/
+                        "destroy":true, //Cannot reinitialise DataTable,解决重新加载表格内容问题
+                        "bDestroy":true,
                         "bProcessing" : true,
                         "bAutoWidth" : false, //是否自适应宽度
                         "bScrollCollapse" : false, //是否开启DataTables的高度自适应，当数据条数不够分页数据条数的时候，插件高度是否随数据条数而改变
@@ -76,6 +76,20 @@ var threadManager = new Vue({
             name = item.name.split('@')[0];
 	    }
         location.hash = "/task/edit.html?group="+this.groupName+"&host=master&name="+name;
-	  }
+	  },
+      stopTask:function(item,type){
+        var name = '';
+        if(type == 'action'){
+            name = item.taskName;
+        }else if(type == 'thread'){
+            name = item.name;
+        }
+        Jcoder.ajax('/admin/thread/stop', 'post',{key:name},null).then(function (data) {
+          JqdeBox.unloading();
+          if(data.ok){
+            JqdeBox.message(data.ok, "停止任务成功！");
+          }
+        });
+      }
   }
 });

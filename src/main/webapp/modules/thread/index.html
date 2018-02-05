@@ -1,6 +1,6 @@
 <div id="threadManager">
     <div class="row">
-        <div class="col-xs-12" v-if="actions.length > 0">
+        <div class="col-xs-12">
             <div class="widget-box transparent">
                 <div class="widget-header widget-header-flat">
                     <h4 class="widget-title lighter">
@@ -21,12 +21,6 @@
                             <table id="actionsTable" class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th class="center">
-                                            <label class="pos-rel">
-                                                <input type="checkbox" class="ace" />
-                                                <span class="lbl"></span>
-                                            </label>
-                                        </th>
                                         <th class="center">名称</th>
                                         <th class="center">主机</th>
                                         <th class="center">分组</th>
@@ -40,12 +34,6 @@
 
                                 <tbody>
                                     <tr v-for="(action, index) in actions">
-                                        <td class="center">
-                                            <label class="pos-rel">
-                                                <input type="checkbox" class="ace" />
-                                                <span class="lbl"></span>
-                                            </label>
-                                        </td>
                                         <td  class="center">{{action.taskName}}</td>
                                         <td  class="center">{{action.hostPort}}</td>
                                         <td  class="center">{{action.groupName}}</td>
@@ -57,7 +45,10 @@
                                             <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
                                                 <div class="editbutton" style="display:inline;">
                                                     <a class="green" href="javascript:;" title="编辑" >
-                                                        <i class="ace-icon fa fa-pencil bigger-130" @click="gotoTaskInfo(action,'thread');"></i>
+                                                        <i class="ace-icon fa fa-pencil bigger-130" @click="gotoTaskInfo(action,'action');"></i>
+                                                    </a>
+                                                    <a class="green" href="javascript:;" title="停止" >
+                                                        <i class="ace-icon fa fa-stop-circle bigger-130" @click="stopTask(action,'action');"></i>
                                                     </a>
                                                 </div>
                                             </div>
@@ -72,7 +63,7 @@
         </div>
     </div>
     <div class="row" style="margin-top:20px;">
-        <div class="col-xs-12" v-if="threads.length > 0">
+        <div class="col-xs-12" >
             <div class="widget-box transparent">
                 <div class="widget-header widget-header-flat">
                     <h4 class="widget-title lighter">
@@ -93,12 +84,6 @@
                             <table id="threadsTable" class="table table-bordered">
                                 <thead>
                                 <tr>
-                                    <th class="center">
-                                        <label class="pos-rel">
-                                            <input type="checkbox" class="ace" />
-                                            <span class="lbl"></span>
-                                        </label>
-                                    </th>
                                     <th class="center">Name</th>
                                     <th class="center">Host</th>
                                     <th class="center">Group</th>
@@ -113,12 +98,6 @@
 
                                 <tbody>
                                 <tr v-for="(thread, index) in threads">
-                                    <td class="center">
-                                        <label class="pos-rel">
-                                            <input type="checkbox" class="ace" />
-                                            <span class="lbl"></span>
-                                        </label>
-                                    </td>
                                     <td  class="center">{{thread.name}}</td>
                                     <td  class="center">{{thread.host}}</td>
                                     <td  class="center">{{thread.group}}</td>
@@ -133,6 +112,9 @@
                                                 <a class="green" href="javascript:;" title="编辑" >
                                                     <i class="ace-icon fa fa-pencil bigger-130" @click="gotoTaskInfo(thread,'thread');"></i>
                                                 </a>
+                                                <a class="green" href="javascript:;" title="停止" >
+                                                    <i class="ace-icon fa fa-stop-circle bigger-130" @click="stopTask(thread,'thread');"></i>
+                                                </a>
                                             </div>
                                         </div>
                                     </td>
@@ -145,7 +127,7 @@
             </div>
         </div>
     </div>
-    <div class="row" style="margin-top:20px;">
+    <div class="row" style="margin-top:20px;" v-if="schedulers.length > 0">
         <div class="col-xs-12">
             <div class="widget-box transparent">
                 <div class="widget-header widget-header-flat">
@@ -167,12 +149,6 @@
                             <table id="schedulersTable" class="table table-bordered">
                                 <thead>
                                 <tr>
-                                    <th class="center">
-                                        <label class="pos-rel">
-                                            <input type="checkbox" class="ace" />
-                                            <span class="lbl"></span>
-                                        </label>
-                                    </th>
                                     <th class="center">名称</th>
                                     <th class="center">主机</th>
                                     <th class="center">分组</th>
@@ -186,12 +162,6 @@
 
                                 <tbody>
                                 <tr v-for="(scheduler, index) in schedulers">
-                                    <td class="center">
-                                        <label class="pos-rel">
-                                            <input type="checkbox" class="ace" />
-                                            <span class="lbl"></span>
-                                        </label>
-                                    </td>
                                     <td  class="center">{{scheduler.name}}</td>
                                     <td  class="center">{{scheduler.host}}</td>
                                     <td  class="center">{{scheduler.group}}</td>
@@ -212,7 +182,6 @@
                                 </tbody>
                             </table>
                         </div>
-
                     </div>
                 </div>
             </div>
