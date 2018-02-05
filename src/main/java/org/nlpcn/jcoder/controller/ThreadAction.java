@@ -70,7 +70,7 @@ public class ThreadAction {
 			for (Map.Entry<String, Restful> entry : post.entrySet()) {
 				Restful ref = entry.getValue();
 				if (!ref.isOk()) {
-					LOG.error(entry.toString());
+					LOG.error(entry.getKey()+":"+entry.getValue().toJsonString());
 					continue;
 				}
 				JSONObject jsonObject = ref.obj2JsonObject();
@@ -109,8 +109,9 @@ public class ThreadAction {
 						actions = ThreadManager.getAllAction();
 						break;
 					default:
+						throw new ApiException(500, "err type " + type);
 				}
-				throw new ApiException(500, "err type " + type);
+
 			} else {
 				threads = ThreadManager.getAllThread();
 				schedulers = ThreadManager.getAllScheduler();
