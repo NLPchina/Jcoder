@@ -112,6 +112,14 @@ public class TaskAction {
 				.stream()
 				.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
 				.map(t -> {
+
+					boolean compile = false ;
+					if(t.getStatus()==1){ //停用状态不需要编译，只要代码规范即可
+						compile = t.sourceUtil() != null && t.codeInfo().getClassz() != null ;
+					}else{
+						compile = t.sourceUtil() != null ;
+					}
+
 					Map<String, Object> map = Maps.hash("name", t.getName(),
 							"groupName", t.getGroupName(),
 							"hostPort", StaticValue.getHostPort(),
@@ -119,7 +127,7 @@ public class TaskAction {
 							"status", t.getStatus(),
 							"createTime", DateTimeUtils.formatDateTime(t.getCreateTime(), DATETIME_FORMAT, null, null),
 							"updateTime", DateTimeUtils.formatDateTime(t.getUpdateTime(), DATETIME_FORMAT, null, null),
-							"compile", t.sourceUtil() != null && t.codeInfo().getClassz() != null);
+							"compile", compile);
 
 					if (!isCurrent) {
 						Different different = new Different();
