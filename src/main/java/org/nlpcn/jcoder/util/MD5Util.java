@@ -4,12 +4,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 public class MD5Util {
 	/**
@@ -35,6 +29,7 @@ public class MD5Util {
 
 	/**
 	 * 对一个字符串进行md5
+	 *
 	 * @param content
 	 * @return
 	 */

@@ -10,25 +10,17 @@ import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutFilter;
 import org.nutz.mvc.config.FilterNutConfig;
 
-import java.io.IOException;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
+import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class JcoderFilter extends NutFilter {
 
 	private static final String JCODER_NAME = "jcoder";
-
-	private ApiActionHandler apiHandler;
-
-	private String host;
-
 	private static final byte[] AUTH_ERR = "no right to call this server".getBytes();
+	private ApiActionHandler apiHandler;
+	private String host;
 
 	public void init(FilterConfig conf) throws ServletException {
 		super.init(conf);

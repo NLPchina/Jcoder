@@ -1,20 +1,14 @@
 package org.nlpcn.jcoder.job;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
-
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
-import org.nlpcn.jcoder.domain.Handler;
-import org.nlpcn.jcoder.domain.HostGroup;
-import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.domain.TaskInfo;
+import org.nlpcn.jcoder.domain.*;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
@@ -28,11 +22,7 @@ import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -55,6 +45,9 @@ public class MasterTaskCheckJob implements Runnable {
 
 	private Cache<String, String> oneCache = CacheBuilder.newBuilder().maximumSize(1000).build();
 
+
+	private MasterTaskCheckJob() {
+	}
 
 	/**
 	 * 当竞选为master时候调用此方法
@@ -82,8 +75,11 @@ public class MasterTaskCheckJob implements Runnable {
 		thread = null;
 	}
 
-
-	private MasterTaskCheckJob() {
+	/**
+	 * 发布一个监听任务
+	 */
+	public static void addQueue(Handler handler) {
+		HANDLER_QUEUE.add(handler);
 	}
 
 	@Override
@@ -303,7 +299,6 @@ public class MasterTaskCheckJob implements Runnable {
 		}
 	}
 
-
 	/**
 	 * 获取所有机器运行中的任务
 	 */
@@ -314,14 +309,6 @@ public class MasterTaskCheckJob implements Runnable {
 		JSONArray jar = JSONObject.parseObject(post.getContent()).getJSONObject("obj").getJSONArray("threads");
 
 		taskInfos = jar.toJavaList(TaskInfo.class);
-	}
-
-
-	/**
-	 * 发布一个监听任务
-	 */
-	public static void addQueue(Handler handler) {
-		HANDLER_QUEUE.add(handler);
 	}
 
 }

@@ -6,7 +6,6 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.http.Http;
@@ -20,7 +19,10 @@ import org.nutz.mvc.impl.ActionInvoker;
 import org.nutz.mvc.impl.Loadings;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -151,12 +153,12 @@ public class ApiUrlMappingImpl implements UrlMapping {
 		String[] split = path.split("/");
 
 		if (split.length < 5) {
-			throw new RuntimeException(path + " not match any class it must /api/[groupName]/[className]/[methodName]") ;
+			throw new RuntimeException(path + " not match any class it must /api/[groupName]/[className]/[methodName]");
 		}
 
 		Task task = TaskService.findTaskByCache(split[2], split[3]);
 
-		try{
+		try {
 			if (task != null && task.getStatus() == 1 && task.getType() == 1) {
 
 				CodeInfo codeInfo = new JavaRunner(task).compile().instance().getTask().codeInfo();
@@ -182,9 +184,9 @@ public class ApiUrlMappingImpl implements UrlMapping {
 					this.add(aacm, info, config);
 				}
 			}
-		}catch (Exception e){
+		} catch (Exception e) {
 			e.printStackTrace();
-			throw new RuntimeException(ExceptionUtil.realException(e)) ;
+			throw new RuntimeException(ExceptionUtil.realException(e));
 		}
 
 		return map.get(path);

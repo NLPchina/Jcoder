@@ -15,7 +15,7 @@ public class ParameterNameUtils {
 			for (Parameter pa : method.getParameters()) {
 				System.out.println(pa.getName());
 			}
-			
+
 		}
 	}
 

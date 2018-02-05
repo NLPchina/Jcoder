@@ -1,35 +1,25 @@
 package org.nlpcn.jcoder.util;
 
-import com.github.javaparser.ParseException;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.TypeDeclaration;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
-import org.h2.store.FileLister;
-import org.nlpcn.jcoder.domain.ApiDoc;
-import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
-import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.text.StringContent;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,6 +37,17 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 	 * 记录taskname对应的file文件路径
 	 */
 	private ConcurrentHashMap<String, File> taskFileMap = new ConcurrentHashMap<>();
+	private String groupName;
+	private File srcFile;
+	private File pomFile;
+	private File iocFile;
+
+	public GroupFileListener(String groupName) {
+		this.groupName = groupName;
+		srcFile = new File(StaticValue.GROUP_FILE, groupName + "/src/api");
+		pomFile = new File(StaticValue.GROUP_FILE, groupName + "/pom.xml");
+		iocFile = new File(StaticValue.GROUP_FILE, groupName + "/resources/ioc.js");
+	}
 
 	/**
 	 * 注册一个监听事件
@@ -57,7 +58,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		FileAlterationMonitor src = createMonitor(groupFileListener.srcFile, groupFileListener);
 
 		FileListener ioc = new FileListener(groupFileListener.iocFile, (v) -> {
-			JarService.getOrCreate(groupName).flushIOC();
+			JarService.getOrCreate(groupName).release();
 			return null;
 		});
 		ioc.start();
@@ -89,6 +90,47 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			e.printStackTrace();
 		}
 		return monitor;
+	}
+
+	public static void writeTask2Src(Task t) throws IOException, CodeException {
+		LOG.info("syn write file by task " + t.getName());
+		String pk = new JavaSourceUtil(t.getCode()).getPackage();
+		File file = new File(StaticValue.GROUP_FILE, t.getGroupName() + "/src/api/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
+
+		if (!file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
+
+		}
+		try (FileOutputStream fos = new FileOutputStream(file)) {
+			fos.write(t.getCode().getBytes("utf-8"));
+		}
+	}
+
+	/**
+	 * 注销一个监听事件
+	 */
+	public static void unRegediter(String groupName) {
+		Object[] remove = MAP.remove(groupName);
+		if (remove != null) {
+			for (Object o : remove) {
+				if (o instanceof FileAlterationMonitor) {
+					try {
+						((FileAlterationMonitor) o).stop();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (o instanceof FileListener) {
+					try {
+						((Thread) o).interrupt();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+		}
 	}
 
 	/**
@@ -128,7 +170,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 			Map<String, Task> maps = new HashMap<>();
 
-			StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTaskByGroupNameCache(groupName).forEach(t -> {
+			StaticValue.getSystemIoc().get(TaskService.class, "taskService").findTasksByGroupName(groupName).forEach(t -> {
 				try {
 					maps.put(t.getName(), t);
 				} catch (Exception e) {
@@ -183,61 +225,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static void writeTask2Src(Task t) throws IOException, CodeException {
-		LOG.info("syn write file by task " + t.getName());
-		String pk = new JavaSourceUtil(t.getCode()).getPackage();
-		File file = new File(StaticValue.GROUP_FILE, t.getGroupName() + "/src/api/" + pk.replace(".", "/") + "/" + t.getName() + ".java");
-
-		if (!file.getParentFile().exists()) {
-			file.getParentFile().mkdirs();
-
-		}
-		try (FileOutputStream fos = new FileOutputStream(file)) {
-			fos.write(t.getCode().getBytes("utf-8"));
-		}
-	}
-
-	/**
-	 * 注销一个监听事件
-	 */
-	public static void unRegediter(String groupName) {
-		Object[] remove = MAP.remove(groupName);
-		if (remove != null) {
-			for (Object o : remove) {
-				if (o instanceof FileAlterationMonitor) {
-					try {
-						((FileAlterationMonitor) o).stop();
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-
-				if (o instanceof FileListener) {
-					try {
-						((Thread) o).interrupt();
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				}
-			}
-
-		}
-	}
-
-	private String groupName;
-
-	private File srcFile;
-	private File pomFile;
-	private File iocFile;
-
-	public GroupFileListener(String groupName) {
-		this.groupName = groupName;
-		JarService js = JarService.getOrCreate(groupName);
-		srcFile = new File(StaticValue.GROUP_FILE, groupName + "/src/api");
-		pomFile = new File(js.getPomPath());
-		iocFile = new File(js.getIocPath());
 	}
 
 	@Override
@@ -353,7 +340,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 	/**
 	 * 刷新這個類
 	 *
-	 * @param task
+	 * @param taskName
 	 * @throws Exception
 	 */
 	private void flush(String taskName) {
@@ -428,12 +415,9 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 	private static class FileListener extends Thread {
 
-		private long preStatus = 0;
-
-		private File file = null;
-
 		boolean flag = true;
-
+		private long preStatus = 0;
+		private File file = null;
 		private Function<Void, Void> callBack;
 
 		public FileListener(File file, Function<Void, Void> callBack) {

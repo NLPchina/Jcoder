@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.job;
 
 import com.google.common.collect.ImmutableMap;
-
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.domain.KeyValue;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
@@ -27,6 +26,9 @@ public class MasterRunTaskJob implements Runnable {
 	private static BlockingQueue<KeyValue<String, String>> TASK_QUEUE = new LinkedBlockingQueue<>();
 
 	private static Thread thread = null;
+
+	private MasterRunTaskJob() {
+	}
 
 	/**
 	 * 当竞选为master时候调用此方法
@@ -54,7 +56,11 @@ public class MasterRunTaskJob implements Runnable {
 		thread = null;
 	}
 
-	private MasterRunTaskJob() {
+	/**
+	 * 发布一个task到任务队列
+	 */
+	public static void addQueue(KeyValue kv) {
+		TASK_QUEUE.add(kv);
 	}
 
 	@Override
@@ -100,14 +106,6 @@ public class MasterRunTaskJob implements Runnable {
 			}
 		}
 
-	}
-
-
-	/**
-	 * 发布一个task到任务队列
-	 */
-	public static void addQueue(KeyValue kv) {
-		TASK_QUEUE.add(kv);
 	}
 
 }

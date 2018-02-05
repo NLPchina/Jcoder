@@ -1,16 +1,5 @@
 package org.nlpcn.jcoder.run.mvc.cache;
 
-import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import org.nlpcn.jcoder.domain.Task;
-import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -18,19 +7,26 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.run.java.JavaRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Method;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * api请求实体
- * 
+ *
  * @author ansj
- * 
  */
 public class CacheEntry {
 
-	private static final Logger LOG = LoggerFactory.getLogger(CacheEntry.class);
-
 	public static final Object NULL = new Object();
-
+	private static final Logger LOG = LoggerFactory.getLogger(CacheEntry.class);
 	private Method method;
 
 	// 缓存时间
@@ -75,11 +71,11 @@ public class CacheEntry {
 		} else {
 			cache = CacheBuilder.newBuilder().maximumSize(this.size).refreshAfterWrite(time, TimeUnit.SECONDS).build(new CacheLoader<Args, Object>() {
 
+				private ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+
 				public Object load(Args args) {
 					return executeNoCache(args);
 				}
-
-				private ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
 
 				@Override
 				public ListenableFuture<Object> reload(final Args args, Object oldValue) {

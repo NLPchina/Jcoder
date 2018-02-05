@@ -1,10 +1,8 @@
 package org.nlpcn.jcoder.controller;
 
-import com.google.common.collect.ImmutableMap;
-
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
+import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.domain.User;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
@@ -24,12 +22,7 @@ import org.nutz.mvc.annotation.Ok;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -134,11 +127,17 @@ public class MainAction {
 				Set<String> hosts = groupService.getGroupHostList(gn).stream().map(gh -> gh.getHostPort()).collect(Collectors.toSet());
 				// 查询所有组的机器
 				Map<String, Restful> post = proxyService.post(hosts, Api.TASK_LIST.getPath(), Maps.hash("groupName", gn, "taskType", -1), 5000);
-				post.entrySet().forEach(e -> {
+				post.entrySet().stream().filter(e -> {
+					if (e.getValue().isOk()) {
+						return true;
+					}
+					errTask.add(ImmutableMap.of("name", "网络：" + e.getKey() + "\t" + e.getValue().getMessage(), "url", "#"));
+					return false;
+				}).forEach(e -> {
 					e.getValue().obj2JsonArray().stream().forEach(o -> {
 						JSONObject job = (JSONObject) o;
 						if (!job.getBooleanValue("compile") && job.getIntValue("status") == 1) {
-							errTask.add(ImmutableMap.of("name", "编译：" + gn + "/" + job.getString("name"), "url", "task/list.html?name=" + gn + "&hostPort=" + e.getKey()));
+							errTask.add(ImmutableMap.of("name", "编译：" + gn + "/" + job.getString("name"), "url", "task/list.html?name=" + gn + "&host=" + e.getKey()));
 						}
 					});
 
@@ -146,6 +145,7 @@ public class MainAction {
 
 			} catch (Exception e) {
 				e.printStackTrace();
+				errTask.add(ImmutableMap.of("name", "网络：hosts失败", "url", "#"));
 			}
 
 		});

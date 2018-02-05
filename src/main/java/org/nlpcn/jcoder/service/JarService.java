@@ -1,12 +1,10 @@
 package org.nlpcn.jcoder.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
-
-import com.alibaba.fastjson.JSONObject;
-
 import org.nlpcn.jcoder.domain.GroupCache;
 import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.scheduler.TaskException;
@@ -21,14 +19,11 @@ import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.ioc.loader.json.JsonLoader;
 import org.nutz.lang.Lang;
+import org.nutz.lang.reflect.FastClassFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileVisitResult;
@@ -37,14 +32,8 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -53,10 +42,6 @@ public class JarService {
 
 
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
-
-	@Inject
-	private BasicDao basicDao;
-
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
 			.removalListener((RemovalListener<String, JarService>) notification -> {
 				try {
@@ -78,74 +63,16 @@ public class JarService {
 					return new JarService(key);
 				}
 			});
-
 	private static final ConcurrentHashMap<String, Lock> LOCK_CONCURRENT_HASH_MAP = new ConcurrentHashMap<>();
-
-	public static JarService getOrCreate(String groupName) {
-		JarService jarService = CACHE.getIfPresent(groupName);
-		if (jarService == null) {
-
-			Lock lock = getLock(groupName);
-			try {
-				lock.lock();
-				jarService = CACHE.get(groupName);
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-			try {
-				StaticValue.getSystemIoc().get(TaskService.class, "taskService").initTaskFromDB(groupName);
-			} catch (Exception e) {
-				e.printStackTrace();
-			} finally {
-				unLock(groupName);
-			}
-
-		}
-		return jarService;
-	}
-
-	/**
-	 * 锁一个group
-	 *
-	 * @param groupName
-	 * @return
-	 */
-	public synchronized static Lock getLock(String groupName) {
-		return LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock());
-	}
-
-	/**
-	 * 解锁一个group
-	 *
-	 * @param groupName
-	 */
-	public static void unLock(String groupName) {
-		Lock lock = getLock(groupName);
-		if (lock != null) {
-			lock.unlock();
-			LOCK_CONCURRENT_HASH_MAP.remove(groupName);
-		}
-	}
-
-	public static void remove(String groupName) {
-		CACHE.invalidate(groupName);
-	}
-
-
 	private static final String MAVEN_PATH = "maven";
-
-	private String groupName;
-
-	private String jarPath = null;
-
-	private String pomPath = null;
-
-	private String iocPath = null;
-
 	public Set<String> libPaths = new HashSet<>();
-
+	@Inject
+	private BasicDao basicDao;
+	private String groupName;
+	private String jarPath = null;
+	private String pomPath = null;
+	private String iocPath = null;
 	private DynamicEngine engine;
-
 	private Ioc ioc;
 
 	private JarService(String groupName) throws IOException {
@@ -162,10 +89,55 @@ public class JarService {
 		init();
 	}
 
+	public static JarService getOrCreate(String groupName) {
+
+		JarService jarService = CACHE.getIfPresent(groupName);
+
+
+		if (jarService == null) {
+			long start = System.currentTimeMillis();
+			LOG.info("to init JarService by group {}", groupName);
+			try {
+				lock(groupName);
+				jarService = CACHE.get(groupName);
+				StaticValue.getSystemIoc().get(TaskService.class, "taskService").flushGroup(groupName);
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				unLock(groupName);
+			}
+			LOG.info("init JarService by group {} ok use time : {}", groupName, System.currentTimeMillis() - start);
+		}
+
+		return jarService;
+	}
+
+	/**
+	 * 锁一个group
+	 */
+	public synchronized static void lock(String groupName) {
+		LOCK_CONCURRENT_HASH_MAP.computeIfAbsent(groupName, (k) -> new ReentrantLock()).lock();
+	}
+
+	/**
+	 * 解锁一个group
+	 */
+	public static void unLock(String groupName) {
+		Lock lock = LOCK_CONCURRENT_HASH_MAP.get(groupName);
+		if (lock != null) {
+			lock.unlock();
+			LOCK_CONCURRENT_HASH_MAP.remove(groupName);
+		}
+	}
+
+	public static void remove(String groupName) {
+		CACHE.invalidate(groupName);
+	}
+
 	/**
 	 * 环境加载中
 	 */
-	public void init() {
+	private void init() {
 		// 如果发生改变则刷新一次
 		try {
 			flushMaven();
@@ -187,7 +159,7 @@ public class JarService {
 			libPaths.clear();
 			for (int i = 0; i < findJars.size(); i++) {
 				urls[i] = findJars.get(i).toURI().toURL();
-				LOG.info("find JAR " + findJars.get(i));
+				LOG.debug("find JAR " + findJars.get(i));
 				libPaths.add(findJars.get(i).getAbsolutePath());
 			}
 		} catch (IOException e1) {
@@ -211,10 +183,10 @@ public class JarService {
 	public void saveIoc(String groupName, String code) throws IOException, NoSuchAlgorithmException {
 		File ioc = new File(StaticValue.GROUP_FILE, groupName + "/resources");
 		IOUtil.Writer(new File(ioc, "ioc.js").getAbsolutePath(), "utf-8", code);
-		flushIOC();
+		this.release();
 	}
 
-	public synchronized void flushIOC() {
+	private synchronized void flushIOC() {
 		LOG.info("to flush ioc");
 
 		JsonLoader loader = null;
@@ -236,6 +208,8 @@ public class JarService {
 
 					LOG.info("to init bean[{}{}]", entry.getKey(), entry.getValue());
 
+					//TODO: nutz的bug 错误缓存
+					FastClassFactory.clearCache();
 					//
 					ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
 					try {
@@ -279,10 +253,21 @@ public class JarService {
 	 * copyjar包到当前目录中
 	 */
 	private String copy() throws IOException {
-		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			return execute(new File(StaticValue.GROUP_FILE, groupName), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=lib/target/dependency");
-		} else {
-			return execute(new File(StaticValue.GROUP_FILE, groupName), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=lib/target/dependency");
+		String tempPom = pomContent();
+		File tempFile = new File(jarPath + "/pom.xml");
+		try (FileOutputStream fos = new FileOutputStream(new File(jarPath + "/pom.xml"))) {
+			fos.write(tempPom.getBytes("utf-8"));
+			fos.flush();
+		}
+		try {
+
+			if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+				return execute(new File(jarPath), "cmd", "/c", getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=target/dependency");
+			} else {
+				return execute(new File(jarPath), getMavenPath(), "-f", "pom.xml", "dependency:copy-dependencies", "-DexcludeScope=system", "-DoutputDirectory=target/dependency");
+			}
+		} finally {
+			org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
 		}
 	}
 
@@ -290,13 +275,7 @@ public class JarService {
 	 * 删除jiar包
 	 */
 	private void clean() throws IOException {
-		String tempPom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-				"         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" +
-				"    <modelVersion>4.0.0</modelVersion>\n" +
-				"    <groupId>org.nlpcn.jcoder</groupId>\n" +
-				"    <artifactId>InfcnNlp</artifactId>\n" +
-				"    <version>0.1</version>\n" +
-				"</project>";
+		String tempPom = pomContent();
 
 		File tempFile = new File(jarPath + "/pom.xml");
 
@@ -305,13 +284,16 @@ public class JarService {
 			fos.flush();
 		}
 
-		if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-			execute(new File(jarPath), "cmd", "/c", getMavenPath(), "clean");
-		} else {
-			execute(new File(jarPath), getMavenPath(), "clean");
-		}
+		try {
 
-		org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
+			if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+				execute(new File(jarPath), "cmd", "/c", getMavenPath(), "clean");
+			} else {
+				execute(new File(jarPath), getMavenPath(), "clean");
+			}
+		} finally {
+			org.nutz.lang.Files.deleteFile(tempFile); //执行完毕后删除
+		}
 	}
 
 	/**
@@ -346,12 +328,61 @@ public class JarService {
 
 		String pomMD5 = getPomMd5();
 
-		if (!pomMD5.equals(groupCache.getPomMD5())) {
+		if (pomMD5!=null && !pomMD5.equals(groupCache.getPomMD5())) {
 			groupCache.setPomMD5(pomMD5);
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getAbsolutePath(), "utf-8", JSONObject.toJSONString(groupCache));
 			clean();
 			copy();
 		}
+	}
+
+	/**
+	 * 获取pom文件的内容并移除掉jcoder元素
+	 */
+	private String pomContent() {
+		File file = new File(pomPath);
+		if (!file.exists()) {
+			return null;
+		}
+		String content = IOUtil.getContent(file, "utf-8");
+
+		String[] split = content.split("\n");
+
+		int mid = 0;
+
+		for (int i = 0; i < split.length; i++) {
+			if ("<scope>system</scope>".equals(split[i].replace("\\s+", "").trim())) {
+				mid = i;
+				break;
+			}
+		}
+
+		int min = mid;
+
+		while (!"<dependency>".equals(split[min].replace("\\s+", "").trim())) {
+			min--;
+		}
+
+		int max = mid;
+
+		while (!"</dependency>".equals(split[max].replace("\\s+", "").trim())) {
+			max++;
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		for (int i = 0; i < min; i++) {
+			sb.append(split[i]);
+			sb.append("\n");
+		}
+
+		for (int i = max + 1; i < split.length; i++) {
+			sb.append(split[i]);
+			sb.append("\n");
+		}
+
+		return sb.toString();
+
 	}
 
 
@@ -405,7 +436,7 @@ public class JarService {
 	/**
 	 * 查找所有的jar
 	 */
-	public List<File> findJars() throws IOException {
+	private List<File> findJars() throws IOException {
 		List<File> findAllJar = new ArrayList<>();
 
 		if (!new File(jarPath).exists()) {
@@ -442,14 +473,7 @@ public class JarService {
 	public void savePom(String groupName, String content) throws IOException, NoSuchAlgorithmException {
 		File pom = new File(StaticValue.GROUP_FILE, groupName);
 		IOUtil.Writer(new File(pom, "pom.xml").getAbsolutePath(), "utf-8", content);
-		flushMaven();
-	}
-
-	/**
-	 * 得到启动时候加载的路径
-	 */
-	public HashSet<String> getLibPathSet() {
-		return new HashSet<>(libPaths);
+		this.release();
 	}
 
 	/**
@@ -470,6 +494,7 @@ public class JarService {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			this.release();
 			return true;
 		} else {
 			LOG.info(file.getAbsolutePath() + " is not manager by file JAR_PATH is :" + jarPath);
@@ -485,18 +510,6 @@ public class JarService {
 
 	public DynamicEngine getEngine() {
 		return engine;
-	}
-
-	public String getIocPath() {
-		return iocPath;
-	}
-
-	public String getPomPath() {
-		return pomPath;
-	}
-
-	public String getJarPath() {
-		return jarPath;
 	}
 
 	/**

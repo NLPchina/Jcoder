@@ -32,7 +32,7 @@ public class JavaSourceUtil {
 
 			PackageDeclaration aPackage = compile.getPackage();
 
-			if(aPackage==null){
+			if (aPackage == null) {
 				throw new CodeException("package can not null ");
 			}
 			pack = aPackage.getPackageName();
@@ -60,26 +60,6 @@ public class JavaSourceUtil {
 
 
 	}
-
-
-	public String getPackage() {
-		return pack;
-	}
-
-	public String getFullName() throws IOException {
-		return pack + "." + className;
-	}
-
-	/**
-	 * 根据一个类返回类名称
-	 *
-	 * @return 类名称
-	 * @throws IOException
-	 */
-	public String getClassName() {
-		return className;
-	}
-
 
 	/**
 	 * 根据一个类返回类名称
@@ -109,5 +89,23 @@ public class JavaSourceUtil {
 		}
 
 		return null;
+	}
+
+	public String getPackage() {
+		return pack;
+	}
+
+	public String getFullName() throws IOException {
+		return pack + "." + className;
+	}
+
+	/**
+	 * 根据一个类返回类名称
+	 *
+	 * @return 类名称
+	 * @throws IOException
+	 */
+	public String getClassName() {
+		return className;
 	}
 }

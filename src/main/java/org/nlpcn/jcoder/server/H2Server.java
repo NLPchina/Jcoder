@@ -1,9 +1,6 @@
 package org.nlpcn.jcoder.server;
 
-import java.io.File;
-import java.net.URL;
-import java.sql.SQLException;
-
+import com.alibaba.druid.pool.DruidDataSource;
 import org.h2.tools.Server;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -13,13 +10,13 @@ import org.nutz.mvc.NutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.alibaba.druid.pool.DruidDataSource;
+import java.io.File;
+import java.sql.SQLException;
 
 /**
  * h2数据库
  *
  * @author ansj
- *
  */
 public class H2Server {
 	private static final Logger LOG = LoggerFactory.getLogger(H2Server.class);
@@ -38,10 +35,10 @@ public class H2Server {
 
 			boolean dbIsActive = new File(h2db + ".h2.db").isFile();
 
-			String content = null ;
-			if(!dbIsActive){
+			String content = null;
+			if (!dbIsActive) {
 				content = IOUtil.getContent(H2Server.class.getResourceAsStream("/jcoder.sql"), IOUtil.UTF8);
-				if(StringUtil.isBlank(content)){
+				if (StringUtil.isBlank(content)) {
 					LOG.error("not found sql file ");
 					System.exit(-1);
 				}
@@ -61,7 +58,7 @@ public class H2Server {
 			StaticValue.systemDao = basicDao;
 
 			LOG.info("database path is " + new File(h2db).getAbsolutePath());
-			server = Server.createPgServer(new String[] { "-baseDir", h2db}).start();
+			server = Server.createPgServer(new String[]{"-baseDir", h2db}).start();
 			if (!dbIsActive) {
 				LOG.warn("the database is not create , use db script to create it!");
 				basicDao.executeSql(content);

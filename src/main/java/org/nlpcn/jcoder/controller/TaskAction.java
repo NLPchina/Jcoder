@@ -13,7 +13,6 @@ import org.nlpcn.jcoder.scheduler.TaskException;
 import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.*;
 import org.nutz.http.Response;
@@ -379,8 +378,6 @@ public class TaskAction {
 	 * @param groupName 组名
 	 * @param name      任务名
 	 * @param size      版本的数量限制
-	 * @return
-	 * @throws Exception
 	 */
 	@At
 	public Restful version(String host, String groupName, String name, @Param(value = "size", df = "50") int size) throws Exception {
@@ -425,7 +422,6 @@ public class TaskAction {
 	 * @param groupName 组名
 	 * @param name      任务名
 	 * @param version   版本
-	 * @return
 	 */
 	@At
 	public Restful history(String host, String groupName, String name, String version) throws Exception {
@@ -702,7 +698,13 @@ public class TaskAction {
 		if (restful.code() == 404) { //删除
 			return __delete__(false, true, groupName, taskName, user.getName(), new Date());
 		} else if (restful.code() == 200 && restful.getObj() != null) {
-			Task remote = JSONObject.toJavaObject(restful.getObj(), Task.class);
+			Task remote = null;
+			if (restful.getObj() instanceof Task) {
+				remote = restful.getObj();
+			} else {
+				remote = JSONObject.toJavaObject(restful.getObj(), Task.class);
+			}
+
 			//从本机查一下要是有。本机走update，没有走save
 			Task local = taskService.findTask(groupName, taskName);
 			String oldName = null;

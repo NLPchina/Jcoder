@@ -1,13 +1,12 @@
 package org.nlpcn.jcoder.run.mvc.view;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import com.alibaba.fastjson.JSONObject;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nutz.mvc.View;
 
-import com.alibaba.fastjson.JSONObject;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class JsonpView implements View {
 
@@ -37,18 +36,18 @@ public class JsonpView implements View {
 		} else {
 			resp.setStatus(httpStatus);
 		}
-		
+
 		if (obj == null) {
 			obj = result;
 		}
-		
+
 		if (obj == null) {
 			return;
 		}
-		
+
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("text/javascript");
-		
+
 		StringBuilder sb = new StringBuilder();
 
 		sb.append(methodName);

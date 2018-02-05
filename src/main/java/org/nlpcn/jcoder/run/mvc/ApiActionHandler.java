@@ -1,17 +1,13 @@
 package org.nlpcn.jcoder.run.mvc;
 
-import javax.servlet.FilterConfig;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.nlpcn.jcoder.run.mvc.processor.ApiActionInvoker;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.mvc.ActionContext;
-import org.nutz.mvc.Loading;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.NutConfig;
-import org.nutz.mvc.UrlMapping;
-import org.nutz.mvc.config.FilterNutConfig;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class ApiActionHandler {
 

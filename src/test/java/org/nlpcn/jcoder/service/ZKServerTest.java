@@ -5,7 +5,7 @@ import org.junit.Test;
 public class ZKServerTest {
 
 	@Test
-	public void test(){
+	public void test() {
 	}
 
 }

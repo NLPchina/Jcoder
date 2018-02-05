@@ -1,23 +1,11 @@
 package org.nlpcn.jcoder.domain;
 
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
 import org.nlpcn.jcoder.service.FileInfoService;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.MD5Util;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nutz.json.Json;
 
-import javax.persistence.Transient;
 import java.io.File;
 import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Date;
-import java.util.List;
 
 /**
  * 文件信息的包装类
@@ -72,16 +60,16 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		return name;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public File file() {
 		return file;
 	}
 
 	public void setFile(File file) {
 		this.file = file;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	public synchronized String getMd5() {

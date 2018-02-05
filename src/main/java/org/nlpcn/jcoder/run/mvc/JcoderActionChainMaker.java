@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.run.mvc;
 
-import org.nlpcn.jcoder.run.mvc.processor.*;
+import org.nlpcn.jcoder.run.mvc.processor.ApiFailProcessor;
+import org.nlpcn.jcoder.run.mvc.processor.ApiViewProcessor;
 import org.nutz.mvc.ActionChainMaker;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.NutConfig;
@@ -39,7 +40,7 @@ public class JcoderActionChainMaker implements ActionChainMaker {
 		List<Processor> list = new ArrayList<>();
 		list.add(init(config, ai, new UpdateRequestAttributesProcessor())); // 设置代理类
 		list.add(init(config, ai, new EncodingProcessor())); // 设置编码信息@Encoding
-		list.add(init(config, ai, new ModuleProcessor())) ;//增加跨域支持
+		list.add(init(config, ai, new ModuleProcessor()));//增加跨域支持
 		list.add(init(config, ai, new ActionFiltersProcessor())); // 获取入口类的对象,从ioc或直接new
 		list.add(init(config, ai, new AdaptorProcessor())); // 处理@Filters
 		list.add(init(config, ai, new MethodInvokeProcessor())); // 处理@Adaptor

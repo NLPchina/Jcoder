@@ -4,25 +4,20 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by Ansj on 24/01/2018.
  */
 public class ZookeeperRoomService implements RoomService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(SharedSpaceService.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ZookeeperRoomService.class);
 
 	private static final byte[] EMPTY = new byte[0];
 
@@ -43,7 +38,6 @@ public class ZookeeperRoomService implements RoomService {
 	public Set<String> ids(String room) {
 		Map<String, ChildData> currentChildren = roomCache.getCurrentChildren(ROOM_PATH + "/" + room);
 		if (currentChildren == null) {
-			LOG.info("romt {} not created ", room);
 			return Collections.emptySet();
 		}
 		return currentChildren.keySet();

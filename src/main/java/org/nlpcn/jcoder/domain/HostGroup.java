@@ -5,11 +5,11 @@ import java.io.Serializable;
 /**
  * 主机信息序列化后存放于集群中
  */
-public class HostGroup implements Serializable{
-	private int weight ;
-	private boolean ssl ;
-	private boolean current ;
-	private String hostPort ;
+public class HostGroup implements Serializable {
+	private int weight;
+	private boolean ssl;
+	private boolean current;
+	private String hostPort;
 
 	public int getWeight() {
 		return weight;

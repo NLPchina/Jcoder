@@ -6,7 +6,7 @@ public class H2ServerTest {
 
 	@Test
 	public void test() {
-		
+
 	}
 
 }

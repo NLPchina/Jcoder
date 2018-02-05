@@ -1,19 +1,14 @@
 package org.nlpcn.jcoder.run.annotation;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * execute function use it by classname/funname
- * 
- * @author ansj
  *
+ * @author ansj
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE, ElementType.METHOD })
+@Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 public @interface Execute {
 
@@ -24,14 +19,14 @@ public @interface Execute {
 
 	/**
 	 * is publish as restful
-	 * 
+	 *
 	 * @return true
 	 */
 	boolean restful() default true;
 
 	/**
 	 * is publish as rpc
-	 * 
+	 *
 	 * @return true
 	 */
 	boolean rpc() default true;

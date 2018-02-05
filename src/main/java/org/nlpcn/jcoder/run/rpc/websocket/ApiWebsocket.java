@@ -3,8 +3,6 @@ package org.nlpcn.jcoder.run.rpc.websocket;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
-import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.CodeInfo;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
@@ -29,18 +27,10 @@ import org.nutz.mvc.annotation.Filters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.websocket.*;
+import javax.websocket.server.ServerEndpoint;
 import java.util.Date;
 import java.util.Map;
-
-import javax.websocket.CloseReason;
-import javax.websocket.Endpoint;
-import javax.websocket.EndpointConfig;
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
-import javax.websocket.server.ServerEndpoint;
 
 @ServerEndpoint(value = "/api", configurator = JcoderConfigurator.class)
 @IocBean

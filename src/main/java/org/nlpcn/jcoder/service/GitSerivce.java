@@ -1,7 +1,10 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
-import org.eclipse.jgit.api.*;
+import org.eclipse.jgit.api.CloneCommand;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LsRemoteCommand;
+import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -13,7 +16,6 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
 import org.nlpcn.jcoder.util.*;
-import org.nutz.dao.util.cri.Static;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -30,7 +32,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 @IocBean
@@ -45,12 +46,6 @@ public class GitSerivce {
 
 	/**
 	 * 获得远程的全部分支
-	 *
-	 * @param uri
-	 * @param userName
-	 * @param password
-	 * @return
-	 * @throws GitAPIException
 	 */
 	public Collection<Ref> getRemoteBranchs(String uri, String userName, String password) throws GitAPIException {
 		LsRemoteCommand lsRemoteCommand = Git.lsRemoteRepository().setRemote(uri).setTags(false).setHeads(true);
@@ -63,8 +58,6 @@ public class GitSerivce {
 
 	/**
 	 * 從git刷新一個組
-	 *
-	 * @return
 	 */
 	public synchronized String flush(GroupGit groupGit) throws Exception {
 		String groupName = groupGit.getGroupName();
@@ -94,6 +87,7 @@ public class GitSerivce {
 				if (ref.getObjectId().getName().equals(groupGit.getMd5())) {
 					return "md5一致已经是最新版本";
 				} else {
+					groupGit.setMd5(ref.getObjectId().getName()); //先设置为最新的md5
 					hasBranch = true;
 				}
 			}
@@ -108,12 +102,12 @@ public class GitSerivce {
 		String token = "empty";
 
 		if (groupToken.exists()) {
-			token = IOUtil.getContent(groupToken, IOUtil.UTF8);
+			token = IOUtil.getContent(groupToken, IOUtil.UTF8).trim();
 		}
 
 		boolean clone = false;
 		//判断git目录是否存在。
-		File groupDir = new File(StaticValue.HOME_FILE, "git/" + groupName);
+		File groupDir = new File(StaticValue.HOME_FILE, "/git/" + groupName);
 		if (!groupDir.exists() || !groupGit.getToken().equals(token)) {
 
 			for (int i = 0; i < 10 && groupDir.exists(); i++) {
@@ -132,7 +126,6 @@ public class GitSerivce {
 
 		Git git = null;
 
-
 		try {
 
 			if (clone) {
@@ -148,6 +141,8 @@ public class GitSerivce {
 			if (!call.isSuccessful()) {
 				return call.toString();
 			}
+
+
 			LOG.info(call.getMergeResult().getMergeStatus().toString());
 
 			List<String> relativePaths = new ArrayList<>();
@@ -157,31 +152,36 @@ public class GitSerivce {
 			//进行task同步
 			relativePaths.addAll(apiSyn(groupGit, groupName, groupDir));
 
+			String message = "文件无变动";
+
 			//当前节点同步到主节点，和其他同步节点
-			Response post = proxyService.post(StaticValue.getHostPort(), "/admin/group/fixDiff",
-					Maps.hash("fromHostPort", StaticValue.getHostPort(), "toHostPort", Constants.HOST_MASTER, "groupName", groupName, "relativePath[]", relativePaths.toArray()), 100000);
+			if (relativePaths.size() > 0) {
+				Response post = proxyService.post(StaticValue.getHostPort(), "/admin/group/fixDiff",
+						Maps.hash("fromHostPort", StaticValue.getHostPort(), "toHostPort", Constants.HOST_MASTER, "groupName", groupName, "relativePath[]", relativePaths.toArray()), 100000);
+				message = Restful.instance(post).getMessage();
 
-			groupGit.setLastPullTime(new Date());
+			}
 
-			StaticValue.space().setData2ZK(SharedSpaceService.GROUP_PATH + "/" + groupName, JSONObject.toJSONBytes(groupGit));
 
+			return message;
+
+
+		} finally {
 			try (FileOutputStream fos = new FileOutputStream(groupToken)) { //写入当前版本的token
 				fos.write(groupGit.getToken().getBytes("utf-8"));
 			}
-
-			return Restful.instance(post).getMessage();
-		} finally {
 			if (git != null) {
 				git.close();
 			}
+
+
+			groupGit.setLastPullTime(new Date());
+			StaticValue.space().setData2ZK(SharedSpaceService.GROUP_PATH + "/" + groupName, JSONObject.toJSONBytes(groupGit));
 		}
 	}
 
 	/**
 	 * 和git进行文件增量同步
-	 *
-	 * @param groupName
-	 * @throws IOException
 	 */
 	private List<String> resourceSyn(String groupName) throws IOException {
 
@@ -209,9 +209,8 @@ public class GitSerivce {
 		}
 
 		if (changeList.size() > 0) {
-			Lock lock = JarService.getLock(groupName);
 			try {
-				lock.lock();
+				JarService.lock(groupName);
 				// 关闭classloader，和Ioc
 				JarService.getOrCreate(groupName).release();
 				System.gc();

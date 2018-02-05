@@ -1,16 +1,5 @@
 package org.nlpcn.jcoder.controller;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TreeMap;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.nlpcn.jcoder.domain.Group;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.BackupService;
@@ -19,18 +8,23 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.dao.Cnd;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.AdaptBy;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
 public class SystemAction {
+
+	public static void main(String[] args) {
+
+	}
 
 	@At("/system")
 	@Ok("jsp:/system.jsp")
@@ -85,9 +79,5 @@ public class SystemAction {
 		list(Mvcs.getReq());
 
 		return sb.toString();
-	}
-
-	public static void main(String[] args) {
-		
 	}
 }

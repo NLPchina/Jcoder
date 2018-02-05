@@ -22,25 +22,26 @@ import java.util.List;
 @Ok("json")
 public class UserAction {
 
-	private static final Logger LOG = LoggerFactory.getLogger(UserAction.class) ;
+	private static final Logger LOG = LoggerFactory.getLogger(UserAction.class);
 
 
-	public BasicDao basicDao = StaticValue.systemDao;;
+	public BasicDao basicDao = StaticValue.systemDao;
+	;
 
 	@At("/admin/user/list")
 	public Restful userList() {
-		
-		JSONObject result = new JSONObject() ;
-		
+
+		JSONObject result = new JSONObject();
+
 		Condition con = null;
 		List<User> users = basicDao.search(User.class, con);
 		result.put("users", users);
 
 		List<Group> groups = basicDao.search(Group.class, con);
 		result.put("groups", groups);
-		
-		return Restful.instance().obj(result) ;
-		
+
+		return Restful.instance().obj(result);
+
 	}
 
 	@At("/user/nameDiff")
@@ -61,10 +62,10 @@ public class UserAction {
 			basicDao.save(user);
 			LOG.info("add user:" + user.getName());
 			return Restful.ok().msg("添加成功！");
-		}else{
+		} else {
 			return Restful.fail().msg("有相同名字用户！");
 		}
-		
+
 	}
 
 	@At("/admin/user/del")
@@ -82,7 +83,7 @@ public class UserAction {
 		boolean flag = basicDao.delById(user.getId(), User.class);
 		if (flag) {
 			LOG.info("del user:" + user.getName());
-			return Restful.ok().msg("删除用户："+ user.getName()+"成功！");
+			return Restful.ok().msg("删除用户：" + user.getName() + "成功！");
 		}
 		Condition co = Cnd.where("userId", "=", user.getId());
 		/*int num = basicDao.delByCondition(UserGroup.class, co);
@@ -97,7 +98,7 @@ public class UserAction {
 		if (user == null) {
 			return Restful.fail().msg("修改失败！");
 		}
-		
+
 		User dbUser = basicDao.find(user.getId(), User.class);
 
 		if (!user.getPassword().equals(dbUser.getPassword())) {
@@ -111,7 +112,6 @@ public class UserAction {
 		}
 		return Restful.ok();
 	}
-
 
 
 }

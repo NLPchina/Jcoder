@@ -9,15 +9,15 @@ package org.nlpcn.jcoder.constant;
  */
 public enum TaskType {
 
-    RECYCLE(0), API(1), CRON(2);
+	RECYCLE(0), API(1), CRON(2);
 
-    private int value;
+	private int value;
 
-    TaskType(int value) {
-        this.value = value;
-    }
+	TaskType(int value) {
+		this.value = value;
+	}
 
-    public int getValue() {
-        return value;
-    }
+	public int getValue() {
+		return value;
+	}
 }

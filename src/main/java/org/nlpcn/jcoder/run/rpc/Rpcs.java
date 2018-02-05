@@ -21,14 +21,6 @@ public class Rpcs {
 		return ctx().getReq();
 	}
 
-	public Object getContext(Object key) {
-		return ctx().get(key);
-	}
-
-	public void put(Object key, Object value) {
-		ctx().put(key, value);
-	}
-
 	public static RpcContext ctx() {
 		RpcContext context = RPC_CONTEXT.get();
 		if (context == null) {
@@ -44,6 +36,13 @@ public class Rpcs {
 		return context;
 	}
 
-	
+	public Object getContext(Object key) {
+		return ctx().get(key);
+	}
+
+	public void put(Object key, Object value) {
+		ctx().put(key, value);
+	}
+
 
 }

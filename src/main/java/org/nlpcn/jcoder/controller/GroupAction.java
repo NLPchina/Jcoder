@@ -1,12 +1,10 @@
 package org.nlpcn.jcoder.controller;
 
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
-
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
@@ -15,37 +13,22 @@ import org.nlpcn.jcoder.domain.HostGroup;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.GroupService;
+import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.ApiException;
-import org.nlpcn.jcoder.util.DateUtils;
-import org.nlpcn.jcoder.util.GroupFileListener;
-import org.nlpcn.jcoder.util.IOUtil;
-import org.nlpcn.jcoder.util.Restful;
-import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
-import org.nlpcn.jcoder.util.ZKMap;
+import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @IocBean
 @Filters(@By(type = AuthoritiesManager.class))
@@ -187,7 +170,7 @@ public class GroupAction {
 
 			basicDao.save(group);
 
-			StaticValue.space().joinCluster(group, true);
+			StaticValue.space().joinCluster(group);
 
 			if (StaticValue.TESTRING) { //测试模式进行文件监听
 				GroupFileListener.regediter(name);
@@ -275,7 +258,7 @@ public class GroupAction {
 		}
 
 		//获取远程主机的所有files
-		Response response = proxyService.post(fromHostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("groupName", groupName), 120000);
+		Response response = proxyService.post(fromHostPort, "/admin/fileInfo/listFiles", ImmutableMap.of("hostPort", fromHostPort, "groupName", groupName), 120000);
 
 		JSONArray jarry = JSONObject.parseObject(response.getContent()).getJSONArray("obj");
 
@@ -294,7 +277,7 @@ public class GroupAction {
 				}
 				long start = System.currentTimeMillis();
 				LOG.info("to down " + fileInfo.getRelativePath());
-				Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("groupName", groupName, "relativePath", fileInfo.getRelativePath()), 1200000);
+				Response post = proxyService.post(fromHostPort, "/admin/fileInfo/downFile", ImmutableMap.of("hostPort", fromHostPort, "groupName", groupName, "relativePath", fileInfo.getRelativePath()), 1200000);
 				IOUtil.writeAndClose(post.getStream(), file);
 				LOG.info("down ok : {} use time : {} ", fileInfo.getRelativePath(), System.currentTimeMillis() - start);
 			}
@@ -322,7 +305,7 @@ public class GroupAction {
 		}
 
 		//刷新本地group,加入到集群中
-		groupService.flush(group, true);
+		groupService.flush(group);
 
 		if (StaticValue.TESTRING) { //测试模式进行文件监听
 			GroupFileListener.regediter(toGroupName);
@@ -340,9 +323,30 @@ public class GroupAction {
 	@At
 	public Restful flush(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param("upMapping") boolean upMapping, @Param(value = "first", df = "true") boolean first) throws Exception {
 		if (!first || StaticValue.getHostPort().equals(hostPort)) {
-			return Restful.instance(groupService.flush(groupName, upMapping));
+			return Restful.instance(groupService.flush(groupName));
 		} else {
 			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "upMapping", upMapping, "first", false), 120000);
+			return Restful.instance(post);
+		}
+
+	}
+
+
+	/**
+	 * 刷新一个group到集群中
+	 *
+	 * @param hostPort 需要刷新的主机
+	 * @return 不同
+	 */
+	@At
+	public Restful flushClassLoader(@Param("hostPort") String hostPort, @Param("groupName") String groupName, @Param(value = "first", df = "true") boolean first) throws Exception {
+		if (!first || StaticValue.getHostPort().equals(hostPort)) {
+			JarService orCreate = JarService.getOrCreate(groupName);
+			orCreate.release();
+
+			return Restful.instance(groupService.flush(groupName));
+		} else {
+			Response post = proxyService.post(hostPort, "/admin/group/flush", ImmutableMap.of("hostPort", hostPort, "groupName", groupName, "first", false), 120000);
 			return Restful.instance(post);
 		}
 
@@ -379,6 +383,8 @@ public class GroupAction {
 		} else {
 			toHostPorts.add(toHostPort);
 		}
+
+		toHostPorts.remove(fromHostPort);
 
 		List<String> message = new ArrayList<>();
 

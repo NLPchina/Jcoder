@@ -1,28 +1,23 @@
 package org.nlpcn.jcoder.run.mvc;
 
-import java.lang.reflect.Method;
-import java.util.Iterator;
-import java.util.List;
-
-import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.run.mvc.processor.ApiMethodInvokeProcessor;
 import org.nutz.lang.Lang;
 import org.nutz.mvc.ActionChain;
 import org.nutz.mvc.ActionContext;
 import org.nutz.mvc.ActionInfo;
 import org.nutz.mvc.Processor;
-import org.nutz.mvc.impl.NutActionChain;
+
+import java.lang.reflect.Method;
+import java.util.Iterator;
+import java.util.List;
 
 public class JcoderActionChain implements ActionChain {
 
+	String methodStr;
 	private Processor head;
-
 	private Processor errorProcessor;
-
 	private Method method;
-
 	private Integer lineNumber;
-
 	/**
 	 * 暴露出去执行动作链,为其他调用者使用其缓存
 	 */
@@ -65,8 +60,6 @@ public class JcoderActionChain implements ActionChain {
 	public ApiMethodInvokeProcessor getInvokeProcessor() {
 		return invokeProcessor;
 	}
-
-	String methodStr;
 
 	public String toString() {
 		if (methodStr == null) {

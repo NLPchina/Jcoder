@@ -1,13 +1,9 @@
 package org.nlpcn.jcoder.server;
 
-import com.alibaba.druid.pool.DruidDataSource;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
-import org.h2.tools.Server;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.dao.BasicDao;
-import org.nutz.mvc.NutConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,15 +15,15 @@ public class ZKServer extends Thread {
 
 	private static boolean start = false;
 
+	private ZKServer() {
+	}
+
 	public synchronized static void startServer() {
 		if (start) {
 			return;
 		}
 
 		new ZKServer().start();
-	}
-
-	private ZKServer() {
 	}
 
 	public static void stopServer() {

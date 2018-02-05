@@ -1,19 +1,13 @@
 package org.nlpcn.jcoder.domain;
 
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.nlpcn.jcoder.run.CodeRuntimeException;
-import org.nlpcn.jcoder.run.java.DynamicEngine;
 import org.nlpcn.jcoder.service.JarService;
-import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.Ioc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.Method;
+import java.util.*;
 
 /**
  * the code init info
@@ -54,12 +48,12 @@ public class CodeInfo {
 		this.ioc = ioc;
 	}
 
-	public void setClassLoader(ClassLoader classLoader) {
-		this.classLoader = classLoader;
-	}
-
 	public ClassLoader getClassLoader() {
 		return this.classLoader;
+	}
+
+	public void setClassLoader(ClassLoader classLoader) {
+		this.classLoader = classLoader;
 	}
 
 	public Class<?> getClassz() {

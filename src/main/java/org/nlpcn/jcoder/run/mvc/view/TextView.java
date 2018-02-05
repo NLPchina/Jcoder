@@ -1,19 +1,16 @@
 package org.nlpcn.jcoder.run.mvc.view;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.Restful;
 import org.nutz.mvc.View;
 
-import com.alibaba.fastjson.JSONObject;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * 直接返回正文
- * 
+ *
  * @author ansj
- * 
  */
 public class TextView implements View {
 
@@ -40,7 +37,7 @@ public class TextView implements View {
 		} else {
 			resp.setStatus(httpStatus);
 		}
-		
+
 		if (obj == null) {
 			obj = result;
 		}
@@ -48,10 +45,10 @@ public class TextView implements View {
 		if (obj == null) {
 			return;
 		}
-		
+
 		resp.setHeader("Cache-Control", "no-cache");
 		resp.setContentType("text/html");
-		
+
 
 		resp.getWriter().write(obj.toString());
 		resp.flushBuffer();

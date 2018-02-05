@@ -7,6 +7,8 @@ import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.CodeRuntimeException;
 import org.nlpcn.jcoder.run.annotation.Execute;
 import org.nlpcn.jcoder.run.annotation.Single;
+import org.nlpcn.jcoder.run.rpc.Rpcs;
+import org.nlpcn.jcoder.run.rpc.domain.RpcContext;
 import org.nlpcn.jcoder.service.JarService;
 import org.nlpcn.jcoder.util.ExceptionUtil;
 import org.nlpcn.jcoder.util.MapCount;
@@ -14,6 +16,7 @@ import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.Ioc;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Mirror;
+import org.nutz.lang.reflect.FastClassFactory;
 import org.nutz.mvc.Mvcs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,11 +31,9 @@ import java.util.Map.Entry;
 public class JavaRunner {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JavaRunner.class);
-
+	private static final Object[] DEFAULT_ARG = new Object[0];
 	private Task task = null;
-
 	private CodeInfo codeInfo;
-
 	private Object objInstance;
 
 	public JavaRunner(Task task) {
@@ -128,7 +129,7 @@ public class JavaRunner {
 				codeInfo.setClassz(clz);
 
 			} catch (IOException | CodeException e) {
-				LOG.debug("code compile err ",e);
+				LOG.debug("code compile err ", e);
 				throw new CodeRuntimeException(e);
 			}
 		}
@@ -174,22 +175,30 @@ public class JavaRunner {
 		try {
 			LOG.info("to instance with ioc className: " + codeInfo.getClassz().getName());
 
+			/**
+			 * 设置groupname
+			 */
+			RpcContext ctx = Rpcs.ctx();
+			if (ctx.getGroupName() == null) {
+				ctx.setGroupName(task.getGroupName());
+			}
 
 			Thread.currentThread().setContextClassLoader(codeInfo.getClassLoader());
+
 			Mvcs.setIoc(codeInfo.getIoc());
 
 			objInstance = codeInfo.getClassz().newInstance();
 
 			Mirror<?> mirror = Mirror.me(codeInfo.getClassz());
 
+			//TODO: nutz的bug，暂时这么处理,更新后替换
+			FastClassFactory.clearCache();
+
 			for (Field field : mirror.getFields()) {
 				Inject inject = field.getAnnotation(Inject.class);
 				if (inject != null) {
 					field.setAccessible(true);
-					if (field.getType().equals(org.apache.log4j.Logger.class)) {
-						LOG.warn("org.apache.log4j.Logger Deprecated please use org.slf4j.Logger by LoggerFactory");
-						mirror.setValue(objInstance, field, org.apache.log4j.Logger.getLogger(codeInfo.getClassz()));
-					} else if (field.getType().equals(org.slf4j.Logger.class)) {
+					if (field.getType().equals(org.slf4j.Logger.class)) {
 						mirror.setValue(objInstance, field, LoggerFactory.getLogger(codeInfo.getClassz()));
 					} else {
 						mirror.setValue(objInstance, field, codeInfo.getIoc().get(field.getType(), StringUtil.isBlank(inject.value()) ? field.getName() : inject.value()));
@@ -216,8 +225,6 @@ public class JavaRunner {
 	public Task getTask() {
 		return this.task;
 	}
-
-	private static final Object[] DEFAULT_ARG = new Object[0];
 
 	/**
 	 * execte task defaultExecute if not found , it execute excutemehtod ， if not found it throw Exception

@@ -230,6 +230,9 @@ var resourceManager = new Vue({
             }else{
                 JqdeBox.message(false, data.msg);
             }
+          }).catch(function (data) {
+            JqdeBox.unloading();
+            JqdeBox.message(false, data.responseText);
           });
       },
       downFile:function(path){

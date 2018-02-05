@@ -1,18 +1,7 @@
 package org.nlpcn.jcoder.util;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import com.github.javaparser.ParseException;
-import org.nlpcn.jcoder.domain.ClassDoc;
-import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
-import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc.ParamDoc;
-
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseException;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -21,6 +10,19 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import org.nlpcn.jcoder.domain.ClassDoc;
+import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
+import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc.ParamDoc;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 根据java文件解析
@@ -30,7 +32,7 @@ import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 public class JavaDocUtil {
 
 	public static CompilationUnit compile(String code) throws ParseException {
-		try(Reader reader = new StringReader(StringUtil.trim(code))){
+		try (Reader reader = new StringReader(StringUtil.trim(code))) {
 			return JavaParser.parse(reader, false);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -39,7 +41,7 @@ public class JavaDocUtil {
 	}
 
 	public static ClassDoc parse(String code) throws Exception {
-		try(Reader reader = new StringReader(StringUtil.trim(code))){
+		try (Reader reader = new StringReader(StringUtil.trim(code))) {
 			CompilationUnit cu = JavaParser.parse(reader, true);
 
 			List<TypeDeclaration> types = cu.getTypes();
@@ -82,7 +84,7 @@ public class JavaDocUtil {
 
 	private static void explainMethod(ClassDoc cd, MethodDeclaration node) {
 
-        List<AnnotationExpr> annotations = node.getAnnotations();
+		List<AnnotationExpr> annotations = node.getAnnotations();
 
 		boolean flag = false;
 
@@ -117,19 +119,19 @@ public class JavaDocUtil {
 
 		List<Parameter> parameters = node.getParameters();
 
-        for (Parameter param : parameters) {
-            // 对某些类型的参数做处理
-            String type = param.getType().toString();
-            switch (type) {
-                case "HttpServletRequest":
-                case "HttpServletResponse":
-                    continue;
-                case "TempFile":
-                    type = "File";
-                    break;
-                default:
-                    break;
-            }
+		for (Parameter param : parameters) {
+			// 对某些类型的参数做处理
+			String type = param.getType().toString();
+			switch (type) {
+				case "HttpServletRequest":
+				case "HttpServletResponse":
+					continue;
+				case "TempFile":
+					type = "File";
+					break;
+				default:
+					break;
+			}
 
 			List<AnnotationExpr> ans = param.getAnnotations();
 			String name = null;
@@ -175,33 +177,33 @@ public class JavaDocUtil {
 			pd.setContent(content);
 
 			// 是否必填
-            if (StringUtil.isNotBlank(content)) {
-                int i = content.lastIndexOf('|');
-                if (-1 < i) {
-                    switch (StringUtil.trim(content.substring(i + 1))) {
-                        case "*":
-                        case "y":
-                        case "Y":
-                        case "yes":
-                        case "YES":
-                        case "是":
-                        case "必填":
-                            pd.setRequired(true);
-                        case "n":
-                        case "N":
-                        case "no":
-                        case "NO":
-                        case "否":
-                        case "不":
-                        case "不是":
-                        case "不必填":
-                            pd.setContent(content.substring(0, i));
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            }
+			if (StringUtil.isNotBlank(content)) {
+				int i = content.lastIndexOf('|');
+				if (-1 < i) {
+					switch (StringUtil.trim(content.substring(i + 1))) {
+						case "*":
+						case "y":
+						case "Y":
+						case "yes":
+						case "YES":
+						case "是":
+						case "必填":
+							pd.setRequired(true);
+						case "n":
+						case "N":
+						case "no":
+						case "NO":
+						case "否":
+						case "不":
+						case "不是":
+						case "不必填":
+							pd.setContent(content.substring(0, i));
+							break;
+						default:
+							break;
+					}
+				}
+			}
 		}
 
 	}
