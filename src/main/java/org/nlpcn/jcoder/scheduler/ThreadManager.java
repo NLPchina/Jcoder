@@ -244,7 +244,7 @@ public class ThreadManager {
 		List<TaskInfo> schedulers = new ArrayList<>();
 		for (String jobKey : taskList) {
 			String[] split = jobKey.split(Constants.GROUP_TASK_SPLIT);
-			schedulers.add(new TaskInfo(jobKey, split[0], split[1]));
+			schedulers.add(new TaskInfo(jobKey, split[1], split[0]));
 		}
 		return schedulers;
 	}

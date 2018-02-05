@@ -279,6 +279,7 @@ var resourceManager = new Vue({
                 {hostPort:importFile.checkedHosts,groupName:$this.groupName,"relativePaths[]":path},null).then(function (data) {
                 JqdeBox.unloading();
                 JqdeBox.message(data.ok, data.message);
+                JqdeBox.unloading();
                 if(data.ok){
                     var msg = data.message.substring(data.message.indexOf(":") , data.message.length).split(',');
                     debugger;
