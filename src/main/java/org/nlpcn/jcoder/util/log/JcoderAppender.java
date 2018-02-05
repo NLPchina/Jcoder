@@ -9,6 +9,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.nlpcn.jcoder.job.LogJob;
 
 import java.io.Serializable;
 
@@ -25,9 +26,9 @@ public class JcoderAppender extends AbstractAppender {
 	// 下面这个方法可以接收配置文件中的参数信息
 	@PluginFactory
 	public static JcoderAppender createAppender(@PluginAttribute("name") String name,
-	                                            @PluginElement("Filter") final Filter filter,
-	                                            @PluginElement("Layout") Layout<? extends Serializable> layout,
-	                                            @PluginAttribute("ignoreExceptions") boolean ignoreExceptions) {
+												@PluginElement("Filter") final Filter filter,
+												@PluginElement("Layout") Layout<? extends Serializable> layout,
+												@PluginAttribute("ignoreExceptions") boolean ignoreExceptions) {
 		if (name == null) {
 			LOGGER.error("No name provided for MyCustomAppenderImpl");
 			return null;
@@ -40,7 +41,7 @@ public class JcoderAppender extends AbstractAppender {
 
 	@Override
 	public void append(LogEvent event) {
-//		StaticValue.space().getRoomService().sendMessage("jcoder_log", event.getMessage().getFormattedMessage());
+		LogJob.QUEUE.add(event.getMessage().getFormattedMessage());
 		return;
 	}
 }
