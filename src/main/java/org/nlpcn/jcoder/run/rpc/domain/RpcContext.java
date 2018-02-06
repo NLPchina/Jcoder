@@ -13,6 +13,10 @@ public class RpcContext {
 
 	private String groupName;
 
+	private String className ;
+
+	private String methodName ;
+
 	private Session session;
 
 	private RpcRequest req;
@@ -61,6 +65,22 @@ public class RpcContext {
 
 	public void setSession(Session session) {
 		this.session = session;
+	}
+
+	public String getClassName() {
+		return className;
+	}
+
+	public void setClassName(String className) {
+		this.className = className;
+	}
+
+	public String getMethodName() {
+		return methodName;
+	}
+
+	public void setMethodName(String methodName) {
+		this.methodName = methodName;
 	}
 
 	public RpcRequest getReq() {

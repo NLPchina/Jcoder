@@ -86,6 +86,9 @@ public class SiteSetup implements Setup {
 
 		new Thread(new CheckDiffJob()).start();
 
+		//开启日志监控
+		new Thread(new LogJob()).start();
+
 		//init webscoket
 		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
 		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
