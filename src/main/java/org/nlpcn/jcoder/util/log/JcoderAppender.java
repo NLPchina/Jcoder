@@ -9,6 +9,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.PatternLayout;
+import org.nlpcn.jcoder.domain.LogInfo;
 import org.nlpcn.jcoder.job.LogJob;
 
 import java.io.Serializable;
@@ -41,7 +42,7 @@ public class JcoderAppender extends AbstractAppender {
 
 	@Override
 	public void append(LogEvent event) {
-		LogJob.QUEUE.add(event.getMessage().getFormattedMessage());
+		LogJob.add(new LogInfo(event));
 		return;
 	}
 }

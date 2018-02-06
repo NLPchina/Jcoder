@@ -21,6 +21,8 @@ public class ApiModuleProcessor extends AbstractProcessor {
 	private Method method;
 	private Task moduleObj;
 	private String groupName;
+	private String taskName;
+	private String methodName;
 
 	@Override
 	public void init(NutConfig config, ActionInfo ai) throws Throwable {
@@ -30,12 +32,16 @@ public class ApiModuleProcessor extends AbstractProcessor {
 		method = ai.getMethod();
 		moduleObj = new JavaRunner(task).compile().instance().getTask();
 		groupName = task.getGroupName();
+		taskName = task.getName();
+		methodName = method.getName();
 	}
 
 	public void process(ActionContext ac) throws Throwable {
 		ac.setModule(moduleObj);
 		ac.setMethod(method);
 		Rpcs.ctx().setGroupName(groupName);
+		Rpcs.ctx().setClassName(taskName);
+		Rpcs.ctx().setMethodName(methodName);
 		Thread.currentThread().setContextClassLoader(moduleObj.codeInfo().getClassLoader());//设置classloader
 		doNext(ac);
 	}

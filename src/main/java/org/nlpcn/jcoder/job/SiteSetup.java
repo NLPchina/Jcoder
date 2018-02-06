@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.job;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.nlpcn.jcoder.run.rpc.websocket.ApiWebsocket;
+import org.nlpcn.jcoder.run.rpc.websocket.LogWebsocket;
 import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.service.GroupService;
@@ -86,12 +87,16 @@ public class SiteSetup implements Setup {
 
 		new Thread(new CheckDiffJob()).start();
 
+		//开启日志监控
+		new Thread(new LogJob()).start();
+
 		//init webscoket
 		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
 		WebAppContext webAppContext = (WebAppContext) ct.getContextHandler();
 		try {
 			ServerContainer configureContext = configureContext = WebSocketServerContainerInitializer.configureContext(webAppContext);
 			configureContext.addEndpoint((Class<?>) ApiWebsocket.class);
+			configureContext.addEndpoint((Class<?>) LogWebsocket.class);
 		} catch (ServletException e) {
 			e.printStackTrace();
 		} catch (DeploymentException e) {
