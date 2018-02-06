@@ -27,20 +27,18 @@
                                         <th class="center">简介</th>
                                         <th class="center">激活</th>
                                         <th class="center">状态</th>
-                                        <th class="center">信息</th>
                                         <th class="center">操作</th>
                                     </tr>
                                 </thead>
 
                                 <tbody>
                                     <tr v-for="(action, index) in actions">
-                                        <td  class="center">{{action.taskName}}</td>
+                                        <td  class="center">{{action.name}}</td>
                                         <td  class="center">{{action.hostPort}}</td>
                                         <td  class="center">{{action.groupName}}</td>
                                         <td  class="center">{{action.description}}</td>
                                         <td  class="center">{{action.runStatus}}</td>
                                         <td  class="center">{{action.status}}</td>
-                                        <td  class="center">{{action.info}}</td>
                                         <td  class="center">
                                             <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
                                                 <div class="editbutton" style="display:inline;">
@@ -99,13 +97,13 @@
                                 <tbody>
                                 <tr v-for="(thread, index) in threads">
                                     <td  class="center">{{thread.name}}</td>
-                                    <td  class="center">{{thread.host}}</td>
-                                    <td  class="center">{{thread.group}}</td>
+                                    <td  class="center">{{thread.hostPort}}</td>
+                                    <td  class="center">{{thread.groupName}}</td>
                                     <td  class="center">{{thread.description}}</td>
                                     <td  class="center">{{thread.status}}</td>
                                     <td  class="center">{{thread.success}}</td>
-                                    <td  class="center">{{thread.err}}</td>
-                                    <td  class="center">{{thread.info}}</td>
+                                    <td  class="center">{{thread.error}}</td>
+                                    <td  class="center">{{thread.runStatus}}</td>
                                     <td  class="center">
                                         <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
                                             <div class="editbutton" style="display:inline;">
@@ -154,21 +152,19 @@
                                     <th class="center">分组</th>
                                     <th class="center">简介</th>
                                     <th class="center">激活</th>
-                                    <th class="center">状态</th>
-                                    <th class="center">信息</th>
+                                    <th class="center">调度计划</th>
                                     <th class="center">操作</th>
                                 </tr>
                                 </thead>
 
                                 <tbody>
                                 <tr v-for="(scheduler, index) in schedulers">
-                                    <td  class="center">{{scheduler.name}}</td>
-                                    <td  class="center">{{scheduler.host}}</td>
-                                    <td  class="center">{{scheduler.group}}</td>
+                                    <td  class="center">{{scheduler.taskName}}</td>
+                                    <td  class="center">{{scheduler.hostPort}}</td>
+                                    <td  class="center">{{scheduler.groupName}}</td>
                                     <td  class="center">{{scheduler.description}}</td>
-                                    <td  class="center">{{scheduler.runStatus}}</td>
                                     <td  class="center">{{scheduler.status}}</td>
-                                    <td  class="center">{{scheduler.info}}</td>
+                                    <td  class="center">{{scheduler.name}}</td>
                                     <td  class="center">
                                         <div class="hidden-sm hidden-xs btn-group" style="text-align:center;">
                                             <div class="editbutton" style="display:inline;">

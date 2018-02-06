@@ -87,6 +87,7 @@ public class MainAction {
 		submenus = new JSONArray();
 		submenus.add(ImmutableMap.of("name", "用户管理", "url", "user/list.html"));
 		submenus.add(ImmutableMap.of("name", "Group管理", "url", "group/list.html"));
+		submenus.add(ImmutableMap.of("name", "日志管理", "url", "logs/list.html"));
 		submenus.add(ImmutableMap.of("name", "持续集成", "url", "group/group_git.html"));
 		result.add(ImmutableMap.of("name", "系统管理", "submenus", submenus));
 

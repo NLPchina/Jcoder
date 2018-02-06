@@ -12,6 +12,7 @@ import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.BasicDao;
+import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.annotation.*;
@@ -128,11 +129,11 @@ public class ThreadAction {
 
 			JSONObject json = new JSONObject();
 
-			json.put("threads", threads);
-			json.put("schedulers", schedulers);
-			json.put("actions", actions);
+            json.put("threads", threads);
+            json.put("schedulers", schedulers);
+            json.put("actions", actions);
 
-			return Restful.ok().obj(json);
+            return Restful.ok().obj(json);
 		}
 	}
 
@@ -142,26 +143,40 @@ public class ThreadAction {
 	 * 停止一个运行的action，或者task
 	 */
 	@At
-	public Restful stop(String key) throws Exception {
-	    boolean flag = false;
-	    String msg = "";
-		try {
-			try {
+	public Restful stop(@Param("hostPort") String hostPort, @Param("key") String key,@Param(value = "first", df = "true") boolean first ) throws Exception {
+        if (first) {
+            JSONObject json = new JSONObject();
+            Map<String, Restful> post = proxyService.post(new String[]{hostPort}, "/admin/thread/stop", ImmutableMap.of("key", key,"first",false), 100000);
+            for (Map.Entry<String, Restful> entry : post.entrySet()) {
+                Restful ref = entry.getValue();
+                if (!ref.isOk()) {
+                    LOG.error(entry.getKey()+":"+entry.getValue().toJsonString());
+                    continue;
+                }
+                JSONObject jsonObject = ref.obj2JsonObject();
+                json.put("msg",jsonObject.getString("msg"));
+                json.put("flag",ref.isOk());
+                return Restful.ok().obj(json);
+            }
+        }else{
+            boolean flag = false;
+            String msg = "";
+            JSONObject json = new JSONObject();
+            try {
                 flag = ThreadManager.stop(key);
                 msg = "停止任务成功！";
+                json.put("msg",msg);
+                return Restful.ok().obj(json);
             } catch (TaskException e) {
-				e.printStackTrace();
-				flag = false;
+                e.printStackTrace();
+                flag = false;
                 msg = "停止任务失败！";
-				LOG.error("stop action err", e);
-			}
-		} catch (Exception e) {
-			LOG.error("author err", e);
-			flag = false;
-            msg = "停止任务失败！";
-			throw e;
-		}
-		return Restful.instance(flag,msg);
+                LOG.error("stop action err", e);
+                json.put("msg",msg);
+                return Restful.fail().obj(json);
+            }
+        }
+        return null;
 	}
 
 	/**

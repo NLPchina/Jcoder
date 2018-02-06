@@ -1,0 +1,45 @@
+<style>
+.CodeMirror {
+    border-radius: 3px;
+    overflow: hidden;
+    font-size: 14px;
+    height: 520px;
+    background-color: #000;
+    color: #2ec607;
+    line-height: 1;
+    border-top: 1px solid #eee;
+	border-bottom: 1px solid #eee;
+	font-size: 18px;
+	line-height:120% ;
+}
+
+.CodeMirror-sizer{
+    margin-left: 29px !important;
+}
+</style>
+<div id="logsManager" class="page-content" style="overflow: hidden; height: 60%;">
+    <div class="row">
+        <div class="col-xs-12">
+            <div>
+                <host-component :hosts.sync="hosts" :group-name="groupName" @change="change"/>
+            </div>
+            <div class="widget-box">
+                <div class="widget-header">
+                    <h4 class="widget-title lighter smaller">
+                        <i class="ace-icon fa fa-pencil-square-o blue"></i>
+                        Console
+                    </h4>
+                </div>
+
+                <div class="widget-body">
+                    <div class="widget-main">
+                        <div class="row">
+                            <textarea id="fileInfoDlg" style="width: 100%;" >{{fileInfo}}</textarea>
+                        </div>
+                    </div><!-- /.widget-main  padding: 1em;-->
+                </div><!-- /.widget-body -->
+            </div>
+        </div>
+    </div>
+</div>
+<script src="modules/logs/main.js"></script>
