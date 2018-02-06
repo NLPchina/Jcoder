@@ -29,5 +29,13 @@ public interface Constants {
 	String GROUP_TASK_SPLIT = "@";
 
 
+	/**
+	 * 代理请求头，如果有这个头，则不代理
+	 */
 	String PROXY_HEADER = "_proxy";
+
+	/**
+	 * 内置房间的log
+	 */
+	String LOG_ROOM = "_jcoder_log" ;
 }

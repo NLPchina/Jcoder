@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.nlpcn.jcoder.constant.Constants.LOG_ROOM;
 
 /**
  * 日志处理的定时任务。所有机器运行
@@ -41,11 +42,13 @@ public class LogJob implements Runnable {
 				String logJson = JSONObject.toJSONString(logInfo);
 
 				//发送到日志房间
-				StaticValue.space().getRoomService().sendMessage("jcoder_log", logJson);
+				StaticValue.space().getRoomService().sendMessage(LOG_ROOM, logJson);
 
 				if (logInfo.getGroupName() != null) {
 					//发送到group日志房间
-					StaticValue.space().getRoomService().sendMessage("jcoder_log" + "_" + logInfo.getGroupName(), logJson);
+					StaticValue.space().getRoomService().sendMessage(LOG_ROOM + "_" + logInfo.getGroupName(), logJson);
+				} else {
+					StaticValue.space().getRoomService().sendMessage(LOG_ROOM + "_" + LOG_ROOM, logJson);
 				}
 
 				//进行日志统计分析
@@ -60,9 +63,8 @@ public class LogJob implements Runnable {
 
 	/**
 	 * 增加一个元素到队列
-	 * @param logInfo
 	 */
-	public static void add(LogInfo logInfo){
-		QUEUE.offer(logInfo) ;
+	public static void add(LogInfo logInfo) {
+		QUEUE.offer(logInfo);
 	}
 }
