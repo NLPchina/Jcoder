@@ -2,15 +2,18 @@ package org.nlpcn.jcoder.run.rpc.websocket;
 
 import com.alibaba.fastjson.JSONObject;
 
+import org.nlpcn.jcoder.constant.UserConstants;
 import org.nlpcn.jcoder.run.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.run.rpc.domain.RpcUser;
 import org.nlpcn.jcoder.run.rpc.service.SessionService;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
+import javax.servlet.http.HttpSession;
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -31,31 +34,40 @@ public class LogWebsocket extends Endpoint {
 	public void onClose(Session session, CloseReason closeReason) {
 		LOG.info("{} onClose , reson:{} ", session.getId(), closeReason);
 		SessionService.remove(session.getId());
-
 	}
 
 	@OnError
 	public void onError(Session session, Throwable throwable) {
 		LOG.info(session.getId() + " error ", throwable);
-		onClose(session, null);
+		onClose(session, new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, String.valueOf(throwable.getMessage())));
 	}
 
 	@OnOpen
 	public void onOpen(Session session, EndpointConfig config) {
 		LOG.info("{} onOpen ", session.getId());
 		SessionService.add(new RpcUser(null, session));
+//		HttpSession httpSession = (HttpSession) config.getUserProperties().get("HttpSession");
+//		if (httpSession == null || httpSession.getAttribute(UserConstants.USER) == null) { //如果未登陆不让连接
+//			this.onError(session, new ApiException(ApiException.Forbidden, "not login"));
+//		} else {
+//
+//		}
 	}
 
 
 	/**
-	 *
-	 * @param message  {className:"_jcoder_log",methodName:"join"}
-	 * @param session
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
+	 * @param message {groupName:"_jcoder_log",methodName:"join"}
 	 */
 	@OnMessage
-	public void onMessage(String message, Session session) throws InstantiationException, IllegalAccessException {
+	public void onMessage(String message, Session session) throws InstantiationException, IllegalAccessException, IOException {
+
+		HttpSession httpSession = (HttpSession) session.getUserProperties().get("HttpSession");
+
+		if (httpSession == null || httpSession.getAttribute(UserConstants.USER) == null) {
+			session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "not login"));
+			return ;
+		}
+
 		RpcRequest request = JSONObject.parseObject(message, RpcRequest.class); //构建请求
 
 

@@ -4,13 +4,18 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.nlpcn.jcoder.run.rpc.domain.RpcUser;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by Ansj on 24/01/2018.
@@ -106,15 +111,13 @@ public class ZookeeperRoomService implements RoomService {
 
 	public void sendMessage(String room, final String message) {
 		this.ids(room).parallelStream().forEach((String id) -> {
-			Optional.of(SessionService.getRpcUser(id)).ifPresent(v -> {
-				if (v.getSession().isOpen()) {
-					if (message != null) {
-						v.getSession().getAsyncRemote().sendText(message);
-					}
-				} else {
-					left(room, id);
-				}
-			});
+			RpcUser rpcUser = SessionService.getRpcUser(id);
+			if (rpcUser != null && rpcUser.getSession().isOpen()) {
+				if (StringUtil.isNotBlank(message))
+					rpcUser.getSession().getAsyncRemote().sendText(message);
+			} else {
+				left(room, id);
+			}
 		});
 	}
 
