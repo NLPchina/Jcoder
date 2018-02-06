@@ -46,12 +46,6 @@ public class LogWebsocket extends Endpoint {
 	public void onOpen(Session session, EndpointConfig config) {
 		LOG.info("{} onOpen ", session.getId());
 		SessionService.add(new RpcUser(null, session));
-//		HttpSession httpSession = (HttpSession) config.getUserProperties().get("HttpSession");
-//		if (httpSession == null || httpSession.getAttribute(UserConstants.USER) == null) { //如果未登陆不让连接
-//			this.onError(session, new ApiException(ApiException.Forbidden, "not login"));
-//		} else {
-//
-//		}
 	}
 
 
