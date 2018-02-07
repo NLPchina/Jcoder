@@ -74,22 +74,26 @@ var threadManager = new Vue({
         location.hash = "/task/edit.html?group="+this.groupName+"&host=master&name="+item.taskName;
 	  },
       stopTask:function(item,type){
+        debugger;
         var $this = this;
         Jcoder.ajax('/admin/thread/stop', 'post',{hostPort:item.hostPort,key:item.name,first:true},null).then(function (data) {
           JqdeBox.unloading();
           if(data.ok){
             JqdeBox.message(data.ok, "停止任务成功！");
-            /*if(type == 'thread'){
+            if(type == 'thread'){
                 for(var i = 0;i < $this.threads.length;i++){
                     if($this.threads[i].name == item.name)$this.threads.splice($.inArray($this.threads[i],$this.threads),1);
                 }
+                var threadsTable =$('#threadsTable').dataTable();
+                threadsTable.fnDestroy();
             }else if(type == 'action'){
                 for(var i = 0;i < $this.actions.length;i++){
                     if($this.actions[i].name == item.name)$this.actions.splice($.inArray($this.actions[i],$this.actions),1);
                 }
-            }*/
-            var threadsTable =$('#threadsTable').dataTable();
-            threadsTable.fnDestroy();
+                var actionsTable =$('#actionsTable').dataTable();
+                actionsTable.fnDestroy();
+            }
+
             //threadsTable.fnClearTable();
             $this.threadList();
             /*var dttable = $('#datatable1').dataTable();
