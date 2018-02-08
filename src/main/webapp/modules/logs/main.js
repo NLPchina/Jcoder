@@ -7,7 +7,8 @@ var logsManager = new Vue({
     groups:[],
     webSockets:[],
     checkedHosts:[],
-    activeGroup:''
+    activeGroup:'',
+    ok:true
   },
   mounted:function(){
 	  var $this = this;
@@ -21,11 +22,7 @@ var logsManager = new Vue({
          showCursorWhenSelecting:true
       });
       $this.checkedHosts = $this.hosts;
-      $this.activeGroup = $this.groups[0];
-      console.log(1);
-      console.log($('#groups .infobox-blue'));
-      console.log(1);
-      $this.initLogs($this.activeGroup);
+
   },
   methods:{
       getHosts:function(){
@@ -51,6 +48,10 @@ var logsManager = new Vue({
                for(var i = 0;i < data.obj.length; i++){
                   $this.groups.push(data.obj[i]);
                }
+               Vue.nextTick(function(){
+                    $this.getGroupLogInfo($this.groups[0]);
+               });
+
             }else{
                JqdeBox.message(false, "group列表获取失败！");
             }
@@ -74,7 +75,7 @@ var logsManager = new Vue({
                 $("#logsInfoConsole").append("<p>"+event.data+"</p>");
             };
         }
-        setInterval(me.ws_ping(), 25000); // 25秒一次就可以了
+        //setInterval(me.ws_ping(), 25000); // 25秒一次就可以了
       },
       ws_ping:function(){
         var me = this;
@@ -84,8 +85,20 @@ var logsManager = new Vue({
            	}
         }
       },
-      getLogsInfo:function(host,groupName){
-
+      getGroupLogInfo:function(groupName){
+      debugger;
+         var $this = this;
+        $("#groups ul li").each(function(index){
+            alert($(this).prop('innerText') + "--->" + groupName);
+            if(groupName == $(this).prop('innerText')){
+                alert(123);
+                //$('.infobox-green').removeClass('infobox-green');
+                $(this).children().eq(0).addClass('infobox-green');
+                return false;
+            }
+        });
+        $this.activeGroup = groupName;
+        $this.initLogs($this.activeGroup);
       }
   }
 });

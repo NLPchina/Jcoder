@@ -36,12 +36,16 @@
             </div>
 
             <div>
-                <div id="groups"  style="padding:8px;" class="alert alert-block alert-success host-component clearfix form-actions">
-                    <div class="infobox infobox-small infobox-dark infobox-blue" style="cursor: pointer; margin: 2px; width: 150px;height:35px;" v-for="group in groups">
-                        <div class="infobox-data" ><!-- infobox-green-->
-                            <div class="infobox-content" style="align:'center';vertical-align:'middle'">{{group}}</div>
-                        </div>
-                    </div>
+                <div id="groups" style="padding:8px;" class="alert alert-block alert-success host-component clearfix form-actions">
+                    <ul style="list-style:none;" >
+                        <li style="float:left;margin-left:10px;" v-for="(group, index) in groups" @click="getGroupLogInfo(group);">
+                            <div class="infobox infobox-small infobox-dark infobox-blue" style="cursor: pointer; margin: 2px; width: 150px;height:35px;" >
+                                <div class="infobox-data">
+                                    <div class="infobox-content" style="align:'center';vertical-align:'middle'">{{group}}</div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
             </div>
 
