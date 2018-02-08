@@ -93,6 +93,11 @@ public class SharedSpaceService {
 	 */
 	private static final String LOCK_PATH = StaticValue.ZK_ROOT + "/lock";
 
+    /**
+	 * 日志统计ZNODE
+	 */
+	public static final String LOG_STATS_PATH = StaticValue.ZK_ROOT + "/log_stats";
+
 	private static final Lock LOCK = new ReentrantLock();
 
 
