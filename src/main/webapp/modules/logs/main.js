@@ -6,22 +6,26 @@ var logsManager = new Vue({
     editor: '',
     groups:[],
     webSockets:[],
-    checkedHosts:[]
+    checkedHosts:[],
+    activeGroup:''
   },
   mounted:function(){
 	  var $this = this;
 	  $this.getHosts();
 	  $this.getGroups();
-	  $this.editor = CodeMirror.fromTextArea(document.getElementById('fileInfoDlg'), {
+	  $this.editor = CodeMirror.fromTextArea(document.getElementById('logsInfoConsole'), {
          lineNumbers : true,
          mode : "xml",
          matchBrackets : true,
          theme : "monokai",
          showCursorWhenSelecting:true
       });
-
-
-
+      $this.checkedHosts = $this.hosts;
+      $this.activeGroup = $this.groups[0];
+      console.log(1);
+      console.log($('#groups .infobox-blue'));
+      console.log(1);
+      $this.initLogs($this.activeGroup);
   },
   methods:{
       getHosts:function(){
@@ -52,7 +56,7 @@ var logsManager = new Vue({
             }
           });
       },
-      initLogs:function(){
+      initLogs:function(group){
         var me = this;
         for(var i = 0; i < me.checkedHosts.length; i++){
             // 首先,需要创建一个WebSocket连接
@@ -62,7 +66,7 @@ var logsManager = new Vue({
             ws.onopen = function(event) {
                 console.log("websocket onopen ...");
                 // 加入home房间
-                ws.send(JSON.stringify({groupName:"_jcoder_log",methodName:"join"}));
+                ws.send(JSON.stringify({groupName:group,methodName:"join"}));
             };
             // 收到服务器发来的信息时触发的回调
             ws.onmessage = function(event) {
