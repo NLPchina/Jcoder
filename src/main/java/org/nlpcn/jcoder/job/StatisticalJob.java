@@ -89,16 +89,18 @@ public class StatisticalJob implements Runnable {
             }
             return;
         }
-
-        //
-        Stats stats = new Stats();
+        String message = log.getMessage();
+        if (StringUtil.isBlank(message)) {
+            LOG.warn("empty log message");
+            return;
+        }
 
         // 成功数, 失败数, 耗时
-        String message = log.getMessage();
-        if (StringUtil.isNotBlank(message) && message.startsWith("Execute OK")) {
-            stats.successCount.incrementAndGet();
+        Stats stats;
+        if (message.startsWith("Execute OK")) {
+            (stats = new Stats()).successCount.incrementAndGet();
 
-            int duration = Integer.parseInt(message.substring(message.lastIndexOf(':') + 1));
+            int duration = Integer.parseInt(message.substring(message.lastIndexOf(':') + 1).trim());
 
             // 最小耗时
             if (duration < stats.minDuration.get()) {
@@ -112,10 +114,13 @@ public class StatisticalJob implements Runnable {
 
             // 总耗时
             stats.totalDuration.addAndGet(duration);
-        } else {
-            stats.errorCount.incrementAndGet();
+        } else if (message.startsWith("Error@/api/")) {
+            (stats = new Stats()).errorCount.incrementAndGet();
 
             // TODO: 耗时统计
+        } else {
+            // 屏蔽其他日志信息
+            return;
         }
 
         // 格式: group_class_method年月日时分
