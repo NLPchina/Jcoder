@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * 统计任务，定时生成。报告
@@ -33,7 +34,7 @@ public class StatisticalJob implements Runnable {
     public void run() {
         while (true) {
             try {
-                STATS_CACHE.keySet().forEach(key -> STATS_CACHE.compute(key, (k, stats) -> {
+                Stream.of(STATS_CACHE.keySet().toArray(new String[0])).forEach(key -> STATS_CACHE.compute(key, (k, stats) -> {
                     appendStats2ZK(k, stats);
 
                     // 移除数据
