@@ -1,5 +1,6 @@
 package org.nlpcn.jcoder.job;
 
+import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import org.nlpcn.jcoder.domain.LogInfo;
@@ -95,33 +96,34 @@ public class StatisticalJob implements Runnable {
             return;
         }
 
-        // 成功数, 失败数, 耗时
+        //
         Stats stats;
+        int duration;
         if (message.startsWith("Execute OK")) {
+            // Execute OK  ApiTest/test succesed ! use Time : 0
             (stats = new Stats()).successCount.incrementAndGet();
-
-            int duration = Integer.parseInt(message.substring(message.lastIndexOf(':') + 1).trim());
-
-            // 最小耗时
-            if (duration < stats.minDuration.get()) {
-                stats.minDuration.updateAndGet(operand -> Math.min(duration, operand));
-            }
-
-            // 最大耗时
-            if (duration > stats.maxDuration.get()) {
-                stats.maxDuration.updateAndGet(operand -> Math.max(duration, operand));
-            }
-
-            // 总耗时
-            stats.totalDuration.addAndGet(duration);
-        } else if (message.startsWith("Error@/api/")) {
+            duration = Integer.parseInt(StringUtils.subString(message, " succesed ! use Time : ", null).trim());
+        } else if (message.startsWith("Execute ERR")) {
+            // Execute ERR  ApiTest/test useTime 0 erred : java.lang.reflect.InvocationTargetException...
             (stats = new Stats()).errorCount.incrementAndGet();
-
-            // TODO: 耗时统计
+            duration = Integer.parseInt(StringUtils.subString(message, " useTime ", " erred : ").trim());
         } else {
-            // 屏蔽其他日志信息
+            // 忽略其他日志信息
             return;
         }
+
+        // 最小耗时
+        if (duration < stats.minDuration.get()) {
+            stats.minDuration.updateAndGet(operand -> Math.min(duration, operand));
+        }
+
+        // 最大耗时
+        if (duration > stats.maxDuration.get()) {
+            stats.maxDuration.updateAndGet(operand -> Math.max(duration, operand));
+        }
+
+        // 总耗时
+        stats.totalDuration.addAndGet(duration);
 
         // 格式: group_class_method年月日时分
         ZonedDateTime time = Instant.ofEpochMilli(log.getTime()).atZone(ZoneId.systemDefault());
