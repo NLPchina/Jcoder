@@ -52,8 +52,7 @@ public class LogJob implements Runnable {
 				}
 
 				//进行日志统计分析
-
-
+                StatisticalJob.add(logInfo);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
