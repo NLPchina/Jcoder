@@ -14,15 +14,38 @@ var logsManager = new Vue({
 	  var $this = this;
 	  $this.getHosts();
 	  $this.getGroups();
-	  $this.editor = CodeMirror.fromTextArea(document.getElementById('logsInfoConsole'), {
+	  /*$this.editor = CodeMirror.fromTextArea(document.getElementById('logsInfoConsole'), {
          lineNumbers : true,
          mode : "xml",
          matchBrackets : true,
          theme : "monokai",
          showCursorWhenSelecting:true
-      });
+      });*/
       $this.checkedHosts = $this.hosts;
-
+  },
+  watch:{
+    'checkedHosts':function(val){
+        debugger;
+        for(var i = 0; i < this.hosts.length; i++){
+            var flag = true;
+            for(var a = 0; a < this.checkedHosts.length; a++){
+                if(this.hosts[i] == this.checkedHosts[a]){
+                    flag = false;
+                    break;
+                }
+            }
+            if(flag){
+                // 首先,需要创建一个WebSocket连接
+                var ws = new WebSocket("ws://"+this.hosts[i]+"/log");
+                console.log('close');
+                ws.onclose = function (event) {
+                    console.log("websocket onmessage", event.data);
+                };
+                continue;
+            }
+        }
+        this.initLogs(this.activeGroup);
+    }
   },
   methods:{
       getHosts:function(){
@@ -72,6 +95,7 @@ var logsManager = new Vue({
             // 收到服务器发来的信息时触发的回调
             ws.onmessage = function(event) {
                 console.log("websocket onmessage", event.data);
+                $("#logsInfoConsole").append("<p>aaaaa</p>");
                 $("#logsInfoConsole").append("<p>"+event.data+"</p>");
             };
         }
@@ -86,13 +110,11 @@ var logsManager = new Vue({
         }
       },
       getGroupLogInfo:function(groupName){
-      debugger;
          var $this = this;
         $("#groups ul li").each(function(index){
-            alert($(this).prop('innerText') + "--->" + groupName);
-            if(groupName == $(this).prop('innerText')){
-                alert(123);
-                //$('.infobox-green').removeClass('infobox-green');
+            debugger;
+            if(groupName == $(this).prop('innerText').replace("\n","")){
+                $('.infobox-green').removeClass('infobox-green');
                 $(this).children().eq(0).addClass('infobox-green');
                 return false;
             }

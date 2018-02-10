@@ -60,7 +60,23 @@
                 <div class="widget-body">
                     <div class="widget-main">
                         <div class="row">
-                            <textarea id="logsInfoConsole" style="width: 100%;" >{{fileInfo}}</textarea>
+                            <div class="col-sm-12">
+                                <div class="box-inner">
+                                    <div class="box-content" style="display: block;margin-bottom:20px;">
+                                        <div id="logsInfoConsole" style="line-height:120% ; width:100%; height:500px;; white-space:nowrap; overflow:auto; border:1px solid #000000; background:#000000; color: #FFF; padding: 5px;"></div>
+                                    </div>
+                                    <div class="box-content form-inline">
+                                        <div class="input-group col-md-6" style="width: 49%">
+                                            <span class="input-group-addon"><i class="glyphicon glyphicon-search red"></i></span>
+                                            <input type="text" id="console_contains" class="form-control" placeholder="包含" value="">
+                                        </div>
+                                        <div class="input-group col-md-6" style="width: 50%">
+                                            <span class="input-group-addon"><i class="glyphicon glyphicon-glass red"></i></span>
+                                            <input type="text" id="console_filter" class="form-control" placeholder="不包含" value="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div><!-- /.widget-main  padding: 1em;-->
                 </div><!-- /.widget-body -->
