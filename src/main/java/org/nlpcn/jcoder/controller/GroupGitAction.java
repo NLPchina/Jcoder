@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.controller;
 
 import com.alibaba.fastjson.JSONObject;
+
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.nlpcn.jcoder.domain.GroupGit;
@@ -11,11 +12,16 @@ import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.Maps;
 import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 
 import java.util.List;
 import java.util.Map;
@@ -107,6 +113,11 @@ public class GroupGitAction {
 
 	@At
 	public Restful __flush__(String groupName) throws Exception {
+
+		if (StaticValue.TESTRING) {
+			return Restful.fail().msg("testing模式不能使用git模式");
+		}
+
 		GroupGit groupGit = space().getData(SharedSpaceService.GROUP_PATH + "/" + groupName, GroupGit.class);
 		if (groupGit == null) {
 			return Restful.fail().msg("未定义group");

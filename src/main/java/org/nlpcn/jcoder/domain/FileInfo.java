@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.domain;
 
 import com.google.common.base.Objects;
+
 import org.nlpcn.jcoder.service.FileInfoService;
 import org.nlpcn.jcoder.util.StaticValue;
 
@@ -33,21 +34,13 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 
 	/**
 	 * 从git创建文件
-	 *
-	 * @param file
-	 * @param git
 	 */
-	public FileInfo(File file, boolean git) {
+	public FileInfo(File file) {
 		this.file = file;
 		this.directory = file.isDirectory();
 		this.name = file.getName();
 		String groupPath = null;
-		if (git) {
-			groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "git").toURI().toString(), "/");
-		} else {
-			groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/");
-		}
-
+		groupPath = file.toURI().toString().replaceFirst(new File(StaticValue.HOME_FILE, "group").toURI().toString(), "/");
 		this.groupName = groupPath.split("/")[1];
 		this.relativePath = groupPath.substring(groupName.length() + 1);
 		if (this.relativePath.endsWith("/")) {
@@ -137,7 +130,8 @@ public class FileInfo implements Comparable<FileInfo>, Serializable {
 		if (o == null || getClass() != o.getClass()) return false;
 		FileInfo fileInfo = (FileInfo) o;
 		if (this.length != fileInfo.length) return false;
-		if (this.groupName != null ? this.name.equals(fileInfo.groupName) : fileInfo.groupName == null) return false;
+		if (this.groupName != null ? this.name.equals(fileInfo.groupName) : fileInfo.groupName == null)
+			return false;
 		if (this.getLastModified() != fileInfo.getLastModified()) return false;
 		return relativePath != null ? relativePath.equals(fileInfo.relativePath) : fileInfo.relativePath == null;
 	}

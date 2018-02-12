@@ -730,7 +730,7 @@ public class SharedSpaceService {
 			return;
 		}
 
-		FileInfo lInfo = new FileInfo(file, false);
+		FileInfo lInfo = new FileInfo(file);
 		if (!cInfo.getMd5().equals(lInfo.getMd5())) {
 			different.addMessage("文件内容不一致");
 		}
@@ -829,7 +829,7 @@ public class SharedSpaceService {
 	public void upCluster(String groupName, String relativePath) throws Exception {
 		File file = new File(StaticValue.GROUP_FILE, groupName + relativePath);
 		if (file.exists()) {
-			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file, false)));
+			setData2ZK(GROUP_PATH + "/" + groupName + "/file" + relativePath, JSONObject.toJSONBytes(new FileInfo(file)));
 			LOG.info("up file: {} to {} -> {}", file.getAbsoluteFile(), groupName, relativePath);
 		} else {
 			try {
