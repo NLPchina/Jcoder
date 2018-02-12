@@ -1,36 +1,52 @@
 package org.nlpcn.jcoder.service;
 
 import com.alibaba.fastjson.JSONObject;
+
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.LsRemoteCommand;
 import org.eclipse.jgit.api.PullResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.FileInfo;
 import org.nlpcn.jcoder.domain.GroupGit;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.IOUtil;
+import org.nlpcn.jcoder.util.Maps;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
+import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -97,36 +113,34 @@ public class GitSerivce {
 			return "没有找到分支: " + branch;
 		}
 
-		File groupToken = new File(StaticValue.HOME_FILE, "git/" + groupName + "_token");
-
-		String token = "empty";
-
-		if (groupToken.exists()) {
-			token = IOUtil.getContent(groupToken, IOUtil.UTF8).trim();
-		}
-
-		boolean clone = false;
-		//判断git目录是否存在。
-		File groupDir = new File(StaticValue.HOME_FILE, "/git/" + groupName);
-		if (!groupDir.exists() || !groupGit.getToken().equals(token)) {
-
-			for (int i = 0; i < 10 && groupDir.exists(); i++) {
-				org.nutz.lang.Files.deleteDir(groupDir);
-				System.gc();
-				Thread.sleep(1000);
-				LOG.info("to delete dir {} times {}", groupDir.getPath(), i + 1);
-			}
-			if (groupDir.exists()) {
-				return "删除目录" + groupDir.getPath() + "失败";
-			}
-			clone = true;
-		} else {
-			//TODO：判断.git 文件是否正确
-		}
-
-		Git git = null;
 
 		try {
+
+			JarService.lock(groupName);
+
+			//判断git目录是否存在。
+			boolean clone = !new File(StaticValue.HOME_FILE, "/group/" + groupName + "/.git").exists();
+
+
+			File groupDir = new File(StaticValue.HOME_FILE, "/group/" + groupName);
+
+
+			//如果不是git则删除以前
+			if (clone && groupDir.exists()) {
+				JarService.getOrCreate(groupName).release();//释放
+				for (int i = 0; i < 20 && groupDir.exists(); i++) {
+					Files.deleteDir(groupDir);
+					System.gc();
+					Thread.sleep(100L);
+				}
+
+				if (groupDir.exists()) {
+					throw new Exception("can not del dir : " + groupDir.getAbsolutePath());
+				}
+			}
+
+			Git git = null;
+
 
 			if (clone) {
 				LOG.info("to clone from: " + groupGit.getUri());
@@ -136,102 +150,99 @@ public class GitSerivce {
 				git = Git.open(groupDir);
 			}
 
-			PullResult call = git.pull().setCredentialsProvider(provider).call();//进行更新
+			git.checkout().setAllPaths(true).call();
 
-			if (!call.isSuccessful()) {
-				return call.toString();
+			ObjectId oldHead = git.getRepository().resolve("HEAD^{tree}");
+
+			PullResult origin = git.pull().setRemote("origin").setRemoteBranchName(groupGit.getBranch()).setCredentialsProvider(provider).call();//进行更新
+
+			ObjectId head = git.getRepository().resolve("HEAD^{tree}");
+
+			ObjectReader reader = git.getRepository().newObjectReader();
+			CanonicalTreeParser oldTreeIter = new CanonicalTreeParser();
+			oldTreeIter.reset(reader, oldHead);
+			CanonicalTreeParser newTreeIter = new CanonicalTreeParser();
+			newTreeIter.reset(reader, head);
+			List<DiffEntry> diffs = git.diff().setNewTree(newTreeIter).setOldTree(oldTreeIter).call();
+
+			Set<String> relativePaths = new HashSet<>();
+
+			if (clone) {//clone 说明是安装模式那么整个更新
+				//找到所有路径
+				List<FileInfo> fileInfos = FileInfoService.listFileInfos(groupName);
+				fileInfos.forEach(fi -> relativePaths.add(fi.getRelativePath()));
+			} else {
+				for (DiffEntry diff : diffs) {
+					String newPath = fix2RelativePath(diff.getNewPath());
+					String oldPath = fix2RelativePath(diff.getOldPath());
+					if (newPath != null) {
+						relativePaths.add(newPath);
+					}
+
+					if (oldPath != null) {
+						relativePaths.add(oldPath);
+					}
+				}
+			}
+			relativePaths.addAll(apiSyn(groupName, groupDir));
+
+			//想办法取得变动的文件
+			String message = "文件无变动";
+
+			if (relativePaths.size() == 0) {
+				return message;
 			}
 
 
-			LOG.info(call.getMergeResult().getMergeStatus().toString());
-
-			List<String> relativePaths = new ArrayList<>();
-
-			relativePaths.addAll(resourceSyn(groupName));
-
-			//进行task同步
-			relativePaths.addAll(apiSyn(groupGit, groupName, groupDir));
-
-			String message = "文件无变动";
 
 			//当前节点同步到主节点，和其他同步节点
-			if (relativePaths.size() > 0) {
+			InterProcessMutex lock = StaticValue.space().lockGroup(groupName);
+			try {
+				lock.acquire();
 				Response post = proxyService.post(StaticValue.getHostPort(), "/admin/group/fixDiff",
 						Maps.hash("fromHostPort", StaticValue.getHostPort(), "toHostPort", Constants.HOST_MASTER, "groupName", groupName, "relativePath[]", relativePaths.toArray()), 100000);
 				message = Restful.instance(post).getMessage();
-
+			} finally {
+				StaticValue.space().unLockAndDelete(lock);
 			}
-
-
-			return message;
-
-
-		} finally {
-			try (FileOutputStream fos = new FileOutputStream(groupToken)) { //写入当前版本的token
-				fos.write(groupGit.getToken().getBytes("utf-8"));
-			}
-			if (git != null) {
-				git.close();
-			}
-
 
 			groupGit.setLastPullTime(new Date());
 			StaticValue.space().setData2ZK(SharedSpaceService.GROUP_PATH + "/" + groupName, JSONObject.toJSONBytes(groupGit));
+
+
+			return message;
+		} finally {
+			JarService.unLock(groupName);
 		}
+
+
 	}
 
-	/**
-	 * 和git进行文件增量同步
-	 */
-	private List<String> resourceSyn(String groupName) throws IOException {
-
-		//判断文件有无改动
-		List<FileInfo> groupFileInfos = FileInfoService.listFileInfos(groupName, StaticValue.GROUP_FILE);
-		List<FileInfo> gitFileInfos = FileInfoService.listFileInfos(groupName, new File(StaticValue.HOME_FILE, "git"));
-
-		List<String> relativePaths = new ArrayList<>();
-
-		Map<String, FileInfo> maps = new HashMap<>();
-		groupFileInfos.stream().forEach(info -> maps.put(info.getRelativePath(), info));
-
-		List<FileInfo> changeList = new ArrayList<>();
-
-		for (FileInfo gitInfo : gitFileInfos) {
-			if (gitInfo.isDirectory()) { //目录不同步
-				continue;
-			}
-			FileInfo groupInfo = maps.get(gitInfo.getRelativePath());
-			if (groupInfo == null) {
-				changeList.add(gitInfo);
-			} else if (!groupInfo.getMd5().equals(MD5Util.md5(gitInfo.file()))) {
-				changeList.add(gitInfo);
-			}
+	private String fix2RelativePath(String path) {
+		if (path == null) {
+			return null;
 		}
 
-		if (changeList.size() > 0) {
-			try {
-				JarService.lock(groupName);
-				// 关闭classloader，和Ioc
-				JarService.getOrCreate(groupName).release();
-				System.gc();
-				Thread.sleep(1000L);
-
-				//进行文件同步
-				for (FileInfo gitInfo : changeList) { //进行文件拷贝
-					org.nutz.lang.Files.copy(gitInfo.file(), new File(StaticValue.GROUP_FILE + "/" + groupName + gitInfo.getRelativePath()));
-					relativePaths.add(gitInfo.getRelativePath());
-				}
-
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} finally {
-				JarService.unLock(groupName);
-			}
+		if (path.startsWith("resource/") || path.startsWith("lib/")) {
+			return "/" + path;
 		}
-		return relativePaths;
+
+		if (path.startsWith("src/api/") && path.endsWith(".java")) {
+			String[] split = path.split("/");
+			String name = split[split.length - 1];
+			return name.substring(0, name.length() - 5);
+		}
+
+		if (path.equals("pom.xml")) {
+			return path;
+		}
+
+		return null;
+
 	}
 
-	private List<String> apiSyn(GroupGit groupGit, String groupName, File groupDir) throws IOException {
+
+	private List<String> apiSyn(String groupName, File groupDir) throws IOException {
 
 		File srcFile = new File(groupDir, "src/api");
 
@@ -240,7 +251,7 @@ public class GitSerivce {
 
 		List<String> relativePaths = new ArrayList<>();
 
-		Files.walkFileTree(srcFile.toPath(), new SimpleFileVisitor<Path>() {
+		java.nio.file.Files.walkFileTree(srcFile.toPath(), new SimpleFileVisitor<Path>() {
 
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -292,7 +303,7 @@ public class GitSerivce {
 				changeTask(groupName, file, relativePaths);
 			} else {
 				relativePaths.add(fileName(file));
-				createTask(groupGit.getGroupName(), file);
+				createTask(groupName, file);
 			}
 		});
 
@@ -304,6 +315,7 @@ public class GitSerivce {
 
 		return relativePaths;
 	}
+
 
 	private void deleteTask(Task task) {
 		LOG.info("to del task {} in group {}", task.getName(), task.getGroupName());
