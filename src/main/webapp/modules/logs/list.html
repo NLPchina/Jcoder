@@ -1,0 +1,87 @@
+<style>
+.CodeMirror {
+    border-radius: 3px;
+    overflow: hidden;
+    font-size: 14px;
+    height: 520px;
+    background-color: #000;
+    color: #2ec607;
+    line-height: 1;
+    border-top: 1px solid #eee;
+	border-bottom: 1px solid #eee;
+	font-size: 18px;
+	line-height:120% ;
+}
+
+.CodeMirror-sizer{
+    margin-left: 29px !important;
+}
+</style>
+<div id="logsManager" class="page-content" style="overflow: hidden; height: 60%;">
+    <div class="row">
+        <div class="col-xs-12">
+            <!--<div>
+                <host-component :hosts.sync="hosts" :group-name="groupName" @change="change"/>
+            </div>-->
+            <div class="alert alert-block alert-success">
+                <p>
+                <ul>
+                    <li v-for="host in hosts" style="float:left;list-style:none;margin:3px;">
+                        <input type="checkbox" :value="host" v-model="checkedHosts" />
+                        <label>{{host}}</label>
+                    </li>
+                </ul>
+                </p>
+                <span>&nbsp;</span>
+            </div>
+
+            <div>
+                <div id="groups" style="padding:8px;" class="alert alert-block alert-success host-component clearfix form-actions">
+                    <ul style="list-style:none;" >
+                        <li style="float:left;margin-left:10px;" v-for="(group, index) in groups" @click="getGroupLogInfo(group);">
+                            <div class="infobox infobox-small infobox-dark infobox-blue" style="cursor: pointer; margin: 2px; width: 150px;height:35px;" >
+                                <div class="infobox-data">
+                                    <div class="infobox-content" style="align:'center';vertical-align:'middle'">{{group}}</div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="widget-box">
+                <div class="widget-header">
+                    <h4 class="widget-title lighter smaller">
+                        <i class="ace-icon fa fa-pencil-square-o blue"></i>
+                        Console
+                    </h4>
+                </div>
+
+                <div class="widget-body">
+                    <div class="widget-main">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <div class="box-inner">
+                                    <div class="box-content" style="display: block;margin-bottom:20px;">
+                                        <div id="logsInfoConsole" style="line-height:120% ; width:100%; height:500px;; white-space:nowrap; overflow:auto; border:1px solid #000000; background:#000000; color: #FFF; padding: 5px;"></div>
+                                    </div>
+                                    <div class="box-content form-inline">
+                                        <div class="input-group col-md-6" style="width: 49%">
+                                            <span class="input-group-addon"><i class="glyphicon glyphicon-search red"></i></span>
+                                            <input type="text" id="console_contains" class="form-control" placeholder="包含" value="">
+                                        </div>
+                                        <div class="input-group col-md-6" style="width: 50%">
+                                            <span class="input-group-addon"><i class="glyphicon glyphicon-glass red"></i></span>
+                                            <input type="text" id="console_filter" class="form-control" placeholder="不包含" value="">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- /.widget-main  padding: 1em;-->
+                </div><!-- /.widget-body -->
+            </div>
+        </div>
+    </div>
+</div>
+<script src="modules/logs/main.js"></script>

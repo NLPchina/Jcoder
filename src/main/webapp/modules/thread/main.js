@@ -1,11 +1,13 @@
-
 var threadManager = new Vue({
   el: '#threadManager',
   data: {
     threads: [],
     schedulers:[],
     actions:[],
-    groupName:param.name
+    groupName:param.name,
+    threadsTable:null,
+    schedulersTable:null,
+    actionsTable:null
   },
   mounted:function(){
 	  this.threadList();
@@ -20,7 +22,7 @@ var threadManager = new Vue({
                 $this.schedulers = data.obj.schedulers;
                 $this.actions = data.obj.actions;
                 Vue.nextTick(function(){
-                    var threadsTable = $('#threadsTable').DataTable({
+                    threadsTable = $('#threadsTable').DataTable({
                         /*"colReorder": true,*/
                         "destroy":true, //Cannot reinitialise DataTable,解决重新加载表格内容问题
                         "bDestroy":true,
@@ -38,7 +40,7 @@ var threadManager = new Vue({
                         }*/
                      });
 
-                    var schedulersTable = $('#schedulersTable').DataTable({
+                    schedulersTable = $('#schedulersTable').DataTable({
                          "destroy":true, //Cannot reinitialise DataTable,解决重新加载表格内容问题
                          "bDestroy":true,
                          "bProcessing" : true,
@@ -51,7 +53,7 @@ var threadManager = new Vue({
                          "bFilter" : true, //是否启动过滤、搜索功能
                     });
 
-                    var actionsTable = $('#actionsTable').DataTable({
+                    actionsTable = $('#actionsTable').DataTable({
                        "destroy":true, //Cannot reinitialise DataTable,解决重新加载表格内容问题
                        "bDestroy":true,
                        "bProcessing" : true,
@@ -69,25 +71,35 @@ var threadManager = new Vue({
           });
 	  },
 	  gotoTaskInfo:function(item,type){
-	    var name = '';
-	    if(type == 'scheduler'){
-	        name = item.name.split('@')[1];
-	    }else if(type == 'thread'){
-            name = item.name.split('@')[0];
-	    }
-        location.hash = "/task/edit.html?group="+this.groupName+"&host=master&name="+name;
+        location.hash = "/task/edit.html?group="+this.groupName+"&host=master&name="+item.taskName;
 	  },
       stopTask:function(item,type){
-        var name = '';
-        if(type == 'action'){
-            name = item.taskName;
-        }else if(type == 'thread'){
-            name = item.name;
-        }
-        Jcoder.ajax('/admin/thread/stop', 'post',{key:name},null).then(function (data) {
+        debugger;
+        var $this = this;
+        Jcoder.ajax('/admin/thread/stop', 'post',{hostPort:item.hostPort,key:item.name,first:true},null).then(function (data) {
           JqdeBox.unloading();
           if(data.ok){
             JqdeBox.message(data.ok, "停止任务成功！");
+            if(type == 'thread'){
+                for(var i = 0;i < $this.threads.length;i++){
+                    if($this.threads[i].name == item.name)$this.threads.splice($.inArray($this.threads[i],$this.threads),1);
+                }
+                var threadsTable =$('#threadsTable').dataTable();
+                threadsTable.fnDestroy();
+            }else if(type == 'action'){
+                for(var i = 0;i < $this.actions.length;i++){
+                    if($this.actions[i].name == item.name)$this.actions.splice($.inArray($this.actions[i],$this.actions),1);
+                }
+                var actionsTable =$('#actionsTable').dataTable();
+                actionsTable.fnDestroy();
+            }
+
+            //threadsTable.fnClearTable();
+            $this.threadList();
+            /*var dttable = $('#datatable1').dataTable();
+            dttable.fnClearTable(); //清空一下table
+            dttable.fnDestroy(); //还原初始化了的datatable*/
+            //window.location.reload();
           }
         });
       }

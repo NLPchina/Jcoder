@@ -244,7 +244,10 @@ public class ThreadManager {
 		List<TaskInfo> schedulers = new ArrayList<>();
 		for (String jobKey : taskList) {
 			String[] split = jobKey.split(Constants.GROUP_TASK_SPLIT);
-			schedulers.add(new TaskInfo(jobKey, split[1], split[0]));
+			Task taskByCache = TaskService.findTaskByCache(split[0], split[1]);
+			TaskInfo taskInfo = new TaskInfo(taskByCache.getScheduleStr(), split[1], split[0]);
+			taskInfo.setDescription(taskByCache.getDescription());
+			schedulers.add(taskInfo);
 		}
 		return schedulers;
 	}
