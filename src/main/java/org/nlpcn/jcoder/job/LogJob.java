@@ -41,14 +41,11 @@ public class LogJob implements Runnable {
 
 				String logJson = JSONObject.toJSONString(logInfo);
 
-				//发送到日志房间
-				StaticValue.space().getRoomService().sendMessage(LOG_ROOM, logJson);
-
 				if (logInfo.getGroupName() != null) {
 					//发送到group日志房间
 					StaticValue.space().getRoomService().sendMessage(LOG_ROOM + "_" + logInfo.getGroupName(), logJson);
 				} else {
-					StaticValue.space().getRoomService().sendMessage(LOG_ROOM + "_" + LOG_ROOM, logJson);
+					StaticValue.space().getRoomService().sendMessage(LOG_ROOM, logJson);
 				}
 
 				//进行日志统计分析

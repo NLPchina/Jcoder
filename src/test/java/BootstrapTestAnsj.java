@@ -3,13 +3,13 @@ import org.junit.Test;
 public class BootstrapTestAnsj {
 
 	//	private static String host = "192.168.31.107";
-	private static String host = "192.168.31.227";
-	private static String zk = "192.168.31.227:2181";
+//	private static String host = "192.168.31.227";
+//	private static String zk = "192.168.31.227:2181";
 //	private static String zk = "192.168.3.137:2181|jcoder:jcoder";
 
 //	private static String zk = "192.168.10.9:2181|jcoder:jcoder";
-//	private static String zk = "192.168.3.66:2181";
-//	private static String host = "192.168.3.66";
+	private static String zk = "192.168.3.66:2181";
+	private static String host = "192.168.3.66";
 
 //	private static String zk = "127.0.0.1:2181";
 //	private static String host = "127.0.0.1";
