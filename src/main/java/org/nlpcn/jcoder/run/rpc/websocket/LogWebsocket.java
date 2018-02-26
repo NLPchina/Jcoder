@@ -24,6 +24,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
+import static org.nlpcn.jcoder.constant.Constants.LOG_ROOM;
+
 @ServerEndpoint(value = "/log", configurator = JcoderConfigurator.class)
 @IocBean
 public class LogWebsocket extends Endpoint {
@@ -59,7 +61,7 @@ public class LogWebsocket extends Endpoint {
 
 		if (httpSession == null || httpSession.getAttribute(UserConstants.USER) == null) {
 			session.close(new CloseReason(CloseReason.CloseCodes.CANNOT_ACCEPT, "not login"));
-			return ;
+			return;
 		}
 
 		RpcRequest request = JSONObject.parseObject(message, RpcRequest.class); //构建请求
@@ -68,6 +70,10 @@ public class LogWebsocket extends Endpoint {
 		String groupName = request.getGroupName();
 
 		String methodName = request.getMethodName();
+
+		if (!LOG_ROOM.equals(groupName)) {
+			groupName = LOG_ROOM + "_" + groupName;
+		}
 
 		if ("join".equals(methodName)) {
 			StaticValue.space().getRoomService().join(groupName, session.getId());

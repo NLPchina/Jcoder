@@ -90,7 +90,7 @@ public class SiteSetup implements Setup {
 		//开启日志监控
 		new Thread(new LogJob()).start();
 
-        // 开启日志统计
+        // 开启API访问日志统计
         new Thread(new StatisticalJob()).start();
 
 		//init webscoket

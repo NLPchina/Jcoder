@@ -95,12 +95,9 @@ vmApp.module = new Vue({
                 showCursorWhenSelecting: true,
                 extraKeys: {"Ctrl-S": function (e) {}}
             });
-            me.editor.setSize(null,document.documentElement.clientHeight-300);//设置高度
-            var $this = $(me.$el);
-            $this.find(".CodeMirror").resizable({
-                resize: function () {
-                    me.editor.setSize($this.find("form:first").width() - 37);
-                }
+            $(me.$el).resize(function () {
+                var ele = document.documentElement;
+                me.editor.setSize(ele.clientWidth - 232, ele.clientHeight - 300);
             });
         });
     },
