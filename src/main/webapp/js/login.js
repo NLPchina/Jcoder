@@ -1,33 +1,3 @@
-/*layui.use(['layer', 'form'], function() {
-	var layer = layui.layer,
-		$ = layui.jquery;
-	$("#sub").click(function(){
-		var param = {name:$("#userName").val(),password:$("#password").val()};
-		var flag = false;
-		$.ajax({
-			'url' : '/admin/login',
-			'dataType' : 'json',
-			'type' : 'POST',
-			'data' : param,
-			'success' : function(data) {
-				if(data.ok){
-					flag = true;
-					localStorage.setItem("userName",data.obj.user);
-					localStorage.setItem("userId",data.obj.userId);
-					localStorage.setItem("userType",data.obj.userType);
-					localStorage.setItem("AUTH_MAP",data.obj.AUTH_MAP);
-					localStorage.setItem("GROUP_LIST",data.obj.GROUP_LIST);
-					location.href='index.html';
-					return false;
-				}else{
-					$('#message').addClass("alert alert-danger");
-					$('#message').text(data.message) ;
-				}
-			}
-		});
-		return false;
-	});	
-}); */
 $(function(){
 	$("#sub").on('click',function(){
 		var param = {name:$("#userName").val(),password:$("#password").val()};
@@ -39,7 +9,6 @@ $(function(){
 			'data' : param,
 			'success' : function(data) {
 				if(data.ok){
-					console.log(data);
 					flag = true;
 					localStorage.setItem("userName",data.obj.user);
 					localStorage.setItem("userId",data.obj.userId);
@@ -56,9 +25,6 @@ $(function(){
 		return false;
 	});
 });
-
-	
-
 
 var c=document.getElementById("c");
 var ctx=c.getContext("2d");

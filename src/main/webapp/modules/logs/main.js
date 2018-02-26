@@ -14,6 +14,9 @@ var logsManager = new Vue({
 	  var $this = this;
 	  $this.getHosts();
 	  $this.getGroups();
+
+
+
 	  /*$this.editor = CodeMirror.fromTextArea(document.getElementById('logsInfoConsole'), {
          lineNumbers : true,
          mode : "xml",
@@ -25,7 +28,7 @@ var logsManager = new Vue({
   },
   watch:{
     'checkedHosts':function(val){
-        debugger;
+        
         for(var i = 0; i < this.hosts.length; i++){
             var flag = true;
             for(var a = 0; a < this.checkedHosts.length; a++){
@@ -74,13 +77,13 @@ var logsManager = new Vue({
                Vue.nextTick(function(){
                     $this.getGroupLogInfo($this.groups[0]);
                });
-
             }else{
                JqdeBox.message(false, "group列表获取失败！");
             }
           });
       },
       initLogs:function(group){
+        console.log(group);
         var me = this;
         for(var i = 0; i < me.checkedHosts.length; i++){
             // 首先,需要创建一个WebSocket连接
@@ -90,7 +93,8 @@ var logsManager = new Vue({
             ws.onopen = function(event) {
                 console.log("websocket onopen ...");
                 // 加入home房间
-                ws.send(JSON.stringify({groupName:group,methodName:"join"}));
+                console.log(group);
+                ws.send(JSON.stringify({groupName:group,methodName:"join"}));//'className':group,'methodName':"join"{groupName:group,methodName:"join"}
             };
             // 收到服务器发来的信息时触发的回调
             ws.onmessage = function(event) {
@@ -112,7 +116,6 @@ var logsManager = new Vue({
       getGroupLogInfo:function(groupName){
          var $this = this;
         $("#groups ul li").each(function(index){
-            debugger;
             if(groupName == $(this).prop('innerText').replace("\n","")){
                 $('.infobox-green').removeClass('infobox-green');
                 $(this).children().eq(0).addClass('infobox-green');
