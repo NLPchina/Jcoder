@@ -1,6 +1,5 @@
 package org.nlpcn.jcoder.controller;
 
-import com.alibaba.druid.util.StringUtils;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.SharedSpaceService;
@@ -59,11 +58,23 @@ public class LogsAction {
     public Restful hostGroupList() throws Exception {
         Set<String> hosts = new HashSet<>(), groups = new HashSet<>();
         if (StaticValue.space().getZk().checkExists().forPath(SharedSpaceService.LOG_STATS_PATH) != null) {
+            int index;
             for (String h : StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH)) {
                 hosts.add(h);
 
                 for (String item : StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH + "/" + h)) {
-                    groups.add(StringUtils.subString(item, null, "/"));
+                    for (index = item.length() - 1; index >= 0; index--) {
+                        if (item.charAt(index) == '-') {
+                            break;
+                        }
+                    }
+                    for (index--; index >= 0; index--) {
+                        if (item.charAt(index) == '-') {
+                            break;
+                        }
+                    }
+
+                    groups.add(item.substring(0, index));
                 }
             }
         }
