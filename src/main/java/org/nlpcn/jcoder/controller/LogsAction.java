@@ -1,5 +1,7 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.druid.util.StringUtils;
+import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.Restful;
@@ -7,9 +9,9 @@ import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.mvc.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Created by hanx on 06/2/2018.
@@ -50,4 +52,21 @@ public class LogsAction {
         return Restful.ok().obj(allGroups);
     }
 
+    /**
+     * 获取日志统计的所有主机及分组
+     */
+    @At("/hostgroup/list")
+    public Restful hostGroupList() throws Exception {
+        Set<String> hosts = new HashSet<>(), groups = new HashSet<>();
+        if (StaticValue.space().getZk().checkExists().forPath(SharedSpaceService.LOG_STATS_PATH) != null) {
+            for (String h : StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH)) {
+                hosts.add(h);
+
+                for (String item : StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH + "/" + h)) {
+                    groups.add(StringUtils.subString(item, null, "/"));
+                }
+            }
+        }
+        return Restful.ok().obj(ImmutableMap.of("hosts", hosts, "groups", groups));
+    }
 }
