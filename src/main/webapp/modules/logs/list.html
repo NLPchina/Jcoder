@@ -27,7 +27,7 @@
                 <p>
                 <ul>
                     <li v-for="host in hosts" style="float:left;list-style:none;margin:3px;">
-                        <input type="checkbox" :value="host" v-model="checkedHosts" />
+                        <input type="checkbox" :value="host" @click="openOrCloseHost(host)"/>
                         <label>{{host}}</label>
                     </li>
                 </ul>
@@ -38,8 +38,15 @@
             <div>
                 <div id="groups" style="padding:8px;" class="alert alert-block alert-success host-component clearfix form-actions">
                     <ul style="list-style:none;" >
+                        <li style="float:left;margin-left:10px;" @click="getGroupLogInfo('_jcoder_log');">
+                            <div class="infobox infobox-small infobox-dark infobox-blue" style="cursor: pointer; margin: 2px; width: 150px;height:35px;" id="_jcoder_log">
+                                <div class="infobox-data">
+                                    <div class="infobox-content" style="align:'center';vertical-align:'middle'">系统日志</div>
+                                </div>
+                            </div>
+                        </li>
                         <li style="float:left;margin-left:10px;" v-for="(group, index) in groups" @click="getGroupLogInfo(group);">
-                            <div class="infobox infobox-small infobox-dark infobox-blue" style="cursor: pointer; margin: 2px; width: 150px;height:35px;" >
+                            <div class="infobox infobox-small infobox-dark infobox-blue" style="cursor: pointer; margin: 2px; width: 150px;height:35px;" :id="group">
                                 <div class="infobox-data">
                                     <div class="infobox-content" style="align:'center';vertical-align:'middle'">{{group}}</div>
                                 </div>
