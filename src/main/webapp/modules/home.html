@@ -1,3 +1,163 @@
-<div id="home">
-Hello Jcoder;
-</div>	
+<style>
+    #vmHomeModule .dataTables_wrapper .dataTables_empty, #vmHomeModule .dataTables_wrapper > .row {
+        display: none;
+    }
+</style>
+
+<div class="col-xs-12" id="vmHomeModule">
+    <div class="search-area well row" style="padding: 10px 10px 7px 10px;margin-bottom: 7px;">
+        <div class="row">
+            <div class="col-xs-2">
+                <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-calendar bigger-110"></i>
+                        </span>
+                    <input class="form-control" type="text" name="dateRange"/>
+                </div>
+            </div>
+
+            <div class="col-xs-1" v-for="i in [7,5,3,1]" style="margin-bottom: 5px; width:auto;">
+                <span class="btn btn-white btn-default btn-date" @click="selectDate($event,i)">
+                    最近{{i}}天
+                </span>
+            </div>
+        </div>
+
+        <div class="space-4"></div>
+
+        <div class="row">
+            <div class="col-xs-1" v-for="host in hosts" style="margin-bottom: 5px;width: auto;">
+                <span class="btn btn-white btn-primary btn-host active" @click="selectHost($event,host)">
+                    {{host}}
+                </span>
+            </div>
+        </div>
+
+        <div class="space-4"></div>
+
+        <div class="row">
+            <div class="col-xs-1" v-for="group in groups" style="margin-bottom: 5px;width: auto;">
+                <span class="btn btn-white btn-info btn-group active" @click="selectGroup($event,group)">
+                    {{group}}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <table class="table table-striped table-bordered table-hover"></table>
+    </div>
+</div>
+
+<script>
+    vmApp.module = new Vue({
+        el: '#vmHomeModule',
+
+        data: {
+            hosts: ['全部主机'],
+            groups: ['全部分组']
+        },
+
+        mounted: function () {
+            var me = this, dt = $(me.$el).find('table:first').DataTable({
+                bDestroy: true,
+                bProcessing: true,
+                columns: [
+                    {
+                        title: '',
+                        sortable: false,
+                        render: function (data, type, row, meta) {
+                            return row;
+                        }
+                    },
+                    {title: "组名", data: "group", name: "group"},
+                    {title: "类名", data: "class", name: "class"},
+                    {title: "方法名", data: "method", name: "method"},
+                    {title: "成功数", data: "successCount", name: "successCount"},
+                    {title: "失败数", data: "errorCount", name: "errorCount"},
+                    {title: "最小时长", data: "minDuration", name: "minDuration"},
+                    {title: "最大时长", data: "maxDuration", name: "maxDuration"},
+                    {title: "总时长", data: "totalDuration", name: "totalDuration"}
+                ],
+
+                autoWidth: false,
+                select: {style: 'multi'},
+                aaSorting: [],
+                processing: true,
+                paging: false,
+                /*scrollY: "300px",
+                 scrollCollapse: true,*/
+                language: {
+                    sProcessing: '<i class="ace-icon fa fa-spinner fa-spin orange bigger-125"></i>&nbsp;&nbsp;处理中...',
+                    sZeroRecords: "没有匹配结果",
+                    sInfo: "共有记录数 _TOTAL_ 条",
+                    sInfoEmpty: "共有记录数 0 条",
+                    sInfoFiltered: "(由 _MAX_ 项结果过滤)",
+                    sInfoPostFix: "",
+                    sSearch: "搜索：",
+                    sUrl: "",
+                    sEmptyTable: "表中数据为空",
+                    sLoadingRecords: "载入中...",
+                    sInfoThousands: ",",
+                    oAria: {
+                        sSortAscending: ": 以升序排列",
+                        sSortDescending: ": 以降序排列"
+                    }
+                }
+            });
+
+            // 初始化时间控件
+            $('input[name=dateRange]', me.$el).daterangepicker({
+                autoUpdateInput: true,
+                applyClass: 'btn-sm btn-success',
+                cancelClass: 'btn-sm btn-default',
+                locale: Config.daterangepicker_locale.zh_CN
+            }, function (start, end) {
+                //console.log(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+                $('.btn-date', me.$el).removeClass('active');
+            }).prev().on(ace.click_event, function () {
+                $(this).next().focus();
+            });
+
+            // 获取所有主机及其分组
+            Jcoder.ajax('/admin/logs/hostgroup/list', 'POST').then(function (data) {
+                data = data.obj;
+                me.hosts.concat(data.hosts);
+                me.groups.concat(data.groups);
+            }).catch(function (req) {
+                JqdeBox.message(false, req.responseText);
+            });
+        },
+
+        methods: {
+            selectDate: function (evt, days) {
+                var me = this;
+                $('.btn-date', me.$el).removeClass('active');
+                $(evt.target).addClass('active');
+            },
+
+            selectHost: function (evt, host) {
+                var me = this;
+                me.toggleActive($(evt.target), host, me.hosts, 'btn-host');
+            },
+
+            selectGroup: function (evt, group) {
+                var me = this;
+                me.toggleActive($(evt.target), group, me.groups, 'btn-group');
+            },
+
+            toggleActive: function ($target, item, items, cls) {
+                var me = this, isAll = item == items[0], $items = $('.' + cls + ':not(:first)', me.$el);
+                if (isAll) {
+                    $items.toggleClass('active', !$target.hasClass('active'));
+                }
+                $target.toggleClass('active');
+                if (!isAll) {
+                    $('.' + cls + ':first', me.$el).toggleClass('active', $items.filter(function () {
+                        return $(this).hasClass('active');
+                    }).length == items.length - 1);
+                }
+            }
+        }
+    });
+</script>
