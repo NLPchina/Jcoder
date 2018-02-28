@@ -50,25 +50,39 @@ public class StatisticalJob implements Runnable {
     }
 
     /**
-     * 将日志统计信息放入ZK, 存储结构: jcoder <- log_stats <- 主机 <- group-class-method <- 年月日 <- (时分 ------- 日志统计信息)
+     * 将日志统计信息放入ZK, 存储结构: jcoder <- log_stats <- 主机 <- group <- class-method <- 年月日 <- (时分 ------- 日志统计信息)
      *
-     * @param key   格式: group-class-method|年月日时分
+     * @param key   格式: group|class-method|年月日时分
      * @param stats 日志统计信息
      */
     private void appendStats2ZK(String key, Stats stats) {
         // 追加数据
-        int index = key.lastIndexOf('|'), len = key.length();
-        String path = String.format("%s/%s/%s/%s/%s",
+        int i, len = key.length();
+        for (i = len - 1; i >= 0; --i) {
+            if (key.charAt(i) == '|') {
+                break;
+            }
+        }
+        int j = i - 1;
+        for (; j >= 0; --j) {
+            if (key.charAt(j) == '|') {
+                break;
+            }
+        }
+        String path = String.format("%s/%s/%s/%s/%s/%s",
                 SharedSpaceService.LOG_STATS_PATH,
                 StaticValue.getHostPort(),
-                key.substring(0, index),
-                key.substring(index + 1, len - 4),
+                key.substring(0, j),
+                key.substring(j + 1, i),
+                key.substring(i + 1, len - 4),
                 key.substring(len - 4));
         try {
             if (StaticValue.space().getZk().checkExists().forPath(path) != null) {
                 // 同一分钟的日志进行合并
                 Optional<Stats> opt = Optional.of(StaticValue.space().getData(path, Stats.class));
-                stats = opt.get().add(stats);
+                if (opt.isPresent()) {
+                    stats = opt.get().merge(stats);
+                }
             }
             StaticValue.space().setData2ZK(path, JSONObject.toJSONBytes(stats));
         } catch (Exception e) {
@@ -123,9 +137,9 @@ public class StatisticalJob implements Runnable {
         // 总耗时
         stats.totalDuration.addAndGet(duration);
 
-        // 格式: group-class-method|年月日时分
+        // 格式: group|class-method|年月日时分
         ZonedDateTime time = Instant.ofEpochMilli(log.getTime()).atZone(ZoneId.systemDefault());
-        String key = String.format("%s-%s-%s|%s%s%s%s%s",
+        String key = String.format("%s|%s-%s|%s%s%s%s%s",
                 log.getGroupName(),
                 log.getClassName(),
                 log.getMethodName(),
@@ -134,7 +148,7 @@ public class StatisticalJob implements Runnable {
                 Strings.padStart(String.valueOf(time.getDayOfMonth()), 2, '0'),
                 Strings.padStart(String.valueOf(time.getHour()), 2, '0'),
                 Strings.padStart(String.valueOf(time.getMinute()), 2, '0'));
-        STATS_CACHE.merge(key, stats, Stats::add);
+        STATS_CACHE.merge(key, stats, Stats::merge);
     }
 
     public static class Stats {
@@ -144,7 +158,11 @@ public class StatisticalJob implements Runnable {
         private final AtomicInteger maxDuration = new AtomicInteger();
         private final AtomicInteger totalDuration = new AtomicInteger();
 
-        private Stats add(Stats stats) {
+        private String groupName;
+        private String className;
+        private String methodName;
+
+        public Stats merge(Stats stats) {
             successCount.addAndGet(stats.successCount.get());
             errorCount.addAndGet(stats.errorCount.get());
             if (stats.minDuration.get() < minDuration.get()) {
@@ -195,6 +213,30 @@ public class StatisticalJob implements Runnable {
 
         public void setTotalDuration(int totalDuration) {
             this.totalDuration.set(totalDuration);
+        }
+
+        public String getGroupName() {
+            return groupName;
+        }
+
+        public void setGroupName(String groupName) {
+            this.groupName = groupName;
+        }
+
+        public String getClassName() {
+            return className;
+        }
+
+        public void setClassName(String className) {
+            this.className = className;
+        }
+
+        public String getMethodName() {
+            return methodName;
+        }
+
+        public void setMethodName(String methodName) {
+            this.methodName = methodName;
         }
     }
 }
