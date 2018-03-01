@@ -60,8 +60,7 @@
         },
 
         mounted: function () {
-            var me = this;
-            me.dataTable = $(me.$el).find('table:first').DataTable({
+            var me = this, dt = me.dataTable = $(me.$el).find('table:first').DataTable({
                 bDestroy: true,
                 bProcessing: true,
                 columns: [
@@ -75,9 +74,6 @@
                     {title: "最大时长", data: "maxDuration", name: "maxDuration"},
                     {title: "总时长", data: "totalDuration", name: "totalDuration"}
                 ],
-                createdRow: function (row, data, dataIndex) {
-                    $('td:first', row).text(dataIndex + 1);
-                },
 
                 autoWidth: false,
                 select: {style: 'multi'},
@@ -104,6 +100,11 @@
                     }
                 }
             });
+            dt.on('order.dt search.dt', function () {
+                dt.column(0, {search: 'applied', order: 'applied'}).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
 
             // 初始化时间控件
             $('input[name=dateRange]', me.$el).daterangepicker({
