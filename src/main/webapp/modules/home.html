@@ -143,39 +143,24 @@
                 var me = this;
 
                 // 先判断是否选择了最近x天，如果没有就取daterangepicker
-                var dates, date = $('.btn-date.active', me.$el).attr('data-date');
-                if (date) {
-                    dates = [date];
-                } else {
+                var date = $('.btn-date.active', me.$el).attr('data-date');
+                if (!date) {
                     var data = $('input[name=dateRange]').data('daterangepicker');
-                    dates = [data.startDate.format('YYYYMMDD'), data.endDate.format('YYYYMMDD')];
+                    date = data.startDate.format('YYYYMMDD') + ',' + data.endDate.format('YYYYMMDD');
                 }
 
                 //
-                var hosts = null, selectedHosts = $('.btn-host.active', me.$el).map(function () {
+                var selectedHosts = $('.btn-host.active', me.$el).map(function () {
                     return $(this).attr('data-host');
-                });
-                if (selectedHosts.length < 1) {
-                    hosts = [];
-                } else if (selectedHosts[0] != me.hosts[0]) {
-                    hosts = selectedHosts.splice(0, 1);
-                }
-
-                //
-                var groups = null, selectedGroups = $('.btn-group.active', me.$el).map(function () {
+                }), selectedGroups = $('.btn-group.active', me.$el).map(function () {
                     return $(this).attr('data-group');
                 });
-                if (selectedGroups.length < 1) {
-                    groups = [];
-                } else if (selectedGroups[0] != me.groups[0]) {
-                    groups = selectedGroups.splice(0, 1);
-                }
 
                 JqdeBox.loading();
                 Jcoder.ajax('/admin/logs/stat/list', 'POST', {
-                    dates: dates,
-                    hosts: hosts,
-                    groups: groups
+                    dates: date,
+                    hosts: selectedHosts.length < 1 ? '' : selectedHosts[0] != me.hosts[0] ? selectedHosts.splice(0, 1).join(',') : undefined,
+                    groups: selectedGroups.length < 1 ? '' : selectedGroups[0] != me.groups[0] ? selectedGroups.splice(0, 1).join(',') : undefined
                 }).then(function (data) {
                     JqdeBox.unloading();
                     me.dataTable.clear().rows.add(data.obj || []).draw();

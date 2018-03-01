@@ -88,21 +88,22 @@ public class LogsAction {
      * @throws Exception
      */
     @At("/stat/list")
-    public Restful statList(@Param("dates[]") String[] dates, @Param("hosts[]") String[] hosts, @Param("groups[]") String[] groups) throws Exception {
-        String start, end;
-        if (dates == null) {
-            start = "00000000";
-            end = "99999999";
-        } else if (dates.length > 1) {
-            // 如果是日期范围
-            start = dates[0];
-            end = dates[1];
-        } else {
-            int n = Integer.parseInt(dates[0]);
-            // 如果是最近x天
-            LocalDate now = LocalDate.now();
-            start = LOCAL_DATE.format(now.minus(n - 1, ChronoUnit.DAYS));
-            end = LOCAL_DATE.format(now);
+    public Restful statList(String[] dates, String[] hosts, String[] groups) throws Exception {
+        String start = "00000000", end = "99999999";
+        if (dates != null) {
+            if (dates.length < 1) {
+                start = end;
+            } else if (dates.length > 1) {
+                // 如果是日期范围
+                start = dates[0];
+                end = dates[1];
+            } else {
+                // 如果是最近x天
+                int n = Integer.parseInt(dates[0]);
+                LocalDate now = LocalDate.now();
+                start = LOCAL_DATE.format(now.minus(n - 1, ChronoUnit.DAYS));
+                end = LOCAL_DATE.format(now);
+            }
         }
 
         //
