@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.job;
 
 import com.alibaba.druid.util.StringUtils;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import org.nlpcn.jcoder.domain.LogInfo;
@@ -50,43 +51,46 @@ public class StatisticalJob implements Runnable {
     }
 
     /**
-     * 将日志统计信息放入ZK, 存储结构: jcoder <- log_stats <- 主机 <- group <- class-method <- 年月日 <- (时分 ------- 日志统计信息)
+     * 将日志统计信息放入ZK, 存储结构: jcoder <- log_stats <- 年月日 <- 主机 <- (时分 ------- 日志统计信息)
      *
-     * @param key   格式: group|class-method|年月日时分
+     * @param key   格式: 年月日/时分/group/class/method
      * @param stats 日志统计信息
      */
     private void appendStats2ZK(String key, Stats stats) {
         // 追加数据
         int i, len = key.length();
-        for (i = len - 1; i >= 0; --i) {
-            if (key.charAt(i) == '|') {
+        for (i = 0; i < len; ++i) {
+            if (key.charAt(i) == '/') {
                 break;
             }
         }
-        int j = i - 1;
-        for (; j >= 0; --j) {
-            if (key.charAt(j) == '|') {
+        int j = i + 1;
+        for (; j < len; ++j) {
+            if (key.charAt(j) == '/') {
                 break;
             }
         }
-        String path = String.format("%s/%s/%s/%s/%s/%s",
+        String path = String.format("%s/%s/%s/%s",
                 SharedSpaceService.LOG_STATS_PATH,
+                key.substring(0, i),
                 StaticValue.getHostPort(),
-                key.substring(0, j),
-                key.substring(j + 1, i),
-                key.substring(i + 1, len - 4),
-                key.substring(len - 4));
+                key.substring(i + 1, j));
+        JSONObject data = null;
         try {
             if (StaticValue.space().getZk().checkExists().forPath(path) != null) {
                 // 同一分钟的日志进行合并
-                Optional<Stats> opt = Optional.of(StaticValue.space().getData(path, Stats.class));
+                Optional<JSONObject> opt = Optional.of(StaticValue.space().getData(path, JSONObject.class));
                 if (opt.isPresent()) {
-                    stats = opt.get().merge(stats);
+                    (data = opt.get()).merge(key.substring(j + 1), stats, (o, n) -> ((Stats) o).merge((Stats) n));
                 }
             }
-            StaticValue.space().setData2ZK(path, JSONObject.toJSONBytes(stats));
+            if (data == null) {
+                data = new JSONObject();
+                data.put(key.substring(j + 1), stats);
+            }
+            StaticValue.space().setData2ZK(path, JSON.toJSONBytes(data));
         } catch (Exception e) {
-            throw Lang.wrapThrow(e, "append stats[%s-%s] to zookeeper error", key, JSONObject.toJSONString(stats));
+            throw Lang.wrapThrow(e, "append stats[%s-%s] to zookeeper error", key, data);
         }
     }
 
@@ -137,17 +141,17 @@ public class StatisticalJob implements Runnable {
         // 总耗时
         stats.totalDuration.addAndGet(duration);
 
-        // 格式: group|class-method|年月日时分
+        // 格式: 年月日|时分|groupclassmethod
         ZonedDateTime time = Instant.ofEpochMilli(log.getTime()).atZone(ZoneId.systemDefault());
-        String key = String.format("%s|%s-%s|%s%s%s%s%s",
-                log.getGroupName(),
-                log.getClassName(),
-                log.getMethodName(),
+        String key = String.format("%s%s%s/%s%s/%s/%s/%s",
                 time.getYear(),
                 Strings.padStart(String.valueOf(time.getMonthValue()), 2, '0'),
                 Strings.padStart(String.valueOf(time.getDayOfMonth()), 2, '0'),
                 Strings.padStart(String.valueOf(time.getHour()), 2, '0'),
-                Strings.padStart(String.valueOf(time.getMinute()), 2, '0'));
+                Strings.padStart(String.valueOf(time.getMinute()), 2, '0'),
+                log.getGroupName(),
+                log.getClassName(),
+                log.getMethodName());
         STATS_CACHE.merge(key, stats, Stats::merge);
     }
 

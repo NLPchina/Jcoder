@@ -1,24 +1,30 @@
 package org.nlpcn.jcoder.controller;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.CuratorFramework;
 import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.job.StatisticalJob;
+import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.YEAR;
+import static java.time.temporal.ChronoField.*;
 
 /**
  * Created by hanx on 06/2/2018.
@@ -36,6 +42,9 @@ public class LogsAction {
             .appendValue(MONTH_OF_YEAR, 2)
             .appendValue(DAY_OF_MONTH, 2)
             .toFormatter();
+
+    @Inject
+    private GroupService groupService;
 
     /**
      * 获取主机列表
@@ -70,12 +79,11 @@ public class LogsAction {
      */
     @At("/hostgroup/list")
     public Restful hostGroupList() throws Exception {
-        Set<String> hosts = new HashSet<>(), groups = new HashSet<>();
-        for (String h : Optional.ofNullable(StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH)).orElse(Collections.emptyList())) {
-            hosts.add(h);
-            groups.addAll(Optional.ofNullable(StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH + "/" + h)).orElse(Collections.emptyList()));
+        Set<String> hosts = new HashSet<>();
+        for (String date : Optional.ofNullable(StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH)).orElse(Collections.emptyList())) {
+            hosts.addAll(Optional.ofNullable(StaticValue.space().getZk().getChildren().forPath(SharedSpaceService.LOG_STATS_PATH + "/" + date)).orElse(Collections.emptyList()));
         }
-        return Restful.ok().obj(ImmutableMap.of("hosts", hosts, "groups", groups));
+        return Restful.ok().obj(ImmutableMap.of("hosts", hosts, "groups", groupService.getAllGroupNames()));
     }
 
     /**
@@ -89,7 +97,8 @@ public class LogsAction {
      */
     @At("/stat/list")
     public Restful statList(String[] dates, String[] hosts, String[] groups) throws Exception {
-        String start = "00000000", end = "99999999";
+        LocalDate now = LocalDate.now();
+        String start = "00000000", end = "99999999", today = LOCAL_DATE.format(now);
         if (dates != null) {
             if (dates.length < 1) {
                 start = end;
@@ -100,43 +109,60 @@ public class LogsAction {
             } else {
                 // 如果是最近x天
                 int n = Integer.parseInt(dates[0]);
-                LocalDate now = LocalDate.now();
                 start = LOCAL_DATE.format(now.minus(n - 1, ChronoUnit.DAYS));
-                end = LOCAL_DATE.format(now);
+                end = today;
             }
         }
 
+        Set<String> groupSet = null;
+        if (groups != null) {
+            groupSet = Arrays.stream(groups).collect(Collectors.toSet());
+        }
+
         //
+        String[] arr;
+        String path, path2;
+        JSONObject statsData;
+        StatisticalJob.Stats stats;
         CuratorFramework zk = StaticValue.space().getZk();
         Map<String, StatisticalJob.Stats> map = new HashMap<>();
-        String path, path2, path3;
-        StatisticalJob.Stats stats;
-        int index;
-        for (String h : Optional.ofNullable(hosts).orElse(Optional.ofNullable(zk.getChildren().forPath(SharedSpaceService.LOG_STATS_PATH)).orElseGet(Collections::emptyList).toArray(new String[0]))) {
-            for (String g : Optional.ofNullable(groups).orElse(Optional.ofNullable(zk.getChildren().forPath(SharedSpaceService.LOG_STATS_PATH + "/" + h)).orElseGet(Collections::emptyList).toArray(new String[0]))) {
-                // 获取所有节点: class-method
-                path = SharedSpaceService.LOG_STATS_PATH + "/" + h + "/" + g;
-                for (String item : Optional.ofNullable(zk.getChildren().forPath(path)).orElse(Collections.emptyList())) {
-                    path2 = path + "/" + item;
-                    for (String date : Optional.ofNullable(zk.getChildren().forPath(path2)).orElse(Collections.emptyList())) {
-                        if (date.compareTo(start) < 0 || date.compareTo(end) > 0) {
-                            continue;
-                        }
+        for (String date : Optional.ofNullable(zk.getChildren().forPath(SharedSpaceService.LOG_STATS_PATH)).orElseGet(Collections::emptyList)) {
+            if (date.compareTo(start) < 0 || date.compareTo(end) > 0) {
+                continue;
+            }
 
-                        // 合并这个节点下的所有统计信息
-                        path3 = path2 + "/" + date;
-                        stats = Optional.ofNullable(StaticValue.space().getData(path3, StatisticalJob.Stats.class)).orElse(new StatisticalJob.Stats());
-                        for (String time : Optional.ofNullable(zk.getChildren().forPath(path3)).orElse(Collections.emptyList())) {
-                            Optional.of(StaticValue.space().getData(path3 + "/" + time, StatisticalJob.Stats.class)).ifPresent(stats::merge);
-                        }
+            path = SharedSpaceService.LOG_STATS_PATH + "/" + date;
+            for (String h : Optional.ofNullable(hosts).orElse(Optional.ofNullable(zk.getChildren().forPath(path)).orElseGet(Collections::emptyList).toArray(new String[0]))) {
+                path2 = path + "/" + h;
+                statsData = Optional.ofNullable(StaticValue.space().getData(path2, JSONObject.class)).orElse(null);
 
-                        // 所有的 分组-类-方法 一致的统计合并
-                        index = item.indexOf('-');
-                        stats.setGroupName(g);
-                        stats.setClassName(item.substring(0, index));
-                        stats.setMethodName(item.substring(index + 1));
-                        map.merge(g + item, stats, StatisticalJob.Stats::merge);
+                // 对每个时间节点做合并
+                if (statsData == null) {
+                    statsData = new JSONObject();
+                    for (String time : Optional.ofNullable(zk.getChildren().forPath(path2)).orElse(Collections.emptyList())) {
+                        for (Map.Entry<String, Object> entry : Optional.ofNullable(StaticValue.space().getData(path2 + "/" + time, JSONObject.class)).orElse(new JSONObject()).entrySet()) {
+                            statsData.merge(entry.getKey(), entry.getValue(), (o, n) -> ((StatisticalJob.Stats) o).merge((StatisticalJob.Stats) n));
+                        }
                     }
+
+                    // 将今天以前的日志统计信息汇总后存入父节点
+                    if (date.compareTo(today) < 0) {
+                        StaticValue.space().setData2ZK(path2, JSON.toJSONBytes(statsData));
+                    }
+                }
+
+                // 所有的 分组-类-方法 一致的统计合并
+                for (Map.Entry<String, Object> entry : statsData.entrySet()) {
+                    arr = entry.getKey().split("/");
+                    if (!(groups == null || groupSet.contains(arr[0]))) {
+                        continue;
+                    }
+
+                    stats = (StatisticalJob.Stats) entry.getValue();
+                    stats.setGroupName(arr[0]);
+                    stats.setClassName(arr[1]);
+                    stats.setMethodName(arr[2]);
+                    map.merge(entry.getKey(), stats, StatisticalJob.Stats::merge);
                 }
             }
         }
