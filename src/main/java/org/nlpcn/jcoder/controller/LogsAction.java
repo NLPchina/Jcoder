@@ -120,9 +120,10 @@ public class LogsAction {
         }
 
         //
+        byte[] bytes;
         String[] arr;
         String path, path2;
-        JSONObject statsData;
+        Map<String, StatisticalJob.Stats> statsData;
         StatisticalJob.Stats stats;
         CuratorFramework zk = StaticValue.space().getZk();
         Map<String, StatisticalJob.Stats> map = new HashMap<>();
@@ -134,14 +135,16 @@ public class LogsAction {
             path = SharedSpaceService.LOG_STATS_PATH + "/" + date;
             for (String h : Optional.ofNullable(hosts).orElse(Optional.ofNullable(zk.getChildren().forPath(path)).orElseGet(Collections::emptyList).toArray(new String[0]))) {
                 path2 = path + "/" + h;
-                statsData = Optional.ofNullable(StaticValue.space().getData(path2, JSONObject.class)).orElse(null);
+                bytes = StaticValue.space().getData2ZK(path2);
+                statsData = bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet().stream().collect(Collectors.toMap(Object::toString, o -> JSON.toJavaObject((JSONObject) o, StatisticalJob.Stats.class))) : null;
 
                 // 对每个时间节点做合并
                 if (statsData == null) {
-                    statsData = new JSONObject();
+                    statsData = new HashMap<>();
                     for (String time : Optional.ofNullable(zk.getChildren().forPath(path2)).orElse(Collections.emptyList())) {
-                        for (Map.Entry<String, Object> entry : Optional.ofNullable(StaticValue.space().getData(path2 + "/" + time, JSONObject.class)).orElse(new JSONObject()).entrySet()) {
-                            statsData.merge(entry.getKey(), entry.getValue(), (o, n) -> ((StatisticalJob.Stats) o).merge((StatisticalJob.Stats) n));
+                        bytes = StaticValue.space().getData2ZK(path2 + "/" + time);
+                        for (Map.Entry<String, Object> entry : bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet() : Collections.<Map.Entry<String, Object>>emptySet()) {
+                            statsData.merge(entry.getKey(), JSON.toJavaObject((JSONObject) entry.getValue(), StatisticalJob.Stats.class), StatisticalJob.Stats::merge);
                         }
                     }
 
@@ -152,13 +155,13 @@ public class LogsAction {
                 }
 
                 // 所有的 分组-类-方法 一致的统计合并
-                for (Map.Entry<String, Object> entry : statsData.entrySet()) {
+                for (Map.Entry<String, StatisticalJob.Stats> entry : statsData.entrySet()) {
                     arr = entry.getKey().split("/");
                     if (!(groups == null || groupSet.contains(arr[0]))) {
                         continue;
                     }
 
-                    stats = (StatisticalJob.Stats) entry.getValue();
+                    stats = entry.getValue();
                     stats.setGroupName(arr[0]);
                     stats.setClassName(arr[1]);
                     stats.setMethodName(arr[2]);

@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -77,9 +76,13 @@ public class StatisticalJob implements Runnable {
         try {
             if (StaticValue.space().getZk().checkExists().forPath(path) != null) {
                 // 同一分钟的日志进行合并
-                Optional<JSONObject> opt = Optional.of(StaticValue.space().getData(path, JSONObject.class));
-                if (opt.isPresent()) {
-                    (data = opt.get()).merge(key.substring(j + 1), stats, (o, n) -> ((Stats) o).merge((Stats) n));
+                byte[] bytes = StaticValue.space().getData2ZK(path);
+                if (bytes != null && 0 < bytes.length) {
+                    (data = JSONObject.parseObject(bytes, JSONObject.class)).merge(key.substring(j + 1), stats, (o, n) -> {
+                        Stats s = JSON.toJavaObject((JSONObject) o, Stats.class);
+                        s.merge((Stats) n);
+                        return s;
+                    });
                 }
             }
             if (data == null) {
