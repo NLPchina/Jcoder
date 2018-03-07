@@ -12,9 +12,7 @@ import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -117,11 +115,11 @@ public class StatisticalJob implements Runnable {
         int duration;
         if (message.startsWith("Execute OK")) {
             // Execute OK  ApiTest/test succesed ! use Time : 0
-            (stats = new Stats()).successCount.incrementAndGet();
+            (stats = new Stats()).successCount.set(1);
             duration = Integer.parseInt(StringUtils.subString(message, " succesed ! use Time : ", null).trim());
         } else if (message.startsWith("Execute ERR")) {
             // Execute ERR  ApiTest/test useTime 0 erred : java.lang.reflect.InvocationTargetException...
-            (stats = new Stats()).errorCount.incrementAndGet();
+            (stats = new Stats()).errorCount.set(1);
             duration = Integer.parseInt(StringUtils.subString(message, " useTime ", " erred : ").trim());
         } else {
             // 忽略其他日志信息
@@ -129,20 +127,16 @@ public class StatisticalJob implements Runnable {
         }
 
         // 最小耗时
-        if (duration < stats.minDuration.get()) {
-            stats.minDuration.updateAndGet(operand -> Math.min(duration, operand));
-        }
+        stats.minDuration.set(duration);
 
         // 最大耗时
-        if (duration > stats.maxDuration.get()) {
-            stats.maxDuration.updateAndGet(operand -> Math.max(duration, operand));
-        }
+        stats.maxDuration.set(duration);
 
         // 总耗时
-        stats.totalDuration.addAndGet(duration);
+        stats.totalDuration.set(duration);
 
-        // 格式: 年月日|时分|groupclassmethod
-        ZonedDateTime time = Instant.ofEpochMilli(log.getTime()).atZone(ZoneId.systemDefault());
+        // 格式: 年月日/时分/group/class/method
+        LocalDateTime time = LocalDateTime.now();
         String key = String.format("%s%s%s/%s%s/%s/%s/%s",
                 time.getYear(),
                 Strings.padStart(String.valueOf(time.getMonthValue()), 2, '0'),
@@ -169,12 +163,11 @@ public class StatisticalJob implements Runnable {
         public Stats merge(Stats stats) {
             successCount.addAndGet(stats.successCount.get());
             errorCount.addAndGet(stats.errorCount.get());
-            if (stats.minDuration.get() < minDuration.get()) {
-                minDuration.updateAndGet(operand -> Math.min(operand, stats.minDuration.get()));
-            }
-            if (stats.maxDuration.get() > maxDuration.get()) {
-                maxDuration.updateAndGet(operand -> Math.max(operand, stats.maxDuration.get()));
-            }
+            minDuration.updateAndGet(operand -> {
+                int d = stats.minDuration.get();
+                return d == 0 && operand != 0 ? operand : d != 0 && operand == 0 ? d : Math.min(operand, d);
+            });
+            maxDuration.updateAndGet(operand -> Math.max(operand, stats.maxDuration.get()));
             totalDuration.addAndGet(stats.totalDuration.get());
             return this;
         }
