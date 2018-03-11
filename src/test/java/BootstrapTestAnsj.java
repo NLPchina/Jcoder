@@ -9,6 +9,7 @@ public class BootstrapTestAnsj {
 
 	private static String zk = "192.168.10.9:2181|jcoder:jcoder";
 //	private static String zk = "192.168.3.66:2181";
+
 //	private static String host = "192.168.3.66";
 
 //	private static String zk = "127.0.0.1:2181";

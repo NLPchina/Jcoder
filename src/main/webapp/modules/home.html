@@ -160,8 +160,8 @@
                 JqdeBox.loading();
                 Jcoder.ajax('/admin/logs/stat/list', 'POST', {
                     dates: date,
-                    hosts: selectedHosts.length < 1 ? '' : selectedHosts[0] != me.hosts[0] ? selectedHosts.splice(0, 1).join(',') : undefined,
-                    groups: selectedGroups.length < 1 ? '' : selectedGroups[0] != me.groups[0] ? selectedGroups.splice(0, 1).join(',') : undefined
+                    hosts: selectedHosts.length < 1 ? '' : selectedHosts[0] != me.hosts[0] ? Array.prototype.join.apply(selectedHosts) : undefined,
+                    groups: selectedGroups.length < 1 ? '' : selectedGroups[0] != me.groups[0] ? Array.prototype.join.apply(selectedGroups) : undefined
                 }).then(function (data) {
                     JqdeBox.unloading();
                     me.dataTable.clear().rows.add(data.obj || []).draw();
