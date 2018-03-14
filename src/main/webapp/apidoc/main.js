@@ -47,6 +47,9 @@ new Vue({
                         cls: ele.status ? "" : "alert-danger",
                         href: "#" + groupName + "_" + ele.name + "_" + ele2.name
                     };
+                }).sort(function (a, b) {
+                    var nameA = a.name.toUpperCase(), nameB = b.name.toUpperCase();
+                    return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
                 }));
             }));
             me.apis = data;

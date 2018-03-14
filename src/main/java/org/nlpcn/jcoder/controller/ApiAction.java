@@ -85,8 +85,11 @@ public class ApiAction {
 			cd.setStatus(compile);
 			cd.setVersion(t.getVersion());
 			cd.setDescription(t.getDescription());
-			return cd;
-		}).collect(Collectors.toList());
+            return cd;
+        }).sorted((o1, o2) -> {
+            int comp = o1.getGroup().compareToIgnoreCase(o2.getGroup());
+            return comp == 0 ? o1.getName().compareToIgnoreCase(o2.getName()) : comp;
+        }).collect(Collectors.toList());
 
 		return result;
 
