@@ -136,7 +136,7 @@ public class LogsAction {
             for (String h : Optional.ofNullable(hosts).orElse(Optional.ofNullable(zk.getChildren().forPath(path)).orElseGet(Collections::emptyList).toArray(new String[0]))) {
                 path2 = path + "/" + h;
                 bytes = StaticValue.space().getData2ZK(path2);
-                statsData = bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet().stream().collect(Collectors.toMap(Object::toString, o -> JSON.toJavaObject((JSONObject) o, StatisticalJob.Stats.class))) : null;
+                statsData = bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, o -> JSON.toJavaObject((JSONObject) o.getValue(), StatisticalJob.Stats.class))) : null;
 
                 // 对每个时间节点做合并
                 if (statsData == null) {
