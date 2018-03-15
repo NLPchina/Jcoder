@@ -133,15 +133,15 @@ public class LogsAction {
             }
 
             path = SharedSpaceService.LOG_STATS_PATH + "/" + date;
-            for (String h : Optional.ofNullable(hosts).orElse(Optional.ofNullable(zk.getChildren().forPath(path)).orElseGet(Collections::emptyList).toArray(new String[0]))) {
+            for (String h : Optional.ofNullable(hosts).orElse(Optional.ofNullable(zk.checkExists().forPath(path) != null ? zk.getChildren().forPath(path) : null).orElseGet(Collections::emptyList).toArray(new String[0]))) {
                 path2 = path + "/" + h;
                 bytes = StaticValue.space().getData2ZK(path2);
-                statsData = bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet().stream().collect(Collectors.toMap(Object::toString, o -> JSON.toJavaObject((JSONObject) o, StatisticalJob.Stats.class))) : null;
+                statsData = bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, o -> JSON.toJavaObject((JSONObject) o.getValue(), StatisticalJob.Stats.class))) : null;
 
                 // 对每个时间节点做合并
                 if (statsData == null) {
                     statsData = new HashMap<>();
-                    for (String time : Optional.ofNullable(zk.getChildren().forPath(path2)).orElse(Collections.emptyList())) {
+                    for (String time : Optional.ofNullable(zk.checkExists().forPath(path2) != null ? zk.getChildren().forPath(path2) : null).orElse(Collections.emptyList())) {
                         bytes = StaticValue.space().getData2ZK(path2 + "/" + time);
                         for (Map.Entry<String, Object> entry : bytes != null && 0 < bytes.length ? JSONObject.<JSONObject>parseObject(bytes, JSONObject.class).entrySet() : Collections.<Map.Entry<String, Object>>emptySet()) {
                             statsData.merge(entry.getKey(), JSON.toJavaObject((JSONObject) entry.getValue(), StatisticalJob.Stats.class), StatisticalJob.Stats::merge);
