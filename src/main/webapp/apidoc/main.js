@@ -12,22 +12,25 @@ new Vue({
         var me = this;
 
         $.getJSON("/apidoc/info").done(function (data) {
-            var groupName = null, isGreen = true, isWarning = false;
-            me.nav_apis = Array.prototype.concat($.map(data, function (ele) {
-                if (isGreen) isGreen &= ele.status;
-                if (!isWarning) isWarning |= ele.status;
-                var group = {};
-                if (groupName === null || groupName != ele.group) {
-                    group = {
-                        name: groupName = ele.group,
-                        cls: isGreen ? "" : (isWarning ? "alert-warning" : "alert-danger"),
-                        href: "#" + groupName,
-                        isGroup: true
-                    };
+            var groupName = null, isGreen = true, isWarning = false, group = {};
+            me.nav_apis = Array.prototype.concat($.map(data.concat(null), function (ele) {
+                if (ele === null) {
+                    group.cls = isGreen ? "" : (isWarning ? "alert-warning" : "alert-danger");
+                    return;
+                }
+
+                var isNewGroup = groupName === null || groupName != ele.group;
+                if (isNewGroup) {
+                    if (groupName) {
+                        group.cls = isGreen ? "" : (isWarning ? "alert-warning" : "alert-danger");
+                    }
+                    group = {name: groupName = ele.group, href: "#" + groupName, isGroup: true};
                     isGreen = true;
                     isWarning = false;
                 }
-                return Array.prototype.concat(group, {
+                if (isGreen) isGreen &= ele.status;
+                if (!isWarning) isWarning |= ele.status;
+                return Array.prototype.concat(isNewGroup ? group : {}, {
                     name: ele.name,
                     cls: ele.status ? "" : "alert-danger",
                     href: "#" + groupName + "_" + ele.name,
