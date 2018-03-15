@@ -32,7 +32,7 @@ public interface Constants {
 	/**
 	 * 代理请求头，如果有这个头，则不代理
 	 */
-	String PROXY_HEADER = "_proxy";
+	String PROXY_HEADER = " ";
 
 	/**
 	 * 内置房间的log
