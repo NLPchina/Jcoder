@@ -6,13 +6,13 @@ vmApp.module = new Vue({
     editor: '',
     groups:[],
     webSockets:{},
-    checkedHosts:[],
     ok:true
   },
   mounted:function(){
 	  var $this = this;
 	  $this.getHosts();
 	  $this.getGroups();
+	  setInterval($this.ws_ping(), 25000); // 25秒一次就可以了
   },
   methods:{
       getHosts:function(){
@@ -24,11 +24,10 @@ vmApp.module = new Vue({
              for(var i = 0;i < data.obj.length; i++){
                 $this.hosts.push(data.obj[i]);
              }
-             $this.checkedHosts = $this.hosts;
              Vue.nextTick(function(){
-              for(var i = 0;i < $this.checkedHosts.length;i++){
+              for(var i = 0;i < $this.hosts.length;i++){
                   $(":checkbox").each(function(index){
-                      if($(this).val() == $this.checkedHosts[i])$(this).attr('checked',true);
+                      if($(this).val() == $this.hosts[i])$(this).attr('checked',true);
                   });
                }
                $this.initLogs('_jcoder_log');
@@ -54,25 +53,35 @@ vmApp.module = new Vue({
       initLogs:function(group){
         $('#groups ul li').eq(0).children().eq(0).addClass('infobox-green');
         var me = this;
-        for(var i = 0; i < me.checkedHosts.length; i++){
+        for(var i = 0; i < me.hosts.length; i++){
             // 首先,需要创建一个WebSocket连接
-            var ws = new WebSocket("ws://"+me.checkedHosts[i]+"/log");
-            var key = me.checkedHosts[i]+"";
+            var ws = new WebSocket("ws://"+me.hosts[i]+"/log");
+            var key = me.hosts[i]+"";
             me.webSockets[key] = ws;
-            console.log(me.webSockets);
-            // 连接成功后,会触发onopen回调
+
             ws.onopen = function(event) {
-                // 加入home房间
-                console.log('open....');
-                ws.send(JSON.stringify({'groupName':group,'methodName':"join"}));
+                event.target.send(JSON.stringify({'groupName':group,'methodName':"join"}));
+            };
+            ws.onerror = function(event){
+                console.log(event);
             };
             // 收到服务器发来的信息时触发的回调
             ws.onmessage = function(event) {
-                console.log(event.data);
-                $("#logsInfoConsole").append("<p>"+JSON.parse(event.data).message+"</p>");
+                var message = JSON.parse(event.data).message;
+
+                var temp = $("#console_contains").val();
+
+                if (temp != undefined && temp != "" && message.indexOf(temp) == -1) {
+                    return;
+                }
+
+                temp = $("#console_filter").val();
+                if (temp != "" && message.indexOf(temp) >= 0) {
+                    return;
+                }
+                $("#logsInfoConsole").append("<p>"+event.target.url.split('/')[2]+'-->'+JSON.parse(event.data).threadName+'-->'+JSON.parse(event.data).message+"</p>");
             };
         }
-        //setInterval(me.ws_ping(), 25000); // 25秒一次就可以了
       },
       ws_ping:function(){
         var me = this;
@@ -102,13 +111,15 @@ vmApp.module = new Vue({
       //开启指定group日志监控
       openOrCloseGroupLog:function(group,type){
         var me = this;
-        for(var i = 0; i < me.checkedHosts.length; i++){
-            //获取连接
-            var key = me.checkedHosts[i]+"";
-            var ws = me.webSockets[key];
-            //把连接中指定group开启或移除
-            ws.send(JSON.stringify({'groupName':group,'methodName':type}));
-        }
+        $(":checkbox").each(function(index){
+          if($(this).is(":checked")){
+              //获取连接
+              var key = $(this).val()+"";
+              var ws = me.webSockets[key];
+              //把连接中指定group开启或移除
+              ws.send(JSON.stringify({'groupName':group,'methodName':type}));
+          }
+        });
       },
       openOrCloseHost:function(host){
         var me = this;
@@ -131,6 +142,10 @@ vmApp.module = new Vue({
             }
             return false;
         });
+      },
+      //清空控制台信息
+      cleanConsole:function(){
+        $("#logsInfoConsole").empty();
       }
   },
   beforeDestroy: function () {
@@ -140,4 +155,9 @@ vmApp.module = new Vue({
     }
   },
 });
+
+function sleep(n) { //n表示的毫秒数
+    var start = new Date().getTime();
+    while (true) if (new Date().getTime() - start > n) break;
+}
 

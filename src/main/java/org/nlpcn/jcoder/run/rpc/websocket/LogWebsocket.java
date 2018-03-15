@@ -82,9 +82,5 @@ public class LogWebsocket extends Endpoint {
 		} else {
 			LOG.error("not has method name : it only support `join` , `left` : " + methodName);
 		}
-
-
 	}
-
-
 }
