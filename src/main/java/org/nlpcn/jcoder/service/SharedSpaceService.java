@@ -376,6 +376,10 @@ public class SharedSpaceService {
 				zkDao.getZk().create().creatingParentsIfNeeded().forPath(HOST_PATH);
 			}
 
+			if (zkDao.getZk().checkExists().forPath(LOG_STATS_PATH) == null) {
+				zkDao.getZk().create().creatingParentsIfNeeded().forPath(LOG_STATS_PATH);
+			}
+
 			/**
 			 * 监听group目录
 			 */

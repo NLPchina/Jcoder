@@ -1,6 +1,7 @@
 package org.nlpcn.jcoder.job;
 
 import com.alibaba.druid.util.StringUtils;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
 import org.nlpcn.jcoder.domain.LogInfo;
@@ -11,11 +12,8 @@ import org.nutz.lang.Lang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,29 +48,50 @@ public class StatisticalJob implements Runnable {
     }
 
     /**
-     * 将日志统计信息放入ZK, 存储结构: jcoder <- log_stats <- 主机 <- group-class-method <- 年月日 <- (时分 ------- 日志统计信息)
+     * 将日志统计信息放入ZK, 存储结构: jcoder <- log_stats <- 年月日 <- 主机 <- (时分 ------- 日志统计信息)
      *
-     * @param key   格式: group-class-method|年月日时分
+     * @param key   格式: 年月日/时分/group/class/method
      * @param stats 日志统计信息
      */
     private void appendStats2ZK(String key, Stats stats) {
         // 追加数据
-        int index = key.lastIndexOf('|'), len = key.length();
-        String path = String.format("%s/%s/%s/%s/%s",
+        int i, len = key.length();
+        for (i = 0; i < len; ++i) {
+            if (key.charAt(i) == '/') {
+                break;
+            }
+        }
+        int j = i + 1;
+        for (; j < len; ++j) {
+            if (key.charAt(j) == '/') {
+                break;
+            }
+        }
+        String path = String.format("%s/%s/%s/%s",
                 SharedSpaceService.LOG_STATS_PATH,
+                key.substring(0, i),
                 StaticValue.getHostPort(),
-                key.substring(0, index),
-                key.substring(index + 1, len - 4),
-                key.substring(len - 4));
+                key.substring(i + 1, j));
+        JSONObject data = null;
         try {
             if (StaticValue.space().getZk().checkExists().forPath(path) != null) {
                 // 同一分钟的日志进行合并
-                Optional<Stats> opt = Optional.of(StaticValue.space().getData(path, Stats.class));
-                stats = opt.get().add(stats);
+                byte[] bytes = StaticValue.space().getData2ZK(path);
+                if (bytes != null && 0 < bytes.length) {
+                    (data = JSONObject.parseObject(bytes, JSONObject.class)).merge(key.substring(j + 1), stats, (o, n) -> {
+                        Stats s = JSON.toJavaObject((JSONObject) o, Stats.class);
+                        s.merge((Stats) n);
+                        return s;
+                    });
+                }
             }
-            StaticValue.space().setData2ZK(path, JSONObject.toJSONBytes(stats));
+            if (data == null) {
+                data = new JSONObject();
+                data.put(key.substring(j + 1), stats);
+            }
+            StaticValue.space().setData2ZK(path, JSON.toJSONBytes(data));
         } catch (Exception e) {
-            throw Lang.wrapThrow(e, "append stats[%s-%s] to zookeeper error", key, JSONObject.toJSONString(stats));
+            throw Lang.wrapThrow(e, "append stats[%s-%s] to zookeeper error", key, data);
         }
     }
 
@@ -99,11 +118,11 @@ public class StatisticalJob implements Runnable {
         int duration;
         if (message.startsWith("Execute OK")) {
             // Execute OK  ApiTest/test succesed ! use Time : 0
-            (stats = new Stats()).successCount.incrementAndGet();
+            (stats = new Stats()).successCount.set(1);
             duration = Integer.parseInt(StringUtils.subString(message, " succesed ! use Time : ", null).trim());
         } else if (message.startsWith("Execute ERR")) {
             // Execute ERR  ApiTest/test useTime 0 erred : java.lang.reflect.InvocationTargetException...
-            (stats = new Stats()).errorCount.incrementAndGet();
+            (stats = new Stats()).errorCount.set(1);
             duration = Integer.parseInt(StringUtils.subString(message, " useTime ", " erred : ").trim());
         } else {
             // 忽略其他日志信息
@@ -111,30 +130,26 @@ public class StatisticalJob implements Runnable {
         }
 
         // 最小耗时
-        if (duration < stats.minDuration.get()) {
-            stats.minDuration.updateAndGet(operand -> Math.min(duration, operand));
-        }
+        stats.minDuration.set(duration);
 
         // 最大耗时
-        if (duration > stats.maxDuration.get()) {
-            stats.maxDuration.updateAndGet(operand -> Math.max(duration, operand));
-        }
+        stats.maxDuration.set(duration);
 
         // 总耗时
-        stats.totalDuration.addAndGet(duration);
+        stats.totalDuration.set(duration);
 
-        // 格式: group-class-method|年月日时分
-        ZonedDateTime time = Instant.ofEpochMilli(log.getTime()).atZone(ZoneId.systemDefault());
-        String key = String.format("%s-%s-%s|%s%s%s%s%s",
-                log.getGroupName(),
-                log.getClassName(),
-                log.getMethodName(),
+        // 格式: 年月日/时分/group/class/method
+        LocalDateTime time = LocalDateTime.now();
+        String key = String.format("%s%s%s/%s%s/%s/%s/%s",
                 time.getYear(),
                 Strings.padStart(String.valueOf(time.getMonthValue()), 2, '0'),
                 Strings.padStart(String.valueOf(time.getDayOfMonth()), 2, '0'),
                 Strings.padStart(String.valueOf(time.getHour()), 2, '0'),
-                Strings.padStart(String.valueOf(time.getMinute()), 2, '0'));
-        STATS_CACHE.merge(key, stats, Stats::add);
+                Strings.padStart(String.valueOf(time.getMinute()), 2, '0'),
+                log.getGroupName(),
+                log.getClassName(),
+                log.getMethodName());
+        STATS_CACHE.merge(key, stats, Stats::merge);
     }
 
     public static class Stats {
@@ -144,15 +159,18 @@ public class StatisticalJob implements Runnable {
         private final AtomicInteger maxDuration = new AtomicInteger();
         private final AtomicInteger totalDuration = new AtomicInteger();
 
-        private Stats add(Stats stats) {
+        private String groupName;
+        private String className;
+        private String methodName;
+
+        public Stats merge(Stats stats) {
             successCount.addAndGet(stats.successCount.get());
             errorCount.addAndGet(stats.errorCount.get());
-            if (stats.minDuration.get() < minDuration.get()) {
-                minDuration.updateAndGet(operand -> Math.min(operand, stats.minDuration.get()));
-            }
-            if (stats.maxDuration.get() > maxDuration.get()) {
-                maxDuration.updateAndGet(operand -> Math.max(operand, stats.maxDuration.get()));
-            }
+            minDuration.updateAndGet(operand -> {
+                int d = stats.minDuration.get();
+                return d == 0 && operand != 0 ? operand : d != 0 && operand == 0 ? d : Math.min(operand, d);
+            });
+            maxDuration.updateAndGet(operand -> Math.max(operand, stats.maxDuration.get()));
             totalDuration.addAndGet(stats.totalDuration.get());
             return this;
         }
@@ -195,6 +213,30 @@ public class StatisticalJob implements Runnable {
 
         public void setTotalDuration(int totalDuration) {
             this.totalDuration.set(totalDuration);
+        }
+
+        public String getGroupName() {
+            return groupName;
+        }
+
+        public void setGroupName(String groupName) {
+            this.groupName = groupName;
+        }
+
+        public String getClassName() {
+            return className;
+        }
+
+        public void setClassName(String className) {
+            this.className = className;
+        }
+
+        public String getMethodName() {
+            return methodName;
+        }
+
+        public void setMethodName(String methodName) {
+            this.methodName = methodName;
         }
     }
 }

@@ -17,7 +17,7 @@
             </div>
 
             <div class="col-xs-1" v-for="i in [7,5,3,1]" style="margin-bottom: 5px; width:auto;">
-                <span class="btn btn-white btn-default btn-date" @click="selectDate($event,i)">
+                <span class="btn btn-white btn-default btn-date" :data-date="i" @click="selectDate($event,i)">
                     最近{{i}}天
                 </span>
             </div>
@@ -27,7 +27,7 @@
 
         <div class="row">
             <div class="col-xs-1" v-for="host in hosts" style="margin-bottom: 5px;width: auto;">
-                <span class="btn btn-white btn-primary btn-host active" @click="selectHost($event,host)">
+                <span class="btn btn-white btn-primary btn-host active" :data-host="host" @click="selectHost($event,host)">
                     {{host}}
                 </span>
             </div>
@@ -37,7 +37,7 @@
 
         <div class="row">
             <div class="col-xs-1" v-for="group in groups" style="margin-bottom: 5px;width: auto;">
-                <span class="btn btn-white btn-info btn-group active" @click="selectGroup($event,group)">
+                <span class="btn btn-white btn-info btn-group active" :data-group="group" @click="selectGroup($event,group)">
                     {{group}}
                 </span>
             </div>
@@ -55,24 +55,19 @@
 
         data: {
             hosts: ['全部主机'],
-            groups: ['全部分组']
+            groups: ['全部分组'],
+            dataTable: null
         },
 
         mounted: function () {
-            var me = this, dt = $(me.$el).find('table:first').DataTable({
+            var me = this, dt = me.dataTable = $(me.$el).find('table:first').DataTable({
                 bDestroy: true,
                 bProcessing: true,
                 columns: [
-                    {
-                        title: '',
-                        sortable: false,
-                        render: function (data, type, row, meta) {
-                            return row;
-                        }
-                    },
-                    {title: "组名", data: "group", name: "group"},
-                    {title: "类名", data: "class", name: "class"},
-                    {title: "方法名", data: "method", name: "method"},
+                    {title: '', sortable: false},
+                    {title: "组名", data: "groupName", name: "groupName"},
+                    {title: "类名", data: "className", name: "className"},
+                    {title: "方法名", data: "methodName", name: "methodName"},
                     {title: "成功数", data: "successCount", name: "successCount"},
                     {title: "失败数", data: "errorCount", name: "errorCount"},
                     {title: "最小时长", data: "minDuration", name: "minDuration"},
@@ -81,7 +76,7 @@
                 ],
 
                 autoWidth: false,
-                select: {style: 'multi'},
+                /*select: {style: 'multi'},*/
                 aaSorting: [],
                 processing: true,
                 paging: false,
@@ -105,6 +100,11 @@
                     }
                 }
             });
+            dt.on('order.dt search.dt', function () {
+                dt.column(0, {search: 'applied', order: 'applied'}).nodes().each(function (cell, i) {
+                    cell.innerHTML = i + 1;
+                });
+            }).draw();
 
             // 初始化时间控件
             $('input[name=dateRange]', me.$el).daterangepicker({
@@ -113,8 +113,8 @@
                 cancelClass: 'btn-sm btn-default',
                 locale: Config.daterangepicker_locale.zh_CN
             }, function (start, end) {
-                //console.log(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
                 $('.btn-date', me.$el).removeClass('active');
+                me.loadData();
             }).prev().on(ace.click_event, function () {
                 $(this).next().focus();
             });
@@ -122,28 +122,72 @@
             // 获取所有主机及其分组
             Jcoder.ajax('/admin/logs/hostgroup/list', 'POST').then(function (data) {
                 data = data.obj;
-                me.hosts.concat(data.hosts);
-                me.groups.concat(data.groups);
+                _.reduce(data.hosts, function (memo, h) {
+                    memo.push(h);
+                    return memo;
+                }, me.hosts);
+                _.reduce(data.groups, function (memo, g) {
+                    memo.push(g);
+                    return memo;
+                }, me.groups);
             }).catch(function (req) {
                 JqdeBox.message(false, req.responseText);
             });
+
+            //
+            me.loadData();
         },
 
         methods: {
+
+            loadData: function () {
+                var me = this;
+
+                // 先判断是否选择了最近x天，如果没有就取daterangepicker
+                var date = $('.btn-date.active', me.$el).attr('data-date');
+                if (!date) {
+                    var data = $('input[name=dateRange]').data('daterangepicker');
+                    date = data.startDate.format('YYYYMMDD') + ',' + data.endDate.format('YYYYMMDD');
+                }
+
+                //
+                var selectedHosts = $('.btn-host.active', me.$el).map(function () {
+                    return $(this).attr('data-host');
+                }), selectedGroups = $('.btn-group.active', me.$el).map(function () {
+                    return $(this).attr('data-group');
+                });
+
+                JqdeBox.loading();
+                Jcoder.ajax('/admin/logs/stat/list', 'POST', {
+                    dates: date,
+                    hosts: selectedHosts.length < 1 ? '' : selectedHosts[0] != me.hosts[0] ? Array.prototype.join.apply(selectedHosts) : undefined,
+                    groups: selectedGroups.length < 1 ? '' : selectedGroups[0] != me.groups[0] ? Array.prototype.join.apply(selectedGroups) : undefined
+                }).then(function (data) {
+                    JqdeBox.unloading();
+                    me.dataTable.clear().rows.add(data.obj || []).draw();
+                }).catch(function (req) {
+                    JqdeBox.unloading();
+                    JqdeBox.message(false, req.responseText);
+                });
+            },
+
             selectDate: function (evt, days) {
                 var me = this;
                 $('.btn-date', me.$el).removeClass('active');
                 $(evt.target).addClass('active');
+                me.loadData();
             },
 
             selectHost: function (evt, host) {
                 var me = this;
                 me.toggleActive($(evt.target), host, me.hosts, 'btn-host');
+                me.loadData();
             },
 
             selectGroup: function (evt, group) {
                 var me = this;
                 me.toggleActive($(evt.target), group, me.groups, 'btn-group');
+                me.loadData();
             },
 
             toggleActive: function ($target, item, items, cls) {
