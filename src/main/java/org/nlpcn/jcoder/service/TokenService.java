@@ -46,11 +46,6 @@ public class TokenService {
 
 		if (time < 0) {
 			tokenCache.remove(key);
-			try {
-				StaticValue.space().getZk().delete().forPath(SharedSpaceService.TOKEN_PATH + "/" + key);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
 			return null;
 		}
 
