@@ -34,14 +34,14 @@ public class ZKServer extends Thread {
 	public void run() {
 		Properties props = new Properties();
 		props.setProperty("tickTime", "2000");
-		props.setProperty("dataDir", new File(System.getProperty("java.io.tmpdir"), "zookeeper").getAbsolutePath());
-		props.setProperty("clientPort", String.valueOf(StaticValue.PORT + 2));
+		props.setProperty("dataDir", new File(StaticValue.HOME, "zkdata").getAbsolutePath());
+		props.setProperty("clientPort", String.valueOf(StaticValue.PORT + 1));
 		props.setProperty("initLimit", "10");
 		props.setProperty("syncLimit", "5");
 
 		QuorumPeerConfig quorumConfig = new QuorumPeerConfig();
 		try {
-			LOG.info("start zk server on port : " + (StaticValue.PORT + 2));
+			LOG.info("start zk server on port : " + (StaticValue.PORT + 1));
 			quorumConfig.parseProperties(props);
 			final ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
 			final ServerConfig config = new ServerConfig();

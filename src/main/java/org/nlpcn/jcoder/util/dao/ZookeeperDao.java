@@ -46,36 +46,34 @@ public class ZookeeperDao implements Closeable {
 		if (split.length == 2) {
 			authorStr = split[1];
 			authProvider = new DigestAuthenticationProvider();
-		} else if (StaticValue.IS_LOCAL && connStr.startsWith("127.0.0.1")) {
+		} else if (StaticValue.IS_LOCAL) {
 			authorStr = "127.0.0.1";
 			authProvider = new IPAuthenticationProvider();
 		}
 
 		CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().connectString(connStr).retryPolicy(new RetryNTimes(10, 2000));
 
-		if (authProvider != null) {
-			List<ACL> defaultACL = new ArrayList<>();
-			if (StaticValue.ZK.startsWith("127.0.0.1:" + (StaticValue.PORT + 2))) { //如果单机模式只有本机可以访问
-				defaultACL.add(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), authorStr)));
-			} else {
-				defaultACL.add(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), DigestAuthenticationProvider.generateDigest(authorStr))));
-			}
+		List<ACL> defaultACL = new ArrayList<>();
+		if (StaticValue.IS_LOCAL) { //如果单机模式只有本机可以访问
+			defaultACL.add(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), authorStr)));
+		} else {
+			defaultACL.add(new ACL(ZooDefs.Perms.ALL, new Id(authProvider.getScheme(), DigestAuthenticationProvider.generateDigest(authorStr))));
+		}
 
-			try {
-				builder.authorization(authProvider.getScheme(), authorStr.getBytes("utf-8")).aclProvider(new ACLProvider() {
-					@Override
-					public List<ACL> getDefaultAcl() {
-						return defaultACL;
-					}
+		try {
+			builder.authorization(authProvider.getScheme(), authorStr.getBytes("utf-8")).aclProvider(new ACLProvider() {
+				@Override
+				public List<ACL> getDefaultAcl() {
+					return defaultACL;
+				}
 
-					@Override
-					public List<ACL> getAclForPath(String path) {
-						return defaultACL;
-					}
-				});
-			} catch (UnsupportedEncodingException e) {
-				e.printStackTrace();
-			}
+				@Override
+				public List<ACL> getAclForPath(String path) {
+					return defaultACL;
+				}
+			});
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
 		}
 
 		client = builder.build();
