@@ -13,7 +13,12 @@ new Vue({
 
         $.getJSON("/apidoc/info").done(function (data) {
             var groupName = null, isGreen = true, isWarning = false, group = {};
-            me.nav_apis = Array.prototype.concat($.map(data.concat(null), function (ele) {
+            me.nav_apis = Array.prototype.concat($.map($.each(data, function (index, ele) {
+                ele.sub && ele.sub.sort(function (a, b) {
+                    var nameA = a.name.toUpperCase(), nameB = b.name.toUpperCase();
+                    return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+                });
+            }).concat(null), function (ele) {
                 if (ele === null) {
                     group.cls = isGreen ? "" : (isWarning ? "alert-warning" : "alert-danger");
                     return;
@@ -50,9 +55,6 @@ new Vue({
                         cls: ele.status ? "" : "alert-danger",
                         href: "#" + groupName + "_" + ele.name + "_" + ele2.name
                     };
-                }).sort(function (a, b) {
-                    var nameA = a.name.toUpperCase(), nameB = b.name.toUpperCase();
-                    return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
                 }));
             }));
             me.apis = data;
