@@ -563,9 +563,8 @@ public class SharedSpaceService {
 			if (zkDao.getZk().checkExists().forPath(GROUP_PATH + "/" + groupName) == null) {
 				addGroup2Cluster(groupName, tasks, fileInfos);
 				diffs = Collections.emptyList();
-			} else {
-				diffs = diffGroup(groupName, tasks, (ArrayList<FileInfo>) fileInfos);
 			}
+			diffs = diffGroup(groupName, tasks, (ArrayList<FileInfo>) fileInfos);
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {
