@@ -73,7 +73,7 @@ public class User implements Serializable {
 	}
 
 	public void setType(int type) {
-		if (this.id == -1 && type != 1) { //cluster user不让改类型
+		if (this.id != null && this.id == -1 && type != 1) { //cluster user不让改类型
 			throw new RuntimeException("cluster user must not modify");
 		}
 		this.type = type;

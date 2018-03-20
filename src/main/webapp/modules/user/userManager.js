@@ -40,8 +40,8 @@ var userManager = new Vue({
 	  	        	  if(userAddOrEdit.item.type == $(this).attr('value'))$(this).attr("selected", "selected");
 	  	          });  
               },
-              confirm: function () { 
-            	  userAddOrEdit.item.type = $("#userType").val();
+              confirm: function () {
+            	  userAddOrEdit.item.type = parseInt($("#userType").val());
             	  var param = userAddOrEdit.item;
             	  Jcoder.ajax(vUrl, 'post',param,null).then(function (data) {
                       JqdeBox.unloading();
