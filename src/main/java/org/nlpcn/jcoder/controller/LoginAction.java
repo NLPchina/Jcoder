@@ -66,6 +66,7 @@ public class LoginAction {
 
 	@At("/login/api")
 	@Ok("json")
+	@Deprecated
 	public Restful loginApi(HttpServletRequest req, HttpServletResponse resp, @Param("name") String name, @Param("password") String password) throws Exception {
 		resp.addHeader("Access-Control-Allow-Origin", origin);
 		resp.addHeader("Access-Control-Allow-Methods", methods);
@@ -85,7 +86,12 @@ public class LoginAction {
 
 	@At("/loginOut/api")
 	@Ok("json")
-	public Restful loginOutApi(HttpServletRequest req) throws Exception {
+	public Restful loginOutApi(HttpServletRequest req,HttpServletResponse resp) throws Exception {
+		resp.addHeader("Access-Control-Allow-Origin", origin);
+		resp.addHeader("Access-Control-Allow-Methods", methods);
+		resp.addHeader("Access-Control-Allow-Headers", headers);
+		resp.addHeader("Access-Control-Allow-Credentials", credentials);
+
 		String token = req.getHeader(UserConstants.USER_TOKEN_HEAD);
 		if (StringUtil.isBlank(token)) {
 			return Restful.instance(false, "token 'authorization' not in header ");
@@ -100,12 +106,12 @@ public class LoginAction {
 	}
 
 	@At("/validation/token")
-	public void validation(String token) throws Exception {
+	public Restful validation(String token) throws Exception {
 		Token t = TokenService.getToken(token);
 		if (t == null) {
-			new JsonView(ApiException.NotFound);
+			return Restful.fail().code(ApiException.NotFound).msg("token not access") ;
 		} else {
-			new JsonView();
+			return Restful.ok();
 		}
 	}
 
