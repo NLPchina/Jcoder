@@ -1,5 +1,8 @@
 package org.nlpcn.jcoder.domain;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.annotation.JSONField;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
@@ -17,7 +20,10 @@ public class Token implements Serializable {
 
 	private String token;
 
-	private User user;
+    private String userStr;
+
+    @JSONField(serialize = false, deserialize = false)
+    private User user;
 
 	private long expiration = 20 * 60 * 1000L;
 
@@ -40,13 +46,28 @@ public class Token implements Serializable {
 		this.token = token;
 	}
 
-	public User getUser() {
-		return user;
-	}
+    public String getUserStr() {
+        return userStr;
+    }
 
-	public void setUser(User user) {
-		this.user = user;
-	}
+    public void setUserStr(String userStr) {
+        this.userStr = userStr;
+    }
+
+    public User getUser() {
+        return getUser(User.class);
+    }
+
+    public <T extends User> T getUser(Class<T> clazz) {
+        if (user == null) {
+            user = JSON.parseObject(userStr, clazz);
+        }
+        return clazz.cast(user);
+    }
+
+    public void setUser(User user) {
+        userStr = JSON.toJSONString(this.user = user);
+    }
 
 	public Date getExpirationTime() {
 		return expirationTime;
