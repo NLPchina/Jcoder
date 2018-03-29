@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * @author ansj
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE})
 @Documented
 public @interface Single {
 	boolean value() default true;

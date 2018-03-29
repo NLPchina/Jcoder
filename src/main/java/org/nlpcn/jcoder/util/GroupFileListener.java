@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.util;
 import org.apache.commons.io.monitor.FileAlterationListenerAdaptor;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.io.monitor.FileAlterationObserver;
+import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaSourceUtil;
@@ -247,6 +248,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 		JavaSourceUtil javaSourceUtil = new JavaSourceUtil(content);
 
+
 		String className = javaSourceUtil.getClassName();
 
 		String fileName = fileName(file);
@@ -268,10 +270,26 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		if (task != null) {
 			this.onFileChange(file);
 		} else {
+
+			ClassDoc parse = null ;
+
+			try {
+				parse = JavaDocUtil.parse(content);
+			} catch (Exception e) {
+				throw new CodeException(e) ;
+			}
+
 			task = new Task();
 			task.setCode(content);
 			task.setCreateUser("admin");
-			task.setType(1);
+
+			if(parse.getScheduleStr()!=null){
+				task.setType(2);
+				task.setScheduleStr(parse.getScheduleStr());
+			}else{
+				task.setType(1);
+			}
+
 			task.setStatus(1);
 			task.setCreateTime(new Date());
 			task.setUpdateTime(new Date());

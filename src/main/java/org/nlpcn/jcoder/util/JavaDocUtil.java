@@ -9,7 +9,10 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
+
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc.ParamDoc;
@@ -62,11 +65,25 @@ public class JavaDocUtil {
 				if (node instanceof SingleMemberAnnotationExpr) {
 
 					SingleMemberAnnotationExpr sma = (SingleMemberAnnotationExpr) node;
-
 					if (sma.getName().getName().equals("Single")) {
 						if ("false".equals(sma.getMemberValue().toString())) {
 							cd.setSingle(false);
 						}
+					}else if (sma.getName().getName().equals("Schedule")) {
+						cd.setScheduleStr(((StringLiteralExpr)sma.getMemberValue()).getValue());
+					}
+
+				} else if (node instanceof MethodDeclaration) {
+					explainMethod(cd, (MethodDeclaration) node);
+				}else if (node instanceof NormalAnnotationExpr) {
+
+					NormalAnnotationExpr sma = (NormalAnnotationExpr) node;
+					if (sma.getName().getName().equals("Single")) {
+						if("false".equals(sma.getPairs().get(0).getValue().toString())){
+							cd.setSingle(false);
+						}
+					}else if (sma.getName().getName().equals("Schedule")) {
+						cd.setScheduleStr(((StringLiteralExpr)sma.getPairs().get(0).getValue()).getValue());
 					}
 
 				} else if (node instanceof MethodDeclaration) {

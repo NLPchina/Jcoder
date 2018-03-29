@@ -15,6 +15,7 @@ public class ClassDoc extends ApiDoc {
 	private String group;
 	private boolean single = true;
 	private boolean status = true;
+	private String scheduleStr ;
 	private String version;
 	private String description;
 
@@ -60,6 +61,14 @@ public class ClassDoc extends ApiDoc {
 
 	public void setDescription(String description) {
 		this.description = description;
+	}
+
+	public String getScheduleStr() {
+		return scheduleStr;
+	}
+
+	public void setScheduleStr(String scheduleStr) {
+		this.scheduleStr = scheduleStr;
 	}
 
 	@Override
