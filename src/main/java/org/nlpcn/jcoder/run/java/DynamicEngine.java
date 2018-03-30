@@ -3,6 +3,7 @@ package org.nlpcn.jcoder.run.java;
 import com.google.common.base.Joiner;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.scheduler.TaskException;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +90,9 @@ public class DynamicEngine {
 		options.add("-classpath");
 		options.add(this.classpath);
 		options.add("-parameters");
+        if (StaticValue.TESTRING) {
+            options.add("-g");
+        }
 
 		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, jfiles);
 		boolean success = task.call();
