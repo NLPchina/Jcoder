@@ -8,9 +8,13 @@ import org.nlpcn.jcoder.server.H2Server;
 import org.nlpcn.jcoder.server.ZKServer;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.JarService;
+import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.GroupFileListener;
+import org.nlpcn.jcoder.util.Maps;
+import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
+import org.nutz.http.Response;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
 import org.slf4j.Logger;
@@ -90,8 +94,8 @@ public class SiteSetup implements Setup {
 		//开启日志监控
 		new Thread(new LogJob()).start();
 
-        // 开启API访问日志统计
-        new Thread(new StatisticalJob()).start();
+		// 开启API访问日志统计
+		new Thread(new StatisticalJob()).start();
 
 		//init webscoket
 		WebAppContext.Context ct = (WebAppContext.Context) nc.getServletContext();
@@ -107,6 +111,45 @@ public class SiteSetup implements Setup {
 		}
 
 
+		if (!StaticValue.IS_LOCAL) { //验证host 及 port是否配置正确
+			new Thread() {
+				@Override
+				public void run() {
+					Response response = null ;
+					for (int i = 0; i < 10; i++) {
+						try {
+							Thread.sleep(5000L);
+
+							LOG.info("times: {} , to check host port is right host:port:{}", (i + 1), StaticValue.getHostPort());
+							response = StaticValue.getSystemIoc().get(ProxyService.class,"proxyService").post(StaticValue.getHostPort(), "/apidoc/validate", Maps.hash("code", StaticValue.RANDOM_CODE), 1000);
+							if (response.getStatus() == 200) {
+								Restful instance = Restful.instance(response);
+								Boolean obj = instance.getObj();
+								if (obj) {
+									LOG.info("validate code ok the host or port is right");
+								} else {
+									LOG.info("validate code fail , please check you host and port is right ? now stop service");
+									System.exit(-1);
+								}
+								break ;
+							}
+
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+
+					}
+
+					if(response==null) {
+						LOG.error("not visit {} , please check you host and port is right ? now stop service", StaticValue.getHostPort());
+						System.exit(-1);
+					}
+
+				}
+			}.start();
+		}
+
+
 		LOG.info("start all ok , goodluck YouYou");
 
 	}
@@ -115,13 +158,13 @@ public class SiteSetup implements Setup {
 	 * 检查机器是否可以运行
 	 */
 	private void checkServer() {
-//		if (!StaticValue.IS_LOCAL) {
-//			if ("127.0.0.1".equals(StaticValue.getHost())
-//					|| "localhost".equals(StaticValue.getHost())) {
-//				LOG.error("cluster model must set host by LAN IP or domain");
-//				System.exit(-1);
-//			}
-//		}
+		if (!StaticValue.IS_LOCAL) {
+			if ("127.0.0.1".equals(StaticValue.getHost())
+					|| "localhost".equals(StaticValue.getHost())) {
+				LOG.error("cluster model must set host by LAN IP or domain");
+				System.exit(-1);
+			}
+		}
 	}
 
 }

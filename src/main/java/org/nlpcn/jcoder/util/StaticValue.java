@@ -17,10 +17,13 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.ResourceBundle;
+import java.util.UUID;
 
 public class StaticValue {
 
 	private static final Logger LOG = LoggerFactory.getLogger(StaticValue.class);
+
+	public static final String RANDOM_CODE = UUID.randomUUID().toString() ;
 
 	public static final String PREFIX = "jcoder_";
 

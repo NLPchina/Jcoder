@@ -1,25 +1,28 @@
 package org.nlpcn.jcoder.controller;
 
 import com.google.common.collect.Sets;
+
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.service.TaskService;
-import org.nlpcn.jcoder.util.*;
+import org.nlpcn.jcoder.util.ApiException;
+import org.nlpcn.jcoder.util.JavaDocUtil;
+import org.nlpcn.jcoder.util.Restful;
+import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.annotation.At;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
+import org.nutz.mvc.annotation.Ok;
+import org.nutz.mvc.annotation.Param;
 import org.nutz.mvc.filter.CrossOriginFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,6 +31,7 @@ import java.util.stream.Collectors;
 public class ApiAction {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ApiAction.class);
+
 
 	private static final Set<String> DEFAULT_METHODS = Sets.newHashSet("GET", "POST", "PUT", "DELETE");
 
@@ -85,54 +89,20 @@ public class ApiAction {
 			cd.setStatus(compile);
 			cd.setVersion(t.getVersion());
 			cd.setDescription(t.getDescription());
-            return cd;
-        }).sorted((o1, o2) -> {
-            int comp = o1.getGroup().compareToIgnoreCase(o2.getGroup());
-            return comp == 0 ? o1.getName().compareToIgnoreCase(o2.getName()) : comp;
-        }).collect(Collectors.toList());
+			return cd;
+		}).sorted((o1, o2) -> {
+			int comp = o1.getGroup().compareToIgnoreCase(o2.getGroup());
+			return comp == 0 ? o1.getName().compareToIgnoreCase(o2.getName()) : comp;
+		}).collect(Collectors.toList());
 
 		return result;
 
 	}
 
-	@At("/jar/org/nlpcn/jcoder/?/?/*")
-	@Ok("void")
-	public void maven(HttpServletRequest req, HttpServletResponse rep) throws ApiException, IOException {
-
-		String path = req.getServletPath();
-
-		if (!StaticValue.getJcoderJarFile().exists()) {
-			throw new ApiException(404, path + " not found ");
-		}
-
-		String[] split = path.split("/");
-		String libName = split[split.length - 1];
-		if (StringUtil.isBlank(libName)) {
-			throw new ApiException(404, "path error " + req.getServletPath());
-		}
-
-		String pom = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
-				+ "		  <modelVersion>4.0.0</modelVersion>\n" + "		  <groupId>org.nlpcn.jcoder.jar</groupId>\n" + "		  <artifactId>jcoder.jar</artifactId>\n"
-				+ "		  <version>1.0</version>\n" + "\n" + "\n" + "</project>";
-
-		if (libName.endsWith(".pom")) {
-			rep.getOutputStream().write(pom.getBytes("utf-8"));
-		} else if (libName.endsWith(".pom.sha1")) {
-			rep.getOutputStream().write(MD5Util.sha1(pom).getBytes());
-		} else if (libName.endsWith(".jar")) {
-			Mvcs.getResp().setContentType("application/octet-stream");
-			try (FileInputStream is = new FileInputStream(StaticValue.getJcoderJarFile());
-			     OutputStream os = rep.getOutputStream()) {
-				IOUtil.writeAndClose(is, os);
-			} catch (Exception e) {
-				e.printStackTrace();
-				throw new ApiException(404, e.getMessage());
-			}
-		} else if (libName.endsWith(".jar.sha1")) {
-			rep.getOutputStream().write(MD5Util.sha1(StaticValue.getJcoderJarFile()).getBytes());
-		} else {
-			throw new ApiException(404, "the end of " + libName + " err");
-		}
+	@At("/apidoc/validate")
+	@Ok("json")
+	public Restful validate(String code) throws ApiException, IOException {
+		return Restful.ok().obj(StaticValue.RANDOM_CODE.equals(code));
 	}
 
 
