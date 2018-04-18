@@ -155,7 +155,7 @@ class TaskRunManager {
 	 */
 	public static void removeIfOver(String key) {
 		TaskJob taskJob = THREAD_POOL.get(key);
-		if (taskJob.isOver()) {
+		if (taskJob!=null && taskJob.isOver()) {
 			THREAD_POOL.remove(key);
 		}
 	}
