@@ -25,7 +25,7 @@ class TaskRunManager {
 
 		try {
 			taskJob.start();
-			THREAD_POOL.put(taskJob.getName(), taskJob);
+			THREAD_POOL.put(taskJob.getTask().getGroupName()+"@"+taskJob.getName(), taskJob);
 		} catch (Exception e) {
 			throw new TaskException("the thread " + taskJob.getName() + e.toString());
 		}
@@ -116,16 +116,16 @@ class TaskRunManager {
 		return THREAD_POOL.containsKey(key);
 	}
 
-	public static void resetScheduler() throws TaskException {
-		synchronized (THREAD_POOL) {
-			Set<String> keys = THREAD_POOL.keySet();
-			for (String key : keys) {
-				String[] split = key.split("@");
-				stopAll(split[0], split[1]);
-			}
-		}
-
-	}
+//	private static void resetScheduler() throws TaskException {
+//		synchronized (THREAD_POOL) {
+//			Set<String> keys = THREAD_POOL.keySet();
+//			for (String key : keys) {
+//				String[] split = key.split("@");
+//				stopAll(split[0], split[1]);
+//			}
+//		}
+//
+//	}
 
 	/**
 	 * stop all task in thread

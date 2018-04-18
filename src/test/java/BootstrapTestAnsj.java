@@ -20,8 +20,8 @@ public class BootstrapTestAnsj {
 	public void test1() throws Exception {
 		int port = 9095;
 		Bootstrap.main(new String[]{
-				"--zk=" + zk,
-				"--host=" + host,
+				//"--zk=" + zk,
+				//"--host=" + host,
 				"--home=jcoder_home_" + port,
 				"--port=" + port,
 				"--token=www.infcn.com.cn",
