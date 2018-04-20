@@ -40,7 +40,7 @@ Vue.component('host-component', {
     data: function () {return {isLoading: true};},
     template: '<div class="alert alert-block alert-success host-component" style="padding:8px;">' +
     '<i v-if="isLoading" class="ace-icon fa fa-spinner fa-spin orange bigger-140"></i>' +
-    '<div v-else v-on:click="select(item)" v-for="item in hosts"' +
+    '<div v-else v-on:click="select(item)" v-on:dblclick="check(item)" v-for="item in hosts"' +
     '       v-bind="{class:\'infobox infobox-small infobox-dark \'+(item.selected?\'infobox-blue\':(item.current?\'infobox-green\':\'\')),style:\'cursor:pointer;margin:2px;width:210px;\'+(!item.selected&&!item.current?\'background-color:#E08374;border-color:#E08374;\':\'\')}">' +
     '<div class="infobox-progress">' +
     '    <div class="easy-pie-chart percentage" :data-percent="item.weight" data-size="39">' +
@@ -105,6 +105,12 @@ Vue.component('host-component', {
                 _.each(this.hosts, function (ele) {ele.selected = ele.host == host;});
             }
 
+            this.$emit('change', ele);
+        },
+
+        check: function (ele) {
+            var host = ele.host;
+            _.each(this.hosts, function (ele) {ele.selected = ele.host == host;});
             this.$emit('change', ele);
         },
 
