@@ -4,6 +4,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.*;
@@ -98,6 +99,7 @@ public class Bootstrap {
 			server = new Server(port);
 		}
 
+		((QueuedThreadPool)server.getThreadPool()).setMaxThreads(10000);
 
 		ProtectionDomain domain = Bootstrap.class.getProtectionDomain();
 
