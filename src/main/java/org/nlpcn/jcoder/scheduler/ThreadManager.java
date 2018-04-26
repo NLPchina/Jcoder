@@ -14,8 +14,12 @@ import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ThreadManager {
@@ -26,9 +30,6 @@ public class ThreadManager {
 
 	/**
 	 * 增加一个task 只有master可以添加任务
-	 *
-	 * @throws SchedulerException
-	 * @throws TaskException
 	 */
 	public synchronized static boolean addJob(String groupName, String taskName, String scheduleStr) throws TaskException, SchedulerException {
 		if (StringUtil.isBlank(scheduleStr)) {
@@ -49,9 +50,6 @@ public class ThreadManager {
 
 	/**
 	 * 更新映射
-	 *
-	 * @param oldTask
-	 * @param newTask
 	 */
 	public static void addApi(Task oldTask, Task newTask) {
 
@@ -77,9 +75,6 @@ public class ThreadManager {
 
 	/**
 	 * 停用一个task并从定时任务中删除
-	 *
-	 * @param GroupName
-	 * @param taskName
 	 */
 	public static void removeTaskJob(String GroupName, String taskName) throws SchedulerException {
 		QuartzSchedulerManager.stopTaskJob(GroupName + Constants.GROUP_TASK_SPLIT + taskName);
@@ -87,9 +82,6 @@ public class ThreadManager {
 
 	/**
 	 * 运行一个task
-	 *
-	 * @param task
-	 * @throws TaskException
 	 */
 	public static void run(Task task) throws TaskException {
 		//如果是while或者一次性任务将不再添加进来
@@ -106,8 +98,6 @@ public class ThreadManager {
 
 	/**
 	 * 运行一个taskJob
-	 *
-	 * @throws TaskException
 	 */
 	public static void run(TaskJob taskJob) throws TaskException {
 		TaskRunManager.runTaskJob(taskJob);
@@ -115,8 +105,6 @@ public class ThreadManager {
 
 	/**
 	 * 停止一个task
-	 *
-	 * @throws TaskException
 	 */
 	private static synchronized void stopTask(String groupName, String taskName) throws TaskException {
 		try {
@@ -140,8 +128,6 @@ public class ThreadManager {
 
 	/**
 	 * 刷新task 相当于从定时任务中移除，并且重新插入,非线程安全.如果调用记得在外层锁定对象
-	 *
-	 * @throws Exception
 	 */
 	public static void flush(Task oldTask, Task newTask) throws Exception {
 		if (oldTask != null && StringUtil.isNotBlank(oldTask.getName())) {
@@ -193,10 +179,6 @@ public class ThreadManager {
 
 	/**
 	 * 判断一个定时任务是否存在
-	 *
-	 * @param taskName
-	 * @return
-	 * @throws SchedulerException
 	 */
 	public static boolean checkExists(String groupName, String taskName) {
 		try {
@@ -211,8 +193,6 @@ public class ThreadManager {
 
 	/**
 	 * 取得所有的在运行状态的线程
-	 *
-	 * @throws SchedulerException
 	 */
 	public static List<TaskInfo> getAllThread() throws TaskException {
 		Collection<Entry<String, TaskJob>> entrys = TaskRunManager.getTaskList();
@@ -235,9 +215,6 @@ public class ThreadManager {
 
 	/**
 	 * 获得所有的调度任务
-	 *
-	 * @return
-	 * @throws SchedulerException
 	 */
 	public static List<TaskInfo> getAllScheduler() throws SchedulerException {
 		List<String> taskList = QuartzSchedulerManager.getTaskList();
@@ -245,9 +222,14 @@ public class ThreadManager {
 		for (String jobKey : taskList) {
 			String[] split = jobKey.split(Constants.GROUP_TASK_SPLIT);
 			Task taskByCache = TaskService.findTaskByCache(split[0], split[1]);
-			TaskInfo taskInfo = new TaskInfo(taskByCache.getScheduleStr(), split[1], split[0]);
-			taskInfo.setDescription(taskByCache.getDescription());
-			schedulers.add(taskInfo);
+			if (taskByCache == null) {
+				LOG.warn("not found task in cache {}/{}", split[0], split[1]);
+			} else {
+				TaskInfo taskInfo = new TaskInfo(taskByCache.getScheduleStr(), split[1], split[0]);
+				taskInfo.setDescription(taskByCache.getDescription());
+				schedulers.add(taskInfo);
+			}
+
 		}
 		return schedulers;
 	}
@@ -301,9 +283,6 @@ public class ThreadManager {
 
 	/**
 	 * 增加taskaction到运行队列中
-	 *
-	 * @param key
-	 * @param thread
 	 */
 	public static void add2ActionTask(String key, Thread thread) {
 		ActionRunManager.add2ThreadPool(key, thread);
@@ -311,10 +290,6 @@ public class ThreadManager {
 
 	/**
 	 * 强行停止一个 thread
-	 *
-	 * @param key
-	 * @return
-	 * @throws TaskException
 	 */
 	public static boolean stop(String key) throws TaskException {
 		if (ActionRunManager.checkExists(key)) {
@@ -342,10 +317,6 @@ public class ThreadManager {
 
 	/**
 	 * 判断一个任务是否存在
-	 *
-	 * @param taskName
-	 * @return
-	 * @throws SchedulerException
 	 */
 	public static boolean checkActionExists(String taskName) {
 		return ActionRunManager.checkExists(taskName);
