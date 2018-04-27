@@ -117,6 +117,7 @@
                     },
                     {
                         title: "平均时长",
+                        type: "duration",
                         render: function (data, type, row, meta) {
                             return Tools.formatMillisec(row.totalDuration / (row.successCount + row.errorCount));
                         }
