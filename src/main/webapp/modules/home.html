@@ -72,7 +72,13 @@
                     {title: "失败数", data: "errorCount", name: "errorCount"},
                     {title: "最小时长", data: "minDuration", name: "minDuration"},
                     {title: "最大时长", data: "maxDuration", name: "maxDuration"},
-                    {title: "总时长", data: "totalDuration", name: "totalDuration"}
+                    {title: "总时长", data: "totalDuration", name: "totalDuration"},
+                    {
+                        title: "平均时长",
+                        render: function (data, type, row, meta) {
+                            return Math.round(row.totalDuration / (row.successCount + row.errorCount));
+                        }
+                    }
                 ],
 
                 autoWidth: false,
