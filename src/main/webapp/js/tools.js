@@ -75,6 +75,33 @@ var Tools = {
         return (f.indexOf('.' + new Array(decimals + 1).join('0'), f.length - (decimals + 1)) !== -1 ? f.slice(0, -decimals - 1) : f) + sizes[i];
     },
 
+    formatMillisec: function (millisec) {
+        if (!_.isNumber(millisec) || millisec < 0) {
+            return null;
+        }
+
+        if (millisec < 1000) {
+            return Math.ceil(millisec) + "ms";
+        }
+
+        millisec /= 1000;
+        if (millisec < 60) {
+            return Math.ceil(millisec) + "s";
+        }
+
+        millisec /= 60;
+        if (millisec < 60) {
+            return Math.ceil(millisec) + "m";
+        }
+
+        millisec /= 60;
+        if (millisec < 24) {
+            return Math.ceil(millisec) + "h";
+        }
+
+        return Math.ceil(millisec / 24) + "d";
+    },
+
     /*
      * LOAD SCRIPTS
      * Usage:

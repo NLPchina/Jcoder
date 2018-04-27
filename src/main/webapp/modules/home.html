@@ -60,6 +60,24 @@
         },
 
         mounted: function () {
+            $.fn.dataTable.ext.type.order['duration-pre'] = function (data) {
+                var matches = data.match(/^(\d+(?:\.\d+)?)\s*([a-z]+)/i);
+                if (!matches) {
+                    return -1;
+                }
+                var duration = parseFloat(matches[1]);
+                switch (matches[2]) {
+                    case "d":
+                        duration *= 24;
+                    case "h":
+                        duration *= 60;
+                    case "m":
+                        duration *= 60;
+                    case "s":
+                        duration *= 1000;
+                }
+                return duration;
+            };
             var me = this, dt = me.dataTable = $(me.$el).find('table:first').DataTable({
                 bDestroy: true,
                 bProcessing: true,
@@ -70,13 +88,37 @@
                     {title: "方法名", data: "methodName", name: "methodName"},
                     {title: "成功数", data: "successCount", name: "successCount"},
                     {title: "失败数", data: "errorCount", name: "errorCount"},
-                    {title: "最小时长", data: "minDuration", name: "minDuration"},
-                    {title: "最大时长", data: "maxDuration", name: "maxDuration"},
-                    {title: "总时长", data: "totalDuration", name: "totalDuration"},
+                    {
+                        title: "最小时长",
+                        data: "minDuration",
+                        name: "minDuration",
+                        type: "duration",
+                        render: function (data, type, row, meta) {
+                            return Tools.formatMillisec(data);
+                        }
+                    },
+                    {
+                        title: "最大时长",
+                        data: "maxDuration",
+                        name: "maxDuration",
+                        type: "duration",
+                        render: function (data, type, row, meta) {
+                            return Tools.formatMillisec(data);
+                        }
+                    },
+                    {
+                        title: "总时长",
+                        data: "totalDuration",
+                        name: "totalDuration",
+                        type: "duration",
+                        render: function (data, type, row, meta) {
+                            return Tools.formatMillisec(data);
+                        }
+                    },
                     {
                         title: "平均时长",
                         render: function (data, type, row, meta) {
-                            return Math.round(row.totalDuration / (row.successCount + row.errorCount));
+                            return Tools.formatMillisec(row.totalDuration / (row.successCount + row.errorCount));
                         }
                     }
                 ],
