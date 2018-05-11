@@ -62,7 +62,7 @@ public class MasterCleanTokenJob implements Runnable {
 				Map<String, Token> stringTokenMap = tokenCache.toMap();
 
 				for (Map.Entry<String, Token> entry : stringTokenMap.entrySet()) {
-					if (entry.getValue().getExpirationTime().getTime() < System.currentTimeMillis() + 600000) { //过期10分钟的清除。防止服务器时间不太同步
+					if (entry.getValue().getExpirationTime().getTime() < System.currentTimeMillis() - 600000) { //过期10分钟的清除。防止服务器时间不太同步
 						tokenCache.remove(entry.getKey());
 					}
 				}

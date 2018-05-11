@@ -80,6 +80,24 @@ public class TokenService {
 		return token.getToken();
 	}
 
+
+	/**
+	 * regeidt a token by user
+	 *
+	 * @param key ,用户自定义自己的token，用户自己保持不重复
+	 */
+	public static String regToken(User user, String key, long expiration) {
+		LOG.info(user.getName() + " to create a key");
+		Token token = new Token();
+		token.setExpiration(expiration);
+		token.setToken(key);
+		token.setCreateTime(new Date());
+		token.setExpirationTime(new Date(System.currentTimeMillis() + token.getExpiration()));
+		token.setUser(user);
+		space().getTokenCache().put(token.getToken(), token);
+		return token.getToken();
+	}
+
 	/**
 	 * login out by token
 	 */
