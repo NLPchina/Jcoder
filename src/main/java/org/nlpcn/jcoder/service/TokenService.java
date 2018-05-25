@@ -84,6 +84,15 @@ public class TokenService {
 	/**
 	 * regeidt a token by user
 	 *
+	 */
+	public static String regToken(User user, long expiration) {
+		LOG.info(user.getName() + " to create a key");
+		return regToken(user,UUID.randomUUID().toString(),expiration) ;
+	}
+
+	/**
+	 * regeidt a token by user
+	 *
 	 * @param key ,用户自定义自己的token，用户自己保持不重复
 	 */
 	public static String regToken(User user, String key, long expiration) {

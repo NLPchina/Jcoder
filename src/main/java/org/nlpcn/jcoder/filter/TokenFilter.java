@@ -36,7 +36,7 @@ public class TokenFilter implements ActionFilter, RpcFilter {
 		String token = actionContext.getRequest().getHeader(UserConstants.USER_TOKEN_HEAD);
 
 		if (token == null) { //尝试从参数中获取
-			token = actionContext.getRequest().getParameter("_" + UserConstants.USER_TOKEN_HEAD);
+			token = actionContext.getRequest().getParameter(UserConstants.USER_TOKEN_PARAM);
 		}
 
 		if (StringUtil.isBlank(token)) {

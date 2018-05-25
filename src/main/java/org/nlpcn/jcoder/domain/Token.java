@@ -25,7 +25,7 @@ public class Token implements Serializable {
     @JSONField(serialize = false, deserialize = false)
     private User user;
 
-	private long expiration = 20 * 60 * 1000L;
+	private long expiration = 30 * 60 * 1000L;
 
 	private Date expirationTime;
 
