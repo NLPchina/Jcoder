@@ -232,7 +232,10 @@ public class GroupService {
 	 * 随机的获取一台和主版本同步着的主机
 	 */
 	public List<String> getCurrentHostPort(String groupName) {
-		List<String> collect = StaticValue.space().getHostGroupCache().entrySet().stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey()).filter(k -> groupName.equals(k.split("_")[1])).map(k -> k.split("_")[0]).collect(Collectors.toList());
+		List<String> collect = StaticValue.space().getHostGroupCache().entrySet()
+				.stream().filter(e -> e.getValue().isCurrent()).map(e -> e.getKey())
+				.filter(k -> groupName.equals(k.split("_")[1]))
+				.map(k -> k.split("_")[0]).collect(Collectors.toList());
 		return collect;
 	}
 

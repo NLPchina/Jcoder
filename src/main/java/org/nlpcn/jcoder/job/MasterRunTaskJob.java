@@ -3,12 +3,12 @@ package org.nlpcn.jcoder.job;
 import com.google.common.collect.ImmutableMap;
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.domain.KeyValue;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nutz.http.Response;
+import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +33,8 @@ public class MasterRunTaskJob implements Runnable {
 	/**
 	 * 当竞选为master时候调用此方法
 	 */
-	public synchronized static void startJob() {
+	public synchronized static void startJob()  {
 		stopJob();
-		ThreadManager.startScheduler();
 		thread = new Thread(new MasterRunTaskJob());
 		thread.start();
 	}
@@ -43,8 +42,7 @@ public class MasterRunTaskJob implements Runnable {
 	/**
 	 * 当失去master时候调用此方法
 	 */
-	public synchronized static void stopJob() {
-		ThreadManager.stopScheduler();
+	public synchronized static void stopJob(){
 		if (thread != null) {
 			try {
 				thread.interrupt();

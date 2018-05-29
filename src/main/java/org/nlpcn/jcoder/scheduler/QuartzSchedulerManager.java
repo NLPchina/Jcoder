@@ -1,5 +1,9 @@
 package org.nlpcn.jcoder.scheduler;
 
+import org.nlpcn.jcoder.constant.Constants;
+import org.nlpcn.jcoder.domain.Task;
+import org.nlpcn.jcoder.domain.TaskInfo;
+import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -17,7 +21,7 @@ import java.util.Set;
  *
  * @author ansj
  */
-class QuartzSchedulerManager {
+public class QuartzSchedulerManager {
 
 	private static final Logger LOG = LoggerFactory.getLogger(QuartzSchedulerManager.class);
 
@@ -28,7 +32,7 @@ class QuartzSchedulerManager {
 	 *
 	 * @return
 	 */
-	private static Scheduler init() {
+	private synchronized static Scheduler init() {
 		try {
 			Scheduler scheduler = StdSchedulerFactory.getDefaultScheduler();
 			scheduler.start();
@@ -50,10 +54,13 @@ class QuartzSchedulerManager {
 	/**
 	 * 增加一个ｊｏｂ
 	 *
-	 * @param groupTaskName
+	 * @param groupName
+	 * @param taskName
+	 * @param scheduleStr
 	 * @throws SchedulerException
 	 */
-	protected static synchronized boolean addJob(String groupTaskName, String scheduleStr) throws SchedulerException {
+	public static synchronized boolean addJob(String groupName, String taskName, String scheduleStr) throws SchedulerException {
+		String groupTaskName = groupName + Constants.GROUP_TASK_SPLIT + taskName;
 		LOG.info(groupTaskName + " add to the schedulejob! ");
 		scheduler.scheduleJob(makeJobDetail(groupTaskName), makeTrigger(scheduleStr));
 		return true;
@@ -75,12 +82,13 @@ class QuartzSchedulerManager {
 	/**
 	 * 删除一个job
 	 *
-	 * @param groupTaskName
+	 * @param groupName
+	 * @param taskName
 	 * @throws SchedulerException
 	 * @throws Exception
 	 */
-	protected static synchronized boolean stopTaskJob(String groupTaskName) throws SchedulerException {
-		scheduler.deleteJob(JobKey.jobKey(groupTaskName));
+	public static synchronized boolean removeJob(String groupName, String taskName) throws SchedulerException {
+		scheduler.deleteJob(JobKey.jobKey(groupName + Constants.GROUP_TASK_SPLIT + taskName));
 		return true;
 	}
 
@@ -99,11 +107,11 @@ class QuartzSchedulerManager {
 	 *
 	 * @throws SchedulerException
 	 */
-	protected static void startScheduler() throws SchedulerException {
+	public static void startScheduler() throws SchedulerException {
 		scheduler = init();
 	}
 
-	protected static void stopScheduler() throws SchedulerException {
+	public static void stopScheduler() throws SchedulerException {
 		if (scheduler != null) {
 			scheduler.clear();
 			scheduler.shutdown();
@@ -118,17 +126,32 @@ class QuartzSchedulerManager {
 	 * @return
 	 * @throws SchedulerException
 	 */
-	protected static List<String> getTaskList() throws SchedulerException {
+	public static Set<JobKey> jobList() throws SchedulerException {
 		if (scheduler == null) {
-			return Collections.emptyList();
+			return Collections.emptySet();
 		}
-		List<String> list = new ArrayList<>();
-		Set<JobKey> jobKeys = scheduler.getJobKeys(GroupMatcher.anyJobGroup());
-
-		for (JobKey jobKey : jobKeys) {
-			list.add(jobKey.getName());
-		}
-		return list;
+		return scheduler.getJobKeys(GroupMatcher.anyJobGroup());
 	}
 
+
+	/**
+	 * 获得所有的定时计划任务
+	 *
+	 * @return
+	 */
+	public static List<TaskInfo> getAllScheduler() throws SchedulerException {
+		List<TaskInfo> allScheduler = new ArrayList<>();
+		for (JobKey jobKey : jobList()) {
+			String[] split = jobKey.getName().split(Constants.GROUP_TASK_SPLIT);
+			Task taskByCache = TaskService.findTaskByCache(split[0], split[1]);
+			if (taskByCache == null) {
+				LOG.warn("not found task in cache {}/{}", split[0], split[1]);
+			} else {
+				TaskInfo taskInfo = new TaskInfo(taskByCache.getScheduleStr(), split[1], split[0]);
+				taskInfo.setDescription(taskByCache.getDescription());
+				allScheduler.add(taskInfo);
+			}
+		}
+		return allScheduler;
+	}
 }

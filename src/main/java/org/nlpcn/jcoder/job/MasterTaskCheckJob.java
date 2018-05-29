@@ -2,20 +2,17 @@ package org.nlpcn.jcoder.job;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableMap;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent.Type;
 import org.nlpcn.jcoder.constant.Api;
 import org.nlpcn.jcoder.constant.Constants;
 import org.nlpcn.jcoder.domain.*;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.scheduler.QuartzSchedulerManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.SharedSpaceService;
 import org.nlpcn.jcoder.util.MapCount;
 import org.nlpcn.jcoder.util.StaticValue;
-import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.ZKMap;
 import org.nutz.http.Response;
 import org.quartz.SchedulerException;
@@ -24,9 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class MasterTaskCheckJob implements Runnable {
 
@@ -43,9 +40,6 @@ public class MasterTaskCheckJob implements Runnable {
 
 	private GroupService groupService;
 
-	private Cache<String, String> oneCache = CacheBuilder.newBuilder().maximumSize(1000).build();
-
-
 	private MasterTaskCheckJob() {
 	}
 
@@ -54,7 +48,6 @@ public class MasterTaskCheckJob implements Runnable {
 	 */
 	public synchronized static void startJob() {
 		stopJob();
-		ThreadManager.startScheduler();
 		thread = new Thread(new MasterTaskCheckJob());
 		thread.start();
 	}
@@ -63,7 +56,6 @@ public class MasterTaskCheckJob implements Runnable {
 	 * 当失去master时候调用此方法
 	 */
 	public synchronized static void stopJob() {
-		ThreadManager.stopScheduler();
 		if (thread != null) {
 			try {
 				thread.interrupt();
@@ -99,15 +91,12 @@ public class MasterTaskCheckJob implements Runnable {
 
 					if (handler != null) {
 						if (handler.getAction() == Type.NODE_REMOVED) {
-							ThreadManager.removeTaskJob(handler.getGroupName(), handler.getTaskName());
-
+							QuartzSchedulerManager.removeJob(handler.getGroupName(), handler.getTaskName());
 						} else if (handler.getAction() == Type.NODE_ADDED || handler.getAction() == Type.NODE_UPDATED) {
 							Task task = StaticValue.space().getDataInGroupCache(handler.getPath(), Task.class);
+							QuartzSchedulerManager.removeJob(handler.getGroupName(), handler.getTaskName());
 							if (task.getType() == 2 && task.getStatus() == 1) {
-								ThreadManager.removeTaskJob(handler.getGroupName(), task.getName());
-								ThreadManager.addJob(task.getGroupName(), task.getName(), task.getScheduleStr());
-							} else {//其他情況都刪除一下反正沒什么坏处
-								ThreadManager.removeTaskJob(handler.getGroupName(), handler.getTaskName());
+								QuartzSchedulerManager.addJob(task.getGroupName(), task.getName(), task.getScheduleStr());
 							}
 						}
 
@@ -127,8 +116,7 @@ public class MasterTaskCheckJob implements Runnable {
 						});
 
 
-						Set<String> allScheduler = new HashSet<>();
-						ThreadManager.getAllScheduler().forEach(s -> allScheduler.add(s.getGroupName() + Constants.GROUP_TASK_SPLIT + s.getTaskName()));
+						Set<String> allScheduler = QuartzSchedulerManager.jobList().stream().map(j -> j.getName()).collect(Collectors.toSet()); // 现在所有的定时计划
 
 						//获取集群中所有的定时任务
 						findAllRuningJob();
@@ -143,12 +131,11 @@ public class MasterTaskCheckJob implements Runnable {
 									checkWhileJob(task);
 								} else if ("all".equals(scheduleStr)) {
 									checkAllJob(task);
-								} else if (StringUtil.isBlank(scheduleStr)) {
-									checkOneceJob(task);
 								} else {
-									allScheduler.remove(task.getGroupName() + "@" + task.getName());
-									if (!ThreadManager.checkExists(task.getGroupName(), task.getName())) {
-										if (ThreadManager.addJob(task.getGroupName(), task.getName(), task.getScheduleStr())) {
+									String key = task.getGroupName() + "@" + task.getName();
+									allScheduler.remove(key);
+									if (!QuartzSchedulerManager.checkExists(key)) {
+										if (QuartzSchedulerManager.addJob(task.getGroupName(), task.getName(), task.getScheduleStr())) {
 											LOG.info("regedit ok ! cornStr : " + task.getScheduleStr());
 										} else {
 											LOG.error("regedit fail ! cornStr : " + task.getScheduleStr());
@@ -168,7 +155,7 @@ public class MasterTaskCheckJob implements Runnable {
 							allScheduler.stream().forEach(groupTaskName -> {
 								String[] split = groupTaskName.split(Constants.GROUP_TASK_SPLIT);
 								try {
-									ThreadManager.removeTaskJob(split[0], split[1]);
+									QuartzSchedulerManager.removeJob(split[0], split[1]);
 								} catch (SchedulerException e) {
 									e.printStackTrace();
 								}
@@ -198,6 +185,11 @@ public class MasterTaskCheckJob implements Runnable {
 	}
 
 	private void stopOutsideJob() {
+		//如果单机模式则废止
+		if (StaticValue.IS_LOCAL) {
+			return;
+		}
+
 		//检查非同步状态的机器如果有定时任务就停止
 		ZKMap<HostGroup> hostGroupCache = StaticValue.space().getHostGroupCache();
 
@@ -213,21 +205,21 @@ public class MasterTaskCheckJob implements Runnable {
 		});
 	}
 
-	/**
-	 * 只执行一次的任务
-	 */
-	private void checkOneceJob(Task task) throws ExecutionException {
-		if (oneCache.getIfPresent(task.getMd5()) == null) {
-			MasterRunTaskJob.addQueue(KeyValue.with(task.getGroupName(), task.getName()));
-			oneCache.put(task.getMd5(), task.getMd5());
-		}
-	}
 
 	/**
 	 * 检查all的task
 	 */
 	private void checkAllJob(Task task) {
-		Set<String> currentHostPort = new HashSet<>(groupService.getCurrentHostPort(task.getGroupName())); //获得所有有这个group的同步机器
+
+		Set<String> currentHostPort = null;
+
+		if (StaticValue.IS_LOCAL) {
+			currentHostPort = new HashSet<>();
+			currentHostPort.add(StaticValue.getHostPort());
+		} else {
+			//获得所有有这个group的同步机器
+			currentHostPort = new HashSet<>(groupService.getCurrentHostPort(task.getGroupName()));
+		}
 
 		MapCount<String> mc = new MapCount<>();
 		for (TaskInfo taskInfo : taskInfos) {

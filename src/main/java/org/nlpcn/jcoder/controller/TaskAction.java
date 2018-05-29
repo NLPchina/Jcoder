@@ -10,7 +10,7 @@ import org.nlpcn.jcoder.filter.AuthoritiesManager;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.scheduler.TaskException;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.scheduler.TaskRunManager;
 import org.nlpcn.jcoder.service.GroupService;
 import org.nlpcn.jcoder.service.ProxyService;
 import org.nlpcn.jcoder.service.TaskService;
@@ -681,7 +681,7 @@ public class TaskAction {
 		}
 
 		try {
-			ThreadManager.run(task);
+			TaskRunManager.run(task);
 		} catch (TaskException e) {
 			e.printStackTrace();
 			return Restful.fail().code(ApiException.ServerException).msg("task run fail " + taskName + e.getMessage());

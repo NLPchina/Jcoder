@@ -4,7 +4,7 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.annotation.Cache;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.run.mvc.cache.CacheEntry;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.scheduler.TaskRunManager;
 import org.nlpcn.jcoder.util.DateUtils;
 import org.nlpcn.jcoder.util.Restful;
 import org.nutz.lang.Lang;
@@ -60,7 +60,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		try {
 			threadName = module.getGroupName() + "@" + module.getName() + "@" + method.getName() + "@" + ac.getRequest().getRemoteAddr() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss") + "@"
 					+ al.getAndIncrement();
-			ThreadManager.add2ActionTask(threadName, Thread.currentThread());
+			TaskRunManager.put(threadName, Thread.currentThread());
 			Object result = executeByCache(module, method, args);
 			ac.setMethodReturn(result);
 			doNext(ac);
@@ -71,7 +71,7 @@ public class ApiMethodInvokeProcessor extends AbstractProcessor {
 		} catch (InvocationTargetException e) {
 			throw e.getCause();
 		} finally {
-			ThreadManager.removeActionIfOver(threadName);
+			TaskRunManager.remove(threadName);
 		}
 	}
 

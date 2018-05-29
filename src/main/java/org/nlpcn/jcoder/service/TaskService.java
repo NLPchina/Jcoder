@@ -12,7 +12,7 @@ import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
 import org.nlpcn.jcoder.filter.TestingFilter;
 import org.nlpcn.jcoder.run.CodeException;
 import org.nlpcn.jcoder.run.java.JavaRunner;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.scheduler.TaskRunManager;
 import org.nlpcn.jcoder.util.*;
 import org.nlpcn.jcoder.util.dao.BasicDao;
 import org.nutz.castor.Castors;
@@ -495,7 +495,7 @@ public class TaskService {
 				clearSucessErr(oldTask);
 				clearSucessErr(newTask);
 
-				ThreadManager.flush(oldTask, newTask);
+				TaskRunManager.flush(oldTask, newTask);
 			}
 		}
 	}
@@ -561,10 +561,9 @@ public class TaskService {
 				task.codeInfo().getExecuteMethods().forEach(m -> {
 					StaticValue.space().removeMapping(task.getGroupName(), task.getName(), m.getName());
 				});
+				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
 				TASK_MAP_CACHE.remove(task.getId());
 				TASK_MAP_CACHE.remove(makeKey(task));
-				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
-
 			} catch (Throwable e) {
 				e.printStackTrace();
 				LOG.error(e.getMessage(), e);
@@ -611,37 +610,5 @@ public class TaskService {
 		return list;
 	}
 
-	/**
-	 * 检查所有的task
-	 */
-	public void checkAllTask() throws Exception {
-		// 获得当前运行的任务
-		List<Task> search = StaticValue.systemDao.search(Task.class, "id");
 
-		// 线程任务
-		List<TaskInfo> threads = ThreadManager.getAllThread();
-
-		MapCount<String> mc = new MapCount<>();
-
-		threads.forEach(ti -> mc.add(ti.getTaskName()));
-
-		for (Task task : search) {
-			// 检查while的task是否活着
-			if (task.getStatus() == 1 && "while".equalsIgnoreCase(task.getScheduleStr())) {
-				Double num = mc.get().get(task.getName());
-				if (num == null || num < 1) {
-					LOG.warn(task.getName() + " is while task , not find in threads , now to start it! ");
-					this.flush(task.getId());
-				}
-			}
-			// stop的task是否活着
-			if (task.getStatus() == 0) {
-				// 如果不是1 那么不正常，全局刷新
-				if (mc.get().containsKey(task.getName())) {
-					LOG.warn(task.getName() + " is stop task , but it is runing, now sotp it ! ");
-					this.flush(task.getId());
-				}
-			}
-		}
-	}
 }

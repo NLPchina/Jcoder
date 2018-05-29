@@ -11,15 +11,12 @@ import javax.servlet.http.HttpServletResponse;
 
 public class ApiActionHandler {
 
-	private ApiUrlMappingImpl mapping;
-
 	private NutConfig config;
 
 
 	public ApiActionHandler(NutConfig conf) {
 		this.config = conf;
-		this.mapping = StaticValue.MAPPING;
-		config.setUrlMapping(mapping);
+		config.setUrlMapping(null);
 	}
 
 	public boolean handle(HttpServletRequest req, HttpServletResponse resp) {
@@ -30,7 +27,7 @@ public class ApiActionHandler {
 
 		Mvcs.setActionContext(ac);
 
-		ApiActionInvoker invoker = mapping.getOrCreate(config, ac);
+		ApiActionInvoker invoker = StaticValue.MAPPING.getOrCreate(config, ac);
 
 		if (null == invoker) {
 			return false;

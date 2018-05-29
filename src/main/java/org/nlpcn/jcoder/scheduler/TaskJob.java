@@ -11,7 +11,6 @@ public class TaskJob extends Thread {
 
 	private Task task = null;
 
-	private boolean over = true;
 
 	private long startTime = System.currentTimeMillis();
 
@@ -31,7 +30,7 @@ public class TaskJob extends Thread {
 
 	@Override
 	public void run() {
-		over = false;
+		TaskRunManager.put(this.getName(),this);
 		try {
 			new JavaRunner(task).compile().instance().execute();
 			task.updateSuccess();
@@ -40,8 +39,7 @@ public class TaskJob extends Thread {
 			e.printStackTrace();
 			LOG.error(e.getMessage(), e);
 		} finally {
-			over = true;
-			ThreadManager.removeTaskIfOver(this.getName());
+			TaskRunManager.remove(this.getName());
 		}
 
 	}
@@ -50,8 +48,5 @@ public class TaskJob extends Thread {
 		return task;
 	}
 
-	public boolean isOver() {
-		return over;
-	}
 
 }

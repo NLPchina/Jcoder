@@ -20,10 +20,8 @@ import org.nutz.mvc.impl.Loadings;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -125,7 +123,6 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	 */
 	private ApiActionInvoker getOrCreate(NutConfig config, String path) {
 		ApiActionInvoker invoker = map.get(path);
-
 		if (invoker == null) {
 			Lock lock = null;
 			synchronized (this) {
@@ -195,14 +192,12 @@ public class ApiUrlMappingImpl implements UrlMapping {
 	/**
 	 * 从映射表中删除一个api
 	 */
-	public void remove(String groupName, String className) {
-		Iterator<Entry<String, ApiActionInvoker>> iterator = map.entrySet().iterator();
-		String path;
-		Task task = TaskService.findTaskByCache(groupName, className);
+	public synchronized void remove(String groupName, String className) {
 		synchronized (map) {
-			while (iterator.hasNext()) {
-				if ((path = iterator.next().getKey()).startsWith("/api/" + groupName + "/" + task.getName() + "/")) {
-					iterator.remove();
+			Task task = TaskService.findTaskByCache(groupName, className);
+			for (String path : map.keySet()) {
+				if (path.startsWith("/api/" + groupName + "/" + task.getName() + "/")) {
+					map.remove(path);
 					log.info("remove api " + path);
 				}
 			}

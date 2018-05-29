@@ -15,7 +15,7 @@ import org.nlpcn.jcoder.run.rpc.domain.RpcRequest;
 import org.nlpcn.jcoder.run.rpc.domain.RpcResponse;
 import org.nlpcn.jcoder.run.rpc.domain.RpcUser;
 import org.nlpcn.jcoder.run.rpc.service.SessionService;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
+import org.nlpcn.jcoder.scheduler.TaskRunManager;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ApiException;
 import org.nlpcn.jcoder.util.DateUtils;
@@ -69,7 +69,8 @@ public class ApiWebsocket extends Endpoint {
 			String threadName = request.getGroupName() + "@" + request.getClassName() + "@" + request.getMethodName() + "@RPC" + request.getMessageId() + "@" + DateUtils.formatDate(new Date(), "yyyyMMddHHmmss");
 			try {
 				try {
-					executeTask(request, threadName);
+					TaskRunManager.put(threadName,Thread.currentThread());
+					executeTask(request);
 				} catch (Exception e) {
 					LOG.error(e.getMessage(), e);
 					try {
@@ -80,7 +81,7 @@ public class ApiWebsocket extends Endpoint {
 					throw e;
 				}
 			} finally {
-				ThreadManager.removeActionIfOver(threadName);
+				TaskRunManager.remove(threadName);
 			}
 		}
 	}
@@ -89,7 +90,7 @@ public class ApiWebsocket extends Endpoint {
 	/**
 	 * 具体的执行一个task
 	 */
-	private void executeTask(RpcRequest request, String threadName) {
+	private void executeTask(RpcRequest request) {
 
 		Restful restful = new Restful();
 

@@ -23,16 +23,17 @@ import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.domain.Token;
 import org.nlpcn.jcoder.job.CheckDiffJob;
 import org.nlpcn.jcoder.job.MasterCleanTokenJob;
-import org.nlpcn.jcoder.job.MasterGitPullJob;
 import org.nlpcn.jcoder.job.MasterRunTaskJob;
 import org.nlpcn.jcoder.job.MasterTaskCheckJob;
 import org.nlpcn.jcoder.run.rpc.service.MemoryRoomService;
 import org.nlpcn.jcoder.run.rpc.service.RoomService;
 import org.nlpcn.jcoder.run.rpc.service.ZookeeperRoomService;
+import org.nlpcn.jcoder.scheduler.QuartzSchedulerManager;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.StringUtil;
 import org.nlpcn.jcoder.util.ZKMap;
 import org.nlpcn.jcoder.util.dao.ZookeeperDao;
+import org.quartz.SchedulerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -339,19 +340,27 @@ public class SharedSpaceService {
 				public void isLeader() {
 					StaticValue.setMaster(true);
 					LOG.info("I am master my host is " + StaticValue.getHostPort());
-					MasterTaskCheckJob.startJob();
-					MasterRunTaskJob.startJob();
-					MasterGitPullJob.startJob();
-					MasterCleanTokenJob.startJob();
+					try {
+						QuartzSchedulerManager.startScheduler();
+						MasterTaskCheckJob.startJob();
+						MasterRunTaskJob.startJob();
+						MasterCleanTokenJob.startJob();
+					} catch (SchedulerException e) {
+						e.printStackTrace();
+					}
 				}
 
 				@Override
 				public void notLeader() {
 					StaticValue.setMaster(false);
 					LOG.info("I am lost master " + StaticValue.getHostPort());
+					try {
+						QuartzSchedulerManager.stopScheduler();
+					} catch (SchedulerException e) {
+						e.printStackTrace();
+					}
 					MasterTaskCheckJob.stopJob();
 					MasterRunTaskJob.stopJob();
-					MasterGitPullJob.stopJob();
 					MasterCleanTokenJob.stopJob();
 				}
 

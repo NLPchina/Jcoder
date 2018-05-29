@@ -60,6 +60,7 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 		FileListener ioc = new FileListener(groupFileListener.iocFile, (v) -> {
 			JarService.getOrCreate(groupName).release();
+			JarService.getOrCreate(groupName);
 			return null;
 		});
 		ioc.start();

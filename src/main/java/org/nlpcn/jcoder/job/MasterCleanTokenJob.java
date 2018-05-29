@@ -1,7 +1,6 @@
 package org.nlpcn.jcoder.job;
 
 import org.nlpcn.jcoder.domain.Token;
-import org.nlpcn.jcoder.scheduler.ThreadManager;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nlpcn.jcoder.util.ZKMap;
 import org.slf4j.Logger;
@@ -27,7 +26,6 @@ public class MasterCleanTokenJob implements Runnable {
 	 */
 	public synchronized static void startJob() {
 		stopJob();
-		ThreadManager.startScheduler();
 		thread = new Thread(new MasterCleanTokenJob());
 		thread.start();
 	}
@@ -36,7 +34,6 @@ public class MasterCleanTokenJob implements Runnable {
 	 * 当失去master时候调用此方法
 	 */
 	public synchronized static void stopJob() {
-		ThreadManager.stopScheduler();
 		if (thread != null) {
 			try {
 				thread.interrupt();
