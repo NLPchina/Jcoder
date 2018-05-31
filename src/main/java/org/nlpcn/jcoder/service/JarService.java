@@ -40,10 +40,10 @@ import java.util.concurrent.locks.ReentrantLock;
 @IocBean
 public class JarService {
 
-
 	private static final Logger LOG = LoggerFactory.getLogger(JarService.class);
 	private static final LoadingCache<String, JarService> CACHE = CacheBuilder.newBuilder()
 			.removalListener((RemovalListener<String, JarService>) notification -> {
+
 				try {
 					notification.getValue().getIoc().depose();
 				} catch (Exception e) {
@@ -65,6 +65,7 @@ public class JarService {
 			});
 	private static final ConcurrentHashMap<String, Lock> LOCK_CONCURRENT_HASH_MAP = new ConcurrentHashMap<>();
 	private static final String MAVEN_PATH = "maven";
+
 	public Set<String> libPaths = new HashSet<>();
 	@Inject
 	private BasicDao basicDao;
@@ -122,7 +123,7 @@ public class JarService {
 	/**
 	 * 解锁一个group
 	 */
-	public static void unLock(String groupName) {
+	public synchronized static void unLock(String groupName) {
 		Lock lock = LOCK_CONCURRENT_HASH_MAP.get(groupName);
 		if (lock != null) {
 			lock.unlock();
@@ -328,7 +329,7 @@ public class JarService {
 
 		String pomMD5 = getPomMd5();
 
-		if (pomMD5!=null && !pomMD5.equals(groupCache.getPomMD5())) {
+		if (pomMD5 != null && !pomMD5.equals(groupCache.getPomMD5())) {
 			groupCache.setPomMD5(pomMD5);
 			IOUtil.Writer(new File(StaticValue.GROUP_FILE, groupName + ".cache").getAbsolutePath(), "utf-8", JSONObject.toJSONString(groupCache));
 			clean();
@@ -515,7 +516,21 @@ public class JarService {
 	/**
 	 * 释放和关闭当前jarservice。在操作。ioc和jar 之后。都需要调用此方式使之生效
 	 */
-	public synchronized void release() {
+	private synchronized void release() {
 		CACHE.invalidate(groupName);
+	}
+
+	/**
+	 * 刷新一个
+	 * @param groupName
+	 */
+	public static void flush(String groupName) {
+		try {
+			lock(groupName);
+			remove(groupName);
+			getOrCreate(groupName);
+		} finally {
+			unLock(groupName);
+		}
 	}
 }

@@ -145,7 +145,7 @@ public class GroupService {
 		try {
 			JarService.lock(name);
 
-			JarService.getOrCreate(name).release(); //释放环境变量
+			JarService.remove(name); //释放环境变量
 
 			Group group = findGroupByName(name);
 

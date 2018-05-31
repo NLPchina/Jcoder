@@ -140,12 +140,12 @@ public class Testing {
 	/**
 	 * 对比本地代码和线上代码的不同
 	 *
-	 * @param apiPath 本地代码路径
-	 * @param apiPath 线上api地址
+	 * @param groupName 组名称
+	 * @param ipPort    对比的ip和端口
 	 * @return
 	 * @throws IOException
 	 */
-	public static void diffCode(String apiPath, String ipPort) throws IOException {
+	public static void diffCode(String groupName, String apiPath, String ipPort) throws IOException {
 
 		List<Path> lists = new ArrayList<>();
 
@@ -163,6 +163,7 @@ public class Testing {
 			Map<String, Object> params = new HashMap<>();
 			File f = p.toFile();
 			String fileName = f.getName();
+			params.put("groupName", groupName);
 			params.put("name", fileName.substring(0, fileName.length() - 5));
 			params.put("code", IOUtil.getContent(f, "utf-8"));
 			JSONObject parse = JSONObject.parseObject(Http.post("http://" + ipPort + "/api_diff", params, 30000));

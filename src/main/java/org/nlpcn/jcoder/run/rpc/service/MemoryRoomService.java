@@ -42,7 +42,7 @@ public class MemoryRoomService implements RoomService {
 	public void sendMessage(String room, String message) {
 		List<String> remove = new ArrayList<>();
 		ids(room).stream().forEach((String id) -> {
-			Optional.of(SessionService.getRpcUser(id)).ifPresent(v -> {
+			Optional.ofNullable(SessionService.getRpcUser(id)).ifPresent(v -> {
 				if (v.getSession().isOpen()) {
 					if (message != null)
 						v.getSession().getAsyncRemote().sendText(message);
@@ -69,4 +69,6 @@ public class MemoryRoomService implements RoomService {
 	public void close() throws IOException {
 
 	}
+
+
 }

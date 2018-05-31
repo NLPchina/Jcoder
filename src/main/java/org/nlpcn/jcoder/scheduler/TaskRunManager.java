@@ -153,6 +153,7 @@ public class TaskRunManager {
 	public static void flush(Task oldTask, Task newTask) throws Exception {
 		if (oldTask != null && StringUtil.isNotBlank(oldTask.getName())) {
 			LOG.info("to stop oldTask " + oldTask.getName() + " BEGIN! ");
+			StaticValue.MAPPING.remove(oldTask.getGroupName(), oldTask.getName()); // remove url from api mapping
 			stopAll(oldTask.getGroupName(), oldTask.getName());
 			LOG.info("to stop oldTask " + oldTask.getName() + " OK! ");
 		}
@@ -177,6 +178,7 @@ public class TaskRunManager {
 
 		oldTask.codeInfo().getExecuteMethods().forEach(m -> {
 			StaticValue.space().removeMapping(oldTask.getGroupName(), oldTask.getName(), m.getName());
+
 		});
 
 		try {

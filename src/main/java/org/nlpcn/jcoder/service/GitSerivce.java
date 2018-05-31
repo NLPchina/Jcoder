@@ -127,7 +127,7 @@ public class GitSerivce {
 
 			//如果不是git则删除以前
 			if (clone && groupDir.exists()) {
-				JarService.getOrCreate(groupName).release();//释放
+				JarService.remove(groupName);//释放
 				for (int i = 0; i < 20 && groupDir.exists(); i++) {
 					Files.deleteDir(groupDir);
 					System.gc();

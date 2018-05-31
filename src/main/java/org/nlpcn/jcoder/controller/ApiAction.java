@@ -1,10 +1,10 @@
 package org.nlpcn.jcoder.controller;
 
 import com.google.common.collect.Sets;
-
 import org.nlpcn.jcoder.domain.ClassDoc;
 import org.nlpcn.jcoder.domain.ClassDoc.MethodDoc;
 import org.nlpcn.jcoder.domain.CodeInfo.ExecuteMethod;
+import org.nlpcn.jcoder.domain.Task;
 import org.nlpcn.jcoder.run.java.JavaRunner;
 import org.nlpcn.jcoder.service.TaskService;
 import org.nlpcn.jcoder.util.ApiException;
@@ -13,16 +13,14 @@ import org.nlpcn.jcoder.util.Restful;
 import org.nlpcn.jcoder.util.StaticValue;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
-import org.nutz.mvc.annotation.At;
-import org.nutz.mvc.annotation.By;
-import org.nutz.mvc.annotation.Filters;
-import org.nutz.mvc.annotation.Ok;
-import org.nutz.mvc.annotation.Param;
+import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CrossOriginFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,7 +46,7 @@ public class ApiAction {
 	@Filters(@By(type = CrossOriginFilter.class))
 	public Object api(@Param(value = "type", df = "1") int type) {
 
-		List<ClassDoc> result = TaskService.findTaskList(type).stream().sorted((t1, t2) -> {
+		List<ClassDoc> result = TaskService.findTaskList(type).stream().filter(t -> t.getStatus() == 1).sorted((t1, t2) -> {
 			/*int v = (int) (t1.getGroupId() - t2.getGroupId());
 			if (v != 0) {
 				return v;
@@ -105,5 +103,34 @@ public class ApiAction {
 		return Restful.ok().obj(StaticValue.RANDOM_CODE.equals(code));
 	}
 
+	/**
+	 * 对比代码不同
+	 *
+	 * @param
+	 * @return
+	 * @throws
+	 */
+	@At("/api_diff")
+	@Ok("json")
+	public Object diff(String groupName, String name, String code) throws UnsupportedEncodingException {
+
+		Task task = TaskService.findTaskByCache(groupName, name);
+
+		if (task == null) {
+			return Restful.instance(false, "notFound");
+		}
+
+		code = code.replace("\r", "");
+		String tCode = task.getCode().replaceAll("\r", "");
+
+		if (code.trim().equals(tCode.trim())) {
+			return Restful.instance(true, "same");
+		}
+
+		Date updateTime = task.getUpdateTime();
+
+		return Restful.instance(false, "unSame", updateTime);
+
+	}
 
 }

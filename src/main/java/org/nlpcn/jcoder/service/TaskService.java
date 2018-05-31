@@ -553,7 +553,34 @@ public class TaskService {
 	 * 从数据库中init所有的task
 	 */
 	public synchronized void flushGroup(String groupName) {
+		removeMapping(groupName); //刪除所有映射
+		createMapping(groupName); //插入所有映射
+	}
 
+	private void createMapping(String groupName) {
+		List<Task> search = findTasksByGroupName(groupName);
+
+		for (Task task : search) {
+			try {
+				TASK_MAP_CACHE.put(task.getId(), task);
+				TASK_MAP_CACHE.put(makeKey(task), task);
+				try {
+					new JavaRunner(task).compile();
+					Collection<ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
+					executeMethods.forEach(e -> {
+						StaticValue.space().addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
+					});
+				} catch (Exception e) {
+					LOG.error("compile {}/{} err ", task.getGroupName(), task.getCode(), e);
+				}
+			} catch (Throwable e) {
+				e.printStackTrace();
+				LOG.error(e.getMessage(), e);
+			}
+		}
+	}
+
+	private void removeMapping(String groupName) {
 		//查询出缓存中的所有task并移除
 		List<Task> search = findAllTasksByCache(groupName);
 		for (Task task : search) {
@@ -564,27 +591,6 @@ public class TaskService {
 				StaticValue.MAPPING.remove(task.getGroupName(), task.getName());//删掉urlmapping重新加载
 				TASK_MAP_CACHE.remove(task.getId());
 				TASK_MAP_CACHE.remove(makeKey(task));
-			} catch (Throwable e) {
-				e.printStackTrace();
-				LOG.error(e.getMessage(), e);
-			}
-		}
-
-		search = findTasksByGroupName(groupName);
-
-		for (Task task : search) {
-			try {
-				TASK_MAP_CACHE.put(task.getId(), task);
-				TASK_MAP_CACHE.put(makeKey(task), task);
-				try {
-					new JavaRunner(task).compile();
-					Collection<CodeInfo.ExecuteMethod> executeMethods = task.codeInfo().getExecuteMethods();
-					executeMethods.forEach(e -> {
-						StaticValue.space().addMapping(task.getGroupName(), task.getName(), e.getMethod().getName());
-					});
-				} catch (Exception e) {
-					LOG.error("compile {}/{} err ", task.getGroupName(), task.getCode(), e);
-				}
 			} catch (Throwable e) {
 				e.printStackTrace();
 				LOG.error(e.getMessage(), e);

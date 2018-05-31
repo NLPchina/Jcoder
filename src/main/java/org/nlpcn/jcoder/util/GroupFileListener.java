@@ -59,15 +59,13 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 		FileAlterationMonitor src = createMonitor(groupFileListener.srcFile, groupFileListener);
 
 		FileListener ioc = new FileListener(groupFileListener.iocFile, (v) -> {
-			JarService.getOrCreate(groupName).release();
-			JarService.getOrCreate(groupName);
+			JarService.flush(groupName);
 			return null;
 		});
 		ioc.start();
 
 		FileListener pom = new FileListener(groupFileListener.pomFile, (v) -> {
-			JarService.getOrCreate(groupName).release();
-			JarService.getOrCreate(groupName);
+			JarService.flush(groupName);
 			return null;
 		});
 		pom.start();

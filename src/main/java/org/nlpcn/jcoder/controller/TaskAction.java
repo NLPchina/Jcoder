@@ -113,11 +113,11 @@ public class TaskAction {
 				.filter(t -> -1 == taskType || Objects.equals(t.getType(), taskType))
 				.map(t -> {
 
-					boolean compile = false ;
-					if(t.getStatus()==1){ //停用状态不需要编译，只要代码规范即可
-						compile = t.sourceUtil() != null && t.codeInfo().getClassz() != null ;
-					}else{
-						compile = t.sourceUtil() != null ;
+					boolean compile = false;
+					if (t.getStatus() == 1) { //停用状态不需要编译，只要代码规范即可
+						compile = t.sourceUtil() != null && t.codeInfo().getClassz() != null;
+					} else {
+						compile = t.sourceUtil() != null;
 					}
 
 					Map<String, Object> map = Maps.hash("name", t.getName(),
@@ -205,6 +205,10 @@ public class TaskAction {
 		Set<String> hostPorts = Stream.of(hosts).collect(Collectors.toSet());
 		boolean containsMaster = hostPorts.remove(Constants.HOST_MASTER);
 
+		if (StringUtil.isNotBlank(oldName) && !oldName.equals(task.getName()) && taskService.existsInCluster(task.getGroupName(), oldName) && taskService.existsInCluster(task.getGroupName(), task.getName())) { //名字变了，新名字旧名字集群都存在，那么可能错误的添加。集群中存在
+			return Restful.fail().code(Forbidden).msg("task[" + task.getGroupName() + "-" + task.getName() + "] already exists in [master]");
+		}
+
 		// 如果是新增, 检查主版本上是否已存在
 		if (containsMaster && task.getId() == null && taskService.existsInCluster(task.getGroupName(), task.getName())) {
 			return Restful.fail().code(Forbidden).msg("task[" + task.getGroupName() + "-" + task.getName() + "] already exists in [master]");
@@ -284,6 +288,10 @@ public class TaskAction {
 	@At
 	public Restful __save__(@Param("::task") Task task, String oldName) throws Exception {
 		boolean nameChanged = StringUtil.isNotBlank(oldName) && !oldName.equals(task.getName());
+
+		if (!oldName.equals(task.getName()) && taskService.findTask(task.getGroupName(), oldName) != null && taskService.findTask(task.getGroupName(), task.getName()) != null) { //名字变了，新名字旧名字集群都存在，那么可能错误的添加。集群中存在
+			return Restful.fail().code(Forbidden).msg("task[" + task.getGroupName() + "-" + task.getName() + "] already exists in [master]");
+		}
 
 		// 如果任务名变更, 强制删除之前的任务, 但不做diff
 		if (nameChanged) {
