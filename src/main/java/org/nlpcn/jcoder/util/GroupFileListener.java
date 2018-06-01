@@ -20,7 +20,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -75,10 +81,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 	/**
 	 * 创建监控
-	 *
-	 * @param file
-	 * @param groupFileListener
-	 * @return
 	 */
 	private static FileAlterationMonitor createMonitor(File file, GroupFileListener groupFileListener) {
 		FileAlterationObserver observer = new FileAlterationObserver(file, null, null);
@@ -270,22 +272,22 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 			this.onFileChange(file);
 		} else {
 
-			ClassDoc parse = null ;
+			ClassDoc parse = null;
 
 			try {
 				parse = JavaDocUtil.parse(content);
 			} catch (Exception e) {
-				throw new CodeException(e) ;
+				throw new CodeException(e);
 			}
 
 			task = new Task();
 			task.setCode(content);
 			task.setCreateUser("admin");
 
-			if(parse.getScheduleStr()!=null){
+			if (parse.getScheduleStr() != null) {
 				task.setType(2);
 				task.setScheduleStr(parse.getScheduleStr());
-			}else{
+			} else {
 				task.setType(1);
 			}
 
@@ -340,6 +342,13 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 							return;
 						}
 
+						try{
+							JavaDocUtil.compile(fCode.replace((char)65307,'错')) ;
+						}catch (Exception e){
+							printLog(String.format("path:%s className:%s can not to compile, so skip save:%s...................................................................", file.getAbsoluteFile(), task.getName(), fileName));
+							return ;
+						}
+
 						StaticValue.getSystemIoc().get(TaskService.class, "taskService").saveOrUpdate(task);
 						flush(task.getName());
 						taskFileMap.put(fileName, file);
@@ -356,9 +365,6 @@ public class GroupFileListener extends FileAlterationListenerAdaptor {
 
 	/**
 	 * 刷新這個類
-	 *
-	 * @param taskName
-	 * @throws Exception
 	 */
 	private void flush(String taskName) {
 		Set<String> taskNames = new HashSet<>(1);
