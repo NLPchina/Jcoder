@@ -71,27 +71,13 @@ public class CacheEntry {
 		} else {
 			cache = CacheBuilder.newBuilder().maximumSize(this.size).refreshAfterWrite(time, TimeUnit.SECONDS).build(new CacheLoader<Args, Object>() {
 
-				private ListeningExecutorService executorService = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
-
 				public Object load(Args args) {
 					return executeNoCache(args);
 				}
 
 				@Override
 				public ListenableFuture<Object> reload(final Args args, Object oldValue) {
-					ListenableFuture<Object> result = ListenableFutureTask.create(new Callable<Object>() {
-						public Object call() {
-							return executeNoCache(args);
-						}
-					});
-
-					result = executorService.submit(new Callable<Object>() {
-						@Override
-						public Object call() {
-							return executeNoCache(args);
-						}
-					});
-					return result;
+					return ListenableFutureTask.create(() -> executeNoCache(args));
 				}
 
 			});
