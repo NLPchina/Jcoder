@@ -27,26 +27,6 @@ import java.util.List;
  */
 public class BasicDao {
 
-	//加载Nutz所支持的数据库的驱动!!
-	static {
-		String[] drivers = {"org.h2.Driver",
-				"com.ibm.db2.jcc.DB2Driver",
-				"org.hsqldb.jdbcDriver",
-				"oracle.jdbc.OracleDriver",
-				"org.postgresql.Driver",
-				"net.sourceforge.jtds.jdbc.Driver",
-				"com.microsoft.sqlserver.jdbc.SQLServerDriver",
-				"org.sqlite.JDBC",
-				"com.mysql.jdbc.Driver",
-				"com.beyondb.jdbc.BeyondbDriver"};
-		for (String driverClassName : drivers) {
-			try {
-				Class.forName(driverClassName);
-			} catch (Throwable e) {
-			}
-		}
-	}
-
 	@Inject
 	protected Dao dao;
 	private HikariDataSource ds;
