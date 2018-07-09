@@ -166,6 +166,8 @@ public class TaskRunManager {
 
 		if (newTask.getType() == 1 && newTask.getStatus() == 1) {
 			addApi(oldTask, newTask);
+		}else if(newTask.getType() == 2 && newTask.getStatus() == 1){
+			new JavaRunner(newTask).compile(); //定時任務進行一次編譯
 		}
 
 	}

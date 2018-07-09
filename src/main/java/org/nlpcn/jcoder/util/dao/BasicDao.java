@@ -27,12 +27,42 @@ import java.util.List;
  */
 public class BasicDao {
 
+	//加载Nutz所支持的数据库的驱动!!
+	static {
+		String[] drivers = {"org.h2.Driver",
+				"com.ibm.db2.jcc.DB2Driver",
+				"org.hsqldb.jdbcDriver",
+				"oracle.jdbc.OracleDriver",
+				"org.postgresql.Driver",
+				"net.sourceforge.jtds.jdbc.Driver",
+				"com.microsoft.sqlserver.jdbc.SQLServerDriver",
+				"org.sqlite.JDBC",
+				"com.mysql.jdbc.Driver",
+				"com.beyondb.jdbc.BeyondbDriver"};
+		for (String driverClassName : drivers) {
+			try {
+				Class.forName(driverClassName);
+			} catch (Throwable e) {
+			}
+		}
+	}
+
 	@Inject
 	protected Dao dao;
 	private HikariDataSource ds;
 
 	public BasicDao(String jdbcUrl, String username, String password) {
 		ds = new HikariDataSource();
+		ds.setDriverClassName(getDriverClassName(jdbcUrl));
+		ds.setJdbcUrl(jdbcUrl);
+		ds.setUsername(username);
+		ds.setPassword(password);
+		this.dao = new NutDao(ds);
+	}
+
+	public BasicDao(String driverClassName, String jdbcUrl, String username, String password) {
+		ds = new HikariDataSource();
+		ds.setDriverClassName(driverClassName);
 		ds.setJdbcUrl(jdbcUrl);
 		ds.setUsername(username);
 		ds.setPassword(password);
@@ -320,10 +350,8 @@ public class BasicDao {
 	 * 分页带条件查询所有数据
 	 *
 	 * @param <T>
-	 * @param c           查询的表
-	 * @param condition   查询条件,用Cnd的静态方法构造
-	 * @param currentPage 当前页码
-	 * @param pageSize    每页显示的数据量
+	 * @param c         查询的表
+	 * @param condition 查询条件,用Cnd的静态方法构造
 	 * @return List
 	 */
 	public <T> List<T> searchByPage(Class<T> c, Condition condition, Pager pager) {
@@ -406,7 +434,7 @@ public class BasicDao {
 	 * 根据指定条件删除对象
 	 *
 	 * @param <T>
-	 * @param Condition 匹配条件
+	 * @param con 匹配条件
 	 * @return int
 	 */
 	public <T> int delByCondition(Class<T> c, Condition con) {
@@ -605,8 +633,6 @@ public class BasicDao {
 	/**
 	 * 无pojo查询记录
 	 *
-	 * @param tableName
-	 * @param cnd
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
@@ -629,8 +655,7 @@ public class BasicDao {
 	/**
 	 * 无pojo查询记录
 	 *
-	 * @param tableName
-	 * @param cnd
+	 * @param sqlStr
 	 * @return
 	 */
 	public Record selectOne(String sqlStr) {
@@ -659,6 +684,117 @@ public class BasicDao {
 	public void close() {
 		if (ds != null) {
 			ds.close();
+		}
+	}
+
+	private static Boolean mysql_driver_version_6 = null;
+
+	public static String getDriverClassName(String rawUrl) {
+		if (rawUrl == null) {
+			return null;
+		}
+
+		if (rawUrl.startsWith("jdbc:derby:")) {
+			return "org.apache.derby.jdbc.EmbeddedDriver";
+		} else if (rawUrl.startsWith("jdbc:mysql:")) {
+			if (mysql_driver_version_6 == null) {
+				try {
+					mysql_driver_version_6 = Class.forName("com.mysql.cj.jdbc.Driver") != null;
+				} catch (ClassNotFoundException e) {
+					mysql_driver_version_6 = false;
+				}
+			}
+
+			if (mysql_driver_version_6) {
+				return "com.mysql.cj.jdbc.Driver";
+			} else {
+				return "com.mysql.jdbc.Driver";
+			}
+		} else if (rawUrl.startsWith("jdbc:log4jdbc:")) {
+			return "net.sf.log4jdbc.DriverSpy";
+		} else if (rawUrl.startsWith("jdbc:mariadb:")) {
+			return "org.mariadb.jdbc.Driver";
+		} else if (rawUrl.startsWith("jdbc:oracle:") //
+				|| rawUrl.startsWith("JDBC:oracle:")) {
+			return "oracle.jdbc.OracleDriver";
+		} else if (rawUrl.startsWith("jdbc:alibaba:oracle:")) {
+			return "com.alibaba.jdbc.AlibabaDriver";
+		} else if (rawUrl.startsWith("jdbc:microsoft:")) {
+			return "com.microsoft.jdbc.sqlserver.SQLServerDriver";
+		} else if (rawUrl.startsWith("jdbc:sqlserver:")) {
+			return "com.microsoft.sqlserver.jdbc.SQLServerDriver";
+		} else if (rawUrl.startsWith("jdbc:sybase:Tds:")) {
+			return "com.sybase.jdbc2.jdbc.SybDriver";
+		} else if (rawUrl.startsWith("jdbc:jtds:")) {
+			return "net.sourceforge.jtds.jdbc.Driver";
+		} else if (rawUrl.startsWith("jdbc:fake:") || rawUrl.startsWith("jdbc:mock:")) {
+			return "com.alibaba.druid.mock.MockDriver";
+		} else if (rawUrl.startsWith("jdbc:postgresql:")) {
+			return "org.postgresql.Driver";
+		} else if (rawUrl.startsWith("jdbc:edb:")) {
+			return "com.edb.Driver";
+		} else if (rawUrl.startsWith("jdbc:odps:")) {
+			return "com.aliyun.odps.jdbc.OdpsDriver";
+		} else if (rawUrl.startsWith("jdbc:hsqldb:")) {
+			return "org.hsqldb.jdbcDriver";
+		} else if (rawUrl.startsWith("jdbc:db2:")) {
+			return "COM.ibm.db2.jdbc.app.DB2Driver";
+		} else if (rawUrl.startsWith("jdbc:sqlite:")) {
+			return "org.sqlite.JDBC";
+		} else if (rawUrl.startsWith("jdbc:ingres:")) {
+			return "com.ingres.jdbc.IngresDriver";
+		} else if (rawUrl.startsWith("jdbc:h2:")) {
+			return "org.h2.Driver";
+		} else if (rawUrl.startsWith("jdbc:mckoi:")) {
+			return "com.mckoi.JDBCDriver";
+		} else if (rawUrl.startsWith("jdbc:cloudscape:")) {
+			return "COM.cloudscape.core.JDBCDriver";
+		} else if (rawUrl.startsWith("jdbc:informix-sqli:")) {
+			return "com.informix.jdbc.IfxDriver";
+		} else if (rawUrl.startsWith("jdbc:timesten:")) {
+			return "com.timesten.jdbc.TimesTenDriver";
+		} else if (rawUrl.startsWith("jdbc:as400:")) {
+			return "com.ibm.as400.access.AS400JDBCDriver";
+		} else if (rawUrl.startsWith("jdbc:sapdb:")) {
+			return "com.sap.dbtech.jdbc.DriverSapDB";
+		} else if (rawUrl.startsWith("jdbc:JSQLConnect:")) {
+			return "com.jnetdirect.jsql.JSQLDriver";
+		} else if (rawUrl.startsWith("jdbc:JTurbo:")) {
+			return "com.newatlanta.jturbo.driver.Driver";
+		} else if (rawUrl.startsWith("jdbc:firebirdsql:")) {
+			return "org.firebirdsql.jdbc.FBDriver";
+		} else if (rawUrl.startsWith("jdbc:interbase:")) {
+			return "interbase.interclient.Driver";
+		} else if (rawUrl.startsWith("jdbc:pointbase:")) {
+			return "com.pointbase.jdbc.jdbcUniversalDriver";
+		} else if (rawUrl.startsWith("jdbc:edbc:")) {
+			return "ca.edbc.jdbc.EdbcDriver";
+		} else if (rawUrl.startsWith("jdbc:mimer:multi1:")) {
+			return "com.mimer.jdbc.Driver";
+		} else if (rawUrl.startsWith("jdbc:dm:")) {
+			return "dm.jdbc.driver.DmDriver";
+		} else if (rawUrl.startsWith("jdbc:kingbase:")) {
+			return "com.kingbase.Driver";
+		} else if (rawUrl.startsWith("jdbc:gbase:")) {
+			return "com.kingbase.Driver";
+		} else if (rawUrl.startsWith("jdbc:xugu:")) {
+			return "com.xugu.cloudjdbc.Driver";
+		} else if (rawUrl.startsWith("jdbc:hive:")) {
+			return "org.apache.hive.jdbc.HiveDriver";
+		} else if (rawUrl.startsWith("jdbc:hive2:")) {
+			return "org.apache.hive.jdbc.HiveDriver";
+		} else if (rawUrl.startsWith("jdbc:phoenix:thin:")) {
+			return "org.apache.phoenix.queryserver.client.Driver";
+		} else if (rawUrl.startsWith("jdbc:phoenix://")) {
+			return "org.apache.phoenix.jdbc.PhoenixDriver";
+		} else if (rawUrl.startsWith("jdbc:kylin:")) {
+			return "org.apache.kylin.jdbc.Driver";
+		} else if (rawUrl.startsWith("jdbc:elastic:")) {
+			return "com.alibaba.xdriver.elastic.jdbc.ElasticDriver";
+		} else if (rawUrl.startsWith("jdbc:clickhouse:")) {
+			return "ru.yandex.clickhouse.ClickHouseDriver";
+		} else {
+			throw new RuntimeException("unkow jdbc driver : " + rawUrl);
 		}
 	}
 
