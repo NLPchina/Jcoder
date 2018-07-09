@@ -1,6 +1,6 @@
 package org.nlpcn.jcoder.util.dao;
 
-import com.alibaba.druid.pool.DruidDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import org.nutz.castor.Castors;
 import org.nutz.dao.*;
 import org.nutz.dao.entity.Entity;
@@ -29,14 +29,13 @@ public class BasicDao {
 
 	@Inject
 	protected Dao dao;
-	private DruidDataSource ds;
+	private HikariDataSource ds;
 
 	public BasicDao(String jdbcUrl, String username, String password) {
-		ds = new DruidDataSource();
-		ds.setUrl(jdbcUrl);
+		ds = new HikariDataSource();
+		ds.setJdbcUrl(jdbcUrl);
 		ds.setUsername(username);
 		ds.setPassword(password);
-		ds.setMaxWait(60000);
 		this.dao = new NutDao(ds);
 	}
 

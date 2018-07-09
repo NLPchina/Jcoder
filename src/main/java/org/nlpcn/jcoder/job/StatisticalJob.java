@@ -1,6 +1,5 @@
 package org.nlpcn.jcoder.job;
 
-import com.alibaba.druid.util.StringUtils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Strings;
@@ -119,11 +118,11 @@ public class StatisticalJob implements Runnable {
         if (message.startsWith("Execute OK")) {
             // Execute OK  ApiTest/test succesed ! use Time : 0
             (stats = new Stats()).successCount.set(1);
-            duration = Integer.parseInt(StringUtils.subString(message, " succesed ! use Time : ", null).trim());
+            duration = Integer.parseInt(StringUtil.subString(message, " succesed ! use Time : ", null).trim());
         } else if (message.startsWith("Execute ERR")) {
             // Execute ERR  ApiTest/test useTime 0 erred : java.lang.reflect.InvocationTargetException...
             (stats = new Stats()).errorCount.set(1);
-            duration = Integer.parseInt(StringUtils.subString(message, " useTime ", " erred : ").trim());
+            duration = Integer.parseInt(StringUtil.subString(message, " useTime ", " erred : ").trim());
         } else {
             // 忽略其他日志信息
             return;

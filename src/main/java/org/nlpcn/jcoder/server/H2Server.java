@@ -1,6 +1,6 @@
 package org.nlpcn.jcoder.server;
 
-import com.alibaba.druid.pool.DruidDataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import org.h2.tools.Server;
 import org.nlpcn.jcoder.util.IOUtil;
 import org.nlpcn.jcoder.util.StaticValue;
@@ -44,15 +44,11 @@ public class H2Server {
 				}
 			}
 
-			DruidDataSource dds = new DruidDataSource();
+			HikariDataSource dds = new HikariDataSource();
 			dds.setDriverClassName("org.h2.Driver");
-			dds.setUrl("jdbc:h2:" + h2db);
+			dds.setJdbcUrl("jdbc:h2:" + h2db);
 			dds.setUsername("sa");
 			dds.setPassword("");
-			dds.setInitialSize(10);
-			dds.setMaxActive(100);
-			dds.setTestOnReturn(true);
-			dds.setValidationQuery("select 1");
 			BasicDao basicDao = new BasicDao(dds);
 
 			StaticValue.systemDao = basicDao;
