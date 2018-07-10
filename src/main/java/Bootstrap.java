@@ -110,7 +110,6 @@ public class Bootstrap {
 		File jcoderHome = new File(home);
 
 		makeFiles(jcoderHome, logPath);
-
 		context.setContextPath("/");
 		context.setServer(server);
 		context.setMaxFormContentSize(0);
@@ -130,6 +129,7 @@ public class Bootstrap {
 		if (location.toExternalForm().endsWith(".jar")) { // 如果是jar包
 			context.setDescriptor(location.toExternalForm() + "!/webapp/WEB-INF/web.xml");
 			context.setWarResource(Resource.newResource(Bootstrap.class.getResource("webapp")));
+			context.setTempDirectory(new File(jcoderHome,".temp"));
 		} else {
 			context.setWar("src/main/webapp");
 		}
