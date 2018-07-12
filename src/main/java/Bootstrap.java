@@ -193,32 +193,6 @@ public class Bootstrap {
 		return true;
 	}
 
-//
-//	/**
-//	 * config log4j2 setting
-//	 *
-//	 * @param logPath
-//	 * @throws IOException
-//	 * @throws FileNotFoundException
-//	 */
-//	private static void createLog4j2Config(File log4jFile, String logPath) throws FileNotFoundException, IOException {
-//
-//		if (log4jFile.exists()) {
-//			return;
-//		}
-//
-//		String logTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<Configuration status=\"INFO\">\n" + "	<properties>\n"
-//				+ "		<property name=\"LOG_PATH\">{{LOG_PATH}}</property>\n" + "	</properties>\n" + "	<Appenders>\n"
-//				+ "		<Console name=\"Console\" target=\"SYSTEM_OUT\">\n" + "			<PatternLayout pattern=\"%c-%-4r %-5p [%d{yyyy-MM-dd HH:mm:ss}]  %m%n\" />\n"
-//				+ "		</Console>\n" + "\n" + "		<RollingRandomAccessFile name=\"File\" fileName=\"${LOG_PATH}\"\n" + "			filePattern=\"${LOG_PATH}-%d{yyyyMMdd}\">\n"
-//				+ "			<PatternLayout pattern=\"%m%n\" />\n" + "			<Policies>\n" + "				<TimeBasedTriggeringPolicy interval=\"1\"\n"
-//				+ "					modulate=\"true\" />\n" + "			</Policies>\n" + "		</RollingRandomAccessFile>\n" + "\n" + "	</Appenders>\n" + "\n" + "\n"
-//				+ "	<Loggers>\n" + "		<Root level=\"info\">\n" + "			<AppenderRef ref=\"Console\" />\n" + "			<AppenderRef ref=\"File\" />\n"
-//				+ "		</Root>\n" + "	</Loggers>\n" + "</Configuration>";
-//
-//		wirteFile(log4jFile.getAbsolutePath(), "utf-8", logTemplate.replace("{{LOG_PATH}}", logPath));
-//
-//	}
 
 	private static void parseFile(String file) throws UnsupportedEncodingException, FileNotFoundException, IOException {
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"))) {
@@ -253,10 +227,6 @@ public class Bootstrap {
 	}
 
 	private static void makeFiles(File JcoderHome, String logPath) throws FileNotFoundException, IOException {
-		File tmpDir = new File(JcoderHome, "tmp"); // create tmp dir
-		if (!tmpDir.exists()) {
-			tmpDir.mkdirs();
-		}
 
 		File pluginDir = new File(JcoderHome, "web"); // create web dir
 		if (!pluginDir.exists()) {
@@ -268,7 +238,6 @@ public class Bootstrap {
 			groupDir.mkdirs();
 		}
 
-//		createLog4j2Config(new File(JcoderHome, "log4j2.xml"), logPath);
 	}
 
 	/**

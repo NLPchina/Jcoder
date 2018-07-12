@@ -43,6 +43,8 @@ public class CacheEntry {
 
 	private LoadingCache<Args, Object> cache = null;
 
+	private ListeningExecutorService backgroundRefreshPools =
+			MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(20));
 	public CacheEntry(Task task, Method method, int time, int size, boolean block) {
 		this.task = task;
 
@@ -71,13 +73,14 @@ public class CacheEntry {
 		} else {
 			cache = CacheBuilder.newBuilder().maximumSize(this.size).refreshAfterWrite(time, TimeUnit.SECONDS).build(new CacheLoader<Args, Object>() {
 
+				@Override
 				public Object load(Args args) {
 					return executeNoCache(args);
 				}
 
 				@Override
 				public ListenableFuture<Object> reload(final Args args, Object oldValue) {
-					return ListenableFutureTask.create(() -> executeNoCache(args));
+					return backgroundRefreshPools.submit(() -> executeNoCache(args));
 				}
 
 			});
