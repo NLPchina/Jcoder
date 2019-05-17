@@ -28,7 +28,7 @@ var groupManager = new Vue({
               confirm: function () {
               	  JqdeBox.loading();
             	  var param = groupAddOrEdit.item;
-            	  groupAddOrEdit.hostArray();
+            	  groupAddOrEdit.getHostArray();
             	  Jcoder.ajax(vUrl, 'post',{"hostPorts":groupAddOrEdit.hostPorts.toString(),"name":groupAddOrEdit.item.name},null).then(function (data) {
                       JqdeBox.unloading();
                       if(data.ok){

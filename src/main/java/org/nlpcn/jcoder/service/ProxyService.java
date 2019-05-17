@@ -215,6 +215,7 @@ public class ProxyService {
 	 * 同时提交到多个主机上
 	 */
 	public <T> T post(Set<String> hostPorts, String path, Map<String, Object> params, int timeout, Function<Map<String, Restful>, T> fun) throws Exception {
+		LOG.info("send post to : "+hostPorts);
 		Map<String, Restful> result = post(hostPorts, path, params, timeout);
 		return fun.apply(result);
 	}

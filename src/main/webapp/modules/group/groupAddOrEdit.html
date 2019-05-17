@@ -57,11 +57,11 @@ var groupAddOrEdit = new Vue({
 		  }
 		});
 	},
-	hostArray: function () {
+	getHostArray: function () {
 		 var $this = this;
-		 var len = $(":checkbox").length ;
+		 var len = $(".ace").length ;
 		 for(var i =0 ;i<len ;i++){
-		 	if($(":checkbox")[i].checked==true){
+		 	if($(".ace")[i].checked==true){
 				$this.hostPorts.push($this.hosts[i]);
 		 	}
 		 }

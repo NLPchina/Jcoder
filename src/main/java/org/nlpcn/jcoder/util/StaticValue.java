@@ -178,11 +178,16 @@ public class StaticValue {
 	 * 从配置文件查找
 	 */
 	public static String getResource(String key) {
-		ResourceBundle bundle = ResourceBundle.getBundle("jcoder");
-		if (bundle.containsKey(key)) {
-			return bundle.getString(key);
-		} else {
-			return null;
+		try {
+			ResourceBundle bundle = ResourceBundle.getBundle("jcoder");
+			if (bundle.containsKey(key)) {
+				return bundle.getString(key);
+			} else {
+				return null;
+			}
+		}catch (Exception e){
+			LOG.warn("init version err ",e);
+			return key ;
 		}
 	}
 
